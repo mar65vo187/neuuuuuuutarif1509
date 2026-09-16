@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-16",
+  "build": "passed",
+  "typecheck": "passed",
+  "lint": {
+    "errors": 0,
+    "existing_logo_warnings": 2
+  },
+  "unit_tests": 12,
+  "integration": {
+    "passed": 27,
+    "checks": [
+      "Migration installs empty database and repeats without changes",
+      "Explicit administrator setup is idempotent",
+      "Startup validation verifies applied migrations, required tables and active admin",
+      "SEO export contains real seeded profile, indexable URLs and working favicon without artificial lastmod",
+      "Anonymous requests cannot access portal or administration; deep links are preserved",
+      "Per-response CSP nonce matches every script, cannot be supplied by clients and is not cached",
+      "Case-insensitive login, persistent cookie and admin page",
+      "User and public profile created atomically; duplicate emails roll back",
+      "RBAC, self-demotion prevention and CSRF rejection",
+      "Multipart upload, real image decoding, durable storage, profile display and ETag",
+      "Stored advisor content cannot break out of JSON-LD; repeated profile query parameters render safely",
+      "Corrupt images and unauthorized uploads rejected",
+      "Lead submission, confirmation validation, ownership and audit notes",
+      "Advisors cannot read applications or take another advisor’s assigned lead",
+      "Team chat saves and retrieves messages",
+      "Referral registration requires consent; private token is hashed and public code cannot read status",
+      "Referral attribution is optional, excludes self-referrals and counts duplicate email once",
+      "Referral dashboard counts follow actual portal status; shared routes render",
+      "Rendered public pages have one H1, bounded metadata, route canonicals, social images, theme color and image alt attributes",
+      "24 public pages, services, repeated query parameters, admin alias and genuine 404",
+      "Server restart preserves authenticated sessions and profile image storage",
+      "Password changes revoke existing sessions",
+      "Image removal clears both profile reference and stored data",
+      "Admin deletion rejects unauthorized/self requests, revokes sessions, removes sole profile and retains private leads and chat",
+      "Referral links and counts survive server restart and unrelated account deletion",
+      "Logout expires the session cookie",
+      "Database failure produces server error instead of false advisor 404 or successful incomplete sitemap and recovers"
+    ]
+  },
+  "references": {
+    "sourceFiles": 84,
+    "localImports": 217,
+    "literalInternalLinks": 34,
+    "errors": []
+  },
+  "freeze": {
+    "jsxFilesChecked": 54,
+    "cssFilesByteIdentical": 1,
+    "layoutClassesStylesLinksImageReferencesAndVisibleTextUnchanged": true,
+    "contentChangesLimitedToSeoFields": true
+  },
+  "database_test_engine": "PGlite with PostgreSQL wire protocol",
+  "production_and_search_console_configured": false,
+  "browser_visual_comparison": false,
+  "existing_images_unchanged": true
+}

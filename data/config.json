@@ -1,0 +1,102 @@
+{
+  "purpose": "Configuration inventory only; no credentials or separate runtime configuration",
+  "stack": "Next.js 16 / React 19 / PostgreSQL",
+  "staticHostingSupported": false,
+  "databaseRequired": true,
+  "runtimeSecrets": [
+    "DATABASE_URL",
+    "SESSION_SECRET"
+  ],
+  "oneTimeSetup": [
+    "PORTAL_ADMIN_EMAIL",
+    "PORTAL_ADMIN_PASSWORD"
+  ],
+  "optionalBenefits": [
+    "REFERRAL_FRIEND_BENEFIT",
+    "REFERRAL_REFERRER_BENEFIT"
+  ],
+  "endpoints": [
+    {
+      "routePattern": "/api/advisors/[id]/image",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/health",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/leads",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/advisors/[id]/image",
+      "methods": [
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/users/[id]",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/users",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/chat",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/leads/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/login",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/logout",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/referrals",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/referrals/status",
+      "methods": [
+        "GET"
+      ]
+    }
+  ],
+  "formFallback": "Existing local API routes remain authoritative. Failed requests never become a fake success; existing WhatsApp/contact alternatives remain available.",
+  "legalDataMissing": [
+    "Full business address",
+    "Operator-confirmed processing and retention details for referrals"
+  ],
+  "marketingChanged": false
+}

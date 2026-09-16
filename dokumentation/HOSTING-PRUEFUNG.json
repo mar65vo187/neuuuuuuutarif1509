@@ -1,0 +1,48 @@
+{
+  "projectRootBuild": "passed",
+  "localHttpChecks": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/leistungen",
+      "status": 200
+    },
+    {
+      "path": "/leistungen/strom-gas",
+      "status": 200
+    },
+    {
+      "path": "/berater",
+      "status": 200
+    },
+    {
+      "path": "/anfrage",
+      "status": 200
+    },
+    {
+      "path": "/portal/login",
+      "status": 200
+    },
+    {
+      "path": "/freund-werben",
+      "status": 200
+    },
+    {
+      "path": "/portal/verwaltung",
+      "status": 307
+    },
+    {
+      "path": "/wirklich-nicht-vorhanden",
+      "status": 404
+    }
+  ],
+  "liveObserved": {
+    "host": "GitHub Pages",
+    "root": 200,
+    "berater": 404
+  },
+  "deployed": false,
+  "databaseConfigured": false
+}

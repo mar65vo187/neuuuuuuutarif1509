@@ -1,0 +1,63 @@
+{
+  "date": "2026-09-15",
+  "input": "tarifwerk new.zip",
+  "build": "passed",
+  "typecheck": "passed",
+  "lint": {
+    "errors": 0,
+    "existing_logo_warnings": 2
+  },
+  "unit_tests": 10,
+  "integration": {
+    "passed": 24,
+    "checks": [
+      "Migration installs empty database and repeats without changes",
+      "Explicit administrator setup is idempotent",
+      "Startup validation verifies applied migrations, required tables and active admin",
+      "Anonymous requests cannot access portal or administration; deep links are preserved",
+      "Per-response CSP nonce matches every script, cannot be supplied by clients and is not cached",
+      "Case-insensitive login, persistent cookie and admin page",
+      "User and public profile created atomically; duplicate emails roll back",
+      "RBAC, self-demotion prevention and CSRF rejection",
+      "Multipart upload, real image decoding, durable storage, profile display and ETag",
+      "Stored advisor content cannot break out of JSON-LD; repeated profile query parameters render safely",
+      "Corrupt images and unauthorized uploads rejected",
+      "Lead submission, confirmation validation, ownership and audit notes",
+      "Advisors cannot read applications or take another advisor’s assigned lead",
+      "Team chat saves and retrieves messages",
+      "Referral registration requires consent; private token is hashed and public code cannot read status",
+      "Referral attribution is optional, excludes self-referrals and counts duplicate email once",
+      "Referral dashboard counts follow actual portal status; shared routes render",
+      "24 public pages, services, repeated query parameters, admin alias and genuine 404",
+      "Server restart preserves authenticated sessions and profile image storage",
+      "Password changes revoke existing sessions",
+      "Image removal clears both profile reference and stored data",
+      "Admin deletion rejects unauthorized/self requests, revokes sessions, removes sole profile and retains private leads and chat",
+      "Referral links and counts survive server restart and unrelated account deletion",
+      "Logout expires the session cookie"
+    ]
+  },
+  "references": {
+    "sourceFiles": 83,
+    "localImports": 201,
+    "literalInternalLinks": 34,
+    "errors": []
+  },
+  "freeze": {
+    "baseline": "tarifwerk new.zip",
+    "unchanged_files": 137,
+    "protected_unchanged_files": 108,
+    "changed_existing_files": [
+      ".env.example",
+      "ASSUMPTIONS.md",
+      "next.config.ts",
+      "package.json",
+      "README.md"
+    ],
+    "source_ui_and_marketing_unchanged": true
+  },
+  "database_test_engine": "PGlite with PostgreSQL wire protocol",
+  "docker_runtime_tested": false,
+  "production_infrastructure_configured": false,
+  "browser_verified": false
+}
