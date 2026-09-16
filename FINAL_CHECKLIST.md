@@ -8,8 +8,8 @@ Stand: 16.09.2026. ✅ bezeichnet den konkret dokumentierten Prüfumfang, keine 
 | ✅ | Syntax und TypeScript | npm run typecheck und Produktionsbuild bestanden. |
 | ✅ | Produktionsbuild | npm run build erfolgreich. |
 | ✅ | Lint | Keine Fehler; zwei bestehende Hinweise zu nativen Logo-Bildern. |
-| ✅ | Auth-/Security-Modultests | 12 Testgruppen einschließlich Startkonfiguration und SEO-Metadaten bestanden. |
-| ✅ | Serverintegration | 27 Testgruppen gegen isolierte PostgreSQL-kompatible Testdatenbank bestanden. |
+| ✅ | Auth-/Security-Modultests | 16 Testgruppen einschließlich Admin-Rechteentzug, Chat-Cleanup und Notizerhalt bestanden. |
+| ✅ | Serverintegration | 29 Testgruppen gegen isolierte PostgreSQL-kompatible Testdatenbank bestanden. |
 | ✅ | Import-Referenzen | 217 lokale Imports aus 84 Quelldateien auf vorhandene Ziele geprüft. |
 | ✅ | Feste interne Links | 34 statische Linkreferenzen auf Routen/Dateien geprüft. |
 | ✅ | Unterseiten im Serverbetrieb | 24 öffentliche URL-Varianten sowie Portal-/Profilrouten geprüft. |
@@ -45,7 +45,7 @@ Stand: 16.09.2026. ✅ bezeichnet den konkret dokumentierten Prüfumfang, keine 
 | ❌ | Rechtliche Vollständigkeit | Geschäftsadresse fehlt im Input; Pflichtangaben und Datenschutzprozesse benötigen Betreiberprüfung. |
 | ❌ | Unabhängige Claim-/Lastprüfung | Mitgelieferte Geschäftsaussagen, produktive Last und verteilte Rate-Limits nicht unabhängig nachgewiesen. |
 
-## Integrationsergebnisse einschließlich SEO-Update
+## Integrationsergebnisse des Abschlussaudits
 
 
 1. Migration installs empty database and repeats without changes
@@ -54,27 +54,29 @@ Stand: 16.09.2026. ✅ bezeichnet den konkret dokumentierten Prüfumfang, keine 
 4. SEO export contains real seeded profile, indexable URLs and working favicon without artificial lastmod
 5. Anonymous requests cannot access portal or administration; deep links are preserved
 6. Per-response CSP nonce matches every script, cannot be supplied by clients and is not cached
-7. Case-insensitive login, persistent cookie and admin page
-8. User and public profile created atomically; duplicate emails roll back
-9. RBAC, self-demotion prevention and CSRF rejection
-10. Multipart upload, real image decoding, durable storage, profile display and ETag
-11. Stored advisor content cannot break out of JSON-LD; repeated profile query parameters render safely
-12. Corrupt images and unauthorized uploads rejected
-13. Lead submission, confirmation validation, ownership and audit notes
-14. Advisors cannot read applications or take another advisor’s assigned lead
-15. Team chat saves and retrieves messages
-16. Referral registration requires consent; private token is hashed and public code cannot read status
-17. Referral attribution is optional, excludes self-referrals and counts duplicate email once
-18. Referral dashboard counts follow actual portal status; shared routes render
-19. Rendered public pages have one H1, bounded metadata, route canonicals, social images, theme color and image alt attributes
-20. 24 public pages, services, repeated query parameters, admin alias and genuine 404
-21. Server restart preserves authenticated sessions and profile image storage
-22. Password changes revoke existing sessions
-23. Image removal clears both profile reference and stored data
-24. Admin deletion rejects unauthorized/self requests, revokes sessions, removes sole profile and retains private leads and chat
-25. Referral links and counts survive server restart and unrelated account deletion
-26. Logout expires the session cookie
-27. Database failure produces server error instead of false advisor 404 or successful incomplete sitemap and recovers
+7. Successful shared-IP logins do not exhaust the failed-login quota; repeated failures remain blocked
+8. Case-insensitive login, persistent cookie and admin page
+9. User and public profile created atomically; duplicate emails roll back
+10. RBAC, self-demotion prevention and CSRF rejection
+11. Multipart upload, real image decoding, durable storage, profile display and ETag
+12. Stored advisor content cannot break out of JSON-LD; repeated profile query parameters render safely
+13. Corrupt images and unauthorized uploads rejected
+14. Lead submission, confirmation validation, ownership and audit notes
+15. Advisors cannot read applications or take another advisor’s assigned lead
+16. Team chat saves and retrieves messages
+17. Referral registration requires consent; private token is hashed and public code cannot read status
+18. Referral attribution is optional, excludes self-referrals and counts duplicate email once
+19. Referral dashboard counts follow actual portal status; shared routes render
+20. Rendered public pages have one H1, bounded metadata, route canonicals, social images, theme color and image alt attributes
+21. 24 public pages, services, repeated query parameters, admin alias and genuine 404
+22. Server restart preserves authenticated sessions and profile image storage
+23. Password changes revoke existing sessions
+24. Image removal clears both profile reference and stored data
+25. Admin deletion rejects unauthorized/self requests, revokes sessions, removes sole profile and retains private leads and chat
+26. Referral links and counts survive server restart and unrelated account deletion
+27. Authentication outage returns retryable API responses without clearing the session or redirecting to login; same cookie works after recovery
+28. Logout expires the session cookie
+29. Database failure produces server error instead of false advisor 404 or successful incomplete sitemap and recovers
 
 ## Übergabe
 
@@ -83,3 +85,5 @@ Aktuelle Grundlage: tarifwerk new.zip. Es wurden keine npm-Abhängigkeiten ergä
 Alle Dateien sind vollständig; keine Datei wurde wegen eines Budgets abgebrochen. Offene Live-/Prüfvoraussetzungen sind oben aufgeführt. Details und begründete Abweichungen vom allgemeinen Masterprompt: ASSUMPTIONS.md. Historische Berichte in dokumentation/ bleiben erhalten und stellen keinen neu durchgeführten Live-Test dar.
 
 Aktueller SEO-Nachweis: `dokumentation/SEO-PRUEFUNG.json`. Die ältere Startprüfung beschreibt den vorherigen Stand. `GOOGLE-SEARCH-CONSOLE.md` enthält genau drei Schritte mit offiziellen Quellen.
+
+Abschlussaudit: `dokumentation/FINAL-AUDIT.md` und `dokumentation/FINAL-AUDIT.json`. Zusätzliche Regressionen: Rollenentzug vor Schreibzugriffen, IP-Limit bei erfolgreichen Logins, DB-Ausfall ohne Session-Verlust, Chat-Cleanup und Erhalt neuer Notizentwürfe. CSS, öffentliche Assets und zentrale Inhaltsdaten sind gegenüber dem Audit-Ausgangscommit bytegleich.

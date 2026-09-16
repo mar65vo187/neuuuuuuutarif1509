@@ -121,6 +121,10 @@ export async function clearSessionCookie() {
 
 export type SessionUser = Pick<Employee, "id" | "name" | "email" | "role" | "advisorId">;
 
+export class AuthenticationUnavailableError extends Error {
+  constructor() { super("Die Anmeldung kann momentan nicht überprüft werden."); }
+}
+
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const store = await cookies();
   const payload = readSessionToken(store.get(COOKIE_NAME)?.value);
@@ -145,7 +149,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     if (expected.length !== actual.length || !timingSafeEqual(actual, expected)) return null;
     return { id: user.id, name: user.name, email: user.email, role: user.role, advisorId: user.advisorId };
   } catch {
-    return null;
+    throw new AuthenticationUnavailableError();
   }
 }
 

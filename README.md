@@ -94,3 +94,7 @@ Suggested Commit Message: `feat: complete production build v1.0`
 ## Technisches SEO-Update
 
 Vollständig integrierte Metadaten und die drei Schritte zur Sitemap-Einreichung stehen in [GOOGLE-SEARCH-CONSOLE.md](GOOGLE-SEARCH-CONSOLE.md). Layoutklassen, CSS, sichtbare Texte, bestehende Bilddateien und Marketinglinks bleiben erhalten; Überschriftentags und Porträt-Alternativtexte wurden semantisch korrigiert. Die XML- und robots-Dateien in der Wurzel sind Exportkopien. Maßgeblich sind im Serverbetrieb die dynamischen Next.js-Routen.
+
+## Abschlussaudit
+
+Der letzte Audit-Lauf und seine Grenzen sind in [dokumentation/FINAL-AUDIT.md](dokumentation/FINAL-AUDIT.md) dokumentiert. Nachgewiesen sind der Produktionsbuild, 16 Modultests und 29 isolierte Server-Integrationstests. Änderungen betreffen Sitzungserhalt bei Ausfällen, die erneute Prüfung von Adminrechten, den Login-Versuchszähler, Chat-Cleanup, Notizentwürfe und datensparsame Fehlerprotokolle.

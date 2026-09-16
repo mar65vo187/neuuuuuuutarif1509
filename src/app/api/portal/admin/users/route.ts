@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { advisors, employees } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { createAccountSchema } from "@/lib/admin-validation";
-import { accountSelection, adminFailure, authorizeAdmin, listAdminAccounts, readAdminJson } from "@/lib/admin-server";
+import { accountSelection, adminFailure, lockAdminMutation, authorizeAdmin, listAdminAccounts, readAdminJson } from "@/lib/admin-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     const { advisor, password, ...account } = parsed.data;
     const passwordHash = hashPassword(password);
     const user = await db.transaction(async (tx) => {
+      await lockAdminMutation(tx, admin.id);
       let advisorId: number | null = null;
       if (advisor) {
         const [profile] = await tx.insert(advisors).values({ ...advisor, name: account.name }).returning({ id: advisors.id });

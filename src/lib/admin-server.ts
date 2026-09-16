@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees } from "@/db/schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
@@ -26,6 +26,15 @@ export async function authorizeAdmin(request: NextRequest, mutation = true) {
 
 export class AdminRequestError extends Error {
   constructor(message: string, public status: number) { super(message); }
+}
+
+type AdminTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Recheck privileges after waiting, before any persistent administrator mutation. */
+export async function lockAdminMutation(tx: AdminTransaction, userId: number) {
+  await tx.execute(sql`select pg_advisory_xact_lock(746172, 2026)`);
+  const [actor] = await tx.select(accountSelection).from(employees).where(eq(employees.id, userId)).limit(1);
+  if (!actor?.active || actor.role !== "admin") throw new AdminRequestError("Die Administratorberechtigung ist nicht mehr gültig.", 403);
 }
 
 export async function readBoundedBody(request: NextRequest, maximum: number) {

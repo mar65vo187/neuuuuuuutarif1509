@@ -9,19 +9,21 @@ import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ ok: false, error: "Nicht angemeldet." }, { status: 401 });
   try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ ok: false, error: "Nicht angemeldet." }, { status: 401 });
     const messages = await listTeamMessages(100);
     return NextResponse.json({ ok: true, messages, me: user.id }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
-    return NextResponse.json({ ok: false, error: "Nachrichten konnten nicht geladen werden." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Nachrichten konnten nicht geladen werden." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } });
   }
 }
 
 export async function POST(req: NextRequest) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
-  const user = await getCurrentUser();
+  let user;
+  try { user = await getCurrentUser(); }
+  catch { return NextResponse.json({ ok: false, error: "Anmeldung momentan nicht überprüfbar. Bitte erneut versuchen." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } }); }
   if (!user) return NextResponse.json({ ok: false, error: "Nicht angemeldet." }, { status: 401 });
   let body: unknown;
   try {

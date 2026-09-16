@@ -13,37 +13,46 @@ export function ChatPanel() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
+  const loadRequest = useRef<AbortController | null>(null);
+  const sendRequest = useRef<AbortController | null>(null);
   const sendingRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
+    if (loadRequest.current) return;
+    const controller = new AbortController();
+    loadRequest.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const res = await fetch("/api/portal/chat", { cache: "no-store", signal: AbortSignal.timeout(15000) });
+      const res = await fetch("/api/portal/chat", { cache: "no-store", signal: controller.signal });
+      if (loadRequest.current !== controller) return;
       if (res.status === 401) {
         window.location.replace("/portal/login?next=%2Fportal%2Fchat");
         return;
       }
       if (!res.ok) throw new Error("Chat unavailable");
       const json = (await res.json()) as { ok: boolean; messages: Msg[]; me: number };
+      if (loadRequest.current !== controller) return;
       if (json.ok && Array.isArray(json.messages)) {
         setMessages(json.messages);
         setMe(json.me);
         setError((current) => current?.startsWith("Nachrichten konnten nicht geladen") ? null : current);
       } else throw new Error("Invalid chat response");
     } catch {
-      setError("Nachrichten konnten nicht geladen werden. Die Verbindung wird erneut geprüft.");
+      if (loadRequest.current === controller) setError("Nachrichten konnten nicht geladen werden. Die Verbindung wird erneut geprüft.");
     } finally {
-      loadingRef.current = false;
-      setLoaded(true);
+      clearTimeout(timeout);
+      if (loadRequest.current === controller) { loadRequest.current = null; setLoaded(true); }
     }
   }, []);
 
   useEffect(() => {
     const first = setTimeout(() => { void load(); }, 0);
     const t = setInterval(load, 6000);
-    return () => { clearTimeout(first); clearInterval(t); };
+    return () => {
+      clearTimeout(first); clearInterval(t);
+      loadRequest.current?.abort(); loadRequest.current = null;
+      sendRequest.current?.abort(); sendRequest.current = null;
+    };
   }, [load]);
 
   useEffect(() => {
@@ -57,22 +66,28 @@ export function ChatPanel() {
     sendingRef.current = true;
     setError(null);
     setSending(true);
+    const controller = new AbortController();
+    sendRequest.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const res = await fetch("/api/portal/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }), signal: AbortSignal.timeout(15000) });
+      const res = await fetch("/api/portal/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }), signal: controller.signal });
+      if (sendRequest.current !== controller) return;
       if (res.status === 401) {
         window.location.replace("/portal/login?next=%2Fportal%2Fchat");
         return;
       }
       const json = await res.json() as { ok?: boolean; error?: string };
+      if (sendRequest.current !== controller) return;
       if (res.ok && json.ok) {
         setText((current) => current.trim() === body ? "" : current);
+        loadRequest.current?.abort(); loadRequest.current = null;
         await load();
       } else setError(json.error ?? "Senden fehlgeschlagen. Deine Nachricht bleibt erhalten.");
     } catch {
-      setError("Senden fehlgeschlagen. Prüfe den Verlauf vor einem erneuten Versuch.");
+      if (sendRequest.current === controller) setError("Senden fehlgeschlagen. Prüfe den Verlauf vor einem erneuten Versuch.");
     } finally {
-      sendingRef.current = false;
-      setSending(false);
+      clearTimeout(timeout);
+      if (sendRequest.current === controller) { sendRequest.current = null; sendingRef.current = false; setSending(false); }
     }
   };
 

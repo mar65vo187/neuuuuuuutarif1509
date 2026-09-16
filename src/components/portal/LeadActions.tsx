@@ -92,8 +92,9 @@ export function LeadActions({ leadId, status, confirmedSlot, assigned, isAppoint
           type="button"
           disabled={busy !== null || !note.trim()}
           onClick={async () => {
-            const ok = await patch("note", { note: note.trim() });
-            if (ok) setNote("");
+            const submitted = note.trim();
+            const ok = await patch("note", { note: submitted });
+            if (ok) setNote((current) => current.trim() === submitted ? "" : current);
           }}
           className="mt-2 inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold text-ink hover:border-ink/40 disabled:opacity-50"
         >

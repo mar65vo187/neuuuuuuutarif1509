@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     else attempt.count += 1;
   }
 
+  const reservedIpAttempt = attempts.get(keys[0]);
   try {
     const [user] = await db.select().from(employees).where(eq(sql`lower(${employees.email})`, parsed.data.email)).limit(1);
     const validPassword = await verifyPassword(parsed.data.password, user?.passwordHash ?? DUMMY_HASH);
@@ -72,6 +73,11 @@ export async function POST(req: NextRequest) {
     const secure = forwardedProtocol ? forwardedProtocol === "https" : req.nextUrl.protocol === "https:";
     await setSessionCookie(user.id, secure, user.passwordHash);
     attempts.delete(`account:${parsed.data.email}`);
+    // Successful sign-ins must not lock out colleagues sharing the same IP.
+    // Retain preceding failed attempts and do not touch a newer rate-limit window.
+    if (reservedIpAttempt && attempts.get(keys[0]) === reservedIpAttempt) {
+      reservedIpAttempt.count = Math.max(0, reservedIpAttempt.count - 1);
+    }
     return NextResponse.json({ ok: true, user: { id: user.id, name: user.name, role: user.role } }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     // Configuration/database failures are retryable and must not consume the user's quota.

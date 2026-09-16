@@ -98,8 +98,10 @@ test("cookie spans portal paths and user state/password changes revoke access", 
   assert.equal(await auth.getCurrentUser(), null);
   currentUser.passwordHash = passwordHash;
   databaseFails = true;
-  assert.equal(await auth.getCurrentUser(), null);
+  await assert.rejects(auth.getCurrentUser(), auth.AuthenticationUnavailableError);
   databaseFails = false;
+  assert.equal((await auth.getCurrentUser()).id, 7);
+  assert.equal(cookieJar.get("tw_session").value, cookie.value);
   await auth.clearSessionCookie();
   assert.equal(cookieJar.get("tw_session").options.maxAge, 0);
   assert.equal(await auth.getCurrentUser(), null);

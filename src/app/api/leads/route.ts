@@ -99,8 +99,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, id: created.id });
-  } catch (err) {
-    console.error("[leads] insert failed", err);
+  } catch {
+    console.error("[leads] insert failed");
     return NextResponse.json({ ok: false, error: "Die Anfrage konnte gerade nicht gespeichert werden. Bitte versuche es erneut oder schreib uns per WhatsApp." }, { status: 500 });
   }
 }

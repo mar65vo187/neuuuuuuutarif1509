@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
-  const user = await getCurrentUser();
+  let user;
+  try { user = await getCurrentUser(); }
+  catch { return NextResponse.json({ ok: false, error: "Anmeldung momentan nicht überprüfbar. Bitte erneut versuchen." }, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } }); }
   if (!user) return NextResponse.json({ ok: false, error: "Nicht angemeldet." }, { status: 401 });
 
   const { id: rawId } = await ctx.params;
@@ -75,8 +77,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     return NextResponse.json({ ok: true });
     });
-  } catch (err) {
-    console.error("[portal/leads PATCH]", err);
+  } catch {
+    console.error("[portal/leads PATCH] Datenbankzugriff fehlgeschlagen.");
     return NextResponse.json({ ok: false, error: "Speichern fehlgeschlagen." }, { status: 500 });
   }
 }

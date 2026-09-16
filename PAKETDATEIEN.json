@@ -15,7 +15,7 @@
       "change": "modified"
     },
     "FINAL_CHECKLIST.md": {
-      "sha256": "fbc10ff35477ac9dc5d6cc4d30c5a35cc6007bfdc9a2834673d4212da11f4d58",
+      "sha256": "1e9f02f7326e37a3daf6d22a938e5ea1ba79ba19bd4d5f3dd5a757baa7dd2349",
       "change": "modified"
     },
     "GOOGLE-SEARCH-CONSOLE.md": {
@@ -23,7 +23,7 @@
       "change": "added"
     },
     "README.md": {
-      "sha256": "635f041c55916952bf2be86100a584d37fe6098e26e520160f3a7e45a6a47fab",
+      "sha256": "7e30dfedffc56b7408e1a90586be3b9be29d43877bb37000cba33b9c32761cd7",
       "change": "modified"
     },
     "compose.yaml": {
@@ -31,7 +31,7 @@
       "change": "added"
     },
     "data/claims.json": {
-      "sha256": "853cdc1aa61261062dc7eff82eb2db52c47e642a35676ac9a257bf18c7be065b",
+      "sha256": "336a7eb542afc2457dfa39c5f3c490a909385673f0f0c13ddb3e5018156fef62",
       "change": "modified"
     },
     "data/config.json": {
@@ -57,6 +57,14 @@
     "dokumentation/DATEIPRUEFUNG.json": {
       "sha256": "d5ac11c6e8fd4767427079e51dd7e0619add5519cf48a8a2913abc5e040dbe8d",
       "change": "unchanged"
+    },
+    "dokumentation/FINAL-AUDIT.json": {
+      "sha256": "327db974d0c22fef95de5184a5445b2f54e34c789b1007b21b2d5e3851add277",
+      "change": "added"
+    },
+    "dokumentation/FINAL-AUDIT.md": {
+      "sha256": "166dfbaaee3d6bfd76749373a06683d197682c2ca45fe81e209a107f95ccf106",
+      "change": "added"
     },
     "dokumentation/HOSTING-PRUEFUNG.json": {
       "sha256": "0ca47999c0c8b9aa799e7b5b820de729fcacac23959be6ff31218e6d7f776950",
@@ -254,9 +262,17 @@
       "sha256": "f3476d409baf9ae0c178e3571c403d41acd3330b3eacfe7605e0b8ba097164c3",
       "change": "unchanged"
     },
+    "scripts/tests/admin-race.test.mjs": {
+      "sha256": "d4c35165a9ff87a2d0dd23b85c5ba7bc8d7121aaf33bbd8ac842757cb15e6525",
+      "change": "added"
+    },
     "scripts/tests/auth.test.mjs": {
-      "sha256": "20a7d98f9b02786ccb00c804a6355a65c71ef6587ff797914a870c16a71c4f30",
-      "change": "unchanged"
+      "sha256": "b9cbdc8febc1380529cd569fb4d5f2ad10209eaf7d52b45be0b28b606bf145ae",
+      "change": "modified"
+    },
+    "scripts/tests/client-lifecycle.test.mjs": {
+      "sha256": "893ef13ecb943961edc33f3e026be8eba5c7a99086af981c05e48e3806a61b1b",
+      "change": "added"
     },
     "scripts/tests/security.test.mjs": {
       "sha256": "16eb629a9340540d2b18baadaa36cf09322c51a72dc5209a4d84ce8d745e5625",
@@ -343,32 +359,32 @@
       "change": "unchanged"
     },
     "src/app/api/leads/route.ts": {
-      "sha256": "c41de8c615938f39b64866c3b020b9ad567c2ac4bc3633ac77e6f5d85c5d21ce",
-      "change": "unchanged"
+      "sha256": "923ad8af7436b79583d07f8ce61ff75f8700b346a7f602cb6a0c3e58bcaabaf3",
+      "change": "modified"
     },
     "src/app/api/portal/admin/advisors/[id]/image/route.ts": {
-      "sha256": "ce3a32c2344c274cf518a5e420a267adda822a22e21f1c3f6e00e29465d4d9e7",
-      "change": "unchanged"
+      "sha256": "39157899b1abdc587f1d68e5ec7745420963e2e662115741e8bb9e83e7fa35ac",
+      "change": "modified"
     },
     "src/app/api/portal/admin/users/[id]/route.ts": {
-      "sha256": "ec68985879ff3165369309fdb963501286f4f3addc9df736f1cab9c805e275f2",
-      "change": "unchanged"
+      "sha256": "f95e29047b3b89095acade97977e3b296ec0a15e0defefca072a977fa4c103d9",
+      "change": "modified"
     },
     "src/app/api/portal/admin/users/route.ts": {
-      "sha256": "dea0509ecfd21a7c7c084eb277a789419d8fd59894b8556b64b69d0edc1dbf46",
-      "change": "unchanged"
+      "sha256": "9385e9d353512524a5bef0496913ed7336a4d4643fcc3ed28b83b0425122e1ec",
+      "change": "modified"
     },
     "src/app/api/portal/chat/route.ts": {
-      "sha256": "3d69e78dfc76ba59f6a176cc79a6fda18d110d9038f253acfd833edd04eb4e19",
-      "change": "unchanged"
+      "sha256": "ac78ed959cc37f8eac30d7cecf5d4dc38dd50c47fe2697636a94fc2f2636093f",
+      "change": "modified"
     },
     "src/app/api/portal/leads/[id]/route.ts": {
-      "sha256": "1993588a9eb406168d34fcc502d50bb54345cf957b74179b0ad74be294e16604",
-      "change": "unchanged"
+      "sha256": "f83ff443e06db3017dd1ae6e6a860b0657b5da12dc656d243eff05745a4d72bf",
+      "change": "modified"
     },
     "src/app/api/portal/login/route.ts": {
-      "sha256": "b8811597358729a78e5fd6282b549e5e484e393d165cc77e0e5fd9ee6a294183",
-      "change": "unchanged"
+      "sha256": "d03b239b12872efea22261f4f9c3bf2f7ba7ecad19ce537457ea511b16cadcc3",
+      "change": "modified"
     },
     "src/app/api/portal/logout/route.ts": {
       "sha256": "b1ca8649ea719fa378523a0fd2616aee5ab3b84e7cc384754a01dc72919eaaa6",
@@ -483,12 +499,12 @@
       "change": "unchanged"
     },
     "src/components/portal/ChatPanel.tsx": {
-      "sha256": "b0fb1736fd97d31258ffe42d08fa8da175641666b0832322b3bbd9c2a9cb339d",
-      "change": "unchanged"
+      "sha256": "ecfbe4d6cacf35268f9f1e309d526bf771d3015f23e50581d69731b22b467c5e",
+      "change": "modified"
     },
     "src/components/portal/LeadActions.tsx": {
-      "sha256": "750c5b1a0c4c3880c6792365e939fac1fe77e0360699aa20d50b5c3ec1b583a9",
-      "change": "unchanged"
+      "sha256": "d7ddb8bf52a8c34694004e6d91d058ea6bf7a70dff46b48be123f9e8e7bc6a17",
+      "change": "modified"
     },
     "src/components/portal/PortalShell.tsx": {
       "sha256": "b3b617eb5bda93e61841d79b4ed1b3efd378b4cf335c20bc049e78241b5cb776",
@@ -563,8 +579,8 @@
       "change": "unchanged"
     },
     "src/lib/admin-server.ts": {
-      "sha256": "232f186ec8ede7b7646bd2fc187cb0fbfd50e04ca9418b615a1b94e2cd4462ca",
-      "change": "unchanged"
+      "sha256": "80215ddb717c8b62dc9d2c904dce00a1238d60922c67ac1941981361637c1cab",
+      "change": "modified"
     },
     "src/lib/admin-validation.ts": {
       "sha256": "22b75539a4c57aada429b7cc2f4dae6669da576b00a08d87bbdd50cbad661bf8",
@@ -575,8 +591,8 @@
       "change": "unchanged"
     },
     "src/lib/auth.ts": {
-      "sha256": "c3b9741a0a55793a92a2854c89b8c1e2e503a73b946a15d5aa3d04cbf7d175a1",
-      "change": "unchanged"
+      "sha256": "51c4f4e1953ca922b807373f0c9ab0213d2c9e2abf43e779dd7b57ba5c68b4fd",
+      "change": "modified"
     },
     "src/lib/content.ts": {
       "sha256": "bfcca72e5509125e14fb4e6c8216759711d86a9a8ec7444a28bd96abc3b64d1b",

@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { advisorImages, advisors } from "@/db/schema";
-import { adminFailure, AdminRequestError, authorizeAdmin, positiveId, readBoundedBody } from "@/lib/admin-server";
+import { adminFailure, lockAdminMutation, AdminRequestError, authorizeAdmin, positiveId, readBoundedBody } from "@/lib/admin-server";
 import { inspectProfileImage, MAX_PROFILE_IMAGE_BYTES } from "@/lib/advisor-image";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest, context: Context) {
     const digest = createHash("sha256").update(data).digest("hex");
     const imageUrl = `/api/advisors/${advisorId}/image?v=${digest.slice(0, 16)}`;
     await db.transaction(async (tx) => {
+      await lockAdminMutation(tx, admin.id);
       const [profile] = await tx.select({ id: advisors.id }).from(advisors).where(eq(advisors.id, advisorId)).for("update");
       if (!profile) throw new AdminRequestError("Beraterprofil nicht gefunden.", 404);
       await tx.insert(advisorImages).values({ advisorId, contentType: "image/webp", data, digest })
@@ -54,6 +55,7 @@ export async function DELETE(request: NextRequest, context: Context) {
     if (admin instanceof NextResponse) return admin;
     const advisorId = positiveId((await context.params).id);
     await db.transaction(async (tx) => {
+      await lockAdminMutation(tx, admin.id);
       const [profile] = await tx.select({ id: advisors.id }).from(advisors).where(eq(advisors.id, advisorId)).for("update");
       if (!profile) throw new AdminRequestError("Beraterprofil nicht gefunden.", 404);
       await tx.delete(advisorImages).where(eq(advisorImages.advisorId, advisorId));
