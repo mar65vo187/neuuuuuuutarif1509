@@ -5,8 +5,8 @@ type PageSeo = { title: string; description: string; noindex?: boolean };
 
 export const PAGE_SEO: Record<string, PageSeo> = {
   "/": { title: "TarifWerk | Persönliche Beratung deutschlandweit", description: "TarifWerk aus Wiesbaden: persönliche Beratung zu Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen und Immobilien – deutschlandweit." },
-  "/leistungen": { title: "Leistungen & persönliche Beratung | TarifWerk", description: "TarifWerk berät zu Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen, Immobilien und weiteren Alltagsthemen – persönlich und verständlich." },
-  "/berater": { title: "Persönlichen Berater finden | TarifWerk", description: "Finde deinen TarifWerk Ansprechpartner nach Thema und Region: vor Ort nach Absprache oder digital deutschlandweit. Jetzt Berater wählen und Termin anfragen." },
+  "/leistungen": { title: "Leistungen & Beratung | TarifWerk", description: "TarifWerk berät zu Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen und Immobilien – verständlich und persönlich." },
+  "/berater": { title: "Berater finden | TarifWerk", description: "Finde deinen TarifWerk Ansprechpartner nach Thema und Region: vor Ort oder digital deutschlandweit. Jetzt Termin anfragen." },
   "/anfrage": { title: "Kostenloses Erstgespräch anfragen | TarifWerk", description: "Thema wählen, Kontaktdaten senden, persönlich beraten lassen. Frage jetzt deine kostenlose und unverbindliche Erstorientierung bei TarifWerk an." },
   "/ueber-uns": { title: "Über TarifWerk | Persönliche Beratung aus Wiesbaden", description: "Lerne TarifWerk und Gründer Marvin Noel Egenolf kennen. Persönliche Beratung aus Wiesbaden mit festem Ansprechpartner – digital deutschlandweit." },
   "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Du erklärst verständlich und hörst Menschen zu? Entdecke die Arbeit als Berater bei TarifWerk und stelle dich mit deiner Bewerbung vor." },

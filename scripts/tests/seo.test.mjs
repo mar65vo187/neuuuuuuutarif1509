@@ -42,3 +42,11 @@ test("dynamic advisor metadata remains bounded and unknown SEO routes fail expli
   assert.equal(shortenSeoText("  A   B  ", 10), "A B");
   assert.throws(() => pageMetadata("/missing"));
 });
+
+test("portal area is blocked and hidden from indexing", () => {
+  const robotsSource = readFileSync(new URL("../../src/app/robots.ts", import.meta.url), "utf8");
+  const portalLayoutSource = readFileSync(new URL("../../src/app/portal/layout.tsx", import.meta.url), "utf8");
+
+  assert.match(robotsSource, /disallow:\s*\[[\s\S]*"\/portal\/"/, "robots.txt must block /portal/");
+  assert.match(portalLayoutSource, /robots:\s*\{\s*index:\s*false\s*,\s*follow:\s*false\s*\}/, "portal pages must be noindex");
+});
