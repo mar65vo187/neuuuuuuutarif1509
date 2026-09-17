@@ -117,4 +117,6 @@ test("same-origin checks reject foreign origins and support HTTPS reverse proxie
   assert.equal(auth.isSameOriginRequest(request("https://tarifwerk.test", { "sec-fetch-site": "cross-site" })), false);
   assert.equal(auth.isSameOriginRequest(request("https://tarifwerk.test", { host: "tarifwerk.test", "x-forwarded-proto": "https" }, "http://localhost:3000/api/portal/login")), true);
   assert.equal(auth.isSameOriginRequest(request("https://attacker.test", { host: "tarifwerk.test", "x-forwarded-proto": "https" }, "http://localhost:3000/api/portal/login")), false);
+  assert.equal(auth.isSameOriginRequest(request("https://www.tarifwerk.eu", { host: "internal:3000", "x-forwarded-host": "www.tarifwerk.eu", "x-forwarded-proto": "https" }, "http://internal:3000/api/portal/admin/users")), true);
+  assert.equal(auth.isSameOriginRequest(request("https://attacker.test", { host: "internal:3000", "x-forwarded-host": "www.tarifwerk.eu", "x-forwarded-proto": "https" }, "http://internal:3000/api/portal/admin/users")), false);
 });

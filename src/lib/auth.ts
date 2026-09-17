@@ -84,19 +84,22 @@ export function readSessionToken(token: string | undefined): SessionPayload | nu
 /** Reject cross-origin cookie-authenticated mutations, including login CSRF. */
 export function isSameOriginRequest(request: { headers: Headers; url: string }): boolean {
   if (request.headers.get("sec-fetch-site") === "cross-site") return false;
+
+  const target = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const host = forwardedHost ?? request.headers.get("host") ?? target.host;
+  const protocol = forwardedProtocol === "https" || forwardedProtocol === "http"
+    ? `${forwardedProtocol}:` : target.protocol;
+  const trustedOrigin = new URL(`${protocol}//${host}`).origin;
+
   const origin = request.headers.get("origin");
   if (!origin) return request.headers.get("sec-fetch-site") === "same-origin";
+
   try {
     const source = new URL(origin);
     if (source.origin !== origin || !["https:", "http:"].includes(source.protocol)) return false;
-    const target = new URL(request.url);
-    if (source.origin === target.origin) return true;
-    // Reverse proxies may expose an internal request URL; Host remains the browser's target.
-    const host = request.headers.get("host");
-    const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-    const protocol = forwardedProtocol === "https" || forwardedProtocol === "http"
-      ? `${forwardedProtocol}:` : target.protocol;
-    return Boolean(host && source.origin === new URL(`${protocol}//${host}`).origin);
+    return source.origin === target.origin || source.origin === trustedOrigin;
   } catch {
     return false;
   }
