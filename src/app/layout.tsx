@@ -25,8 +25,10 @@ const instrument = Instrument_Serif({
 export const metadata: Metadata = {
   ...pageMetadata("/"),
   metadataBase: new URL(SITE.url),
-  title: { default: "Persönliche Beratung in Wiesbaden | TarifWerk", template: "%s | TarifWerk" },
+  title: { default: "TarifWerk | Persönliche Beratung deutschlandweit", template: "%s | TarifWerk" },
   applicationName: SITE.name,
+  category: "business",
+  referrer: "origin-when-cross-origin",
   authors: [{ name: SITE.founder }],
   creator: SITE.name,
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }] },
