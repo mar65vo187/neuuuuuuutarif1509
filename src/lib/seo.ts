@@ -4,7 +4,7 @@ import { SITE } from "@/lib/content";
 type PageSeo = { title: string; description: string; noindex?: boolean };
 
 export const PAGE_SEO: Record<string, PageSeo> = {
-  "/": { title: "Persönliche Beratung in Wiesbaden | TarifWerk", description: "Energie, Internet, Solar oder Immobilien: Finde deinen persönlichen Berater in Wiesbaden und digital deutschlandweit. Jetzt Erstgespräch anfragen." },
+  "/": { title: "Beratung auf Augenhöhe | TarifWerk", description: "Energie, Internet, Solar oder Immobilien: Finde deinen persönlichen Berater in Wiesbaden und digital deutschlandweit. Jetzt Erstgespräch anfragen." },
   "/leistungen": { title: "Beratung zu Energie, Solar & Immobilien | TarifWerk", description: "Entdecke acht Beratungsbereiche von Internet und Energie bis Solar und Immobilien. Finde die passende Unterstützung und frage dein Erstgespräch an." },
   "/berater": { title: "Persönlichen Berater finden | TarifWerk", description: "Finde deinen Ansprechpartner nach Thema und Region: vor Ort nach Absprache oder digital deutschlandweit. Jetzt Berater wählen und Termin anfragen." },
   "/anfrage": { title: "Kostenloses Erstgespräch anfragen | TarifWerk", description: "Thema wählen, Kontaktdaten senden, persönlich beraten lassen. Frage jetzt deine kostenlose und unverbindliche Erstorientierung bei TarifWerk an." },

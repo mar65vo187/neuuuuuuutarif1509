@@ -6,6 +6,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { Card } from "./ui";
 import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
 import { normalizeSlug, type AdminAccount } from "@/lib/admin-validation";
+import { SERVICES } from "@/lib/content";
 
 type FormState = {
   name: string; email: string; password: string; role: "admin" | "berater"; active: boolean;
@@ -54,6 +55,10 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
   const [success, setSuccess] = useState<string | null>(null);
   const selected = accounts.find((account) => account.id === selectedId);
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((current) => ({ ...current, [key]: value }));
+  const toggleTopic = (topic: string) => {
+    const topics = form.topics.split("\n").map((entry) => entry.trim()).filter(Boolean);
+    update("topics", topics.includes(topic) ? topics.filter((entry) => entry !== topic).join("\n") : [...topics, topic].join("\n"));
+  };
 
   function choose(account?: AdminAccount) {
     setDeleteConfirmation(false);
@@ -192,7 +197,16 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
                 <label className="label">Stadt<input required maxLength={120} className="field" value={form.city} onChange={(event) => update("city", event.target.value)} /></label>
                 <label className="label">Region<input required maxLength={120} className="field" value={form.region} onChange={(event) => update("region", event.target.value)} /></label>
                 <label className="label">Beratungsorte (ein Ort pro Zeile)<textarea required rows={3} className="field" value={form.regions} onChange={(event) => update("regions", event.target.value)} /></label>
-                <label className="label">Schwerpunkte (ein Thema pro Zeile)<textarea required rows={3} className="field" value={form.topics} onChange={(event) => update("topics", event.target.value)} /></label>
+                <div className="sm:col-span-2">
+                  <p className="label">Themenbereiche auswählen</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {SERVICES.map((service) => {
+                      const selectedTopic = form.topics.split("\n").map((entry) => entry.trim()).includes(service.name);
+                      return <label key={service.key} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-[13.5px] transition-colors ${selectedTopic ? "border-electric bg-electric/5" : "border-line bg-white hover:border-ink/30"}`}><input type="checkbox" checked={selectedTopic} onChange={() => toggleTopic(service.name)} />{service.name}</label>;
+                    })}
+                  </div>
+                  <label className="label mt-3">Weitere Schwerpunkte (optional, ein Thema pro Zeile)<textarea rows={2} className="field" value={form.topics.split("\n").filter((topic) => !SERVICES.some((service) => service.name === topic.trim())).join("\n")} onChange={(event) => { const selected = form.topics.split("\n").filter((topic) => SERVICES.some((service) => service.name === topic.trim())); update("topics", [...selected, ...event.target.value.split("\n")].filter(Boolean).join("\n")); }} /></label>
+                </div>
                 <label className="label">Telefon<input maxLength={40} type="tel" className="field" value={form.phone} onChange={(event) => update("phone", event.target.value)} /></label>
                 <label className="label">WhatsApp (z. B. 4915782301076)<input maxLength={20} inputMode="numeric" className="field" value={form.whatsapp} onChange={(event) => update("whatsapp", event.target.value)} /></label>
                 <label className="label">Öffentliche E-Mail (optional)<input type="email" maxLength={200} className="field" value={form.publicEmail} onChange={(event) => update("publicEmail", event.target.value)} /></label>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
 import { LEAD_STATUS_LABELS, LEAD_TYPE_LABELS } from "@/lib/content";
 import { listLeads } from "@/lib/queries";
@@ -30,9 +30,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
         <p className="eyebrow text-electric-deep">Anfragen & Termine</p>
         <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Lead-Verwaltung</h1>
+        </div>
+        <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Lead anlegen</Link>
       </header>
 
       <div className="flex flex-col gap-3">
