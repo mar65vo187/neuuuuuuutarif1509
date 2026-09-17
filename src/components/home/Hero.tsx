@@ -69,7 +69,7 @@ export function Hero() {
             className="eyebrow text-electric-soft"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Persönliche Beratung · deutschlandweit
+            TarifWerk · Persönliche Beratung · deutschlandweit
           </motion.p>
 
           <h1 className="mt-6 text-[clamp(2.25rem,6.2vw,5.2rem)] font-extrabold leading-[1.0] tracking-[-0.03em]">
