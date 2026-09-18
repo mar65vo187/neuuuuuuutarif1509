@@ -13,11 +13,12 @@ export function Hero() {
   const [activeIdx, setActiveIdx] = useState(0);
 
   useEffect(() => {
+    setActiveIdx(0);
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (media.matches || copy.cardSteps.length < 2) return;
     const timer = window.setInterval(() => setActiveIdx((index) => (index + 1) % copy.cardSteps.length), 2800);
     return () => window.clearInterval(timer);
-  }, [copy.cardSteps.length]);
+  }, [audience, copy.cardSteps.length]);
 
   const trustAnchor = audience === "b2b"
     ? "Ein Ansprechpartner statt Vertragskomplexität. Sie entscheiden selbst, ob und wie Sie weitergehen."
@@ -50,7 +51,7 @@ export function Hero() {
           </div>
           <p className="hero-enter mt-3 text-[12.5px] leading-relaxed text-silver/85 [--hero-delay:360ms]">{reassurance}</p>
           <ul key={`${audience}-checks`} className="hero-enter mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver [--hero-delay:390ms]">
-            {copy.checks.map((item) => <li key={item} className="inline-flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/7"><Check className="h-3.5 w-3.5 text-electric-soft" /></span>{item}</li>)}
+            {copy.checks.map((item) => <li key={item} className="inline-flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/7"><Check className="h-3.5 w-3.5 text-electric-soft" aria-hidden="true" /></span>{item}</li>)}
           </ul>
           <div className="hero-enter mt-5 inline-flex max-w-xl items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-[12.5px] leading-relaxed text-silver [--hero-delay:430ms]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-electric-soft" aria-hidden="true" /><span>{trustAnchor}</span></div>
         </div>
