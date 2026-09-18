@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,27 +16,78 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Scan public copy, WhatsApp usage and portal migrations
+      - name: Scan public copy and WhatsApp usage
         shell: bash
         run: |
           {
-            echo "=== informal address ==="
-            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' '\b(du|dein|deine|deinen|deinem|deiner|dich|dir|euch|euer|eure|ihr|ihrerseits)\b' 'src/app/(site)' src/components src/app/error.tsx src/app/not-found.tsx || true
+            echo "=== remaining informal public address ==="
+            grep -RniEi --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' '\b(du|dein|deine|deinen|deinem|deiner|dich|dir|euch|euer|eure)\b'               'src/app/(site)' src/components/home src/components/forms src/components/advisors src/components/referrals src/components/site               src/lib/content.ts src/lib/audience-copy.ts src/lib/referral-rewards.ts src/app/error.tsx src/app/not-found.tsx               src/app/api/leads src/app/api/referrals || true
             echo
-            echo "=== whatsapp ==="
-            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' 'whats.?app|wa\.me' 'src/app/(site)' src/components src/app/error.tsx src/app/not-found.tsx || true
+            echo "=== remaining public WhatsApp placements ==="
+            grep -RniEi --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' 'whats.?app|wa\.me'               'src/app/(site)' src/components/home src/components/forms src/components/advisors src/components/referrals src/components/site               src/app/error.tsx src/app/not-found.tsx || true
             echo
-            echo "=== migrations ==="
-            find migrations -maxdepth 1 -type f -name '*.sql' -print | sort || true
+            echo "=== migration files ==="
+            find migrations -maxdepth 1 -type f -name '*.sql' -print | sort
             echo
-            echo "=== enterprise/referral tables in migrations ==="
-            grep -RniE --include='*.sql' 'create table.*(customers|orders|tasks|providers|products|commission_events|audit_events|automation_rules|login_events|mfa_credentials|referral_rewards|referral_reward_events)' migrations || true
-            echo
-            echo "=== enterprise schema config ==="
-            grep -n "schema:" drizzle.config.ts || true
+            echo "=== schema config ==="
+            cat drizzle.config.ts
           } > audit.txt
           cat audit.txt
       - uses: actions/upload-artifact@v4
         with:
           name: copy-portal-audit
           path: audit.txt
+
+  database-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: tarifwerk
+          POSTGRES_PASSWORD: tarifwerk
+          POSTGRES_DB: tarifwerk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tarifwerk -d tarifwerk"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://tarifwerk:tarifwerk@127.0.0.1:5432/tarifwerk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply all migrations
+        run: npm run db:migrate
+      - name: Verify enterprise tables exist
+        shell: node {0}
+        run: |
+          const pg = require("pg");
+          const required = [
+            "employees","advisors","leads","team_messages","referrers","referrals",
+            "customers","customer_lead_links","providers","products","orders","order_status_history",
+            "commission_events","tasks","audit_events","automation_rules","automation_runs",
+            "outbox_events","notification_queue","reconciliation_issues","mfa_credentials","login_events",
+            "referral_rewards","referral_reward_events"
+          ];
+          const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+          try {
+            for (const table of required) {
+              const result = await pool.query(
+                "select to_regclass($1) as name",
+                ["public." + table]
+              );
+              if (!result.rows[0]?.name) throw new Error("Missing table: " + table);
+            }
+            console.log("All portal and enterprise tables exist.");
+          } finally {
+            await pool.end();
+          }
+      - name: Verify production build path reruns migrations safely
+        run: npm run build
