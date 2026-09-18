@@ -106,7 +106,10 @@ export function Header() {
       {open && <div key="mobile-menu" id="mobile-menu" ref={menuRef} onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) setOpen(false); }} className="menu-enter fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl lg:hidden">
         <div className="container-x flex h-full flex-col overflow-y-auto pb-8 pt-[88px]">
           <nav className="flex shrink-0 flex-col" aria-label="Mobile Navigation">
-            {NAV.map((item, index) => <Link key={item.href} href={item.href} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" /></Link>)}
+            {NAV.map((item, index) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" aria-hidden="true" /></Link>;
+            })}
           </nav>
           <div className="mt-6 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={`/leistungen/${service.slug}`} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
           <div className="mt-auto grid gap-3 pt-8">
