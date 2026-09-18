@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
-  ListTodo, LogOut, MessageSquare, Settings2, ShieldCheck, WalletCards,
+  ListTodo, LogOut, MessageSquare, Settings2, ShieldCheck, UserRoundCog, WalletCards,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -63,6 +63,15 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
               </Link>
             );
           })}
+          {user.role === "admin" && (
+            <Link
+              href="/portal/verwaltung"
+              className={`inline-flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${pathname.startsWith("/portal/verwaltung") ? "bg-white/10 text-white" : "text-silver hover:bg-white/6 hover:text-white"}`}
+            >
+              <UserRoundCog className="h-4.5 w-4.5" />
+              <span className="hidden lg:inline">Mitarbeiter verwalten</span>
+            </Link>
+          )}
         </nav>
         <div className="hidden lg:mt-auto lg:block">
           <Link href="/" className="inline-flex items-center gap-2 text-[13px] text-silver hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Website öffnen</Link>
@@ -70,9 +79,7 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
             <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-platinum to-electric text-[12px] font-extrabold text-ink">{user.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13.5px] font-semibold">{user.name}</p>
-              <p className="text-[11.5px] uppercase tracking-wider text-silver" role={user.role === "admin" ? "link" : undefined} tabIndex={user.role === "admin" ? 0 : undefined} title={user.role === "admin" ? "Benutzer und Berater verwalten" : undefined}
-                onClick={() => { if (user.role === "admin") window.location.assign("/portal/verwaltung"); }}
-                onKeyDown={(event) => { if (user.role === "admin" && event.key === "Enter") window.location.assign("/portal/verwaltung"); }}>{user.role}</p>
+              <p className="text-[11.5px] uppercase tracking-wider text-silver">{user.role === "admin" ? "Administrator" : "Mitarbeiter"}</p>
             </div>
             <button type="button" onClick={logout} className="grid h-8 w-8 place-items-center rounded-lg text-silver hover:bg-white/10 hover:text-white" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button>
           </div>

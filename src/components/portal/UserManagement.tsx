@@ -16,7 +16,7 @@ type FormState = {
 };
 
 const emptyForm = (): FormState => ({
-  name: "", email: "", password: "", role: "berater", active: true, hasProfile: true,
+  name: "", email: "", password: "", role: "berater", active: true, hasProfile: false,
   slug: "", title: "Berater", city: "", region: "Deutschlandweit", regions: "Deutschlandweit (digital)",
   topics: "", bio: "", quote: "", phone: "", whatsapp: "", publicEmail: "", initials: "",
   isFounder: false, profileActive: true, sortOrder: "100",
@@ -182,10 +182,10 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
               <label className="label">Vollständiger Name<input required maxLength={120} className="field" value={form.name} onChange={(event) => update("name", event.target.value)} onBlur={() => { if (!form.slug) update("slug", normalizeSlug(form.name)); if (!form.initials) update("initials", form.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 3).join("").toUpperCase()); }} /></label>
               <label className="label">E-Mail für die Anmeldung<input required type="email" maxLength={200} autoComplete="off" className="field" value={form.email} onChange={(event) => update("email", event.target.value)} /></label>
               <label className="label">{selectedId ? "Neues Passwort (leer = unverändert)" : "Passwort (mindestens 12 Zeichen)"}<input required={!selectedId} type="password" minLength={12} maxLength={200} autoComplete="new-password" className="field" value={form.password} onChange={(event) => update("password", event.target.value)} /></label>
-              <label className="label">Rolle<select className="field" value={form.role} disabled={selectedId === currentUserId} onChange={(event) => update("role", event.target.value as FormState["role"])}><option value="berater">Berater</option><option value="admin">Administrator</option></select></label>
+              <label className="label">Rolle<select className="field" value={form.role} disabled={selectedId === currentUserId} onChange={(event) => update("role", event.target.value as FormState["role"])}><option value="berater">Mitarbeiter</option><option value="admin">Administrator</option></select></label>
             </div>
             <label className="mt-4 inline-flex items-center gap-2 text-[14px] text-ink"><input type="checkbox" checked={form.active} disabled={selectedId === currentUserId} onChange={(event) => update("active", event.target.checked)} /> Portalzugang aktiv</label>
-            <p className="mt-2 text-[12.5px] text-steel">Das Passwort ist nur für den Portalzugang bestimmt. Eine Passwortänderung beendet bestehende Sitzungen dieses Benutzers.</p>
+            <p className="mt-2 text-[12.5px] text-steel">Mitarbeiter können im Portal Anfragen bearbeiten. Nur Administratoren dürfen Benutzer, Beraterprofile und Profilbilder verwalten.</p>
           </Card>
           <Card>
             <label className="inline-flex items-center gap-2 text-[18px] font-extrabold text-ink"><input type="checkbox" checked={form.hasProfile} disabled={Boolean(selected?.advisorId)} onChange={(event) => { update("hasProfile", event.target.checked); if (!event.target.checked) { setImage(null); if (fileInput.current) fileInput.current.value = ""; } }} /> Öffentliches Beraterprofil</label>
