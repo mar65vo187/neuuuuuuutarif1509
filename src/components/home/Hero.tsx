@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, MessageCircle } from "lucide-react";
+import { ArrowRight, Check, MessageCircle, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AudienceToggle, useAudience } from "@/components/home/AudienceProvider";
@@ -58,6 +58,11 @@ export function Hero() {
               </li>
             ))}
           </ul>
+
+          <div className="hero-enter mt-5 inline-flex max-w-xl items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-[12.5px] leading-relaxed text-silver [--hero-delay:420ms]">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-electric-soft" aria-hidden="true" />
+            <span><strong className="font-semibold text-white">Ein Ansprechpartner statt Tarif-Dschungel.</strong> Du entscheidest selbst, ob und wie du weitergehst.</span>
+          </div>
         </div>
 
         <div className="hero-enter lg:col-span-5 [--hero-delay:220ms]">
