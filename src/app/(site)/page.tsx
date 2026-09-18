@@ -1,18 +1,20 @@
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
+import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
-  EverydaySection,
-  FaqSection,
-  FinalCta,
-  FocusSection,
-  Founder,
-  Manifesto,
-  Process,
-  TrustStrip,
-} from "@/components/home/Sections";
+  AudienceEverydaySection,
+  AudienceFaqSection,
+  AudienceFinalCta,
+  AudienceFocusSection,
+  AudienceManifesto,
+  AudienceProcess,
+  AudienceProofSection,
+  AudienceTrustStrip,
+} from "@/components/home/AudienceSections";
+import { Founder } from "@/components/home/Sections";
 import { FAQ } from "@/lib/content";
 
 export const metadata = pageMetadata("/");
@@ -27,21 +29,27 @@ const faqJsonLd = {
   })),
 };
 
-export default function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  const rawAudience = (await searchParams).audience;
+  const initialAudience: AudienceMode = (Array.isArray(rawAudience) ? rawAudience[0] : rawAudience) === "b2b" ? "b2b" : "b2c";
+
   return (
     <>
       <JsonLd data={faqJsonLd} />
-      <Hero />
-      <TrustStrip />
-      <TopicTicker />
-      <FocusSection />
-      <EverydaySection />
-      <Manifesto />
-      <FinderTeaser />
-      <Process />
-      <Founder />
-      <FaqSection />
-      <FinalCta />
+      <AudienceProvider initialAudience={initialAudience}>
+        <Hero />
+        <AudienceTrustStrip />
+        <TopicTicker />
+        <AudienceFocusSection />
+        <AudienceEverydaySection />
+        <AudienceManifesto />
+        <AudienceProofSection />
+        <FinderTeaser />
+        <AudienceProcess />
+        <Founder />
+        <AudienceFaqSection />
+        <AudienceFinalCta />
+      </AudienceProvider>
     </>
   );
 }
