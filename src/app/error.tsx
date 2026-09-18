@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { LogoMark } from "@/components/ui/Logo";
-import { whatsappLink } from "@/lib/content";
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
@@ -14,17 +13,14 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
         <LogoMark size={56} className="mx-auto" />
         <p className="eyebrow mt-8 justify-center text-electric-soft">Kurz nicht erreichbar</p>
         <h1 className="mt-4 text-[clamp(2rem,5vw,3.4rem)] font-extrabold leading-[1.02]">
-          Bitte versuche es <span className="display-i font-normal text-champagne-soft">gleich noch einmal.</span>
+          Bitte versuchen Sie es <span className="display-i font-normal text-champagne-soft">gleich noch einmal.</span>
         </h1>
-        <p className="mt-5 text-[16px] text-silver">Dieser Bereich konnte gerade nicht geladen werden. Du kannst die Seite erneut laden oder uns direkt kontaktieren.</p>
+        <p className="mt-5 text-[16px] text-silver">Dieser Bereich konnte gerade nicht geladen werden. Sie können die Seite erneut laden oder uns direkt kontaktieren.</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button type="button" onClick={reset} className="inline-flex h-12 items-center gap-2 rounded-full bg-electric px-6 font-semibold text-white hover:bg-electric-deep">
             Erneut laden <ArrowRight className="h-4 w-4" />
           </button>
           <Link href="/" className="inline-flex h-12 items-center gap-2 rounded-full border border-white/15 px-6 font-semibold text-white hover:bg-white/10">Zur Startseite</Link>
-          <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center gap-2 rounded-full border border-white/15 px-6 font-semibold text-white hover:bg-white/10">
-            <MessageCircle className="h-4 w-4" /> WhatsApp
-          </a>
         </div>
       </div>
     </main>
