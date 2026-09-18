@@ -23,7 +23,17 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow text-electric-deep">Management</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Enterprise Reporting</h1></div>
-      <form><select name="days" defaultValue={String(days)} className="field" onChange={undefined}><option value="7">7 Tage</option><option value="30">30 Tage</option><option value="90">90 Tage</option><option value="365">365 Tage</option></select></form>
+      <form className="flex items-end gap-2">
+        <label className="label">Zeitraum
+          <select name="days" defaultValue={String(days)} className="field mt-1">
+            <option value="7">7 Tage</option>
+            <option value="30">30 Tage</option>
+            <option value="90">90 Tage</option>
+            <option value="365">365 Tage</option>
+          </select>
+        </label>
+        <button type="submit" className="inline-flex h-12 items-center justify-center rounded-xl bg-ink px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-electric focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric">Anwenden</button>
+      </form>
     </header>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{cards.map(([label,value,Icon]) => <Card key={label}><div className="flex items-center justify-between"><p className="text-[13px] font-semibold text-steel">{label}</p><Icon className="h-4.5 w-4.5 text-electric-deep" /></div><p className="mt-3 text-[30px] font-extrabold tracking-tight">{value}</p></Card>)}</div>
     <div className="grid gap-4 lg:grid-cols-2">
