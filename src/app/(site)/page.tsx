@@ -3,17 +3,13 @@ import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
 import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
-import { TopicTicker } from "@/components/home/TopicTicker";
 import {
-  AudienceEverydaySection,
   AudienceFaqSection,
   AudienceFinalCta,
   AudienceFocusSection,
-  AudienceManifesto,
   AudienceProcess,
   AudienceTrustStrip,
 } from "@/components/home/AudienceSections";
-import { Founder } from "@/components/home/Sections";
 import { ReferralHomeTeaser } from "@/components/referrals/ReferralRewards";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
 import { SERVICES, SITE } from "@/lib/content";
@@ -64,13 +60,9 @@ export default async function HomePage({ searchParams }: Props) {
       <AudienceProvider initialAudience={initialAudience}>
         <Hero />
         <AudienceTrustStrip />
-        <TopicTicker />
         <AudienceFocusSection />
-        <AudienceEverydaySection />
-        <AudienceManifesto />
         <FinderTeaser />
         <AudienceProcess />
-        <Founder />
         <ReferralHomeTeaser />
         <AudienceFaqSection />
         <AudienceFinalCta />
