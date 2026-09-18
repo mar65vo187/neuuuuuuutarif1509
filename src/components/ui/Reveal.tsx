@@ -1,60 +1,35 @@
-"use client";
+import { createElement, type CSSProperties, type ReactNode } from "react";
 
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import type { ReactNode } from "react";
+type RevealTag = "div" | "section" | "li" | "span" | "p" | "h1" | "h2" | "h3";
 
-const ease = [0.22, 1, 0.36, 1] as const;
-
-export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28, filter: "blur(6px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.8, ease } },
+type RevealStyle = CSSProperties & {
+  "--reveal-delay"?: string;
 };
 
-export const fade: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.9, ease } },
-};
+export const fadeUp = "fade-up";
+export const fade = "fade";
 
 export function Reveal({
   children,
   className = "",
   delay = 0,
   as = "div",
-  once = true,
-  amount = 0.25,
-  variants = fadeUp,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
-  as?: "div" | "section" | "li" | "span" | "p" | "h1" | "h2" | "h3";
+  as?: RevealTag;
   once?: boolean;
   amount?: number;
-  variants?: Variants;
+  variants?: unknown;
 }) {
-  const reducedMotion = useReducedMotion();
-  const Comp = motion[as] as typeof motion.div;
-  return (
-    <Comp
-      className={className}
-      initial={reducedMotion ? false : "hidden"}
-      whileInView="show"
-      viewport={{ once, amount, margin: "0px 0px -8% 0px" }}
-      variants={reducedMotion ? { hidden: { opacity: 1, y: 0, filter: "none" }, show: { opacity: 1, y: 0, filter: "none" } } : variants}
-      transition={{ delay: reducedMotion ? 0 : delay }}
-      style={{ willChange: "transform, opacity" }}
-    >
-      {children}
-    </Comp>
-  );
+  const style: RevealStyle = delay ? { "--reveal-delay": `${delay}s` } : {};
+  return createElement(as, { className: `reveal-css ${className}`, style }, children);
 }
 
 export function Stagger({
   children,
   className = "",
-  stagger = 0.08,
-  delay = 0,
-  amount = 0.2,
 }: {
   children: ReactNode;
   className?: string;
@@ -62,25 +37,9 @@ export function Stagger({
   delay?: number;
   amount?: number;
 }) {
-  const reducedMotion = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={reducedMotion ? false : "hidden"}
-      whileInView="show"
-      viewport={{ once: true, amount, margin: "0px 0px -8% 0px" }}
-      variants={{ hidden: {}, show: { transition: { staggerChildren: reducedMotion ? 0 : stagger, delayChildren: reducedMotion ? 0 : delay } } }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className={`stagger-css ${className}`}>{children}</div>;
 }
 
 export function Item({ children, className = "" }: { children: ReactNode; className?: string }) {
-  const reducedMotion = useReducedMotion();
-  return (
-    <motion.div className={className} variants={reducedMotion ? { hidden: { opacity: 1, y: 0, filter: "none" }, show: { opacity: 1, y: 0, filter: "none" } } : fadeUp} style={{ willChange: "transform, opacity" }}>
-      {children}
-    </motion.div>
-  );
+  return <div className={`reveal-item-css ${className}`}>{children}</div>;
 }

@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
-    "check": "npm run typecheck && npm run lint && npm run build",
+    "check": "npm run perf:guard && npm run typecheck && npm run lint && npm test && npm run build",
     "env:init": "node scripts/env-init.mjs",
     "env:check": "node scripts/env-check.mjs",
     "db:up": "docker compose --env-file .env.local up -d --wait db",
@@ -18,7 +18,8 @@
     "db:setup": "npm run env:check && npm run db:migrate && npm run db:seed && npm run db:check",
     "test": "node --test scripts/tests/*.test.mjs",
     "seo:export": "node scripts/export-seo.mjs",
-    "vercel-build": "node scripts/migrate-if-configured.mjs && next build"
+    "vercel-build": "node scripts/migrate-if-configured.mjs && next build",
+    "perf:guard": "node scripts/performance-guard.mjs"
   },
   "dependencies": {
     "dotenv": "17.3.1",

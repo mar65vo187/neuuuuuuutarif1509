@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { MapPin, SlidersHorizontal, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
@@ -98,28 +97,18 @@ export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
           {region && filtered.some((f) => !f.exactRegion) ? " – teils digital erreichbar" : ""}
         </p>
 
-        <AnimatePresence mode="popLayout">
-          {filtered.length > 0 ? (
-            <motion.div layout className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {filtered.map(({ a }, i) => (
-                <motion.div
-                  key={a.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: i * 0.05 }}
-                >
+        {filtered.length > 0 ? (
+            <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filtered.map(({ a }) => (
+                <div key={a.id} className="reveal-item-css">
                   <AdvisorCard advisor={a} highlightTopic={topic || null} highlightRegion={region || null} />
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
+            <div
               key="empty"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-5 rounded-[26px] border border-dashed border-ink/15 bg-white p-10 text-center"
+              className="hero-enter mt-5 rounded-[26px] border border-dashed border-ink/15 bg-white p-10 text-center"
             >
               <p className="text-[19px] font-bold text-ink">Für diese Kombination haben wir gerade niemanden vor Ort.</p>
               <p className="mx-auto mt-2 max-w-md text-[15px] text-steel">
@@ -129,9 +118,8 @@ export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
                 <Button onClick={() => update({ region: "" })} variant="dark">Alle Regionen anzeigen</Button>
                 <Button href={whatsappLink()} target="_blank" variant="whatsapp">WhatsApp schreiben</Button>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </div>
     </div>
   );

@@ -35,6 +35,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
     -webkit-text-size-adjust: 100%;
   }
   @media (prefers-reduced-motion: reduce) {
@@ -174,4 +175,111 @@
   background: linear-gradient(90deg, rgba(15,26,50,0.05) 25%, rgba(15,26,50,0.10) 37%, rgba(15,26,50,0.05) 63%);
   background-size: 800px 100%;
   animation: shimmer 1.6s infinite linear;
+}
+
+
+/* Performance-first progressive enhancement */
+@keyframes reveal-up-css {
+  from { opacity: 0; transform: translate3d(0, 20px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes hero-enter-css {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes menu-enter-css {
+  from { opacity: 0; transform: translate3d(0, -8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes float-soft-css {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -7px, 0); }
+}
+
+@supports (animation-timeline: view()) {
+  .reveal-css,
+  .reveal-item-css {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+    animation: reveal-up-css 1ms var(--ease-premium) both;
+    animation-delay: var(--reveal-delay, 0s);
+    animation-timeline: view();
+    animation-range: entry 4% cover 22%;
+  }
+}
+
+.hero-enter {
+  animation: hero-enter-css 620ms var(--ease-premium) both;
+  animation-delay: var(--hero-delay, 0ms);
+}
+
+.menu-enter {
+  animation: menu-enter-css 220ms var(--ease-premium) both;
+}
+
+.float-soft {
+  animation: float-soft-css 5s ease-in-out infinite;
+}
+
+.faq-panel {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 760px;
+}
+
+.animate-marquee {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.card-hover,
+.group\/btn {
+  backface-visibility: hidden;
+}
+
+.card-hover:hover,
+.group\/btn:hover {
+  transform: translate3d(0, -4px, 0);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .card-hover:hover,
+  .group\/btn:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .glass,
+  .glass-light {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-css,
+  .reveal-item-css,
+  .hero-enter,
+  .menu-enter,
+  .float-soft {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+
+@supports (content-visibility: auto) {
+  main > section:nth-of-type(n + 3) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 760px;
+  }
 }

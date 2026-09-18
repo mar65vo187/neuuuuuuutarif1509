@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
@@ -78,11 +77,11 @@ export function ApplicationForm() {
 
   if (done) {
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+      <div className="hero-enter text-center">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-electric text-white shadow-glow"><Check className="h-7 w-7" /></span>
         <h3 className="mt-6 text-[26px] font-extrabold text-ink">Danke, {f.name.split(" ")[0]}.</h3>
         <p className="mx-auto mt-3 max-w-md text-[15.5px] text-steel">Deine Bewerbung ist angekommen. Wir melden uns persönlich – so, wie du es dir gewünscht hast.</p>
-      </motion.div>
+      </div>
     );
   }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArrowRight, MapPin } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -14,12 +13,12 @@ export function FinderTeaser() {
   const copy = AUDIENCE_COPY[audience].finder;
   const business = audience === "b2b";
   const [topic, setTopic] = useState<string | null>(null);
-  const [region, setRegion] = useState<string>("");
+  const [region, setRegion] = useState("");
 
   return (
-    <section id="berater-auswahl" style={{ scrollMarginTop: 88 }} className="relative overflow-hidden bg-ink-900 py-24 text-white sm:py-32">
+    <section id="berater-auswahl" style={{ scrollMarginTop: 88 }} className="defer-render relative overflow-hidden bg-ink-900 py-20 text-white sm:py-24">
       <div className="pointer-events-none absolute -left-40 top-1/2 h-[520px] w-[520px] -translate-y-1/2 rounded-full bg-electric/15 blur-[130px]" />
-      <div className="container-x relative grid gap-12 lg:grid-cols-12 lg:items-center">
+      <div className="container-x relative grid gap-10 lg:grid-cols-12 lg:items-center">
         <Reveal className="lg:col-span-5">
           <p className="eyebrow text-electric-soft">{copy.eyebrow}</p>
           <h2 className="mt-4 min-h-[2.2em] text-[clamp(2rem,4.4vw,3.6rem)] font-extrabold leading-[1.02]">
@@ -35,24 +34,23 @@ export function FinderTeaser() {
             <p className="text-[13px] font-semibold text-platinum">{copy.topicLabel}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {SERVICES.map((service) => {
-                const on = topic === service.name;
+                const active = topic === service.name;
                 return (
-                  <motion.button
+                  <button
                     key={service.key}
                     type="button"
                     data-topic={service.name}
                     aria-label={service.name}
-                    whileTap={{ scale: 0.96 }}
-                    onClick={() => setTopic(on ? null : service.name)}
-                    aria-pressed={on}
-                    className={`chip h-9 px-4 text-[13.5px] transition-all duration-300 ${
-                      on
+                    onClick={() => setTopic(active ? null : service.name)}
+                    aria-pressed={active}
+                    className={`chip h-9 px-4 text-[13.5px] transition-[transform,background,color,border-color,box-shadow] duration-200 active:scale-[0.97] ${
+                      active
                         ? "border-electric bg-electric text-white shadow-[0_8px_24px_-8px_rgba(79,141,255,0.9)]"
                         : "border-white/12 text-silver hover:border-white/30 hover:text-white"
-                    } ${service.featured && !on ? "border-champagne/30" : ""}`}
+                    } ${service.featured && !active ? "border-champagne/30" : ""}`}
                   >
                     {service.shortLabel || service.name}
-                  </motion.button>
+                  </button>
                 );
               })}
             </div>
@@ -65,7 +63,7 @@ export function FinderTeaser() {
                 name="region"
                 list="tarifwerk-standorte"
                 value={region}
-                onChange={(e) => setRegion(e.target.value)}
+                onChange={(event) => setRegion(event.target.value)}
                 className="field-dark appearance-none pl-11"
                 placeholder={business ? "Stadt oder Region des Unternehmens (optional)" : "Stadt oder Region suchen (optional)"}
                 aria-label={business ? "Unternehmensstandort suchen" : "Stadt oder Region suchen"}

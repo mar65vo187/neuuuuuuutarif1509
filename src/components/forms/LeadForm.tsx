@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
@@ -19,8 +18,6 @@ type Props = {
   title?: string;
   audience?: "b2c" | "b2b";
 };
-
-const ease = [0.22, 1, 0.36, 1] as const;
 
 export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorName, defaultTopic = "", defaultRegion = "", source, tone = "light", title, audience = "b2c" }: Props) {
   const business = audience === "b2b";
@@ -118,7 +115,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
 
   if (done !== null) {
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease }} className="text-center">
+      <div className="hero-enter text-center">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-electric text-white shadow-glow">
           <Check className="h-7 w-7" />
         </span>
@@ -137,7 +134,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
             Zur Startseite
           </Button>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
@@ -165,9 +162,8 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       </ol>
 
       <div className="relative mt-7 min-h-[320px]">
-        <AnimatePresence mode="wait" initial={false}>
-          {step === 0 ? (
-            <motion.div key="s0" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.35, ease }}>
+        {step === 0 ? (
+            <div key="s0" className="hero-enter">
               <p className={label}>Worum geht es?</p>
               <div className="flex flex-wrap gap-2">
                 {SERVICES.map((s) => (
@@ -206,9 +202,9 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
               <datalist id="anfrage-standorte">
                 {LOCATION_OPTIONS.map((r) => <option key={r} value={r} />)}
               </datalist>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div key="s1" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.35, ease }}>
+            <div key="s1" className="hero-enter">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="lf-name" className={label}>Name *</label>
@@ -266,15 +262,14 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                   <Link href="/datenschutz" className="underline underline-offset-2 hover:text-electric">Datenschutz</Link>
                 </span>
               </label>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </div>
 
       {error && (
-        <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} role="alert" className="mt-4 rounded-xl border border-red-300/40 bg-red-500/10 px-4 py-3 text-[14px] text-red-500">
+        <p role="alert" className="hero-enter mt-4 rounded-xl border border-red-300/40 bg-red-500/10 px-4 py-3 text-[14px] text-red-500">
           {error}
-        </motion.p>
+        </p>
       )}
 
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">

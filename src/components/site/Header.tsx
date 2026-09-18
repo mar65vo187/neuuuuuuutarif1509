@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { ArrowRight, Menu, MessageCircle, Phone, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -24,28 +23,42 @@ export function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
-  const { scrollY } = useScroll();
-
-  useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
-
-  // Menü bei Routenwechsel schließen (ohne setState im Effekt-Body)
-  const [lastPath, setLastPath] = useState(pathname);
-  if (lastPath !== pathname) {
-    setLastPath(pathname);
-    if (open) setOpen(false);
-  }
 
   useEffect(() => {
-    const menu = menuRef.current;
-    const toggle = toggleRef.current;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const next = window.scrollY > 24;
+      setScrolled((current) => current === next ? current : next);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = open ? "hidden" : "";
+
     const closeOnEscape = (event: KeyboardEvent) => {
       if (!open) return;
-      if (event.key === "Escape") { event.preventDefault(); setOpen(false); }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        toggleRef.current?.focus();
+        return;
+      }
       if (event.key !== "Tab") return;
-      const controls = [toggleRef.current, ...Array.from(menuRef.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), [tabindex='0']") ?? [])]
-        .filter((element): element is HTMLElement => Boolean(element && element.getClientRects().length));
+      const controls = [
+        toggleRef.current,
+        ...Array.from(menuRef.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), [tabindex='0']") ?? []),
+      ].filter((element): element is HTMLElement => Boolean(element && element.getClientRects().length));
       if (!controls.length) return;
       const position = controls.indexOf(document.activeElement as HTMLElement);
       if (position === -1 || (event.shiftKey && position === 0) || (!event.shiftKey && position === controls.length - 1)) {
@@ -53,14 +66,17 @@ export function Header() {
         controls[event.shiftKey ? controls.length - 1 : 0].focus();
       }
     };
-    const firstFocus = open ? requestAnimationFrame(() => menuRef.current?.querySelector<HTMLElement>("a[href]")?.focus()) : null;
+
     const desktop = window.matchMedia("(min-width: 1024px)");
-    const closeOnDesktop = () => { if (desktop.matches) setOpen(false); };
+    const closeOnDesktop = () => {
+      if (desktop.matches) setOpen(false);
+    };
+
     document.addEventListener("keydown", closeOnEscape);
     desktop.addEventListener("change", closeOnDesktop);
+    if (open) requestAnimationFrame(() => menuRef.current?.querySelector<HTMLElement>("a[href]")?.focus());
+
     return () => {
-      if (firstFocus !== null) cancelAnimationFrame(firstFocus);
-      if (open && menu?.contains(document.activeElement)) toggle?.focus();
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", closeOnEscape);
       desktop.removeEventListener("change", closeOnDesktop);
@@ -75,38 +91,29 @@ export function Header() {
       >
         Zum Inhalt springen
       </a>
-      <motion.header
-        initial={{ y: -24, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-x-0 top-0 z-50"
-      >
+
+      <header className="fixed inset-x-0 top-0 z-50 hero-enter [--hero-delay:40ms]">
         <div
-          className={`transition-all duration-500 ease-premium ${
-            scrolled || open ? "bg-ink/80 backdrop-blur-xl border-b border-white/8" : "bg-transparent border-b border-transparent"
+          className={`transition-[background-color,border-color,backdrop-filter] duration-300 ease-premium ${
+            scrolled || open ? "border-b border-white/8 bg-ink/80 backdrop-blur-xl" : "border-b border-transparent bg-transparent"
           }`}
         >
           <div className="container-x flex h-[72px] items-center justify-between">
             <Logo size={34} imageSrc="/assets/logo-symbol.jpg" />
 
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
-              {NAV.map((n) => {
-                const active = pathname === n.href || pathname.startsWith(n.href + "/");
+              {NAV.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
                   <Link
-                    key={n.href}
-                    href={n.href}
-                    className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors ${
+                    key={item.href}
+                    href={item.href}
+                    className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${
                       active ? "text-white" : "text-silver hover:text-white"
                     }`}
                   >
-                    {n.label}
-                    {active && (
-                      <motion.span
-                        layoutId="nav-dot"
-                        className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric"
-                      />
-                    )}
+                    {item.label}
+                    {active && <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}
                   </Link>
                 );
               })}
@@ -117,20 +124,18 @@ export function Header() {
                 href={whatsappLink("Hallo TarifWerk, ich hätte eine Frage.")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white/85 transition-colors hover:bg-white/10 hover:text-white"
+                className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-white"
                 aria-label="WhatsApp schreiben"
               >
                 <MessageCircle className="h-[18px] w-[18px]" />
               </a>
-              <Button href="/berater" size="sm" iconRight={<ArrowRight />}>
-                Berater finden
-              </Button>
+              <Button href="/berater" size="sm" iconRight={<ArrowRight />}>Berater finden</Button>
             </div>
 
             <button
               type="button"
               className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden"
-              onClick={() => setOpen((o) => !o)}
+              onClick={() => setOpen((value) => !value)}
               aria-label={open ? "Menü schließen" : "Menü öffnen"}
               ref={toggleRef}
               aria-controls={open ? "mobile-menu" : undefined}
@@ -140,78 +145,55 @@ export function Header() {
             </button>
           </div>
         </div>
-      </motion.header>
+      </header>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="mobile-menu"
-            id="mobile-menu"
-            ref={menuRef}
-            onClick={(event) => {
-              if (event.target instanceof Element && event.target.closest("a")) setOpen(false);
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-ink/95 backdrop-blur-2xl lg:hidden"
-          >
-            <div className="container-x flex h-full flex-col overflow-y-auto pt-[88px] pb-8">
-              <motion.nav
-                initial="hidden"
-                animate="show"
-                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } } }}
-                className="flex shrink-0 flex-col"
-                aria-label="Mobile Navigation"
-              >
-                {NAV.map((n) => (
-                  <motion.div key={n.href} variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}>
-                    <Link
-                      href={n.href}
-                      className="flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white"
-                    >
-                      {n.label}
-                      <ArrowRight className="h-5 w-5 text-electric-soft" />
-                    </Link>
-                  </motion.div>
-                ))}
-              </motion.nav>
+      {open && (
+        <div
+          key="mobile-menu"
+          id="mobile-menu"
+          ref={menuRef}
+          onClick={(event) => {
+            if (event.target instanceof Element && event.target.closest("a")) setOpen(false);
+          }}
+          className="menu-enter fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl lg:hidden"
+        >
+          <div className="container-x flex h-full flex-col overflow-y-auto pb-8 pt-[88px]">
+            <nav className="flex shrink-0 flex-col" aria-label="Mobile Navigation">
+              {NAV.map((item, index) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{ animationDelay: `${60 + index * 35}ms` }}
+                  className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white"
+                >
+                  {item.label}
+                  <ArrowRight className="h-5 w-5 text-electric-soft" />
+                </Link>
+              ))}
+            </nav>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="mt-6 flex flex-wrap gap-2"
-              >
-                {SERVICES.map((s) => (
-                  <Link
-                    key={s.slug}
-                    href={`/leistungen/${s.slug}`}
-                    className="chip border-white/12 text-silver hover:border-electric hover:text-white"
-                  >
-                    {s.shortLabel || s.name}
-                  </Link>
-                ))}
-              </motion.div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {SERVICES.map((service) => (
+                <Link
+                  key={service.slug}
+                  href={`/leistungen/${service.slug}`}
+                  className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white"
+                >
+                  {service.shortLabel || service.name}
+                </Link>
+              ))}
+            </div>
 
-              <div className="mt-auto grid gap-3 pt-8">
-                <Button href="/berater" size="lg" iconRight={<ArrowRight />} className="w-full">
-                  Berater finden
-                </Button>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button href={whatsappLink()} target="_blank" variant="whatsapp" icon={<MessageCircle />} className="w-full">
-                    WhatsApp
-                  </Button>
-                  <Button href={SITE.phoneHref} variant="secondary" icon={<Phone />} className="w-full">
-                    Anrufen
-                  </Button>
-                </div>
+            <div className="mt-auto grid gap-3 pt-8">
+              <Button href="/berater" size="lg" iconRight={<ArrowRight />} className="w-full">Berater finden</Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button href={whatsappLink()} target="_blank" variant="whatsapp" icon={<MessageCircle />} className="w-full">WhatsApp</Button>
+                <Button href={SITE.phoneHref} variant="secondary" icon={<Phone />} className="w-full">Anrufen</Button>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
     </>
   );
 }
