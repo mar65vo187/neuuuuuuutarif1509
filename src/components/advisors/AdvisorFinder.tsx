@@ -4,7 +4,7 @@ import { MapPin, SlidersHorizontal, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import type { Advisor } from "@/db/schema";
-import { LOCATION_OPTIONS, SERVICES, whatsappLink, normalizeTopic, normalizeTopics } from "@/lib/content";
+import { LOCATION_OPTIONS, SERVICES, normalizeTopic, normalizeTopics } from "@/lib/content";
 import { AdvisorCard } from "./AdvisorCard";
 import { Button } from "@/components/ui/Button";
 
@@ -112,11 +112,11 @@ export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
             >
               <p className="text-[19px] font-bold text-ink">Für diese Kombination haben wir gerade niemanden vor Ort.</p>
               <p className="mx-auto mt-2 max-w-md text-[15px] text-steel">
-                Digital beraten wir dich trotzdem persönlich – oder schreib uns kurz, wir finden den richtigen Weg.
+                Digital beraten wir Sie trotzdem persönlich – oder senden Sie uns kurz eine Anfrage. Wir finden den richtigen Weg.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Button onClick={() => update({ region: "" })} variant="dark">Alle Regionen anzeigen</Button>
-                <Button href={whatsappLink()} target="_blank" variant="whatsapp">WhatsApp schreiben</Button>
+                <Button href="/anfrage">Anfrage stellen</Button>
               </div>
             </div>
           )}
