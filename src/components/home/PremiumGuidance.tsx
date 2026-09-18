@@ -7,13 +7,13 @@ import { useAudience } from "@/components/home/AudienceProvider";
 
 const COPY = {
   b2c: {
-    eyebrow: "Dein nächster sinnvoller Schritt",
+    eyebrow: "Ihr nächster sinnvoller Schritt",
     title: "Erst Klarheit. Dann eine Entscheidung.",
-    text: "Du musst nicht sofort wissen, welcher Tarif passt. Sag uns kurz, was dir wichtig ist – wir helfen dir, die Situation zu sortieren.",
+    text: "Sie müssen nicht sofort wissen, welcher Tarif passt. Sagen Sie uns kurz, was Ihnen wichtig ist – wir helfen Ihnen, die Situation zu sortieren.",
     cta: "Situation einordnen",
     href: "/anfrage",
-    autonomy: "Keine automatische Entscheidung, keine künstliche Verknappung – du entscheidest selbst.",
-    items: [["Bedarf verstehen", "Wir hören zu, bevor wir etwas empfehlen."], ["Optionen einordnen", "Leistung, Kosten und Laufzeit werden verständlich erklärt."], ["Du entscheidest", "Die Beratung bleibt unverbindlich und in deiner Hand."]],
+    autonomy: "Keine automatische Entscheidung, keine künstliche Verknappung – Sie entscheiden selbst.",
+    items: [["Bedarf verstehen", "Wir hören zu, bevor wir etwas empfehlen."], ["Optionen einordnen", "Leistung, Kosten und Laufzeit werden verständlich erklärt."], ["Sie entscheiden", "Die Beratung bleibt unverbindlich und in Ihrer Hand."]],
   },
   b2b: {
     eyebrow: "Ihr nächster sinnvoller Schritt",

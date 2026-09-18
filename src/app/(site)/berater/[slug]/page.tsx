@@ -137,7 +137,7 @@ export default async function AdvisorPage({ params, searchParams }: Props) {
             <p className="eyebrow text-electric-deep">Terminanfrage</p>
             <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Ein Gespräch mit {first}.</h2>
             <p className="mt-4 text-[15.5px] leading-relaxed text-steel">
-              Du nennst Thema und Wunschzeit – {first} bestätigt dir den Termin persönlich. Telefonisch, per Video oder vor Ort.
+              Sie nennen Thema und Wunschzeit – {first} bestätigt Ihnen den Termin persönlich. Telefonisch, per Video oder vor Ort.
             </p>
             <ol className="mt-8 space-y-4">
               {PROCESS.slice(0, 3).map((p) => (

@@ -4,12 +4,12 @@ import { pageMetadata, RELATED_SERVICE_KEYS } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, MessageCircle } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { LeadForm } from "@/components/forms/LeadForm";
-import { REGIONS, SERVICES, SERVICE_IMAGES, SITE, getService, whatsappLink } from "@/lib/content";
+import { REGIONS, SERVICES, SERVICE_IMAGES, SITE, getService } from "@/lib/content";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -95,9 +95,6 @@ export default async function ServicePage({ params }: Props) {
               <Button href={`/berater?thema=${encodeURIComponent(s.name)}`} size="lg" iconRight={<ArrowRight />}>
                 Berater für {s.name}
               </Button>
-              <Button href={whatsappLink(`Hallo TarifWerk, ich interessiere mich für ${s.name}.`)} target="_blank" variant="secondary" size="lg" icon={<MessageCircle />}>
-                WhatsApp
-              </Button>
             </div>
           </Reveal>
         </div>
@@ -106,9 +103,9 @@ export default async function ServicePage({ params }: Props) {
       <section className="bg-paper py-20 sm:py-28">
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-5">
-            <p className="eyebrow text-electric-deep">Was wir für dich prüfen</p>
+            <p className="eyebrow text-electric-deep">Was wir für Sie prüfen</p>
             <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Die Fragen, die vor der Entscheidung beantwortet sein sollten.</h2>
-            <p className="mt-4 text-[15.5px] leading-relaxed text-steel">Nicht mehr, aber auch nicht weniger. Danach weißt du, ob und wie es für dich Sinn ergibt.</p>
+            <p className="mt-4 text-[15.5px] leading-relaxed text-steel">Nicht mehr, aber auch nicht weniger. Danach wissen Sie, ob und wie es für Sie Sinn ergibt.</p>
           </Reveal>
           <Stagger className="grid gap-3 lg:col-span-7" stagger={0.08}>
             {s.checks.map((c, i) => (
@@ -148,8 +145,8 @@ export default async function ServicePage({ params }: Props) {
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <p className="eyebrow text-electric-soft">Kostenlose Erstprüfung</p>
-            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight">Lass uns über {s.name} sprechen.</h2>
-            <p className="mt-4 text-[15.5px] leading-relaxed text-silver">Zwei Schritte, dann meldet sich ein Berater persönlich bei dir. Ohne Verpflichtung.</p>
+            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight">Lassen Sie uns über {s.name} sprechen.</h2>
+            <p className="mt-4 text-[15.5px] leading-relaxed text-silver">Zwei Schritte, dann meldet sich ein Berater persönlich bei Ihnen. Ohne Verpflichtung.</p>
             <div className="mt-8 border-t border-white/10 pt-6">
               <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-silver">Auch interessant</p>
               <ul className="mt-3 space-y-2">

@@ -22,35 +22,35 @@ export default function DatenschutzPage() {
         </p>
         <h3>Anfragen, Terminwünsche und Bewerbungen</h3>
         <p>
-          Wenn du ein Formular nutzt, verarbeiten wir die von dir angegebenen Daten (z. B. Name, E-Mail, Telefon, Thema, Region, Nachricht)
-          ausschließlich zur Bearbeitung deiner Anfrage bzw. Bewerbung und zur Kontaktaufnahme (Art. 6 Abs. 1 lit. a und b DSGVO). Die Daten werden in
+          Wenn Sie ein Formular nutzen, verarbeiten wir die von Ihnen angegebenen Daten (z. B. Name, E-Mail, Telefon, Thema, Region, Nachricht)
+          ausschließlich zur Bearbeitung Ihrer Anfrage bzw. Bewerbung und zur Kontaktaufnahme (Art. 6 Abs. 1 lit. a und b DSGVO). Die Daten werden in
           unserem geschützten internen System gespeichert und nur den zuständigen Beraterinnen und Beratern zugänglich gemacht.
         </p>
         <h3>WhatsApp, Telefon, E-Mail</h3>
         <p>
-          Kontaktierst du uns über WhatsApp, gelten zusätzlich die Datenschutzbestimmungen von WhatsApp (Meta Platforms Ireland Ltd.). Nutze diesen Weg
-          bitte nur, wenn du damit einverstanden bist. Alternativ stehen Telefon, E-Mail und unser Formular zur Verfügung.
+          Kontaktieren Sie uns über WhatsApp, gelten zusätzlich die Datenschutzbestimmungen von WhatsApp (Meta Platforms Ireland Ltd.). Nutzen Sie diesen Weg
+          bitte nur, wenn Sie damit einverstanden sind. Alternativ stehen Telefon, E-Mail und unser Formular zur Verfügung.
         </p>
         <h3>Externe Bilder</h3>
-        <p>Einzelne Bilder werden von images.pexels.com geladen; dabei wird deine IP-Adresse an diesen Anbieter übermittelt.</p>
+        <p>Einzelne Bilder werden von images.pexels.com geladen; dabei wird Ihre IP-Adresse an diesen Anbieter übermittelt.</p>
       </section>
       <section>
         <h2>3. Weitergabe</h2>
         <p>
-          Eine Weitergabe an Dritte erfolgt nur, wenn dies zur Erfüllung deines Auftrags erforderlich ist (z. B. an den Anbieter eines von dir
-          gewünschten Vertrags) und du dem zugestimmt hast. Ein Verkauf deiner Daten findet nicht statt.
+          Eine Weitergabe an Dritte erfolgt nur, wenn dies zur Erfüllung Ihres Auftrags erforderlich ist (z. B. an den Anbieter eines von Ihnen
+          gewünschten Vertrags) und Sie dem zugestimmt haben. Ein Verkauf Ihrer Daten findet nicht statt.
         </p>
       </section>
       <section>
         <h2>4. Speicherdauer</h2>
         <p>
-          Anfragen speichern wir so lange, wie es für die Bearbeitung und eine mögliche Folgeberatung erforderlich ist, längstens jedoch bis zu deinem
+          Anfragen speichern wir so lange, wie es für die Bearbeitung und eine mögliche Folgeberatung erforderlich ist, längstens jedoch bis zu Ihrem
           Widerruf oder dem Ablauf gesetzlicher Aufbewahrungsfristen. Bewerbungsdaten löschen wir spätestens sechs Monate nach Abschluss des Verfahrens,
           sofern keine Zusammenarbeit zustande kommt.
         </p>
       </section>
       <section>
-        <h2>5. Deine Rechte</h2>
+        <h2>5. Ihre Rechte</h2>
         <ul>
           <li>Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18)</li>
           <li>Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21)</li>

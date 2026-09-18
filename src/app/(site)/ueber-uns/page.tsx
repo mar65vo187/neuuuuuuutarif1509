@@ -9,9 +9,9 @@ import { REGIONS } from "@/lib/content";
 export const metadata = pageMetadata("/ueber-uns");
 
 const VALUES = [
-  { t: "Verständlich", d: "Wir erklären so, dass du Unterschiede, Kosten und nächste Schritte selbst nachvollziehen kannst." },
+  { t: "Verständlich", d: "Wir erklären so, dass Sie Unterschiede, Kosten und nächste Schritte selbst nachvollziehen können." },
   { t: "Nachvollziehbar", d: "Wir sagen, welche Kriterien wir vergleichen, welche Partner verfügbar sind und warum wir etwas empfehlen." },
-  { t: "Erreichbar", d: "Dein Ansprechpartner kennt deine Situation und bleibt auch nach einer Entscheidung für Rückfragen erreichbar." },
+  { t: "Erreichbar", d: "Ihr Ansprechpartner kennt Ihre Situation und bleibt auch nach einer Entscheidung für Rückfragen erreichbar." },
   { t: "Verantwortlich", d: "Wenn eine Änderung aus unserer Sicht keinen Sinn ergibt, ist auch das ein klares und wertvolles Ergebnis." },
 ];
 

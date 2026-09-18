@@ -191,8 +191,6 @@ export function AudienceProcess() {
 export function AudienceFaqSection() {
   const { audience } = useAudience();
   const copy = AUDIENCE_COPY[audience].faq;
-  const business = audience === "b2b";
-
   return (
     <section className="bg-paper py-16 sm:py-20">
       <div className="container-x grid gap-8 lg:grid-cols-12">
@@ -200,18 +198,9 @@ export function AudienceFaqSection() {
           <p className="eyebrow text-electric-deep">{copy.eyebrow}</p>
           <h2 className="mt-3 text-[clamp(1.9rem,3.4vw,2.7rem)] font-extrabold leading-[1.05] text-ink">{copy.title}</h2>
           <p className="mt-3 text-[14.5px] leading-relaxed text-steel">{copy.text}</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button
-              href={whatsappLink(business ? "Hallo TarifWerk, ich habe eine Frage zu einer Beratung für mein Unternehmen:" : "Hallo TarifWerk, ich habe eine Frage:")}
-              target="_blank"
-              variant="dark"
-              size="sm"
-              icon={<MessageCircle />}
-            >
-              {copy.whatsapp}
-            </Button>
+          <div className="mt-6">
             <Link href="/faq" className="inline-flex h-10 items-center text-[14px] font-semibold text-electric-deep hover:underline">
-              {business ? "Alle Fragen →" : "Alle Fragen →"}
+              Alle Fragen →
             </Link>
           </div>
         </Reveal>

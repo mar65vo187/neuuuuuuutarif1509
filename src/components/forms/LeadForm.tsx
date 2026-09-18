@@ -68,7 +68,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     }
     if (!form.topic || !form.situation) {
       setStep(0);
-      setError(business ? "Bitte wählen Sie Ihr Thema und Ihre Situation." : "Bitte wähle dein Thema und deine Situation.");
+      setError("Bitte wählen Sie Ihr Thema und Ihre Situation.");
       return;
     }
     if (!form.name.trim() || !form.email.trim()) {
@@ -80,7 +80,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       return;
     }
     if (["telefon", "whatsapp"].includes(form.preferredChannel) && !form.phone.trim()) {
-      setError(business ? "Bitte geben Sie für Telefon oder WhatsApp eine Telefonnummer an oder wählen Sie E-Mail." : "Bitte gib für Telefon oder WhatsApp eine Telefonnummer an oder wähle E-Mail.");
+      setError("Bitte geben Sie für Telefon oder WhatsApp eine Telefonnummer an oder wählen Sie E-Mail.");
       return;
     }
     sending.current = true;
@@ -106,7 +106,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       }
       setDone(json.id ?? 0);
     } catch {
-      setError(business ? "Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie uns per WhatsApp." : "Verbindung fehlgeschlagen. Bitte versuche es erneut oder schreib uns per WhatsApp.");
+      setError("Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie uns telefonisch.");
     } finally {
       sending.current = false;
       setLoading(false);
@@ -123,12 +123,12 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         <p className={`mx-auto mt-3 max-w-md text-[15.5px] leading-relaxed ${muted}`}>
           {business
             ? <>Ihre Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Sie erhalten eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir ausdrücklich.</>
-            : <>Deine Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Du bekommst eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir dir ausdrücklich.</>}
+            : <>Ihre Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Sie bekommen eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir Ihnen ausdrücklich.</>}
         </p>
         {done > 0 && <p className={`mt-2 text-[12.5px] ${muted}`}>Vorgangsnummer #{done}</p>}
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button href={whatsappLink(`Hallo TarifWerk, ich habe gerade Anfrage #${done} gestellt.`)} target="_blank" variant="whatsapp" icon={<MessageCircle />}>
-            {business ? "Direkt per WhatsApp" : "Lieber gleich per WhatsApp"}
+            Direkt per WhatsApp
           </Button>
           <Button href="/" variant={dark ? "secondary" : "dark"} magnetic={false}>
             Zur Startseite
@@ -138,7 +138,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     );
   }
 
-  const steps = business ? ["Ihr Thema", "Ihr Kontakt"] : ["Dein Thema", "Dein Kontakt"];
+  const steps = ["Ihr Thema", "Ihr Kontakt"];
 
   return (
     <form onSubmit={submit} noValidate>
@@ -173,7 +173,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 ))}
               </div>
 
-              <p className={`${label} mt-7`}>{business ? "Wo stehen Sie gerade?" : "Wo stehst du gerade?"}</p>
+              <p className={`${label} mt-7`}>Wo stehen Sie gerade?</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {SITUATIONS.map((s) => {
                   const on = form.situation === s.value;
@@ -212,14 +212,14 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 </div>
                 <div>
                   <label htmlFor="lf-email" className={label}>E-Mail *</label>
-                  <input id="lf-email" type="email" className={field} value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" required placeholder={business ? "name@unternehmen.de" : "du@beispiel.de"} maxLength={200} />
+                  <input id="lf-email" type="email" className={field} value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" required placeholder={business ? "name@unternehmen.de" : "name@beispiel.de"} maxLength={200} />
                 </div>
                 <div>
                   <label htmlFor="lf-phone" className={label}>Telefon (für Rückruf / WhatsApp)</label>
                   <input id="lf-phone" type="tel" className={field} value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" placeholder="+49 …" maxLength={40} />
                 </div>
                 <div>
-                  <label htmlFor="lf-time" className={label}>{business ? "Wann passt es Ihnen?" : "Wann passt es dir?"}</label>
+                  <label htmlFor="lf-time" className={label}>Wann passt es Ihnen?</label>
                   <select id="lf-time" value={form.preferredTime} onChange={(e) => set("preferredTime", e.target.value)} className={`${field} appearance-none`}>
                     <option value="" className="text-ink">{business ? "Bitte wählen" : "Bitte wählen"}</option>
                     {TIME_SLOTS.map((t) => (
@@ -229,7 +229,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 </div>
               </div>
 
-              <p className={`${label} mt-5`}>{business ? "Wie möchten Sie sprechen?" : "Wie möchtest du sprechen?"}</p>
+              <p className={`${label} mt-5`}>Wie möchten Sie sprechen?</p>
               <div className="flex flex-wrap gap-2">
                 {CHANNELS.map((c) => (
                   <button key={c.value} type="button" onClick={() => set("preferredChannel", c.value)} aria-pressed={form.preferredChannel === c.value} className={chip(form.preferredChannel === c.value)}>
@@ -247,7 +247,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
 
               <div className="mt-5">
                 <label htmlFor="lf-msg" className={label}>Was sollten wir vorab wissen? (optional)</label>
-                <textarea id="lf-msg" rows={3} className={field} value={form.message} onChange={(e) => set("message", e.target.value)} placeholder={business ? "Kurze Eckdaten zu Ihrem Bedarf." : "Kurz in deinen Worten – reicht völlig."} maxLength={2000} />
+                <textarea id="lf-msg" rows={3} className={field} value={form.message} onChange={(e) => set("message", e.target.value)} placeholder={business ? "Kurze Eckdaten zu Ihrem Bedarf." : "Kurze Angaben zu Ihrer Situation – das reicht völlig."} maxLength={2000} />
               </div>
 
               {/* Honeypot */}
@@ -294,7 +294,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         </div>
       </div>
       <p className={`mt-4 text-[12.5px] ${muted}`}>
-        {business ? "Direkter Kontakt?" : "Lieber direkt?"} <a className="font-semibold underline underline-offset-2" href={SITE.phoneHref}>{SITE.whatsappDisplay}</a> – täglich 08–22 Uhr.
+        Direkter Kontakt? <a className="font-semibold underline underline-offset-2" href={SITE.phoneHref}>{SITE.whatsappDisplay}</a> – täglich 08–22 Uhr.
       </p>
     </form>
   );

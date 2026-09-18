@@ -1,6 +1,6 @@
 import { normalizeTopics } from "@/lib/content";
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, MapPin, MessageCircle, Phone } from "lucide-react";
+import { ArrowRight, CalendarCheck, MapPin, Phone } from "lucide-react";
 import type { Advisor } from "@/db/schema";
 import { ProfileImage } from "./ProfileImage";
 
@@ -21,9 +21,6 @@ export function AdvisorCard({ advisor, highlightTopic, highlightRegion }: { advi
   if (highlightTopic) query.set("thema", highlightTopic);
   if (highlightRegion) query.set("region", highlightRegion);
   const profileHref = `/berater/${advisor.slug}${query.size ? `?${query}` : ""}`;
-  const wa = advisor.whatsapp
-    ? `https://wa.me/${advisor.whatsapp}?text=${encodeURIComponent(`Hallo ${advisor.name.split(" ")[0]}, ich habe eine Frage${highlightTopic ? ` zum Thema ${highlightTopic}` : ""}.`)}`
-    : null;
   return (
     <article className="card-hover group relative flex h-full flex-col overflow-hidden rounded-[26px] border border-line bg-white p-6 sm:p-7">
       {advisor.isFounder && (
@@ -56,17 +53,7 @@ export function AdvisorCard({ advisor, highlightTopic, highlightRegion }: { advi
         </ul>
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-2 border-t border-line pt-5">
-        {wa && (
-          <a
-            href={wa}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-1 rounded-xl bg-paper py-2.5 text-[12px] font-semibold text-ink transition-colors hover:bg-[#25D366]/15"
-          >
-            <MessageCircle className="h-4.5 w-4.5 text-[#1fa855]" /> WhatsApp
-          </a>
-        )}
+      <div className="mt-6 grid grid-cols-2 gap-2 border-t border-line pt-5">
         {advisor.phone && (
           <a href={`tel:${advisor.phone}`} className="flex flex-col items-center gap-1 rounded-xl bg-paper py-2.5 text-[12px] font-semibold text-ink transition-colors hover:bg-electric/10">
             <Phone className="h-4.5 w-4.5 text-electric-deep" /> Anruf

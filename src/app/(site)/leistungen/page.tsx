@@ -19,7 +19,7 @@ export default function ServicesPage() {
             Ein Ansprechpartner. <span className="display-i font-normal text-champagne-soft">Acht Bereiche.</span>
           </>
         }
-        text="Von der Immobilie bis zum Mobilfunkvertrag: Wir schauen auf das Ganze – weil sich die Themen gegenseitig beeinflussen und du nicht acht Hotlines brauchst."
+        text="Von der Immobilie bis zum Mobilfunkvertrag: Wir schauen auf das Ganze – weil sich die Themen gegenseitig beeinflussen und Sie nicht acht Hotlines brauchen."
         compact
       />
       <section className="bg-paper py-20">
