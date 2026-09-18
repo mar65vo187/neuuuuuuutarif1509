@@ -5,12 +5,12 @@ type PageSeo = { title: string; description: string; noindex?: boolean };
 
 export const HOME_AUDIENCE_SEO = {
   b2c: {
-    title: "TarifWerk | Tarife, Energie & Versicherungen beraten",
-    description: "Persönliche Beratung zu Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen und Immobilien. TarifWerk berät deutschlandweit.",
+    title: "TarifWerk | Beratung für Tarife, Energie & Versicherungen",
+    description: "Beratung auf Augenhöhe zu Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpen, Versicherungen und Immobilien – persönlich und deutschlandweit.",
   },
   b2b: {
-    title: "TarifWerk Business | Telekommunikation, Energie & Verträge",
-    description: "TarifWerk bündelt Telekommunikation, Energie, Absicherung und weitere Lösungen für Selbstständige und Unternehmen – persönlich, deutschlandweit.",
+    title: "TarifWerk Business | Telekommunikation, Energie & Absicherung",
+    description: "Persönliche Business-Beratung zu Telekommunikation, Energie, Absicherung und weiteren Lösungen für Selbstständige und Unternehmen – deutschlandweit.",
   },
 } as const;
 

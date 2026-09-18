@@ -56,6 +56,7 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
             const Icon = n.icon;
             return (
               <Link key={n.href} href={n.href}
+                aria-current={active ? "page" : undefined}
                 className={`inline-flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${active ? "bg-white/10 text-white" : "text-silver hover:bg-white/6 hover:text-white"}`}>
                 <Icon className="h-4.5 w-4.5" />
                 <span className="hidden lg:inline">{n.label}</span>
@@ -66,6 +67,7 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
           {user.role === "admin" && (
             <Link
               href="/portal/verwaltung"
+              aria-current={pathname.startsWith("/portal/verwaltung") ? "page" : undefined}
               className={`inline-flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${pathname.startsWith("/portal/verwaltung") ? "bg-white/10 text-white" : "text-silver hover:bg-white/6 hover:text-white"}`}
             >
               <UserRoundCog className="h-4.5 w-4.5" />

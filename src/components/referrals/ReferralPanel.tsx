@@ -34,7 +34,7 @@ type Status = {
   rewards: Reward[];
 };
 
-const button = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-50";
+const button = "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-electric focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric disabled:pointer-events-none disabled:opacity-50";
 const euro = (cents: number) => (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
 const STATUS_LABELS: Record<string, string> = {

@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "ghost" | "light" | "whatsapp" | "dark"
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "group/btn relative inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight transition-[transform,background,color,box-shadow,border-color] duration-200 ease-premium select-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.985]";
+  "group/btn relative inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight transition-[transform,background,color,box-shadow,border-color] duration-200 ease-premium select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric disabled:pointer-events-none disabled:opacity-50 active:scale-[0.985]";
 
 const variants: Record<Variant, string> = {
   primary:

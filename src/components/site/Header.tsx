@@ -92,21 +92,24 @@ export function Header() {
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
               {NAV.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                return <Link key={item.href} href={item.href} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
+                return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
               })}
             </nav>
             <div className="hidden items-center gap-2 lg:flex">
               <a href={whatsappLink("Hallo TarifWerk, ich hätte eine Frage.")} target="_blank" rel="noopener noreferrer" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-white" aria-label="WhatsApp schreiben"><MessageCircle className="h-[18px] w-[18px]" /></a>
               <Button href="/anfrage" size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
             </div>
-            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls={open ? "mobile-menu" : undefined} aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls="mobile-menu" aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           </div>
         </div>
       </header>
       {open && <div key="mobile-menu" id="mobile-menu" ref={menuRef} onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) setOpen(false); }} className="menu-enter fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl lg:hidden">
         <div className="container-x flex h-full flex-col overflow-y-auto pb-8 pt-[88px]">
           <nav className="flex shrink-0 flex-col" aria-label="Mobile Navigation">
-            {NAV.map((item, index) => <Link key={item.href} href={item.href} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" /></Link>)}
+            {NAV.map((item, index) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" aria-hidden="true" /></Link>;
+            })}
           </nav>
           <div className="mt-6 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={`/leistungen/${service.slug}`} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
           <div className="mt-auto grid gap-3 pt-8">
