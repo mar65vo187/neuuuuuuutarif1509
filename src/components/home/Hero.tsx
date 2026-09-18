@@ -23,6 +23,10 @@ export function Hero() {
     ? "Ein Ansprechpartner statt Vertragskomplexität. Sie entscheiden selbst, ob und wie Sie weitergehen."
     : "Ein Ansprechpartner statt Tarif-Dschungel. Du entscheidest selbst, ob und wie du weitergehst.";
 
+  const reassurance = audience === "b2b"
+    ? "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen"
+    : "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei dir";
+
   return (
     <section className="relative isolate overflow-hidden bg-ink text-white grain">
       <div className="absolute inset-0 grid-lines" aria-hidden />
@@ -43,16 +47,17 @@ export function Hero() {
             <Button href={copy.primaryHref} size="lg" iconRight={<ArrowRight />}>{copy.primary}</Button>
             <Button href={whatsappLink(copy.whatsapp)} target="_blank" variant="secondary" size="lg" icon={<MessageCircle />}>{copy.secondary}</Button>
           </div>
-          <ul key={`${audience}-checks`} className="hero-enter mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver [--hero-delay:380ms]">
+          <p className="hero-enter mt-3 text-[12.5px] leading-relaxed text-silver/85 [--hero-delay:360ms]">{reassurance}</p>
+          <ul key={`${audience}-checks`} className="hero-enter mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver [--hero-delay:390ms]">
             {copy.checks.map((item) => <li key={item} className="inline-flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/7"><Check className="h-3.5 w-3.5 text-electric-soft" /></span>{item}</li>)}
           </ul>
-          <div className="hero-enter mt-5 inline-flex max-w-xl items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-[12.5px] leading-relaxed text-silver [--hero-delay:420ms]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-electric-soft" aria-hidden="true" /><span>{trustAnchor}</span></div>
+          <div className="hero-enter mt-5 inline-flex max-w-xl items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-[12.5px] leading-relaxed text-silver [--hero-delay:430ms]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-electric-soft" aria-hidden="true" /><span>{trustAnchor}</span></div>
         </div>
 
         <div className="hero-enter lg:col-span-5 [--hero-delay:220ms]"><div className="mx-auto w-full max-w-[430px]"><div className="glass relative overflow-hidden rounded-[26px] p-5 shadow-soft sm:p-6">
           <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-electric/22 blur-[70px]" />
           <div className="relative flex items-start justify-between gap-4"><div><p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-silver">{copy.cardEyebrow}</p><p className="mt-1.5 text-[19px] font-bold">{copy.cardTitle}</p></div><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-silver">{copy.cardBadge}</span></div>
-          <ol className="relative mt-5 space-y-2">{copy.cardSteps.map((item, index) => { const active = index === activeIdx; return <li key={item.label} className={`rounded-2xl border px-4 py-3.5 transition-[background-color,border-color] duration-300 ${active ? "border-electric/45 bg-electric/10" : "border-white/8 bg-white/[0.025]"}`}><div className="flex items-start gap-3"><span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold ${active ? "bg-electric text-white" : "border border-white/12 text-silver"}`}>{String(index + 1).padStart(2, "0")}</span><div><p className="text-[14px] font-semibold">{item.label}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-silver">{item.sub}</p></div></div></li>; })}</ol>
+          <ol className="relative mt-5 space-y-2" aria-label={copy.cardTitle}>{copy.cardSteps.map((item, index) => { const active = index === activeIdx; return <li key={item.label} className={`rounded-2xl border px-4 py-3.5 transition-[background-color,border-color] duration-300 ${active ? "border-electric/45 bg-electric/10" : "border-white/8 bg-white/[0.025]"}`}><div className="flex items-start gap-3"><span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold ${active ? "bg-electric text-white" : "border border-white/12 text-silver"}`}>{String(index + 1).padStart(2, "0")}</span><div><p className="text-[14px] font-semibold">{item.label}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-silver">{item.sub}</p></div></div></li>; })}</ol>
           <div className="relative mt-5 flex items-center gap-3 border-t border-white/8 pt-4"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[12px] font-extrabold text-ink">ME</span><div><p className="text-[13.5px] font-semibold">{copy.person}</p><p className="text-[12px] text-silver">{copy.personSub}</p></div></div>
         </div></div></div>
       </div>
