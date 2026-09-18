@@ -1,0 +1,34 @@
+name: Copy and WhatsApp audit
+
+on:
+  push:
+    branches:
+      - fix/formal-language-whatsapp-balance-20260919
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan public site copy and WhatsApp usage
+        shell: bash
+        run: |
+          {
+            echo "=== informal address ==="
+            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' '\b(du|dein|deine|deinen|deinem|deiner|dich|dir|euch|euer|eure|ihr|ihrerseits)\b' src/app src/components || true
+            echo
+            echo "=== whatsapp ==="
+            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' 'whats.?app|wa\.me' src/app src/components || true
+            echo
+            echo "=== site pages ==="
+            find 'src/app/(site)' -name 'page.tsx' -o -name 'page.ts' | sort || true
+          } > audit.txt
+          cat audit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: copy-whatsapp-audit
+          path: audit.txt
