@@ -68,7 +68,7 @@ jobs:
       - name: Verify enterprise tables exist
         shell: node {0}
         run: |
-          const pg = require("pg");
+          import pg from "pg";
           const required = [
             "employees","advisors","leads","team_messages","referrers","referrals",
             "customers","customer_lead_links","providers","products","orders","order_status_history",
