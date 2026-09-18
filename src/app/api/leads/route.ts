@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   const parsed = leadSchema.safeParse(body);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
-    return NextResponse.json({ ok: false, error: first?.message ?? "Bitte prüfe deine Angaben.", field: first?.path?.[0] }, { status: 422 });
+    return NextResponse.json({ ok: false, error: first?.message ?? "Bitte prüfen Sie Ihre Angaben.", field: first?.path?.[0] }, { status: 422 });
   }
   const data = parsed.data;
 
@@ -103,6 +103,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, id: created.id });
   } catch {
     console.error("[leads] insert failed");
-    return NextResponse.json({ ok: false, error: "Die Anfrage konnte gerade nicht gespeichert werden. Bitte versuche es erneut oder schreib uns per WhatsApp." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Die Anfrage konnte gerade nicht gespeichert werden. Bitte versuchen Sie es erneut oder kontaktieren Sie uns telefonisch." }, { status: 500 });
   }
 }
