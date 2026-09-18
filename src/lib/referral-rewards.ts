@@ -63,7 +63,7 @@ export function formatEuro(value: number) {
 }
 
 export const REFERRAL_PIPELINE = [
-  { key: "tracked", label: "Erfasst", description: "Die Empfehlung wurde deinem Link zugeordnet." },
+  { key: "tracked", label: "Erfasst", description: "Die Empfehlung wurde Ihrem Link zugeordnet." },
   { key: "qualified", label: "Qualifiziert", description: "Ein echter Beratungs- oder Vertragsbedarf wurde bestätigt." },
   { key: "completed", label: "Abgeschlossen", description: "Ein zugehöriger Auftrag wurde erfolgreich abgeschlossen." },
   { key: "approved", label: "Freigegeben", description: "Voraussetzungen und relevante Fristen wurden geprüft." },
