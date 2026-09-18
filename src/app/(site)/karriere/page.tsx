@@ -7,13 +7,13 @@ import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 export const metadata = pageMetadata("/karriere");
 
 const EXPECT = [
-  { t: "Echte Verantwortung", d: "Du begleitest Menschen in Entscheidungen, die zählen – von Internet bis Immobilie." },
-  { t: "Kein Skript", d: "Du berätst so, wie du selbst beraten werden wolltest. Zeit ist bei uns kein Kostenfaktor, sondern Qualität." },
-  { t: "Rückhalt", d: "Erfahrung, Abstimmung und ein offenes Ohr – vom ersten Tag an. Du bist nicht allein." },
+  { t: "Echte Verantwortung", d: "Sie begleiten Menschen in Entscheidungen, die zählen – von Internet bis Immobilie." },
+  { t: "Kein Skript", d: "Sie beraten so, wie Sie selbst beraten werden möchten. Zeit ist bei uns kein Kostenfaktor, sondern Qualität." },
+  { t: "Rückhalt", d: "Erfahrung, Abstimmung und ein offenes Ohr – vom ersten Tag an. Sie sind nicht allein." },
 ];
 
-const FITS = ["Du magst den ehrlichen Kontakt mit Menschen", "Du kannst Komplexes verständlich machen", "Du sagst auch mal „nicht abschließen“", "Du arbeitest selbstständig und zuverlässig"];
-const NOT = ["Du willst Produkte losschieben, ohne zuzuhören", "Du versprichst gern alles, was gehört werden will", "Du arbeitest mit künstlichem Zeitdruck"];
+const FITS = ["Sie mögen den ehrlichen Kontakt mit Menschen", "Sie können Komplexes verständlich machen", "Sie sagen auch einmal „nicht abschließen“", "Sie arbeiten selbstständig und zuverlässig"];
+const NOT = ["Sie wollen Produkte losschieben, ohne zuzuhören", "Sie versprechen gern alles, was gehört werden will", "Sie arbeiten mit künstlichem Zeitdruck"];
 
 export default function CareerPage() {
   return (
@@ -22,7 +22,7 @@ export default function CareerPage() {
         eyebrow="Karriere"
         title={
           <>
-            Beraten, wie du selbst <span className="display-i font-normal text-champagne-soft">beraten werden willst.</span>
+            Beraten, wie Sie selbst <span className="display-i font-normal text-champagne-soft">beraten werden möchten.</span>
           </>
         }
         text="Wir suchen Menschen, die zuhören können, gern erklären und Ambition mit Anstand verbinden. Nebenberuflich oder mit voller Kraft – das klären wir im Gespräch."
@@ -67,7 +67,7 @@ export default function CareerPage() {
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <p className="eyebrow text-electric-deep">Bewerbung</p>
-            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Erzähl uns kurz, wer du bist.</h2>
+            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Erzählen Sie uns kurz, wer Sie sind.</h2>
             <p className="mt-4 text-[15.5px] leading-relaxed text-steel">Zwei Minuten reichen. Wir melden uns persönlich – und klären in einem kurzen Gespräch, ob und wie wir zusammenpassen.</p>
           </Reveal>
           <Reveal className="lg:col-span-8" delay={0.1}>
