@@ -14,7 +14,7 @@ export function Footer() {
             <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed">Persönliche Beratung zu Tarifen, Energie, Versicherungen, Solar, Immobilien und mehr – deutschlandweit.</p>
             <div className="mt-6 flex flex-col gap-2 text-[14.5px]">
               <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white"><MessageCircle className="h-4 w-4 text-electric-soft" /> WhatsApp {SITE.whatsappDisplay}</a>
-              <a href={SITE.phoneHref} className="inline-flex items-center gap-2 hover:text-white"><Phone className="h-4 w-4 text-electric-soft" /> {SITE.phoneDisplay}</a>
+              <a href={SITE.phoneHref} className="inline-flex items-center gap-2 hover:text-white"><Phone className="h-4 w-4 text-electric-soft" /> {SITE.whatsappDisplay}</a>
               <a href={`mailto:${SITE.email}`} className="inline-flex items-center gap-2 hover:text-white"><Mail className="h-4 w-4 text-electric-soft" /> {SITE.email}</a>
               <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-electric-soft" /> {SITE.hq} · {SITE.hours}</span>
             </div>
