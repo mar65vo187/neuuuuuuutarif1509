@@ -32,22 +32,22 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
     return <>
       <PageHero
         eyebrow="Persönlich empfohlen"
-        title={<>Jemand findet, TarifWerk könnte <span className="display-i font-normal text-champagne-soft">zu dir passen.</span></>}
-        text="Deine Entscheidung bleibt bei dir. Wir hören zu, prüfen deine Möglichkeiten und erklären verständlich, welche nächsten Schritte zu deiner Situation passen."
+        title={<>Jemand findet, TarifWerk könnte <span className="display-i font-normal text-champagne-soft">zu Ihnen passen.</span></>}
+        text="Ihre Entscheidung bleibt bei Ihnen. Wir hören zu, prüfen Ihre Möglichkeiten und erklären verständlich, welche nächsten Schritte zu Ihrer Situation passen."
         compact
       />
       <section className="bg-paper py-16 sm:py-20">
         <div className="container-x">
           <div className="mx-auto max-w-3xl rounded-[26px] border border-line bg-white p-6 shadow-soft sm:p-9">
             <p className="eyebrow text-electric-deep">Kostenlose Erstorientierung</p>
-            <h2 className="mt-3 text-[26px] font-extrabold text-ink">Wobei können wir dir helfen?</h2>
+            <h2 className="mt-3 text-[26px] font-extrabold text-ink">Wobei können wir Ihnen helfen?</h2>
             <p className="mt-4 text-[15px] leading-relaxed text-steel">
-              Von Internet und Energie bis zu Solar, Versicherungen, Immobilien und weiteren Entscheidungen: Sag uns, was dich beschäftigt.
-              Wenn du der Zuordnung zustimmst, wird lediglich erfasst, dass deine Anfrage über diesen Empfehlungslink kam.
+              Von Internet und Energie bis zu Solar, Versicherungen, Immobilien und weiteren Entscheidungen: Sagen Sie uns, was Sie beschäftigt.
+              Wenn Sie der Zuordnung zustimmen, wird lediglich erfasst, dass Ihre Anfrage über diesen Empfehlungslink kam.
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[
-                ["Unverbindlich", "Du entscheidest in Ruhe."],
+                ["Unverbindlich", "Sie entscheiden in Ruhe."],
                 ["Persönlich", "Ein Mensch meldet sich."],
                 ["Privat", "Keine Vertragsdaten an den Empfehlenden."],
               ].map(([title, text]) => (
@@ -70,7 +70,7 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
     <PageHero
       eyebrow="TarifWerk Empfehlungsprogramm"
       title={<>Gute Beratung empfehlen. <span className="display-i font-normal text-champagne-soft">Bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} erhalten.</span></>}
-      text="Erstelle deinen persönlichen Empfehlungslink, teile ihn mit Menschen, für die TarifWerk hilfreich sein könnte, und behalte deine Empfehlungen und Prämien transparent im Blick."
+      text="Erstellen Sie Ihren persönlichen Empfehlungslink, teilen Sie ihn mit Menschen, für die TarifWerk hilfreich sein könnte, und behalten Sie Ihre Empfehlungen und Prämien transparent im Blick."
       compact
     />
 
@@ -78,11 +78,11 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
       <div className="container-x grid gap-10 lg:grid-cols-12 lg:items-start">
         <div className="lg:col-span-5">
           <p className="eyebrow text-electric-deep">Einfach weiterempfehlen</p>
-          <h2 className="mt-3 text-[clamp(1.8rem,3.2vw,2.5rem)] font-extrabold leading-tight text-ink">Dein Link. Deine Empfehlungen. Dein Status.</h2>
+          <h2 className="mt-3 text-[clamp(1.8rem,3.2vw,2.5rem)] font-extrabold leading-tight text-ink">Ihr Link. Ihre Empfehlungen. Ihr Status.</h2>
           <ol className="mt-6 space-y-5 text-[15px] leading-relaxed text-steel">
-            <li className="flex gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">01</span><span><strong className="text-ink">Link erstellen.</strong> Du erhältst einen persönlichen Link zum Teilen und einen privaten Status-Link.</span></li>
+            <li className="flex gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">01</span><span><strong className="text-ink">Link erstellen.</strong> Sie erhalten einen persönlichen Link zum Teilen und einen privaten Status-Link.</span></li>
             <li className="flex gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">02</span><span><strong className="text-ink">Persönlich weitergeben.</strong> Die empfohlene Person entscheidet selbst, ob sie Kontakt zu TarifWerk aufnimmt.</span></li>
-            <li className="flex gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">03</span><span><strong className="text-ink">Status verfolgen.</strong> Du siehst anonymisiert, ob Empfehlungen erfasst, qualifiziert, abgeschlossen, freigegeben oder ausgezahlt wurden.</span></li>
+            <li className="flex gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">03</span><span><strong className="text-ink">Status verfolgen.</strong> Sie sehen anonymisiert, ob Empfehlungen erfasst, qualifiziert, abgeschlossen, freigegeben oder ausgezahlt wurden.</span></li>
           </ol>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
@@ -92,13 +92,13 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
           </div>
 
           <div className="mt-6 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel">
-            <strong className="text-ink">Du wählst im Erfolgsfall:</strong> bestätigten Wunschgutschein in voller Höhe oder alternativ eine Geld-Auszahlung in Höhe von 50 % des bestätigten Gutscheinwerts.
+            <strong className="text-ink">Sie wählen im Erfolgsfall:</strong> bestätigten Wunschgutschein in voller Höhe oder alternativ eine Geld-Auszahlung in Höhe von 50 % des bestätigten Gutscheinwerts.
           </div>
         </div>
 
         <div className="lg:col-span-7">
           <div className="rounded-[26px] border border-line bg-white p-6 shadow-soft sm:p-9">
-            {code && <p className="mb-5 rounded-xl bg-paper p-4 text-[14px] text-steel">Dieser Empfehlungslink ist gerade nicht verfügbar. Du kannst hier einen eigenen Link erstellen oder <Link href="/anfrage" className="underline">eine allgemeine Anfrage stellen</Link>.</p>}
+            {code && <p className="mb-5 rounded-xl bg-paper p-4 text-[14px] text-steel">Dieser Empfehlungslink ist gerade nicht verfügbar. Sie können hier einen eigenen Link erstellen oder <Link href="/anfrage" className="underline">eine allgemeine Anfrage stellen</Link>.</p>}
             <ReferralRegistration />
           </div>
         </div>
