@@ -7,7 +7,7 @@ import { REGIONS, SERVICES, SITE } from "@/lib/content";
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": ["Organization", "LocalBusiness", "ProfessionalService"],
+  "@type": ["Organization", "ProfessionalService"],
   "@id": `${SITE.url}/#organization`,
   name: SITE.name,
   alternateName: ["TarifWerk Wiesbaden", "Tarif Werk"],
@@ -22,8 +22,7 @@ const organizationJsonLd = {
   email: SITE.email,
   telephone: "+49 157 82301076",
   slogan: "Beratung auf Augenhöhe",
-  description:
-    "TarifWerk aus Wiesbaden bietet persönliche Beratung zu Internet, Mobilfunk, TV, Strom, Gas, Photovoltaik, Wärmepumpe, Versicherungen, Immobilien, Edelmetallen, Klimaanlagen und Sicherheitslösungen – digital deutschlandweit.",
+  description: "TarifWerk bietet persönliche Beratung zu Internet, Mobilfunk, TV, Strom, Gas, Photovoltaik, Wärmepumpe, Versicherungen, Immobilien, Edelmetallen, Klimaanlagen und Sicherheitslösungen.",
   founder: {
     "@type": "Person",
     name: SITE.founder,
@@ -42,12 +41,6 @@ const organizationJsonLd = {
       name: region,
     })),
   ],
-  openingHoursSpecification: [{
-    "@type": "OpeningHoursSpecification",
-    dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-    opens: "08:00",
-    closes: "22:00",
-  }],
   contactPoint: [{
     "@type": "ContactPoint",
     telephone: "+49 157 82301076",
@@ -62,9 +55,6 @@ const organizationJsonLd = {
     itemListElement: SERVICES.map((service) => ({
       "@type": "Offer",
       url: `${SITE.url}/leistungen/${service.slug}`,
-      price: "0",
-      priceCurrency: "EUR",
-      description: "Kostenlose Erstorientierung",
       itemOffered: {
         "@type": "Service",
         name: service.name,
