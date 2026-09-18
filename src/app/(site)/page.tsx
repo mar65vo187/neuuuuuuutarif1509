@@ -70,10 +70,10 @@ export default async function HomePage({ searchParams }: Props) {
         <AudienceEverydaySection />
         <AudienceManifesto />
         <AudienceProofSection />
-        <ReferralHomeTeaser />
         <FinderTeaser />
         <AudienceProcess />
         <Founder />
+        <ReferralHomeTeaser />
         <AudienceFaqSection />
         <AudienceFinalCta />
       </AudienceProvider>

@@ -207,9 +207,9 @@ export function Process() {
     <section className="bg-paper py-24 sm:py-32">
       <div className="container-x">
         <Reveal className="max-w-2xl">
-          <p className="eyebrow text-electric-deep">So läuft es ab</p>
+          <p className="eyebrow text-electric-deep">So entsteht eine Entscheidung</p>
           <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1.04] text-ink">
-            Vier Schritte. Kein Kleingedrucktes.
+            Vier Schritte. Du weißt jederzeit, was als Nächstes passiert.
           </h2>
         </Reveal>
         <Stagger className="relative mt-14 grid gap-6 md:grid-cols-4" stagger={0.12}>
@@ -257,20 +257,20 @@ export function Founder() {
           <Reveal>
             <p className="eyebrow text-electric-deep">Der Mensch hinter TarifWerk</p>
             <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1.04] text-ink">
-              „Gute Beratung beginnt damit, dass man <span className="display-i font-normal text-ink-700">zuhört</span> – nicht redet.“
+              „Gute Beratung beginnt damit, die <span className="display-i font-normal text-ink-700">richtigen Fragen</span> zu stellen.“
             </h2>
           </Reveal>
           <Reveal delay={0.1}>
             <div className="mt-8 space-y-5 text-[16.5px] leading-relaxed text-steel">
               <p>
-                Marvin Noel Egenolf kommt aus dem Vertrieb – und hat dort gelernt, was er nicht will: Abschlüsse, nach
-                denen niemand mehr ans Telefon geht. TarifWerk ist die Antwort darauf: ambitioniert im Anspruch,
-                bodenständig im Umgang.
+                Marvin Noel Egenolf hat TarifWerk mit einem einfachen Gedanken aufgebaut: Wichtige Vertrags- und
+                Versorgungsthemen sollten nicht jedes Mal bei einem neuen Ansprechpartner beginnen. Deshalb bündelt
+                TarifWerk mehrere Bereiche in einem persönlichen Beratungsprozess.
               </p>
               <p>
-                Heute berät er Privat- und Geschäftskunden im Rhein-Main-Gebiet persönlich und deutschlandweit digital.
-                Der Anspruch ist überall derselbe: erklären, bis es wirklich verständlich ist. Und danach erreichbar
-                bleiben.
+                Entscheidend ist nicht, möglichst viele Produkte zu zeigen, sondern die Ausgangslage sauber zu verstehen,
+                relevante Kriterien offen zu erklären und eine Empfehlung nachvollziehbar zu begründen. Privat- und
+                Geschäftskunden werden deutschlandweit digital und nach Absprache persönlich begleitet.
               </p>
             </div>
           </Reveal>
@@ -333,20 +333,20 @@ export function FinalCta() {
         <Reveal className="mx-auto max-w-3xl text-center">
           <Quote className="mx-auto h-8 w-8 text-champagne" />
           <h2 className="mt-6 text-[clamp(2.2rem,5.4vw,4.4rem)] font-extrabold leading-[1.0]">
-            Du musst nicht alles wissen.
+            Du musst nicht jeden Tarif kennen.
             <br />
-            <span className="display-i font-normal text-platinum">Du musst nur jemanden kennen, der fragt.</span>
+            <span className="display-i font-normal text-platinum">Du brauchst Klarheit darüber, was zu dir passt.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-[16.5px] text-silver">
-            Ein Gespräch, keine Verpflichtung. Danach weißt du, wo du stehst – und was sich für dich lohnt.
+            Schilder uns deine Situation. Danach weißt du, welche Möglichkeiten du hast, worauf du achten solltest und welcher nächste Schritt Sinn ergibt.
           </p>
         </Reveal>
         <Stagger className="mx-auto mt-12 grid max-w-3xl gap-3 sm:grid-cols-3">
           <Item>
             <Link href="/berater" className="card-hover flex h-full flex-col rounded-2xl bg-electric p-6 text-white">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">Empfohlen</span>
-              <span className="mt-3 text-[19px] font-bold">Berater finden</span>
-              <span className="mt-1 text-[13.5px] text-white/85">Passend zu Thema & Region</span>
+              <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">Erster Schritt</span>
+              <span className="mt-3 text-[19px] font-bold">Ansprechpartner finden</span>
+              <span className="mt-1 text-[13.5px] text-white/85">Thema wählen und kostenlos starten</span>
               <ArrowRight className="mt-6 h-5 w-5" />
             </Link>
           </Item>

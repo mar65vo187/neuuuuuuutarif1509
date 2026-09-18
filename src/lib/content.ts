@@ -4,14 +4,14 @@
 
 export const SITE = {
   name: "TarifWerk",
-  claim: "Persönliche Beratung. Auf Augenhöhe.",
+  claim: "Beratung auf Augenhöhe",
   url: "https://www.tarifwerk.eu",
   email: "m.egenolf@tarifwerk.eu",
   whatsappNumber: "4915782301076",
   whatsappDisplay: "0157 823 010 76",
   phoneHref: "tel:+4915782301076",
   founder: "Marvin Noel Egenolf",
-  founderTitle: "Gründer & Senior Sales Consultant",
+  founderTitle: "Gründer von TarifWerk",
   hours: "Täglich 08:00–22:00 Uhr",
   hq: "Wiesbaden",
 } as const;
@@ -388,8 +388,8 @@ export const FAQ = [
     "a": "Erstorientierung und Tarifcheck sind kostenlos und unverbindlich. Bei einer konkreten Vermittlung erklären wir dir die jeweiligen Konditionen und die Vergütung vor deiner Entscheidung."
   },
   {
-    "q": "Was bedeutet unabhängig bei TarifWerk?",
-    "a": "Wir arbeiten mit verschiedenen großen und kleineren Marktteilnehmern und sind nicht auf einen einzigen Anbieter festgelegt. Welche Partner und Optionen für dein Anliegen verfügbar sind, besprechen wir transparent. Wir versprechen keine vollständige Abdeckung des gesamten Marktes."
+    "q": "Vergleicht TarifWerk den gesamten Markt?",
+    "a": "Nein. Wir arbeiten mit verschiedenen großen und kleineren Marktteilnehmern, aber nicht mit jedem Anbieter am Markt. Welche Partner und Optionen für dein Anliegen verfügbar sind, sagen wir dir offen."
   },
   {
     "q": "Bleibt mein Berater auch nach dem Abschluss erreichbar?",
@@ -409,11 +409,15 @@ export const FAQ = [
   },
   {
     "q": "Wie verdient TarifWerk Geld?",
-    "a": "Bei erfolgreicher Vermittlung erhalten wir eine Provision vom jeweiligen Anbieter. Erstorientierung und Tarifcheck sind kostenfrei. Die konkreten Vergütungsbedingungen erklären wir dir im Gespräch."
+    "a": "Bei erfolgreicher Vermittlung erhalten wir in vielen Bereichen eine Provision vom jeweiligen Anbieter. Erstorientierung und Tarifcheck sind kostenfrei. Welche Vergütung für dein Anliegen relevant ist und welche Kriterien wir für eine Empfehlung nutzen, erklären wir dir nachvollziehbar."
+  },
+  {
+    "q": "Wie entscheidet ihr, was ihr empfehlt?",
+    "a": "Wir starten mit deiner Situation und legen die relevanten Kriterien fest – zum Beispiel Leistung, Gesamtkosten, Laufzeit, Bedarf und Umsetzbarkeit. Danach erklären wir dir, warum wir eine verfügbare Option für passend halten."
   },
   {
     "q": "Muss ich mich sofort entscheiden?",
-    "a": "Nein. Du bekommst eine verständliche Einschätzung und entscheidest in Ruhe. Auch wenn sich nichts ändern soll, ist Klarheit ein gutes Ergebnis."
+    "a": "Nein. Ziel des ersten Gesprächs ist, dass du deine Situation und die nächsten Möglichkeiten besser einschätzen kannst. Ob du etwas umsetzt, entscheidest du danach selbst."
   }
 ];
 
@@ -422,10 +426,10 @@ export const FAQ = [
 /* ------------------------------------------------------------------ */
 
 export const PROCESS = [
-  { step: "01", title: "Du meldest dich", text: "Per Formular, WhatsApp oder Anruf – mit deinem Thema und wann es dir passt." },
-  { step: "02", title: "Wir prüfen", text: "Dein Berater schaut auf deine Situation und bestehende Verträge. Nachvollziehbar, ohne Fachchinesisch." },
-  { step: "03", title: "Du bekommst Klarheit", text: "Eine ehrliche Einschätzung und konkrete Optionen. Ob und was du umsetzt, entscheidest du." },
-  { step: "04", title: "Wir bleiben", text: "Wenn du möchtest, begleiten wir die Umsetzung – und sind auch danach dein Ansprechpartner." },
+  { step: "01", title: "Du schilderst deine Situation", text: "Kurz sagen, worum es geht, was heute besteht und was dir wichtig ist." },
+  { step: "02", title: "Wir sortieren die Fakten", text: "Bedarf, bestehende Verträge, relevante Kosten, Fristen und Rahmenbedingungen kommen auf den Tisch." },
+  { step: "03", title: "Du siehst die Unterschiede", text: "Wir erklären konkrete Optionen und warum sie zu deiner Situation passen – oder eben nicht." },
+  { step: "04", title: "Wir begleiten den nächsten Schritt", text: "Wenn du dich entscheidest, koordinieren wir die Umsetzung und bleiben auch danach erreichbar." },
 ];
 
 /* ------------------------------------------------------------------ */

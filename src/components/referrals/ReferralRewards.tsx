@@ -95,15 +95,15 @@ export function ReferralHomeTeaser() {
         <div className="lg:col-span-7">
           <p className="eyebrow text-electric-soft"><Gift className="h-4 w-4" /> Freunde werben</p>
           <h2 className="mt-4 text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold leading-[1.04]">
-            Gute Beratung weiterempfehlen. <span className="display-i font-normal text-champagne-soft">Bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} erhalten.</span>
+            Gute Erfahrungen weitergeben. <span className="display-i font-normal text-champagne-soft">Wir bedanken uns dafür.</span>
           </h2>
           <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-silver">
-            Persönlichen Empfehlungslink erstellen, teilen und den Status transparent verfolgen. Bei erfolgreicher Vermittlung erhältst du je nach Bereich deinen bestätigten Wunschgutschein – oder alternativ 50 % des Gutscheinwerts als Geld-Auszahlung.
+            Wenn du TarifWerk guten Gewissens weiterempfehlen möchtest, bekommst du einen persönlichen Link und einen transparenten Status. Entsteht daraus eine erfolgreiche Vermittlung, erhältst du je nach Bereich einen bestätigten Wunschgutschein von bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} – oder alternativ 50 % des Gutscheinwerts als Geld-Auszahlung.
           </p>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver">
             <span className="inline-flex items-center gap-2"><Share2 className="h-4 w-4 text-electric-soft" /> Persönlicher Link</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-electric-soft" /> Transparenter Status</span>
-            <span className="inline-flex items-center gap-2"><BadgeEuro className="h-4 w-4 text-electric-soft" /> Unbegrenzt Empfehlungen</span>
+            <span className="inline-flex items-center gap-2"><BadgeEuro className="h-4 w-4 text-electric-soft" /> Prämie erst nach erfolgreicher Vermittlung</span>
           </div>
         </div>
         <div className="lg:col-span-5 lg:text-right">

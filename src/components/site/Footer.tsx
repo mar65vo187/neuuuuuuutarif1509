@@ -12,8 +12,8 @@ export function Footer() {
           <div className="md:col-span-4">
             <Logo size={38} />
             <p className="mt-6 max-w-sm text-[15px] leading-relaxed">
-              Ein persönlicher Ansprechpartner für die Entscheidungen, die Alltag und Vermögen wirklich betreffen.
-              Unabhängig, verständlich, langfristig erreichbar.
+              Viele wichtige Themen, ein persönlicher Ansprechpartner. TarifWerk ordnet Möglichkeiten nachvollziehbar ein
+              und begleitet Privat- und Geschäftskunden deutschlandweit.
             </p>
             <div className="mt-6 flex flex-col gap-2 text-[14.5px]">
               <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white">
@@ -65,7 +65,7 @@ export function Footer() {
               ))}
             </ul>
             <p className="mt-4 text-[13px] leading-relaxed text-steel">
-              Persönlich vor Ort im Rhein-Main-Gebiet, digital in ganz Deutschland.
+              Von Wiesbaden aus digital deutschlandweit. Persönliche Vor-Ort-Termine stimmen wir individuell ab.
             </p>
           </div>
         </div>
