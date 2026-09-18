@@ -11,7 +11,7 @@ const headers = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-r
 
 export async function GET(request: NextRequest) {
   const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
-  if (!REFERRAL_TOKEN.test(token)) return NextResponse.json({ ok: false, error: "Bitte öffne deinen privaten Status-Link." }, { status: 401, headers });
+  if (!REFERRAL_TOKEN.test(token)) return NextResponse.json({ ok: false, error: "Bitte öffnen Sie Ihren privaten Status-Link." }, { status: 401, headers });
 
   try {
     const [owner] = await db.select({ id: referrers.id, code: referrers.code }).from(referrers)
