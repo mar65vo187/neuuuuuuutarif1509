@@ -3,6 +3,7 @@ import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
 import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
+import { PremiumGuidance } from "@/components/home/PremiumGuidance";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
   AudienceEverydaySection,
@@ -64,6 +65,7 @@ export default async function HomePage({ searchParams }: Props) {
       <AudienceProvider initialAudience={initialAudience}>
         <Hero />
         <AudienceTrustStrip />
+        <PremiumGuidance />
         <TopicTicker />
         <AudienceFocusSection />
         <AudienceEverydaySection />
