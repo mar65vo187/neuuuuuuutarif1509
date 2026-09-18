@@ -36,7 +36,7 @@ export function shortenSeoText(text: string, limit: number): string {
 
 export function pageMetadata(path: string, details: PageSeo = PAGE_SEO[path], image?: string | null, canonicalPath = path): Metadata {
   if (!details) throw new Error(`SEO-Konfiguration fehlt: ${path}`);
-  const title = shortenSeoText(details.title, 62);
+  const title = shortenSeoText(details.title, 59);
   const description = shortenSeoText(details.description, 160);
   const url = new URL(canonicalPath, SITE.url).href;
   const shareImage = image
