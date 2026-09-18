@@ -7,6 +7,7 @@ import { referralCustomerHash } from "@/lib/referrals";
 import { leadSchema } from "@/lib/validation";
 import { isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
+import { routeNewLead } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
           await tx.insert(referrals).values({ referrerId: owner.id, leadId: lead.id, customerHash: referralCustomerHash(data.email) }).onConflictDoNothing();
         }
       }
+      await routeNewLead(tx, lead.id, advisorId);
       return lead;
     });
 

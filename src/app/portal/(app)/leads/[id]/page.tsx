@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { ArrowLeft, Mail, MessageCircle, Phone } from "lucide-react";
+import { ArrowLeft, FilePlus2, Mail, MessageCircle, Phone } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
 import { getLead, getLeadNotes } from "@/lib/queries";
@@ -35,6 +35,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <div className="flex flex-wrap gap-2">
           {waDigits && <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[13.5px] font-semibold text-ink-900"><MessageCircle className="h-4 w-4" /> WhatsApp</a>}
           {lead.phone && <a href={`tel:${lead.phone}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> {lead.phone}</a>}
+          <Link href={`/portal/auftraege/neu?lead=${lead.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>
           <a href={`mailto:${lead.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>
         </div>
       </header>

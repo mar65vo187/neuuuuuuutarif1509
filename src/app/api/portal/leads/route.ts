@@ -5,6 +5,7 @@ import { advisors, leadNotes, leads } from "@/db/schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { leadSchema } from "@/lib/validation";
+import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,9 @@ export async function POST(request: NextRequest) {
         source: "portal",
       }).returning({ id: leads.id });
       await tx.insert(leadNotes).values({ leadId: lead.id, employeeId: user.id, kind: "system", body: `${user.name} hat den Lead im Mitarbeiterportal angelegt.` });
+      await writeAudit(tx, user.id, "lead.created", "lead", lead.id, undefined, { source: "portal", type: data.type });
+      await emitEvent(tx, "lead.created", "lead", lead.id, { assignedEmployeeId: user.id, source: "portal" });
+      await runAutomationEvent(tx, "lead.created", "lead", lead.id, { assignedEmployeeId: user.id, source: "portal" }, user.id);
       return lead;
     });
     return NextResponse.json({ ok: true, id: created.id });

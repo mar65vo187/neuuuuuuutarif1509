@@ -7,6 +7,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { LEAD_STATUS_LABELS } from "@/lib/content";
 import { leadUpdateSchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
+import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
 
@@ -67,12 +68,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
 
     await tx.update(leads).set(patch).where(eq(leads.id, id));
+    if (Object.keys(patch).length > 1 || data.assignToMe) {
+      await writeAudit(tx, user.id, "lead.updated", "lead", id,
+        { status: existing.status, assignedEmployeeId: existing.assignedEmployeeId, confirmedSlot: existing.confirmedSlot },
+        { status: data.status ?? existing.status, assignedEmployeeId: data.assignToMe ? user.id : existing.assignedEmployeeId, confirmedSlot: data.confirmedSlot ?? existing.confirmedSlot });
+    }
 
     if (systemNotes.length) {
       await tx.insert(leadNotes).values(systemNotes.map((body) => ({ leadId: id, employeeId: user.id, kind: "system", body })));
     }
     if (data.note && data.note.trim()) {
       await tx.insert(leadNotes).values({ leadId: id, employeeId: user.id, kind: "note", body: data.note.trim() });
+    }
+    if (data.status && data.status !== existing.status) {
+      await emitEvent(tx, `lead.status.${data.status}`, "lead", id, { assignedEmployeeId: data.assignToMe ? user.id : existing.assignedEmployeeId ?? user.id, previousStatus: existing.status, status: data.status });
+      await runAutomationEvent(tx, `lead.status.${data.status}`, "lead", id, { assignedEmployeeId: data.assignToMe ? user.id : existing.assignedEmployeeId ?? user.id, previousStatus: existing.status, status: data.status }, user.id);
     }
 
     return NextResponse.json({ ok: true });

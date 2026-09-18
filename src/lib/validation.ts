@@ -18,7 +18,6 @@ export const leadSchema = z.object({
   advisorSlug: trimmed(80).optional().or(z.literal("")),
   source: trimmed(120).optional().or(z.literal("")),
   consent: z.literal(true, { message: "Bitte stimme der Datenverarbeitung zu." }),
-  // Honeypot – muss leer bleiben
   website: z.string().max(2000).optional(),
   meta: z.record(z.string(), z.unknown()).optional(),
 }).superRefine((data, ctx) => {
@@ -35,6 +34,7 @@ export type LeadInput = z.infer<typeof leadSchema>;
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   password: z.string().min(6).max(200),
+  mfaCode: z.string().trim().regex(/^\d{6}$/).optional(),
 });
 
 export const leadUpdateSchema = z.object({

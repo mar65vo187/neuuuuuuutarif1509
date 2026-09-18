@@ -1,0 +1,609 @@
+import { randomBytes } from "node:crypto";
+import { and, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { employees, leads } from "@/db/schema";
+import {
+  auditEvents,
+  automationRules,
+  automationRuns,
+  commissionEvents,
+  customerLeadLinks,
+  customers,
+  notificationQueue,
+  orderStatusHistory,
+  orders,
+  outboxEvents,
+  products,
+  providers,
+  reconciliationIssues,
+  tasks,
+  type Customer,
+} from "@/db/enterprise-schema";
+import type { SessionUser } from "@/lib/auth";
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function suffix() {
+  return randomBytes(4).toString("hex").toUpperCase();
+}
+
+function customerNumber() {
+  return `TWK-${new Date().getFullYear()}-${suffix()}`;
+}
+
+function orderNumber() {
+  return `TWO-${new Date().getFullYear()}-${suffix()}`;
+}
+
+function customerAccess(user: SessionUser) {
+  return user.role === "admin" ? sql`true` : eq(customers.ownerEmployeeId, user.id);
+}
+
+function orderAccess(user: SessionUser) {
+  return user.role === "admin" ? sql`true` : eq(orders.advisorEmployeeId, user.id);
+}
+
+function taskAccess(user: SessionUser) {
+  return user.role === "admin" ? sql`true` : eq(tasks.assignedToEmployeeId, user.id);
+}
+
+export async function writeAudit(
+  tx: Tx,
+  actorEmployeeId: number | null,
+  action: string,
+  entityType: string,
+  entityId: string | number | null,
+  oldValues?: Record<string, unknown>,
+  newValues?: Record<string, unknown>,
+) {
+  await tx.insert(auditEvents).values({
+    actorEmployeeId,
+    action,
+    entityType,
+    entityId: entityId === null ? null : String(entityId),
+    oldValues,
+    newValues,
+  });
+}
+
+export async function emitEvent(
+  tx: Tx,
+  eventType: string,
+  entityType: string,
+  entityId: string | number | null,
+  payload: Record<string, unknown> = {},
+) {
+  await tx.insert(outboxEvents).values({
+    eventType,
+    entityType,
+    entityId: entityId === null ? null : String(entityId),
+    payload,
+  });
+}
+
+function matchesConditions(conditions: Record<string, unknown>, payload: Record<string, unknown>) {
+  return Object.entries(conditions).every(([key, expected]) => payload[key] === expected);
+}
+
+export async function runAutomationEvent(
+  tx: Tx,
+  eventType: string,
+  entityType: string,
+  entityId: number,
+  payload: Record<string, unknown>,
+  actorEmployeeId?: number | null,
+) {
+  const rules = await tx.select().from(automationRules)
+    .where(and(eq(automationRules.active, true), eq(automationRules.eventType, eventType)));
+  for (const rule of rules) {
+    if (!matchesConditions(rule.conditions ?? {}, payload)) continue;
+    const [run] = await tx.insert(automationRuns).values({
+      ruleId: rule.id,
+      eventType,
+      entityType,
+      entityId: String(entityId),
+      status: "running",
+      detail: { payload },
+    }).returning({ id: automationRuns.id });
+    try {
+      for (const action of rule.actions ?? []) {
+        if (action.type === "task" && typeof action.title === "string") {
+          const minutes = typeof action.dueMinutes === "number" ? Math.max(0, action.dueMinutes) : 60;
+          await tx.insert(tasks).values({
+            entityType,
+            entityId,
+            assignedToEmployeeId: typeof payload.assignedEmployeeId === "number" ? payload.assignedEmployeeId : actorEmployeeId ?? null,
+            createdByEmployeeId: actorEmployeeId ?? null,
+            type: typeof action.taskType === "string" ? action.taskType : "follow_up",
+            title: action.title,
+            description: typeof action.description === "string" ? action.description : null,
+            priority: typeof action.priority === "string" ? action.priority : "normal",
+            dueAt: new Date(Date.now() + minutes * 60_000),
+          });
+        }
+        if (action.type === "notification" && typeof action.body === "string") {
+          const employeeId = typeof payload.assignedEmployeeId === "number" ? payload.assignedEmployeeId : actorEmployeeId ?? null;
+          await tx.insert(notificationQueue).values({
+            employeeId,
+            channel: "in_app",
+            subject: typeof action.subject === "string" ? action.subject : null,
+            body: action.body,
+          });
+        }
+      }
+      await tx.update(automationRuns).set({ status: "success", finishedAt: new Date() }).where(eq(automationRuns.id, run.id));
+    } catch (error) {
+      await tx.update(automationRuns).set({
+        status: "failed",
+        finishedAt: new Date(),
+        detail: { payload, error: error instanceof Error ? error.message : "automation_failed" },
+      }).where(eq(automationRuns.id, run.id));
+    }
+  }
+}
+
+export async function routeNewLead(tx: Tx, leadId: number, advisorId: number | null) {
+  let selectedEmployeeId: number | null = null;
+
+  if (advisorId) {
+    const [preferred] = await tx.select({ id: employees.id }).from(employees)
+      .where(and(eq(employees.active, true), eq(employees.advisorId, advisorId)))
+      .limit(1);
+    selectedEmployeeId = preferred?.id ?? null;
+  }
+
+  if (!selectedEmployeeId) {
+    const candidates = await tx.select({
+      id: employees.id,
+      openCount: sql<number>`count(${leads.id})::int`,
+    }).from(employees)
+      .leftJoin(leads, and(
+        eq(leads.assignedEmployeeId, employees.id),
+        inArray(leads.status, ["neu", "kontaktiert", "termin_bestaetigt", "in_beratung"]),
+      ))
+      .where(and(eq(employees.active, true), eq(employees.role, "berater")))
+      .groupBy(employees.id)
+      .orderBy(sql`count(${leads.id}) asc`, employees.id)
+      .limit(1);
+    selectedEmployeeId = candidates[0]?.id ?? null;
+  }
+
+  if (selectedEmployeeId) {
+    await tx.update(leads).set({ assignedEmployeeId: selectedEmployeeId, updatedAt: new Date() }).where(eq(leads.id, leadId));
+  }
+
+  await emitEvent(tx, "lead.created", "lead", leadId, { assignedEmployeeId: selectedEmployeeId });
+  await runAutomationEvent(tx, "lead.created", "lead", leadId, { assignedEmployeeId: selectedEmployeeId }, selectedEmployeeId);
+  return selectedEmployeeId;
+}
+
+export async function ensureCustomerForLead(leadId: number, user: SessionUser): Promise<Customer> {
+  return db.transaction(async (tx) => {
+    const [linked] = await tx
+      .select({ customer: customers })
+      .from(customerLeadLinks)
+      .innerJoin(customers, eq(customerLeadLinks.customerId, customers.id))
+      .where(eq(customerLeadLinks.leadId, leadId))
+      .limit(1);
+    if (linked?.customer) return linked.customer;
+
+    const [lead] = await tx.select().from(leads).where(eq(leads.id, leadId)).limit(1).for("update");
+    if (!lead) throw new Error("Lead nicht gefunden.");
+    if (user.role !== "admin" && lead.assignedEmployeeId !== user.id) throw new Error("Keine Berechtigung für diesen Lead.");
+
+    const parts = lead.name.trim().split(/\s+/);
+    const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] ?? null;
+    const lastName = parts.length > 1 ? parts.at(-1) ?? null : null;
+    const [created] = await tx.insert(customers).values({
+      customerNumber: customerNumber(),
+      type: "private",
+      firstName,
+      lastName,
+      email: lead.email,
+      phone: lead.phone,
+      city: lead.region,
+      preferredChannel: lead.preferredChannel,
+      ownerEmployeeId: lead.assignedEmployeeId ?? user.id,
+      createdFromLeadId: lead.id,
+      metadata: { source: lead.source ?? "website", topic: lead.topic },
+    }).returning();
+    await tx.insert(customerLeadLinks).values({ customerId: created.id, leadId: lead.id });
+    await writeAudit(tx, user.id, "customer.created_from_lead", "customer", created.id, undefined, {
+      customerNumber: created.customerNumber,
+      leadId: lead.id,
+    });
+    await emitEvent(tx, "customer.created", "customer", created.id, { leadId: lead.id, assignedEmployeeId: created.ownerEmployeeId });
+    return created;
+  });
+}
+
+export async function createCustomer(input: {
+  type?: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  postalCode?: string;
+  preferredChannel?: string;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [created] = await tx.insert(customers).values({
+      customerNumber: customerNumber(),
+      type: input.type === "business" ? "business" : "private",
+      firstName: input.firstName?.trim() || null,
+      lastName: input.lastName?.trim() || null,
+      companyName: input.companyName?.trim() || null,
+      email: input.email?.trim().toLowerCase() || null,
+      phone: input.phone?.trim() || null,
+      city: input.city?.trim() || null,
+      postalCode: input.postalCode?.trim() || null,
+      preferredChannel: input.preferredChannel?.trim() || null,
+      ownerEmployeeId: user.id,
+    }).returning();
+    await writeAudit(tx, user.id, "customer.created", "customer", created.id, undefined, { customerNumber: created.customerNumber });
+    await emitEvent(tx, "customer.created", "customer", created.id, { assignedEmployeeId: user.id });
+    return created;
+  });
+}
+
+export async function listCustomers(user: SessionUser, search?: string, limit = 100) {
+  const conditions = [customerAccess(user), isNull(customers.archivedAt)];
+  const q = search?.trim();
+  if (q) {
+    conditions.push(or(
+      ilike(customers.customerNumber, `%${q}%`),
+      ilike(customers.firstName, `%${q}%`),
+      ilike(customers.lastName, `%${q}%`),
+      ilike(customers.companyName, `%${q}%`),
+      ilike(customers.email, `%${q}%`),
+      ilike(customers.phone, `%${q}%`),
+    )!);
+  }
+  return db.select().from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(Math.max(1, Math.min(limit, 200)));
+}
+
+export async function getCustomer(id: number, user: SessionUser) {
+  const [customer] = await db.select().from(customers).where(and(eq(customers.id, id), customerAccess(user))).limit(1);
+  if (!customer) return null;
+  const [customerOrders, customerTasks] = await Promise.all([
+    db.select({
+      order: orders,
+      providerName: providers.name,
+      productName: products.name,
+    }).from(orders)
+      .leftJoin(providers, eq(orders.providerId, providers.id))
+      .leftJoin(products, eq(orders.productId, products.id))
+      .where(and(eq(orders.customerId, id), orderAccess(user)))
+      .orderBy(desc(orders.createdAt)),
+    db.select().from(tasks)
+      .where(and(eq(tasks.entityType, "customer"), eq(tasks.entityId, id), taskAccess(user)))
+      .orderBy(desc(tasks.createdAt)),
+  ]);
+  return { customer, orders: customerOrders, tasks: customerTasks };
+}
+
+export async function listCatalog() {
+  const [providerRows, productRows] = await Promise.all([
+    db.select().from(providers).where(eq(providers.active, true)).orderBy(providers.name),
+    db.select().from(products).where(eq(products.active, true)).orderBy(products.name),
+  ]);
+  return { providers: providerRows, products: productRows };
+}
+
+export async function listOrders(user: SessionUser, filter?: { status?: string; search?: string }, limit = 150) {
+  const conditions = [orderAccess(user)];
+  if (filter?.status) conditions.push(eq(orders.status, filter.status));
+  const search = filter?.search?.trim();
+  if (search) conditions.push(or(
+    ilike(orders.orderNumber, `%${search}%`),
+    ilike(orders.externalOrderId, `%${search}%`),
+    ilike(customers.customerNumber, `%${search}%`),
+    ilike(customers.firstName, `%${search}%`),
+    ilike(customers.lastName, `%${search}%`),
+    ilike(customers.companyName, `%${search}%`),
+  )!);
+  return db.select({
+    order: orders,
+    customer: customers,
+    providerName: providers.name,
+    productName: products.name,
+    advisorName: employees.name,
+  }).from(orders)
+    .innerJoin(customers, eq(orders.customerId, customers.id))
+    .innerJoin(providers, eq(orders.providerId, providers.id))
+    .leftJoin(products, eq(orders.productId, products.id))
+    .leftJoin(employees, eq(orders.advisorEmployeeId, employees.id))
+    .where(and(...conditions))
+    .orderBy(desc(orders.updatedAt))
+    .limit(Math.max(1, Math.min(limit, 300)));
+}
+
+export async function getOrder(id: number, user: SessionUser) {
+  const [row] = await db.select({
+    order: orders,
+    customer: customers,
+    providerName: providers.name,
+    productName: products.name,
+    advisorName: employees.name,
+  }).from(orders)
+    .innerJoin(customers, eq(orders.customerId, customers.id))
+    .innerJoin(providers, eq(orders.providerId, providers.id))
+    .leftJoin(products, eq(orders.productId, products.id))
+    .leftJoin(employees, eq(orders.advisorEmployeeId, employees.id))
+    .where(and(eq(orders.id, id), orderAccess(user)))
+    .limit(1);
+  if (!row) return null;
+  const [history, commissions, orderTasks] = await Promise.all([
+    db.select().from(orderStatusHistory).where(eq(orderStatusHistory.orderId, id)).orderBy(desc(orderStatusHistory.createdAt)),
+    db.select().from(commissionEvents).where(eq(commissionEvents.orderId, id)).orderBy(desc(commissionEvents.createdAt)),
+    db.select().from(tasks).where(and(eq(tasks.entityType, "order"), eq(tasks.entityId, id), taskAccess(user))).orderBy(desc(tasks.createdAt)),
+  ]);
+  return { ...row, history, commissions, tasks: orderTasks };
+}
+
+export async function createOrder(input: {
+  customerId?: number;
+  leadId?: number;
+  providerId: number;
+  productId?: number | null;
+  externalOrderId?: string;
+  expectedCommission?: string | number | null;
+  note?: string;
+}, user: SessionUser) {
+  let customerId = input.customerId;
+  if (!customerId && input.leadId) customerId = (await ensureCustomerForLead(input.leadId, user)).id;
+  if (!customerId) throw new Error("Kunde oder Lead fehlt.");
+
+  return db.transaction(async (tx) => {
+    const [customer] = await tx.select().from(customers).where(and(eq(customers.id, customerId!), customerAccess(user))).limit(1);
+    if (!customer) throw new Error("Kunde nicht gefunden.");
+    const [provider] = await tx.select().from(providers).where(and(eq(providers.id, input.providerId), eq(providers.active, true))).limit(1);
+    if (!provider) throw new Error("Provider nicht gefunden.");
+    let product: typeof products.$inferSelect | null = null;
+    if (input.productId) {
+      [product] = await tx.select().from(products).where(and(eq(products.id, input.productId), eq(products.providerId, provider.id), eq(products.active, true))).limit(1);
+      if (!product) throw new Error("Produkt nicht gefunden.");
+    }
+    const expected = input.expectedCommission === null || input.expectedCommission === undefined || input.expectedCommission === ""
+      ? product?.expectedCommission ?? null
+      : String(input.expectedCommission);
+    const [created] = await tx.insert(orders).values({
+      orderNumber: orderNumber(),
+      customerId: customer.id,
+      leadId: input.leadId ?? null,
+      providerId: provider.id,
+      productId: product?.id ?? null,
+      advisorEmployeeId: user.id,
+      createdByEmployeeId: user.id,
+      status: "draft",
+      externalOrderId: input.externalOrderId?.trim() || null,
+      expectedCommission: expected,
+      metadata: input.note ? { note: input.note } : undefined,
+    }).returning();
+    await tx.insert(orderStatusHistory).values({
+      orderId: created.id,
+      toStatus: "draft",
+      note: "Auftrag angelegt.",
+      actorEmployeeId: user.id,
+    });
+    if (expected) {
+      await tx.insert(commissionEvents).values({
+        orderId: created.id,
+        employeeId: user.id,
+        type: "sale",
+        status: "expected",
+        expectedAmount: expected,
+      });
+    }
+    await writeAudit(tx, user.id, "order.created", "order", created.id, undefined, {
+      orderNumber: created.orderNumber,
+      customerId: created.customerId,
+      providerId: created.providerId,
+      productId: created.productId,
+    });
+    await emitEvent(tx, "order.created", "order", created.id, {
+      assignedEmployeeId: user.id,
+      customerId: created.customerId,
+      providerId: created.providerId,
+    });
+    await runAutomationEvent(tx, "order.created", "order", created.id, { assignedEmployeeId: user.id }, user.id);
+    return created;
+  });
+}
+
+const STATUS_TIMESTAMPS: Record<string, "submittedAt" | "acceptedAt" | "activatedAt" | "cancelledAt" | undefined> = {
+  submitted: "submittedAt",
+  accepted: "acceptedAt",
+  active: "activatedAt",
+  cancelled: "cancelledAt",
+  storno: "cancelledAt",
+};
+
+export async function updateOrder(id: number, input: {
+  status?: string;
+  providerStatus?: string | null;
+  externalOrderId?: string | null;
+  cancellationReason?: string | null;
+  note?: string;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(orders).where(and(eq(orders.id, id), orderAccess(user))).limit(1).for("update");
+    if (!existing) throw new Error("Auftrag nicht gefunden.");
+    const patch: Partial<typeof orders.$inferInsert> = { updatedAt: new Date() };
+    if (input.status && input.status !== existing.status) {
+      patch.status = input.status;
+      const timestamp = STATUS_TIMESTAMPS[input.status];
+      if (timestamp) patch[timestamp] = new Date();
+      if ((input.status === "cancelled" || input.status === "storno") && input.cancellationReason) patch.cancellationReason = input.cancellationReason;
+    }
+    if (input.providerStatus !== undefined) patch.providerStatus = input.providerStatus || null;
+    if (input.externalOrderId !== undefined) patch.externalOrderId = input.externalOrderId?.trim() || null;
+    const [updated] = await tx.update(orders).set(patch).where(eq(orders.id, id)).returning();
+
+    if (input.status && input.status !== existing.status) {
+      await tx.insert(orderStatusHistory).values({
+        orderId: id,
+        fromStatus: existing.status,
+        toStatus: input.status,
+        providerStatus: input.providerStatus ?? updated.providerStatus,
+        note: input.note?.trim() || null,
+        actorEmployeeId: user.id,
+      });
+      if (["accepted", "active"].includes(input.status)) {
+        await tx.update(commissionEvents).set({
+          status: input.status === "active" ? "confirmed" : "provider_confirmed",
+          confirmedAmount: existing.expectedCommission,
+          updatedAt: new Date(),
+        }).where(and(eq(commissionEvents.orderId, id), eq(commissionEvents.type, "sale")));
+      }
+      if (["cancelled", "storno"].includes(input.status)) {
+        const [existingChargeback] = await tx.select({ id: commissionEvents.id }).from(commissionEvents)
+          .where(and(eq(commissionEvents.orderId, id), eq(commissionEvents.type, "chargeback"))).limit(1);
+        if (!existingChargeback) {
+          const amount = Number(existing.expectedCommission ?? 0);
+          await tx.insert(commissionEvents).values({
+            orderId: id,
+            employeeId: existing.advisorEmployeeId,
+            type: "chargeback",
+            status: "open",
+            expectedAmount: amount ? String(-Math.abs(amount)) : null,
+          });
+        }
+      }
+      if (input.status === "documents_missing") {
+        await tx.insert(tasks).values({
+          entityType: "order",
+          entityId: id,
+          assignedToEmployeeId: existing.advisorEmployeeId ?? user.id,
+          createdByEmployeeId: user.id,
+          type: "documents",
+          title: "Fehlende Unterlagen beim Kunden anfordern",
+          priority: "high",
+          dueAt: new Date(Date.now() + 24 * 60 * 60_000),
+        });
+      }
+      await emitEvent(tx, `order.status.${input.status}`, "order", id, {
+        assignedEmployeeId: existing.advisorEmployeeId ?? user.id,
+        previousStatus: existing.status,
+        status: input.status,
+      });
+      await runAutomationEvent(tx, `order.status.${input.status}`, "order", id, {
+        assignedEmployeeId: existing.advisorEmployeeId ?? user.id,
+        previousStatus: existing.status,
+        status: input.status,
+      }, user.id);
+    }
+    await writeAudit(tx, user.id, "order.updated", "order", id,
+      { status: existing.status, providerStatus: existing.providerStatus, externalOrderId: existing.externalOrderId },
+      { status: updated.status, providerStatus: updated.providerStatus, externalOrderId: updated.externalOrderId });
+    return updated;
+  });
+}
+
+export async function listTasks(user: SessionUser, status = "open") {
+  const conditions = [taskAccess(user)];
+  if (status !== "all") conditions.push(eq(tasks.status, status));
+  return db.select({
+    task: tasks,
+    assigneeName: employees.name,
+  }).from(tasks)
+    .leftJoin(employees, eq(tasks.assignedToEmployeeId, employees.id))
+    .where(and(...conditions))
+    .orderBy(sql`case when ${tasks.dueAt} is null then 1 else 0 end`, tasks.dueAt, desc(tasks.createdAt))
+    .limit(300);
+}
+
+export async function updateTask(id: number, input: { status?: string; dueAt?: Date | null; priority?: string }, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(tasks).where(and(eq(tasks.id, id), taskAccess(user))).limit(1).for("update");
+    if (!existing) throw new Error("Aufgabe nicht gefunden.");
+    const patch: Partial<typeof tasks.$inferInsert> = { updatedAt: new Date() };
+    if (input.status) {
+      patch.status = input.status;
+      patch.completedAt = input.status === "completed" ? new Date() : null;
+    }
+    if (input.dueAt !== undefined) patch.dueAt = input.dueAt;
+    if (input.priority) patch.priority = input.priority;
+    const [updated] = await tx.update(tasks).set(patch).where(eq(tasks.id, id)).returning();
+    await writeAudit(tx, user.id, "task.updated", "task", id,
+      { status: existing.status, dueAt: existing.dueAt, priority: existing.priority },
+      { status: updated.status, dueAt: updated.dueAt, priority: updated.priority });
+    return updated;
+  });
+}
+
+export async function getFinanceStats(user: SessionUser) {
+  const access = orderAccess(user);
+  const rows = await db.select({
+    status: commissionEvents.status,
+    expected: sql<string>`coalesce(sum(${commissionEvents.expectedAmount}),0)::text`,
+    confirmed: sql<string>`coalesce(sum(${commissionEvents.confirmedAmount}),0)::text`,
+    paid: sql<string>`coalesce(sum(${commissionEvents.paidAmount}),0)::text`,
+  }).from(commissionEvents)
+    .innerJoin(orders, eq(commissionEvents.orderId, orders.id))
+    .where(access)
+    .groupBy(commissionEvents.status);
+
+  const totals = rows.reduce((acc, row) => {
+    acc.expected += Number(row.expected);
+    acc.confirmed += Number(row.confirmed);
+    acc.paid += Number(row.paid);
+    return acc;
+  }, { expected: 0, confirmed: 0, paid: 0 });
+
+  const issues = user.role === "admin"
+    ? await db.select().from(reconciliationIssues).where(eq(reconciliationIssues.status, "open")).orderBy(desc(reconciliationIssues.createdAt)).limit(50)
+    : [];
+
+  return { ...totals, outstanding: totals.confirmed - totals.paid, byStatus: rows, issues };
+}
+
+export async function getEnterpriseReport(user: SessionUser, days = 30) {
+  const from = new Date(Date.now() - Math.max(1, Math.min(days, 365)) * 24 * 60 * 60_000);
+  const orderCondition = and(orderAccess(user), gte(orders.createdAt, from));
+  const [orderRows, providerRows, cycleRows, taskRows] = await Promise.all([
+    db.select({ status: orders.status, count: sql<number>`count(*)::int`, expected: sql<string>`coalesce(sum(${orders.expectedCommission}),0)::text` })
+      .from(orders).where(orderCondition).groupBy(orders.status),
+    db.select({ provider: providers.name, count: sql<number>`count(*)::int`, expected: sql<string>`coalesce(sum(${orders.expectedCommission}),0)::text` })
+      .from(orders).innerJoin(providers, eq(orders.providerId, providers.id)).where(orderCondition)
+      .groupBy(providers.name).orderBy(desc(sql`count(*)`)).limit(12),
+    db.select({
+      averageHours: sql<number>`coalesce(avg(extract(epoch from (${orders.activatedAt} - ${orders.createdAt})) / 3600),0)::float`,
+    }).from(orders).where(and(orderCondition, eq(orders.status, "active"))),
+    db.select({
+      open: sql<number>`count(*) filter (where ${tasks.status}='open')::int`,
+      overdue: sql<number>`count(*) filter (where ${tasks.status}='open' and ${tasks.dueAt} < now())::int`,
+    }).from(tasks).where(taskAccess(user)),
+  ]);
+  const total = orderRows.reduce((sum, row) => sum + row.count, 0);
+  const active = orderRows.find((row) => row.status === "active")?.count ?? 0;
+  const cancelled = orderRows.filter((row) => ["cancelled", "storno"].includes(row.status)).reduce((sum, row) => sum + row.count, 0);
+  return {
+    days,
+    totalOrders: total,
+    activeOrders: active,
+    cancellationRate: total ? Math.round((cancelled / total) * 1000) / 10 : 0,
+    expectedCommission: orderRows.reduce((sum, row) => sum + Number(row.expected), 0),
+    averageCycleHours: Math.round((cycleRows[0]?.averageHours ?? 0) * 10) / 10,
+    openTasks: taskRows[0]?.open ?? 0,
+    overdueTasks: taskRows[0]?.overdue ?? 0,
+    byStatus: orderRows,
+    byProvider: providerRows,
+  };
+}
+
+export async function listAuditEvents(limit = 100) {
+  return db.select({
+    event: auditEvents,
+    actorName: employees.name,
+  }).from(auditEvents)
+    .leftJoin(employees, eq(auditEvents.actorEmployeeId, employees.id))
+    .orderBy(desc(auditEvents.createdAt))
+    .limit(Math.max(1, Math.min(limit, 500)));
+}
+
+export async function listAutomations() {
+  return db.select().from(automationRules).orderBy(desc(automationRules.updatedAt));
+}
