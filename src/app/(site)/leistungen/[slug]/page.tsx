@@ -1,6 +1,6 @@
 import { JsonLd } from "@/components/security/JsonLd";
 import type { Metadata } from "next";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata, RELATED_SERVICE_KEYS } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -29,22 +29,52 @@ export default async function ServicePage({ params }: Props) {
   const s = getService(slug);
   if (!s) notFound();
   const img = SERVICE_IMAGES[s.key];
-  const others = SERVICES.filter((x) => x.key !== s.key).slice(0, 4);
+  const relatedKeys = RELATED_SERVICE_KEYS[s.key] ?? [];
+  const others = relatedKeys
+    .map((key) => SERVICES.find((service) => service.key === key))
+    .filter((service): service is (typeof SERVICES)[number] => Boolean(service))
+    .slice(0, 4);
 
   const serviceJsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
+    "@id": `${SITE.url}/leistungen/${s.slug}#service`,
+    url: `${SITE.url}/leistungen/${s.slug}`,
     name: `${s.name} – persönliche Beratung`,
     serviceType: s.name,
-    provider: { "@type": "Organization", name: SITE.name, url: SITE.url },
-    areaServed: REGIONS.map((r) => r),
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: { "@type": "Country", name: "Deutschland" },
     description: s.seoDescription,
-    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Kostenloses Erstgespräch" },
+    image: img ? `${SITE.url}${img.src}` : `${SITE.url}/opengraph-image`,
+    audience: [
+      { "@type": "PeopleAudience", audienceType: "Privatkunden" },
+      { "@type": "BusinessAudience", audienceType: "Selbstständige und Unternehmen" },
+    ],
+    offers: {
+      "@type": "Offer",
+      url: `${SITE.url}/anfrage?thema=${encodeURIComponent(s.name)}`,
+      price: "0",
+      priceCurrency: "EUR",
+      availability: "https://schema.org/InStock",
+      description: "Kostenlose und unverbindliche Erstorientierung",
+      offeredBy: { "@id": `${SITE.url}/#organization` },
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Startseite", item: `${SITE.url}/` },
+      { "@type": "ListItem", position: 2, name: "Leistungen", item: `${SITE.url}/leistungen` },
+      { "@type": "ListItem", position: 3, name: s.name, item: `${SITE.url}/leistungen/${s.slug}` },
+    ],
   };
 
   return (
     <>
       <JsonLd data={serviceJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <section className="relative overflow-hidden bg-ink pt-[120px] pb-20 text-white grain sm:pt-[140px]">
         <div className="absolute inset-0 grid-lines" aria-hidden />
         {img && (

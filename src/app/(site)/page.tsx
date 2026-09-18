@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
 import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
@@ -15,27 +15,52 @@ import {
   AudienceTrustStrip,
 } from "@/components/home/AudienceSections";
 import { Founder } from "@/components/home/Sections";
-import { FAQ } from "@/lib/content";
+import { AUDIENCE_COPY } from "@/lib/audience-copy";
+import { SERVICES, SITE } from "@/lib/content";
+import { homeAudienceMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata("/");
+type Props = { searchParams: Promise<{ audience?: string | string[] }> };
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQ.slice(0, 5).map((f) => ({
-    "@type": "Question",
-    name: f.q,
-    acceptedAnswer: { "@type": "Answer", text: f.a },
-  })),
-};
+function resolveAudience(raw: string | string[] | undefined): AudienceMode {
+  return (Array.isArray(raw) ? raw[0] : raw) === "b2b" ? "b2b" : "b2c";
+}
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
-  const rawAudience = (await searchParams).audience;
-  const initialAudience: AudienceMode = (Array.isArray(rawAudience) ? rawAudience[0] : rawAudience) === "b2b" ? "b2b" : "b2c";
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return homeAudienceMetadata(resolveAudience((await searchParams).audience));
+}
+
+export default async function HomePage({ searchParams }: Props) {
+  const initialAudience = resolveAudience((await searchParams).audience);
+  const faq = AUDIENCE_COPY[initialAudience].faq.items;
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${SITE.url}/#faq`,
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+
+  const serviceListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${SITE.url}/#services`,
+    name: "TarifWerk Leistungen",
+    itemListElement: SERVICES.map((service, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${SITE.url}/leistungen/${service.slug}`,
+      name: service.name,
+    })),
+  };
 
   return (
     <>
       <JsonLd data={faqJsonLd} />
+      <JsonLd data={serviceListJsonLd} />
       <AudienceProvider initialAudience={initialAudience}>
         <Hero />
         <AudienceTrustStrip />

@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { QuickContact } from "@/components/site/QuickContact";
-import { REGIONS, SITE } from "@/lib/content";
+import { REGIONS, SERVICES, SITE } from "@/lib/content";
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": ["Organization", "ProfessionalService"],
+  "@type": ["Organization", "LocalBusiness", "ProfessionalService"],
   "@id": `${SITE.url}/#organization`,
   name: SITE.name,
   alternateName: ["TarifWerk Wiesbaden", "Tarif Werk"],
@@ -15,25 +15,70 @@ const organizationJsonLd = {
   logo: {
     "@type": "ImageObject",
     url: `${SITE.url}/assets/logo-symbol.jpg`,
+    width: 53,
+    height: 38,
   },
-  image: `${SITE.url}/assets/architecture.webp`,
+  image: `${SITE.url}/opengraph-image`,
   email: SITE.email,
   telephone: "+49 157 82301076",
-  founder: { "@type": "Person", name: SITE.founder, jobTitle: SITE.founderTitle },
-  address: { "@type": "PostalAddress", addressLocality: SITE.hq, addressRegion: "Hessen", addressCountry: "DE" },
-  areaServed: [
-    ...REGIONS.filter((r) => !r.startsWith("Deutschlandweit")).map((r) => ({ "@type": "City", name: r as string })),
-    { "@type": "Country", name: "Deutschland" },
-  ],
-  openingHours: "Mo-Su 08:00-22:00",
-  priceRange: "Kostenlose Erstberatung",
-  slogan: SITE.claim,
+  slogan: "Beratung auf Augenhöhe",
   description:
-    "TarifWerk aus Wiesbaden bietet persönliche Beratung zu Internet, Mobilfunk, Strom, Gas, Solar, Photovoltaik, Wärmepumpe, Versicherungen, Immobilien, Edelmetallen, Klimaanlagen und Sicherheitslösungen – digital deutschlandweit.",
-  knowsAbout: ["Internet", "Glasfaser", "Mobilfunk", "TV", "Strom", "Gas", "Photovoltaik", "Solar", "Wärmepumpe", "Versicherungen", "Immobilien", "Edelmetalle", "Klimaanlagen", "Sicherheitslösungen"],
+    "TarifWerk aus Wiesbaden bietet persönliche Beratung zu Internet, Mobilfunk, TV, Strom, Gas, Photovoltaik, Wärmepumpe, Versicherungen, Immobilien, Edelmetallen, Klimaanlagen und Sicherheitslösungen – digital deutschlandweit.",
+  founder: {
+    "@type": "Person",
+    name: SITE.founder,
+    jobTitle: SITE.founderTitle,
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: SITE.hq,
+    addressRegion: "Hessen",
+    addressCountry: "DE",
+  },
+  areaServed: [
+    { "@type": "Country", name: "Deutschland" },
+    ...REGIONS.filter((region) => !region.startsWith("Deutschlandweit")).map((region) => ({
+      "@type": "City",
+      name: region,
+    })),
+  ],
+  openingHoursSpecification: [{
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    opens: "08:00",
+    closes: "22:00",
+  }],
+  contactPoint: [{
+    "@type": "ContactPoint",
+    telephone: "+49 157 82301076",
+    email: SITE.email,
+    contactType: "customer service",
+    areaServed: "DE",
+    availableLanguage: ["de"],
+  }],
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "TarifWerk Beratungsleistungen",
+    itemListElement: SERVICES.map((service) => ({
+      "@type": "Offer",
+      url: `${SITE.url}/leistungen/${service.slug}`,
+      price: "0",
+      priceCurrency: "EUR",
+      description: "Kostenlose Erstorientierung",
+      itemOffered: {
+        "@type": "Service",
+        name: service.name,
+        serviceType: service.name,
+        url: `${SITE.url}/leistungen/${service.slug}`,
+        provider: { "@id": `${SITE.url}/#organization` },
+        areaServed: { "@type": "Country", name: "Deutschland" },
+      },
+    })),
+  },
 };
 
 const websiteJsonLd = {
+  "@context": "https://schema.org",
   "@type": "WebSite",
   "@id": `${SITE.url}/#website`,
   url: `${SITE.url}/`,
@@ -46,7 +91,8 @@ const websiteJsonLd = {
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <JsonLd data={{ "@context": "https://schema.org", "@graph": [organizationJsonLd, websiteJsonLd] }} />
+      <JsonLd data={organizationJsonLd} />
+      <JsonLd data={websiteJsonLd} />
       <Header />
       <main id="main" className="pb-[68px] md:pb-0">
         {children}

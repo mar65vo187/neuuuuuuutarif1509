@@ -68,8 +68,8 @@ export const AUDIENCE_COPY: Record<AudienceMode, {
   b2c: {
     hero: {
       eyebrow: "TarifWerk · Persönliche Beratung · deutschlandweit",
-      lines: ["Verträge verstehen.", "Klarheit", "Persönlich begleitet."],
-      emphasis: "gewinnen.",
+      lines: ["Persönliche Beratung für", "Tarife, Energie &", "Deutschlandweit."],
+      emphasis: "Versicherungen.",
       body: "Von Alltagstarifen bis zu großen Entscheidungen: Wir prüfen deine Möglichkeiten, erklären verständlich und bleiben dein Ansprechpartner – auch danach.",
       primary: "Kostenlos beraten lassen",
       primaryHref: "#berater-auswahl",
@@ -178,8 +178,8 @@ export const AUDIENCE_COPY: Record<AudienceMode, {
   b2b: {
     hero: {
       eyebrow: "TarifWerk Business · Persönliche Betreuung · deutschlandweit",
-      lines: ["Betriebskosten verstehen.", "Potenziale", "Strukturiert begleitet."],
-      emphasis: "heben.",
+      lines: ["Business-Beratung für", "Telekommunikation, Energie &", "Deutschlandweit."],
+      emphasis: "Verträge.",
       body: "Von Telekommunikation und Energie bis zu Absicherung, Immobilien und technischen Lösungen: Wir strukturieren Ihren Bedarf, koordinieren passende Optionen und schaffen einen klaren Entscheidungsweg.",
       primary: "Unternehmensangebot anfragen",
       primaryHref: "/anfrage?audience=b2b",
