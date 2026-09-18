@@ -32,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Upgrade patched Next.js line
-        run: npm install --save-exact next@16.3.5 eslint-config-next@16.3.5
+        run: npm install --save-exact next@16.3.5 eslint-config-next@16.3.5 sharp@0.35.4
 
       - name: Runtime vulnerability gate
         run: npm audit --omit=dev --audit-level=high
@@ -49,5 +49,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
-          git commit -m "security: upgrade Next.js to 16.3.5"
+          git commit -m "security: upgrade Next.js and Sharp"
           git push origin HEAD:${{ github.ref_name }}
