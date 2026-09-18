@@ -50,7 +50,7 @@ export function FocusSection() {
           </Reveal>
           <Reveal className="lg:col-span-5" delay={0.1}>
             <p className="text-[16.5px] leading-relaxed text-steel">
-              TarifWerk bringt Klarheit in deine Möglichkeiten. Mit einem Menschen, der an deiner Seite bleibt.
+              TarifWerk bringt Klarheit in Ihre Möglichkeiten. Mit einem Menschen, der an Ihrer Seite bleibt.
             </p>
           </Reveal>
         </div>
@@ -109,7 +109,7 @@ export function EverydaySection() {
           <div>
             <p className="eyebrow text-electric-deep">Und alles, was den Alltag betrifft</p>
             <h2 className="mt-3 text-[clamp(1.7rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">
-              Dein Alltag. Verständlich sortiert.
+              Ihr Alltag. Verständlich sortiert.
             </h2>
           </div>
           <p className="max-w-md text-[15.5px] text-steel">
@@ -147,15 +147,15 @@ export function Manifesto() {
   const principles = [
     {
       t: "Persönlich statt Hotline",
-      d: "Du sprichst mit einem Menschen, der deine Situation kennt – vor, während und nach der Entscheidung.",
+      d: "Sie sprechen mit einem Menschen, der Ihre Situation kennt – vor, während und nach der Entscheidung.",
     },
     {
       t: "Unabhängig statt gebunden",
-      d: "Wir arbeiten mit vielen großen und kleineren Marktteilnehmern. Empfohlen wird, was zu dir passt.",
+      d: "Wir arbeiten mit vielen großen und kleineren Marktteilnehmern. Empfohlen wird, was zu Ihnen passt.",
     },
     {
       t: "Ehrlich statt überredet",
-      d: "Wir sagen dir, wenn etwas nicht lohnt. Auch wenn wir daran nichts verdienen.",
+      d: "Wir sagen Ihnen, wenn etwas nicht lohnt. Auch wenn wir daran nichts verdienen.",
     },
   ];
   return (
@@ -169,7 +169,7 @@ export function Manifesto() {
             <span className="display-i font-normal text-champagne-soft">freundlichem Gesicht.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-[16.5px] leading-relaxed text-silver">
-            Ein neuer Vertrag ist ein Anfang. Gute Beratung geht weiter. Wir kennen deine Situation, denken Zusammenhänge mit und sind erreichbar, wenn das Leben neue Fragen stellt.
+            Ein neuer Vertrag ist ein Anfang. Gute Beratung geht weiter. Wir kennen Ihre Situation, denken Zusammenhänge mit und sind erreichbar, wenn das Leben neue Fragen stellt.
           </p>
         </Reveal>
 
@@ -189,7 +189,7 @@ export function Manifesto() {
           <div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
             <p className="eyebrow text-platinum">Transparenz</p>
             <p className="text-[15.5px] leading-relaxed text-silver">
-              <span className="font-semibold text-white">So verdienen wir:</span> Erstorientierung und Tarifcheck sind kostenfrei. Bei erfolgreicher Vermittlung erhalten wir eine Provision vom jeweiligen Anbieter. Die konkreten Vergütungsbedingungen erklären wir dir im Gespräch.
+              <span className="font-semibold text-white">So verdienen wir:</span> Erstorientierung und Tarifcheck sind kostenfrei. Bei erfolgreicher Vermittlung erhalten wir eine Provision vom jeweiligen Anbieter. Die konkreten Vergütungsbedingungen erklären wir Ihnen im Gespräch.
             </p>
           </div>
         </Reveal>
@@ -277,7 +277,7 @@ export function Founder() {
             <div className="mt-5 max-w-2xl space-y-4 text-[15.5px] leading-relaxed text-steel">
               <p>
                 Marvin Noel Egenolf hat TarifWerk aufgebaut, um mehrere Vertrags-, Versorgungs- und Entscheidungsthemen
-                an einem Ort zusammenzubringen. So musst du bei jedem neuen Thema nicht wieder von vorne anfangen.
+                an einem Ort zusammenzubringen. So müssen Sie bei jedem neuen Thema nicht wieder von vorne anfangen.
               </p>
               <p>
                 Der Anspruch ist einfach: zuhören, sauber erklären, eine klare Empfehlung geben und auch nach der
@@ -310,10 +310,10 @@ export function FaqSection() {
         <Reveal className="lg:col-span-4">
           <p className="eyebrow text-electric-deep">Häufige Fragen</p>
           <h2 className="mt-4 text-[clamp(1.9rem,3.6vw,2.8rem)] font-extrabold leading-[1.05] text-ink">
-            Was du vorher wissen willst.
+            Was Sie vorher wissen möchten.
           </h2>
           <p className="mt-4 text-[15.5px] leading-relaxed text-steel">
-            Nicht dabei? Schreib uns – die Antwort kommt persönlich.
+            Nicht dabei? Schreiben Sie uns – die Antwort kommt persönlich.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button href={whatsappLink("Hallo TarifWerk, ich habe eine Frage:")} target="_blank" variant="dark" size="sm" icon={<MessageCircle />}>
@@ -344,7 +344,7 @@ export function FinalCta() {
         <Reveal className="mx-auto max-w-3xl text-center">
           <Quote className="mx-auto h-8 w-8 text-champagne" />
           <h2 className="mt-4 text-[clamp(2.1rem,5vw,4rem)] font-extrabold leading-[1.0]">
-            Sag uns, worum es geht.
+            Sagen Sie uns, worum es geht.
             <br />
             <span className="display-i font-normal text-platinum">Wir bringen Klarheit rein.</span>
           </h2>
