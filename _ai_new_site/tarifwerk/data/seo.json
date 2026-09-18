@@ -1,0 +1,124 @@
+{
+  "purpose": "Route inventory; Next.js metadata exports remain authoritative",
+  "routes": [
+    {
+      "path": "/",
+      "source": "src/app/layout.tsx",
+      "title": "TarifWerk – Persönliche Beratung auf Augenhöhe | Immobilien, Solar, Energie & mehr"
+    },
+    {
+      "path": "/leistungen/internet-glasfaser-tv",
+      "title": "Internet, Mobilfunk, TV | Persönliche Beratung bei TarifWerk",
+      "description": "Internet inklusive Glasfaser, Mobilfunk und TV: Wir prüfen mit dir Verfügbarkeit, Netz, Datenvolumen, Nutzung und Vertragsbedingungen. Damit deine Verbindung zu deinem Alltag oder deinem Unternehmen passt.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/internet-glasfaser-tv"
+    },
+    {
+      "path": "/leistungen/strom-gas",
+      "title": "Strom & Gas | Persönliche Beratung bei TarifWerk",
+      "description": "Wir schauen auf Verbrauch, Konditionen und Kündigungsfristen. Du erfährst, welche Optionen zu dir passen und ob ein Wechsel sinnvoll ist.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/strom-gas"
+    },
+    {
+      "path": "/leistungen/versicherungen",
+      "title": "Versicherungen | Persönliche Beratung bei TarifWerk",
+      "description": "Welche Risiken möchtest du absichern? Wir sortieren mit dir vorhandene Verträge und deinen Bedarf und binden passende Fachpartner ein.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/versicherungen"
+    },
+    {
+      "path": "/leistungen/sicherheitsloesungen",
+      "title": "Sicherheitslösungen | Persönliche Beratung bei TarifWerk",
+      "description": "Alarmanlagen, Überwachung und Smart Home: Wir klären deinen Bedarf und helfen bei der Einordnung passender Lösungen und Fachpartner.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/sicherheitsloesungen"
+    },
+    {
+      "path": "/leistungen/klimaanlagen",
+      "title": "Klimaanlagen | Persönliche Beratung bei TarifWerk",
+      "description": "Raumgröße, Nutzung und Budget bestimmen, welche Klimaanlage passt. Wir helfen dir bei der Orientierung und der Abstimmung mit Fachpartnern.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/klimaanlagen"
+    },
+    {
+      "path": "/leistungen/solar-photovoltaik",
+      "title": "Solar (Photovoltaik) & Wärmepumpe | Persönliche Beratung bei TarifWerk",
+      "description": "Passt eine Solaranlage mit Wärmepumpe zu deinem Zuhause? Wir betrachten Dach, Gebäude, Verbrauch, Budget und Angebote gemeinsam und stimmen die nächsten Schritte mit passenden Fachpartnern ab.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/solar-photovoltaik"
+    },
+    {
+      "path": "/leistungen/edelmetalle",
+      "title": "Edelmetalle | Persönliche Beratung bei TarifWerk",
+      "description": "Gold, Silber und weitere Edelmetalle verständlich einordnen. Gemeinsam sprechen wir über Möglichkeiten, Kosten und Risiken – ohne Renditeversprechen.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/edelmetalle"
+    },
+    {
+      "path": "/leistungen/immobilien",
+      "title": "Immobilien | Persönliche Beratung bei TarifWerk",
+      "description": "Eigenheim, Kapitalanlage oder eine erste Orientierung: Wir sortieren deine Fragen und bringen dich mit passenden Fachpartnern zusammen.",
+      "canonical": "https://www.tarifwerk.eu/leistungen/immobilien"
+    },
+    {
+      "path": "/agb",
+      "canonical": "https://www.tarifwerk.eu/agb",
+      "source": "src/app/(site)/agb/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/anfrage",
+      "canonical": "https://www.tarifwerk.eu/anfrage",
+      "source": "src/app/(site)/anfrage/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/berater",
+      "canonical": "https://www.tarifwerk.eu/berater",
+      "source": "src/app/(site)/berater/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/datenschutz",
+      "canonical": "https://www.tarifwerk.eu/datenschutz",
+      "source": "src/app/(site)/datenschutz/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/faq",
+      "canonical": "https://www.tarifwerk.eu/faq",
+      "source": "src/app/(site)/faq/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/freund-werben",
+      "canonical": "https://www.tarifwerk.eu/freund-werben",
+      "source": "src/app/(site)/freund-werben/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/freund-werben/status",
+      "canonical": "https://www.tarifwerk.eu/freund-werben/status",
+      "source": "src/app/(site)/freund-werben/status/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/impressum",
+      "canonical": "https://www.tarifwerk.eu/impressum",
+      "source": "src/app/(site)/impressum/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/karriere",
+      "canonical": "https://www.tarifwerk.eu/karriere",
+      "source": "src/app/(site)/karriere/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/leistungen",
+      "canonical": "https://www.tarifwerk.eu/leistungen",
+      "source": "src/app/(site)/leistungen/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    },
+    {
+      "path": "/ueber-uns",
+      "canonical": "https://www.tarifwerk.eu/ueber-uns",
+      "source": "src/app/(site)/ueber-uns/page.tsx",
+      "metadata": "Read from the linked route source; dynamic metadata is resolved at request time."
+    }
+  ]
+}

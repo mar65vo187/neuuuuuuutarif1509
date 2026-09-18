@@ -1,0 +1,39 @@
+{
+  "authTestGroups": 5,
+  "integration": {
+    "passed": 21,
+    "checks": [
+      "Migration installs empty database and repeats without changes",
+      "Explicit administrator setup is idempotent",
+      "Anonymous requests cannot access portal or administration; deep links are preserved",
+      "Case-insensitive login, persistent cookie and admin page",
+      "User and public profile created atomically; duplicate emails roll back",
+      "RBAC, self-demotion prevention and CSRF rejection",
+      "Multipart upload, real image decoding, durable storage, profile display and ETag",
+      "Corrupt images and unauthorized uploads rejected",
+      "Lead submission, confirmation validation, ownership and audit notes",
+      "Advisors cannot read applications or take another advisor’s assigned lead",
+      "Team chat saves and retrieves messages",
+      "Referral registration requires consent; private token is hashed and public code cannot read status",
+      "Referral attribution is optional, excludes self-referrals and counts duplicate email once",
+      "Referral dashboard counts follow actual portal status; shared routes render",
+      "24 public pages, services, repeated query parameters, admin alias and genuine 404",
+      "Server restart preserves authenticated sessions and profile image storage",
+      "Password changes revoke existing sessions",
+      "Image removal clears both profile reference and stored data",
+      "Admin deletion rejects unauthorized/self requests, revokes sessions, removes sole profile and retains private leads and chat",
+      "Referral links and counts survive server restart and unrelated account deletion",
+      "Logout expires the session cookie"
+    ]
+  },
+  "build": "passed",
+  "lint": {
+    "errors": 0,
+    "existingLogoWarnings": 2
+  },
+  "sourceAttributeAudit": {
+    "tsxFiles": 43,
+    "unchanged": "All original className, style, animation, href, src and action attributes retained in order; additive referral consent and footer link are allowed"
+  },
+  "browserTest": "not performed"
+}

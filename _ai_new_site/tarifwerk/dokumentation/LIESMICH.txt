@@ -1,0 +1,14 @@
+TarifWerk – repariertes Serverprojekt
+
+Die vollständige Website einschließlich Portal, Benutzer-/Beraterverwaltung mit Löschfunktion, Profilbild-Upload und Empfehlungsprogramm liegt unter quellcode.
+Die Start- und Einrichtungsanleitung steht in quellcode/README.md.
+
+index.html und assets sind die bytegenau unveränderte statische Startseiten-Vorschau aus neu.zip. Diese Vorschau enthält keinen eigenen Server und keine Datenbank. Für funktionierende Unterseiten, Anmeldung und Upload muss das Next.js-Projekt ausgeführt werden.
+
+Empfehlungsprogramm: /freund-werben. Keine erfundenen Rabatte, keine automatischen Auszahlungen.
+
+Verwaltung nach Anmeldung: /portal/verwaltung; alternativ /admin.
+Produktive Datenbankverbindung, eigenes Session-Geheimnis und ein selbst gewähltes Admin-Passwort sind erforderlich. Keine Standardzugänge enthalten.
+
+Nicht veröffentlicht. Die vollständige Geschäftsadresse fehlt im gelieferten Impressum und muss vor dem Livegang ergänzt werden.
+Details zu tatsächlich durchgeführten Prüfungen: PRUEFBERICHT.md.
