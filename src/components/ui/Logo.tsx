@@ -1,15 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
 
 type Props = { className?: string; size?: number; withWordmark?: boolean; tone?: "light" | "dark"; href?: string; imageSrc?: string };
 
 export function LogoMark({ size = 36, className = "" }: { size?: number; className?: string }) {
   return (
-    <img
+    <Image
       src="/assets/logo-symbol.jpg"
       width={size}
       height={size}
+      sizes={`${size}px`}
       alt="TarifWerk"
-      decoding="async"
+      unoptimized
+      draggable={false}
       style={{ width: size, height: size, objectFit: "contain" }}
       className={className}
     />
@@ -23,9 +26,19 @@ export function Logo({ className = "", size = 34, withWordmark = true, tone = "l
     <Link href={href} className={`group inline-flex items-center gap-3 ${className}`} aria-label="TarifWerk – Startseite">
       <span className="relative inline-flex">
         {imageSrc ? (
-          <img src={imageSrc} width={size} height={size} alt="" decoding="async" style={{ width: size, height: size, objectFit: "contain" }} className="transition-transform duration-500 ease-premium group-hover:rotate-[-6deg] group-hover:scale-105" />
+          <Image
+            src={imageSrc}
+            width={size}
+            height={size}
+            sizes={`${size}px`}
+            alt=""
+            unoptimized
+            draggable={false}
+            style={{ width: size, height: size, objectFit: "contain" }}
+            className="transition-transform duration-300 ease-premium group-hover:rotate-[-6deg] group-hover:scale-105"
+          />
         ) : (
-          <LogoMark size={size} className="transition-transform duration-500 ease-premium group-hover:rotate-[-6deg] group-hover:scale-105" />
+          <LogoMark size={size} className="transition-transform duration-300 ease-premium group-hover:rotate-[-6deg] group-hover:scale-105" />
         )}
       </span>
       {withWordmark && (

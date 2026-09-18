@@ -510,6 +510,7 @@ export async function listTasks(user: SessionUser, status = "open") {
   return db.select({
     task: tasks,
     assigneeName: employees.name,
+    overdue: sql<boolean>`coalesce(${tasks.status} = 'open' and ${tasks.dueAt} is not null and ${tasks.dueAt} < now(), false)`,
   }).from(tasks)
     .leftJoin(employees, eq(tasks.assignedToEmployeeId, employees.id))
     .where(and(...conditions))
