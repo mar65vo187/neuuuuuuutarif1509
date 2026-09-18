@@ -20,7 +20,7 @@ const organizationJsonLd = {
   },
   image: `${SITE.url}/opengraph-image`,
   email: SITE.email,
-  telephone: SITE.phone,
+  telephone: "+49 157 82301076",
   slogan: "Beratung auf Augenhöhe",
   description: "TarifWerk bietet persönliche Beratung zu Internet, Mobilfunk, TV, Strom, Gas, Photovoltaik, Wärmepumpe, Versicherungen, Immobilien, Edelmetallen, Klimaanlagen und Sicherheitslösungen.",
   founder: {
@@ -43,7 +43,7 @@ const organizationJsonLd = {
   ],
   contactPoint: [{
     "@type": "ContactPoint",
-    telephone: SITE.phone,
+    telephone: "+49 157 82301076",
     email: SITE.email,
     contactType: "customer service",
     areaServed: "DE",
