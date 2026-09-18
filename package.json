@@ -42,11 +42,14 @@
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.3.5",
-    "postcss": "8.5.8",
+    "postcss": "8.5.28",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3"
   },
   "engines": {
     "node": ">=20.9.0"
+  },
+  "overrides": {
+    "esbuild": "0.28.2"
   }
 }
