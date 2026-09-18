@@ -111,7 +111,7 @@ export const SERVICES: Service[] = [
     ],
     "faq": [
       {
-        "q": "Kümmert ihr euch um den Wechsel?",
+        "q": "Kümmern Sie sich um den Wechsel?",
         "a": "Wenn Sie möchten, begleiten wir den kompletten Prozess."
       }
     ],
@@ -146,7 +146,7 @@ export const SERVICES: Service[] = [
       }
     ],
     "seoTitle": "Versicherungen verständlich prüfen | TarifWerk",
-    "seoDescription": "Lassen Sie bestehende Versicherungen und Ihren Absicherungsbedarf verständlich einordnen. Frage jetzt dein Erstgespräch mit TarifWerk an.",
+    "seoDescription": "Lassen Sie bestehende Versicherungen und Ihren Absicherungsbedarf verständlich einordnen. Fragen Sie jetzt Ihr Erstgespräch mit TarifWerk an.",
     "tickerLabel": "Versicherungen"
   },
   {
