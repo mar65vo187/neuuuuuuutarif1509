@@ -19,10 +19,10 @@ export default async function AdvisorsPage() {
         eyebrow="Berater finden"
         title={
           <>
-            Ein Mensch, der <span className="display-i font-normal text-champagne-soft">zu dir</span> passt – nicht irgendein Kontaktformular.
+            Ein Mensch, der <span className="display-i font-normal text-champagne-soft">zu Ihnen</span> passt – nicht irgendein Kontaktformular.
           </>
         }
-        text="Wähle dein Thema und deine Region. Du siehst sofort, wer dich begleiten kann – mit Schwerpunkten, Kontaktwegen und direkter Terminanfrage."
+        text="Wählen Sie Ihr Thema und Ihre Region. Sie sehen sofort, wer Sie begleiten kann – mit Schwerpunkten, Kontaktwegen und direkter Terminanfrage."
         compact
       />
       <section className="bg-paper pb-24">
@@ -34,8 +34,8 @@ export default async function AdvisorsPage() {
             <p className="eyebrow text-electric-deep">Das Team wächst</p>
             <h2 className="mt-3 text-[clamp(1.5rem,3vw,2.2rem)] font-extrabold text-ink">Wir nehmen lieber wenige richtige Berater als viele schnelle.</h2>
             <p className="mt-3 max-w-2xl text-[15.5px] leading-relaxed text-steel">
-              Jeder Berater bei TarifWerk arbeitet nach denselben Grundsätzen: verständlich erklären, unabhängig einordnen, erreichbar bleiben. Du
-              möchtest Teil davon werden? <a href="/karriere" className="font-semibold text-electric-deep underline underline-offset-2">Hier erfährst du mehr.</a>
+              Jeder Berater bei TarifWerk arbeitet nach denselben Grundsätzen: verständlich erklären, unabhängig einordnen, erreichbar bleiben. Sie
+              möchten Teil davon werden? <a href="/karriere" className="font-semibold text-electric-deep underline underline-offset-2">Hier erfahren Sie mehr.</a>
             </p>
           </Reveal>
         </div>
