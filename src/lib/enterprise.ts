@@ -20,6 +20,7 @@ import {
   type Customer,
 } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
+import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -494,6 +495,7 @@ export async function updateOrder(id: number, input: {
         previousStatus: existing.status,
         status: input.status,
       }, user.id);
+      await syncReferralRewardForOrder(tx, id, input.status, user.id);
     }
     await writeAudit(tx, user.id, "order.updated", "order", id,
       { status: existing.status, providerStatus: existing.providerStatus, externalOrderId: existing.externalOrderId },

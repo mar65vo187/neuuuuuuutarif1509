@@ -15,6 +15,7 @@ import {
   AudienceTrustStrip,
 } from "@/components/home/AudienceSections";
 import { Founder } from "@/components/home/Sections";
+import { ReferralHomeTeaser } from "@/components/referrals/ReferralRewards";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
 import { SERVICES, SITE } from "@/lib/content";
 import { homeAudienceMetadata } from "@/lib/seo";
@@ -69,6 +70,7 @@ export default async function HomePage({ searchParams }: Props) {
         <AudienceEverydaySection />
         <AudienceManifesto />
         <AudienceProofSection />
+        <ReferralHomeTeaser />
         <FinderTeaser />
         <AudienceProcess />
         <Founder />
