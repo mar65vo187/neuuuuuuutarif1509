@@ -1,0 +1,85 @@
+name: Extract AI website package
+
+on:
+  push:
+    branches:
+      - integration/new-ai-site
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    if: ${{ !contains(github.event.head_commit.message, '[skip extract]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Safely extract source package
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import shutil, zipfile
+
+          src = Path("tarifwerk new.zip")
+          out = Path("_ai_new_site")
+          if out.exists():
+              shutil.rmtree(out)
+          out.mkdir()
+
+          blocked_parts = {
+              "node_modules", ".next", ".git", ".turbo", "dist", "build",
+              "coverage", ".cache", ".vercel"
+          }
+          extracted = []
+          skipped = []
+
+          with zipfile.ZipFile(src) as z:
+              infos = z.infolist()
+              for info in infos:
+                  name = info.filename.replace("\\", "/")
+                  p = PurePosixPath(name)
+                  if not name or name.endswith("/"):
+                      continue
+                  if p.is_absolute() or ".." in p.parts:
+                      raise SystemExit(f"Unsafe ZIP path: {name}")
+                  if any(part in blocked_parts for part in p.parts):
+                      skipped.append(name)
+                      continue
+                  if info.file_size > 20 * 1024 * 1024:
+                      skipped.append(name)
+                      continue
+                  target = out.joinpath(*p.parts)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with z.open(info) as src_f, open(target, "wb") as dst_f:
+                      shutil.copyfileobj(src_f, dst_f)
+                  extracted.append((name, info.file_size))
+
+          lines = [
+              "# tarifwerk new.zip contents",
+              "",
+              f"Extracted files: {len(extracted)}",
+              f"Skipped files: {len(skipped)}",
+              "",
+              "## Extracted",
+          ]
+          lines += [f"- {name} ({size} bytes)" for name, size in extracted]
+          if skipped:
+              lines += ["", "## Skipped"] + [f"- {name}" for name in skipped]
+          (out / "ZIP_CONTENTS.md").write_text("\n".join(lines), encoding="utf-8")
+          PY
+
+      - name: Commit extracted package
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _ai_new_site
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore: extract AI website package [skip extract]"
+          git push
