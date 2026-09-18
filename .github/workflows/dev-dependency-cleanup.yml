@@ -31,10 +31,10 @@ jobs:
       - name: Install current lockfile
         run: npm ci
 
-      - name: Pin patched esbuild transitively
+      - name: Pin patched build dependencies
         run: |
           npm pkg set overrides.esbuild=0.28.2
-          npm install
+          npm install --save-exact postcss@8.5.28
 
       - name: Full dependency vulnerability gate
         run: npm audit --audit-level=moderate
@@ -54,5 +54,5 @@ jobs:
             echo "No dependency changes."
             exit 0
           fi
-          git commit -m "security: pin patched esbuild"
+          git commit -m "security: harden build dependencies"
           git push origin HEAD:${{ github.ref_name }}
