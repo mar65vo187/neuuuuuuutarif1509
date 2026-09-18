@@ -66,28 +66,6 @@ jobs:
       - name: Apply all migrations
         run: npm run db:migrate
       - name: Verify enterprise tables exist
-        shell: node {0}
-        run: |
-          import pg from "pg";
-          const required = [
-            "employees","advisors","leads","team_messages","referrers","referrals",
-            "customers","customer_lead_links","providers","products","orders","order_status_history",
-            "commission_events","tasks","audit_events","automation_rules","automation_runs",
-            "outbox_events","notification_queue","reconciliation_issues","mfa_credentials","login_events",
-            "referral_rewards","referral_reward_events"
-          ];
-          const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-          try {
-            for (const table of required) {
-              const result = await pool.query(
-                "select to_regclass($1) as name",
-                ["public." + table]
-              );
-              if (!result.rows[0]?.name) throw new Error("Missing table: " + table);
-            }
-            console.log("All portal and enterprise tables exist.");
-          } finally {
-            await pool.end();
-          }
+        run: node scripts/verify-migrations.mjs
       - name: Verify production build path reruns migrations safely
         run: npm run build
