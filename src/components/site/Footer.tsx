@@ -7,13 +7,12 @@ export function Footer() {
   return (
     <footer className="relative overflow-hidden bg-ink text-silver">
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-electric/10 blur-[120px]" />
-      <div className="container-x relative pt-20 pb-28 md:pb-12">
-        <div className="grid gap-12 md:grid-cols-12">
+      <div className="container-x relative pt-14 pb-24 md:pb-10">
+        <div className="grid gap-10 md:grid-cols-12">
           <div className="md:col-span-4">
             <Logo size={38} />
-            <p className="mt-6 max-w-sm text-[15px] leading-relaxed">
-              Viele wichtige Themen, ein persönlicher Ansprechpartner. TarifWerk ordnet Möglichkeiten nachvollziehbar ein
-              und begleitet Privat- und Geschäftskunden deutschlandweit.
+            <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed">
+              Persönliche Beratung zu Tarifen, Energie, Versicherungen, Solar, Immobilien und mehr – deutschlandweit.
             </p>
             <div className="mt-6 flex flex-col gap-2 text-[14.5px]">
               <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white">
@@ -70,7 +69,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-16 flex flex-col gap-4 border-t border-white/8 pt-6 text-[13px] text-steel md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 flex flex-col gap-4 border-t border-white/8 pt-5 text-[12.5px] text-steel md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} TarifWerk · {SITE.founder} · Alle Rechte vorbehalten</p>
           <div className="flex gap-5">
             <Link href="/impressum" className="hover:text-white">Impressum</Link>

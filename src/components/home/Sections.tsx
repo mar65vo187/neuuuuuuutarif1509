@@ -37,7 +37,7 @@ export function TrustStrip() {
 
 export function FocusSection() {
   return (
-    <section className="bg-paper py-24 sm:py-32">
+    <section className="bg-paper py-16 sm:py-20">
       <div className="container-x">
         <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
           <Reveal className="lg:col-span-7">
@@ -159,7 +159,7 @@ export function Manifesto() {
     },
   ];
   return (
-    <section className="relative overflow-hidden bg-ink py-24 text-white sm:py-32 grain">
+    <section className="relative overflow-hidden bg-ink py-16 text-white sm:py-20 grain">
       <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-electric/12 blur-[140px]" />
       <div className="container-x relative">
         <Reveal className="mx-auto max-w-3xl text-center">
@@ -208,19 +208,19 @@ export function Process() {
       <div className="container-x">
         <Reveal className="max-w-2xl">
           <p className="eyebrow text-electric-deep">So entsteht eine Entscheidung</p>
-          <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1.04] text-ink">
-            Vier Schritte. Du weißt jederzeit, was als Nächstes passiert.
+          <h2 className="mt-3 text-[clamp(1.9rem,3.6vw,2.9rem)] font-extrabold leading-[1.04] text-ink">
+            Vier Schritte. Mehr braucht es für den Anfang nicht.
           </h2>
         </Reveal>
-        <Stagger className="relative mt-14 grid gap-6 md:grid-cols-4" stagger={0.12}>
+        <Stagger className="relative mt-9 grid gap-4 md:grid-cols-4" stagger={0.12}>
           <div className="pointer-events-none absolute left-0 right-0 top-[22px] hidden h-px bg-gradient-to-r from-transparent via-ink/15 to-transparent md:block" />
           {PROCESS.map((p) => (
             <Item key={p.step} className="relative">
-              <span className="relative z-10 inline-grid h-11 w-11 place-items-center rounded-full border border-ink/10 bg-white text-[13px] font-extrabold text-ink shadow-sm">
+              <span className="relative z-10 inline-grid h-9 w-9 place-items-center rounded-full border border-ink/10 bg-white text-[11px] font-extrabold text-ink shadow-sm">
                 {p.step}
               </span>
-              <h3 className="mt-5 text-[19px] font-bold text-ink">{p.title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-steel">{p.text}</p>
+              <h3 className="mt-4 text-[17px] font-bold text-ink">{p.title}</h3>
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-steel">{p.text}</p>
             </Item>
           ))}
         </Stagger>
@@ -235,51 +235,62 @@ export function Process() {
 
 export function Founder() {
   return (
-    <section className="bg-paper-2 py-24 sm:py-32">
-      <div className="container-x grid items-center gap-12 lg:grid-cols-12">
+    <section className="bg-paper-2 py-16 sm:py-20">
+      <div className="container-x grid gap-8 lg:grid-cols-12 lg:items-center">
         <Reveal className="lg:col-span-5">
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-[420px] overflow-hidden rounded-[32px] bg-ink shadow-soft">
-            <div className="absolute inset-0 grid-lines" />
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-electric/40 blur-[80px]" />
-            <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-champagne/25 blur-[90px]" />
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="grid h-40 w-40 place-items-center rounded-full bg-gradient-to-br from-platinum via-electric-soft to-electric text-[52px] font-extrabold text-ink shadow-glow">
-                ME
+          <div className="relative overflow-hidden rounded-[26px] bg-ink p-6 text-white shadow-soft sm:p-7">
+            <div className="absolute inset-0 grid-lines opacity-60" />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-electric/25 blur-[80px]" />
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-white text-[13px] font-extrabold text-ink">ME</span>
+                <div>
+                  <p className="font-bold">{SITE.founder}</p>
+                  <p className="text-[12.5px] text-silver">{SITE.founderTitle} · {SITE.hq}</p>
+                </div>
               </div>
-            </div>
-            <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-              <p className="text-[22px] font-extrabold">{SITE.founder}</p>
-              <p className="text-[13.5px] text-silver">{SITE.founderTitle} · {SITE.hq}</p>
+              <blockquote className="mt-8 text-[clamp(1.45rem,2.8vw,2.15rem)] font-bold leading-[1.08]">
+                „Erst verstehen, was wirklich gebraucht wird. Dann eine Empfehlung geben.“
+              </blockquote>
+              <div className="mt-8 grid grid-cols-2 gap-3 text-[12.5px] text-silver">
+                <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+                  <p className="font-semibold text-white">Persönlich</p>
+                  <p className="mt-1">direkter Ansprechpartner</p>
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+                  <p className="font-semibold text-white">Deutschlandweit</p>
+                  <p className="mt-1">digital & nach Absprache vor Ort</p>
+                </div>
+              </div>
             </div>
           </div>
         </Reveal>
+
         <div className="lg:col-span-7">
           <Reveal>
             <p className="eyebrow text-electric-deep">Der Mensch hinter TarifWerk</p>
-            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1.04] text-ink">
-              „Gute Beratung beginnt damit, die <span className="display-i font-normal text-ink-700">richtigen Fragen</span> zu stellen.“
+            <h2 className="mt-3 text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold leading-[1.04] text-ink">
+              Beratung soll sich nicht wie ein Verkaufsgespräch anfühlen.
             </h2>
           </Reveal>
-          <Reveal delay={0.1}>
-            <div className="mt-8 space-y-5 text-[16.5px] leading-relaxed text-steel">
+          <Reveal delay={0.08}>
+            <div className="mt-5 max-w-2xl space-y-4 text-[15.5px] leading-relaxed text-steel">
               <p>
-                Marvin Noel Egenolf hat TarifWerk mit einem einfachen Gedanken aufgebaut: Wichtige Vertrags- und
-                Versorgungsthemen sollten nicht jedes Mal bei einem neuen Ansprechpartner beginnen. Deshalb bündelt
-                TarifWerk mehrere Bereiche in einem persönlichen Beratungsprozess.
+                Marvin Noel Egenolf hat TarifWerk aufgebaut, um mehrere Vertrags-, Versorgungs- und Entscheidungsthemen
+                an einem Ort zusammenzubringen. So musst du bei jedem neuen Thema nicht wieder von vorne anfangen.
               </p>
               <p>
-                Entscheidend ist nicht, möglichst viele Produkte zu zeigen, sondern die Ausgangslage sauber zu verstehen,
-                relevante Kriterien offen zu erklären und eine Empfehlung nachvollziehbar zu begründen. Privat- und
-                Geschäftskunden werden deutschlandweit digital und nach Absprache persönlich begleitet.
+                Der Anspruch ist einfach: zuhören, sauber erklären, eine klare Empfehlung geben und auch nach der
+                Entscheidung erreichbar bleiben.
               </p>
             </div>
           </Reveal>
-          <Reveal delay={0.15} className="mt-8 flex flex-wrap gap-3">
+          <Reveal delay={0.12} className="mt-6 flex flex-wrap gap-3">
             <Button href="/berater/marvin-egenolf" iconRight={<ArrowRight />}>
               Marvin kennenlernen
             </Button>
             <Button href="/ueber-uns" variant="dark" magnetic={false}>
-              Unsere Haltung
+              Mehr über TarifWerk
             </Button>
           </Reveal>
         </div>
@@ -332,21 +343,21 @@ export function FinalCta() {
       <div className="container-x relative">
         <Reveal className="mx-auto max-w-3xl text-center">
           <Quote className="mx-auto h-8 w-8 text-champagne" />
-          <h2 className="mt-6 text-[clamp(2.2rem,5.4vw,4.4rem)] font-extrabold leading-[1.0]">
-            Du musst nicht jeden Tarif kennen.
+          <h2 className="mt-4 text-[clamp(2.1rem,5vw,4rem)] font-extrabold leading-[1.0]">
+            Sag uns, worum es geht.
             <br />
-            <span className="display-i font-normal text-platinum">Du brauchst Klarheit darüber, was zu dir passt.</span>
+            <span className="display-i font-normal text-platinum">Wir bringen Klarheit rein.</span>
           </h2>
-          <p className="mx-auto mt-6 max-w-xl text-[16.5px] text-silver">
-            Schilder uns deine Situation. Danach weißt du, welche Möglichkeiten du hast, worauf du achten solltest und welcher nächste Schritt Sinn ergibt.
+          <p className="mx-auto mt-4 max-w-xl text-[15.5px] leading-relaxed text-silver">
+            Ein kurzes Gespräch reicht, um herauszufinden, was sich lohnt und welcher nächste Schritt sinnvoll ist.
           </p>
         </Reveal>
-        <Stagger className="mx-auto mt-12 grid max-w-3xl gap-3 sm:grid-cols-3">
+        <Stagger className="mx-auto mt-9 grid max-w-3xl gap-3 sm:grid-cols-3">
           <Item>
             <Link href="/berater" className="card-hover flex h-full flex-col rounded-2xl bg-electric p-6 text-white">
               <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">Erster Schritt</span>
               <span className="mt-3 text-[19px] font-bold">Ansprechpartner finden</span>
-              <span className="mt-1 text-[13.5px] text-white/85">Thema wählen und kostenlos starten</span>
+              <span className="mt-1 text-[13.5px] text-white/85">Thema wählen und loslegen</span>
               <ArrowRight className="mt-6 h-5 w-5" />
             </Link>
           </Item>

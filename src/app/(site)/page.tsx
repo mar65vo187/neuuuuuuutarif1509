@@ -11,7 +11,6 @@ import {
   AudienceFocusSection,
   AudienceManifesto,
   AudienceProcess,
-  AudienceProofSection,
   AudienceTrustStrip,
 } from "@/components/home/AudienceSections";
 import { Founder } from "@/components/home/Sections";
@@ -69,7 +68,6 @@ export default async function HomePage({ searchParams }: Props) {
         <AudienceFocusSection />
         <AudienceEverydaySection />
         <AudienceManifesto />
-        <AudienceProofSection />
         <FinderTeaser />
         <AudienceProcess />
         <Founder />

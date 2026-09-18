@@ -13,7 +13,6 @@ const NAV = [
   { href: "/berater", label: "Berater" },
   { href: "/ueber-uns", label: "Über uns" },
   { href: "/karriere", label: "Karriere" },
-  { href: "/freund-werben", label: "Freunde werben" },
   { href: "/faq", label: "FAQ" },
 ];
 

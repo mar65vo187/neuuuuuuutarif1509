@@ -90,17 +90,17 @@ export function ReferralPipeline() {
 
 export function ReferralHomeTeaser() {
   return (
-    <section className="bg-ink py-16 text-white sm:py-20">
-      <div className="container-x grid gap-8 lg:grid-cols-12 lg:items-center">
+    <section className="bg-ink py-12 text-white sm:py-14">
+      <div className="container-x grid gap-6 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-7">
           <p className="eyebrow text-electric-soft"><Gift className="h-4 w-4" /> Freunde werben</p>
-          <h2 className="mt-4 text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold leading-[1.04]">
-            Gute Erfahrungen weitergeben. <span className="display-i font-normal text-champagne-soft">Wir bedanken uns dafür.</span>
+          <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.7rem)] font-extrabold leading-[1.04]">
+            TarifWerk weiterempfehlen. <span className="display-i font-normal text-champagne-soft">Prämie erhalten.</span>
           </h2>
-          <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-silver">
-            Wenn du TarifWerk guten Gewissens weiterempfehlen möchtest, bekommst du einen persönlichen Link und einen transparenten Status. Entsteht daraus eine erfolgreiche Vermittlung, erhältst du je nach Bereich einen bestätigten Wunschgutschein von bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} – oder alternativ 50 % des Gutscheinwerts als Geld-Auszahlung.
+          <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-silver">
+            Persönlichen Link teilen, Status verfolgen und bei erfolgreicher Vermittlung je nach Bereich bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} Wunschgutschein erhalten. Alternativ sind 50 % des bestätigten Gutscheinwerts als Geld-Auszahlung möglich.
           </p>
-          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver">
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-silver">
             <span className="inline-flex items-center gap-2"><Share2 className="h-4 w-4 text-electric-soft" /> Persönlicher Link</span>
             <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-electric-soft" /> Transparenter Status</span>
             <span className="inline-flex items-center gap-2"><BadgeEuro className="h-4 w-4 text-electric-soft" /> Prämie erst nach erfolgreicher Vermittlung</span>
@@ -108,7 +108,7 @@ export function ReferralHomeTeaser() {
         </div>
         <div className="lg:col-span-5 lg:text-right">
           <Link href="/freund-werben" className="inline-flex min-h-12 items-center gap-2 rounded-full bg-electric px-6 py-3 text-[14px] font-semibold text-white hover:bg-electric-deep">
-            Empfehlungsprogramm öffnen <ArrowRight className="h-4 w-4" />
+            Freunde werben <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>

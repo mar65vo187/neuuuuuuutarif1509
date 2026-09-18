@@ -16,19 +16,19 @@ export function FinderTeaser() {
   const [region, setRegion] = useState("");
 
   return (
-    <section id="berater-auswahl" style={{ scrollMarginTop: 88 }} className="defer-render relative overflow-hidden bg-ink-900 py-20 text-white sm:py-24">
+    <section id="berater-auswahl" style={{ scrollMarginTop: 88 }} className="defer-render relative overflow-hidden bg-ink-900 py-16 text-white sm:py-20">
       <div className="pointer-events-none absolute -left-40 top-1/2 h-[520px] w-[520px] -translate-y-1/2 rounded-full bg-electric/15 blur-[130px]" />
-      <div className="container-x relative grid gap-10 lg:grid-cols-12 lg:items-center">
+      <div className="container-x relative grid gap-8 lg:grid-cols-12 lg:items-center">
         <Reveal className="lg:col-span-5">
           <p className="eyebrow text-electric-soft">{copy.eyebrow}</p>
-          <h2 className="mt-4 min-h-[2.2em] text-[clamp(2rem,4.4vw,3.6rem)] font-extrabold leading-[1.02]">
+          <h2 className="mt-3 text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1.02]">
             {copy.titleA} <span className="display-i font-normal text-champagne-soft">{copy.titleEm}</span>.
           </h2>
-          <p className="mt-5 min-h-[5rem] max-w-md text-[16px] leading-relaxed text-silver">{copy.text}</p>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-silver">{copy.text}</p>
         </Reveal>
 
         <Reveal className="lg:col-span-7" delay={0.1}>
-          <form action={business ? "/anfrage" : "/berater"} method="get" className="glass rounded-[28px] p-6 sm:p-8">
+          <form action={business ? "/anfrage" : "/berater"} method="get" className="glass rounded-[24px] p-5 sm:p-6">
             <input type="hidden" name="thema" value={topic || ""} />
             <input type="hidden" name="audience" value={audience} />
             <p className="text-[13px] font-semibold text-platinum">{copy.topicLabel}</p>
@@ -55,7 +55,7 @@ export function FinderTeaser() {
               })}
             </div>
 
-            <p className="mt-7 text-[13px] font-semibold text-platinum">{copy.locationLabel}</p>
+            <p className="mt-6 text-[13px] font-semibold text-platinum">{copy.locationLabel}</p>
             <div className="relative mt-3">
               <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" />
               <input
@@ -75,7 +75,7 @@ export function FinderTeaser() {
               </datalist>
             </div>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[13px] text-silver">{copy.note}</p>
               <Button type="submit" size="lg" iconRight={<ArrowRight />}>{copy.button}</Button>
             </div>
