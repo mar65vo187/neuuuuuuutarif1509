@@ -37,9 +37,9 @@ export function ApplicationForm() {
     e.preventDefault();
     if (sending.current) return;
     setError(null);
-    if (!f.name.trim() || !f.email.trim() || !f.why.trim()) return setError("Bitte Name, E-Mail und deine Motivation angeben.");
-    if (!f.consent) return setError("Bitte stimme der Datenverarbeitung zu.");
-    if (["telefon", "whatsapp"].includes(f.channel) && !f.phone.trim()) return setError("Bitte gib für Telefon oder WhatsApp eine Telefonnummer an oder wähle E-Mail.");
+    if (!f.name.trim() || !f.email.trim() || !f.why.trim()) return setError("Bitte geben Sie Name, E-Mail und Ihre Motivation an.");
+    if (!f.consent) return setError("Bitte stimmen Sie der Datenverarbeitung zu.");
+    if (["telefon", "whatsapp"].includes(f.channel) && !f.phone.trim()) return setError("Bitte geben Sie für Telefon oder WhatsApp eine Telefonnummer an oder wählen Sie E-Mail.");
     sending.current = true;
     setLoading(true);
     try {
@@ -68,7 +68,7 @@ export function ApplicationForm() {
       if (!res.ok || !json.ok) return setError(json.error ?? "Etwas ist schiefgelaufen.");
       setDone(true);
     } catch {
-      setError("Verbindung fehlgeschlagen. Bitte versuche es erneut.");
+      setError("Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut.");
     } finally {
       sending.current = false;
       setLoading(false);
@@ -80,7 +80,7 @@ export function ApplicationForm() {
       <div className="hero-enter text-center">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-electric text-white shadow-glow"><Check className="h-7 w-7" /></span>
         <h3 className="mt-6 text-[26px] font-extrabold text-ink">Danke, {f.name.split(" ")[0]}.</h3>
-        <p className="mx-auto mt-3 max-w-md text-[15.5px] text-steel">Deine Bewerbung ist angekommen. Wir melden uns persönlich – so, wie du es dir gewünscht hast.</p>
+        <p className="mx-auto mt-3 max-w-md text-[15.5px] text-steel">Ihre Bewerbung ist angekommen. Wir melden uns persönlich über den von Ihnen gewünschten Kontaktweg.</p>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export function ApplicationForm() {
             {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </div>
-        <div className="sm:col-span-2"><label htmlFor="ap-job" className="label">Was machst du aktuell beruflich?</label><input id="ap-job" className="field" value={f.job} onChange={(e) => set("job", e.target.value)} /></div>
+        <div className="sm:col-span-2"><label htmlFor="ap-job" className="label">Was machen Sie aktuell beruflich?</label><input id="ap-job" className="field" value={f.job} onChange={(e) => set("job", e.target.value)} /></div>
       </div>
 
       <div>
@@ -111,7 +111,7 @@ export function ApplicationForm() {
       </div>
 
       <div>
-        <p className="label">Bereiche, die dich interessieren</p>
+        <p className="label">Bereiche, die Sie interessieren</p>
         <div className="flex flex-wrap gap-2">
           {SERVICES.map((s) => {
             const on = f.areas.includes(s.name);
@@ -123,7 +123,7 @@ export function ApplicationForm() {
       </div>
 
       <div>
-        <label htmlFor="ap-time" className="label">Wie viel Zeit möchtest du investieren?</label>
+        <label htmlFor="ap-time" className="label">Wie viel Zeit möchten Sie investieren?</label>
         <select id="ap-time" className="field appearance-none" value={f.time} onChange={(e) => set("time", e.target.value)}>
           <option value="">Bitte wählen</option>
           <option>Nebenberuflich (bis 10 Std./Woche)</option>
@@ -133,7 +133,7 @@ export function ApplicationForm() {
         </select>
       </div>
 
-      <div><label htmlFor="ap-why" className="label">Warum möchtest du bei TarifWerk beraten? *</label><textarea id="ap-why" rows={4} className="field" value={f.why} onChange={(e) => set("why", e.target.value)} required /></div>
+      <div><label htmlFor="ap-why" className="label">Warum möchten Sie bei TarifWerk beraten? *</label><textarea id="ap-why" rows={4} className="field" value={f.why} onChange={(e) => set("why", e.target.value)} required /></div>
 
       <div>
         <p className="label">Wie sollen wir uns melden?</p>
