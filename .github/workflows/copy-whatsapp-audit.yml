@@ -1,4 +1,4 @@
-name: Copy and WhatsApp audit
+name: Copy and portal audit
 
 on:
   push:
@@ -17,21 +17,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Scan public site copy and WhatsApp usage
+      - name: Scan public copy, WhatsApp usage and portal migrations
         shell: bash
         run: |
           {
             echo "=== informal address ==="
-            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' '\b(du|dein|deine|deinen|deinem|deiner|dich|dir|euch|euer|eure|ihr|ihrerseits)\b' src/app src/components || true
+            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' '\b(du|dein|deine|deinen|deinem|deiner|dich|dir|euch|euer|eure|ihr|ihrerseits)\b' 'src/app/(site)' src/components src/app/error.tsx src/app/not-found.tsx || true
             echo
             echo "=== whatsapp ==="
-            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' 'whats.?app|wa\.me' src/app src/components || true
+            grep -RniE --include='*.tsx' --include='*.ts' --include='*.jsx' --include='*.js' 'whats.?app|wa\.me' 'src/app/(site)' src/components src/app/error.tsx src/app/not-found.tsx || true
             echo
-            echo "=== site pages ==="
-            find 'src/app/(site)' -name 'page.tsx' -o -name 'page.ts' | sort || true
+            echo "=== migrations ==="
+            find migrations -maxdepth 1 -type f -name '*.sql' -print | sort || true
+            echo
+            echo "=== enterprise/referral tables in migrations ==="
+            grep -RniE --include='*.sql' 'create table.*(customers|orders|tasks|providers|products|commission_events|audit_events|automation_rules|login_events|mfa_credentials|referral_rewards|referral_reward_events)' migrations || true
+            echo
+            echo "=== enterprise schema config ==="
+            grep -n "schema:" drizzle.config.ts || true
           } > audit.txt
           cat audit.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: copy-whatsapp-audit
+          name: copy-portal-audit
           path: audit.txt
