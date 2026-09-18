@@ -4,114 +4,36 @@ import { REFERRAL_MAX_VOUCHER, REFERRAL_PIPELINE, REFERRAL_REWARD_GROUPS, format
 
 export function ReferralRewardMatrix() {
   return (
-    <section id="praemien" className="bg-paper-2 py-16 sm:py-20">
+    <section id="praemien" className="section-compact bg-paper-2">
       <div className="container-x">
         <div className="max-w-3xl">
-          <p className="eyebrow text-electric-deep">Prämien</p>
-          <h2 className="mt-3 text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold leading-tight text-ink">
-            Bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} Wunschgutschein pro erfolgreicher Empfehlung.
-          </h2>
-          <p className="mt-4 text-[15.5px] leading-relaxed text-steel">
-            Die veröffentlichten Beträge sind Maximalwerte je Bereich. Die konkrete Prämie wird nach erfolgreicher Vermittlung und Prüfung der jeweiligen Voraussetzungen bestätigt.
-            Alternativ kannst du statt des Wunschgutscheins eine Geld-Auszahlung in Höhe von 50 % des bestätigten Gutscheinwerts wählen.
-          </p>
+          <p className="eyebrow text-electric-deep">Prämienübersicht</p>
+          <h2 className="mt-3 text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold leading-tight text-ink">Transparent sehen, was je Bereich möglich ist.</h2>
+          <p className="mt-4 text-[15.5px] leading-relaxed text-steel">Bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} Wunschgutschein sind im aktuell veröffentlichten Prämienmodell je nach Bereich möglich. Die konkreten Voraussetzungen und der bestätigte Betrag werden vor der Freigabe geprüft.</p>
         </div>
 
-        <div className="mt-10 space-y-5">
-          {REFERRAL_REWARD_GROUPS.map((group) => (
-            <div key={group.group} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-[18px] font-extrabold text-ink">{group.group}</h3>
-                <span className="chip border-electric/20 bg-electric/5 text-electric-deep">bis zu {formatEuro(group.maxVoucherAmount)}</span>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {group.rules.map((rule) => (
-                  <div key={rule.key} className="rounded-2xl border border-line bg-paper p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-bold text-ink">{rule.label}</p>
-                        <p className="mt-1 text-[12.5px] leading-relaxed text-steel">
-                          {rule.note ?? "Wunschgutschein bei erfolgreicher Vermittlung"}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-steel">bis zu</span>
-                        <span className="text-[23px] font-extrabold text-ink">{formatEuro(rule.maxVoucherAmount)}</span>
-                      </div>
-                    </div>
-                    <div className="mt-3 border-t border-line pt-3 text-[12.5px] text-steel">
-                      Alternative Geld-Auszahlung: bis zu {formatEuro(rule.maxCashAmount)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="mt-8 overflow-x-auto rounded-[24px] border border-line bg-white shadow-sm">
+          <table className="w-full min-w-[680px] border-collapse text-left">
+            <caption className="sr-only">Prämienmatrix des TarifWerk Empfehlungsprogramms</caption>
+            <thead className="bg-paper text-[11px] uppercase tracking-[0.14em] text-steel">
+              <tr><th scope="col" className="px-5 py-4 font-semibold">Bereich</th><th scope="col" className="px-5 py-4 font-semibold">Leistung</th><th scope="col" className="px-5 py-4 text-right font-semibold">Max. Gutschein</th><th scope="col" className="px-5 py-4 text-right font-semibold">Alternative Auszahlung</th></tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {REFERRAL_REWARD_GROUPS.flatMap((group) => group.rules.map((rule) => <tr key={rule.key} className="align-top"><td className="px-5 py-4 text-[13px] font-semibold text-electric-deep">{group.group}</td><td className="px-5 py-4"><span className="font-bold text-ink">{rule.label}</span><span className="mt-1 block text-[12.5px] leading-relaxed text-steel">{rule.note ?? "Nach erfolgreicher Vermittlung und Prüfung"}</span></td><td className="px-5 py-4 text-right text-[18px] font-extrabold text-ink">bis {formatEuro(rule.maxVoucherAmount)}</td><td className="px-5 py-4 text-right text-[13px] text-steel">bis {formatEuro(rule.maxCashAmount)}</td></tr>))}
+            </tbody>
+          </table>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel">
-          <strong className="text-ink">Transparent & fair:</strong> Die Prämie gilt pro erfolgreich vermittelter Person. Mehrere Empfehlungen sind erlaubt.
-          Ein Anspruch auf den jeweiligen Maximalbetrag entsteht nicht automatisch; maßgeblich sind Produkt, vermitteltes Geschäft, geltende Voraussetzungen und die individuelle Freigabe.
-          Die Freigabe erfolgt erst nach Prüfung relevanter Widerrufs- und Stornofristen.
-        </div>
+        <div className="mt-5 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel"><strong className="text-ink">Wichtig:</strong> Maximalwerte sind keine automatische Anspruchszusage. Maßgeblich sind das vermittelte Geschäft, die geltenden Bedingungen sowie die Prüfung von Widerrufs- und Stornofristen.</div>
       </div>
     </section>
   );
 }
 
 export function ReferralPipeline() {
-  return (
-    <section className="bg-white py-16 sm:py-20">
-      <div className="container-x">
-        <div className="grid gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-4">
-            <p className="eyebrow text-electric-deep">So bleibt alles nachvollziehbar</p>
-            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Vom Link bis zur Prämie.</h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-steel">
-              Dein privater Status zeigt nur zusammengefasste Informationen und Prämienstatus – keine Namen, Vertragsdetails oder Kontaktdaten deiner Empfehlungen.
-            </p>
-          </div>
-          <ol className="grid gap-3 sm:grid-cols-2 lg:col-span-8">
-            {REFERRAL_PIPELINE.map((step, index) => (
-              <li key={step.key} className="rounded-2xl border border-line bg-paper p-5">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">{String(index + 1).padStart(2, "0")}</span>
-                  <h3 className="font-bold text-ink">{step.label}</h3>
-                </div>
-                <p className="mt-3 text-[13.5px] leading-relaxed text-steel">{step.description}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="section-compact bg-white"><div className="container-x"><div className="grid gap-8 lg:grid-cols-12"><div className="lg:col-span-4"><p className="eyebrow text-electric-deep">So funktioniert es</p><h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Drei einfache Schritte bis zur Empfehlung.</h2><p className="mt-4 text-[15px] leading-relaxed text-steel">Die technische Statusanzeige kann zusätzliche Prüfphasen enthalten. Namen, Vertragsdetails und Kontaktdaten der empfohlenen Personen werden im privaten Status nicht angezeigt.</p></div><ol className="grid gap-3 sm:grid-cols-2 lg:col-span-8">{REFERRAL_PIPELINE.slice(0, 3).map((step, index) => <li key={step.key} className="rounded-2xl border border-line bg-paper p-5"><div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">{String(index + 1).padStart(2, "0")}</span><h3 className="font-bold text-ink">{index === 0 ? "Link erstellen" : index === 1 ? "Weiterempfehlen" : "Status verfolgen"}</h3></div><p className="mt-3 text-[13.5px] leading-relaxed text-steel">{index === 0 ? "Du erhältst einen persönlichen Empfehlungslink und kannst ihn direkt teilen." : index === 1 ? "Die empfohlene Person entscheidet selbst, ob sie Kontakt zu TarifWerk aufnehmen möchte." : "Du siehst den anonymisierten Stand deiner Empfehlung und die nächsten Prüfphasen."}</p></li>)}</ol></div></div></section>;
 }
 
 export function ReferralHomeTeaser() {
-  return (
-    <section className="bg-ink py-12 text-white sm:py-14">
-      <div className="container-x grid gap-6 lg:grid-cols-12 lg:items-center">
-        <div className="lg:col-span-7">
-          <p className="eyebrow text-electric-soft"><Gift className="h-4 w-4" /> Freunde werben</p>
-          <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.7rem)] font-extrabold leading-[1.04]">
-            TarifWerk weiterempfehlen. <span className="display-i font-normal text-champagne-soft">Prämie erhalten.</span>
-          </h2>
-          <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-silver">
-            Persönlichen Link teilen, Status verfolgen und bei erfolgreicher Vermittlung je nach Bereich bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} Wunschgutschein erhalten. Alternativ sind 50 % des bestätigten Gutscheinwerts als Geld-Auszahlung möglich.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-silver">
-            <span className="inline-flex items-center gap-2"><Share2 className="h-4 w-4 text-electric-soft" /> Persönlicher Link</span>
-            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-electric-soft" /> Transparenter Status</span>
-            <span className="inline-flex items-center gap-2"><BadgeEuro className="h-4 w-4 text-electric-soft" /> Prämie erst nach erfolgreicher Vermittlung</span>
-          </div>
-        </div>
-        <div className="lg:col-span-5 lg:text-right">
-          <Link href="/freund-werben" className="inline-flex min-h-12 items-center gap-2 rounded-full bg-electric px-6 py-3 text-[14px] font-semibold text-white hover:bg-electric-deep">
-            Freunde werben <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="bg-ink py-10 text-white sm:py-12"><div className="container-x grid gap-6 lg:grid-cols-12 lg:items-center"><div className="lg:col-span-7"><p className="eyebrow text-electric-soft"><Gift className="h-4 w-4" /> Freunde werben</p><h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.7rem)] font-extrabold leading-[1.04]">Gute Beratung weiterempfehlen. <span className="display-i font-normal text-champagne-soft">Transparent belohnt werden.</span></h2><p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-silver">Persönlichen Link teilen, Status verfolgen und bei erfolgreicher Vermittlung je nach Bereich bis zu {formatEuro(REFERRAL_MAX_VOUCHER)} Wunschgutschein erhalten. Die Bedingungen und Maximalwerte stehen offen in der Prämienmatrix.</p><div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-silver"><span className="inline-flex items-center gap-2"><Share2 className="h-4 w-4 text-electric-soft" /> Persönlicher Link</span><span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-electric-soft" /> Anonymisierter Status</span><span className="inline-flex items-center gap-2"><BadgeEuro className="h-4 w-4 text-electric-soft" /> Prüfung vor Freigabe</span></div></div><div className="lg:col-span-5 lg:text-right"><Link href="/freund-werben" className="inline-flex min-h-12 items-center gap-2 rounded-full bg-electric px-6 py-3 text-[14px] font-semibold text-white hover:bg-electric-deep">Empfehlungslink erstellen <ArrowRight className="h-4 w-4" /></Link></div></div></section>;
 }
