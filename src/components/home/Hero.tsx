@@ -1,11 +1,10 @@
 "use client";
 
-import { ArrowRight, Check, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Check, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AudienceToggle, useAudience } from "@/components/home/AudienceProvider";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
-import { whatsappLink } from "@/lib/content";
 
 export function Hero() {
   const { audience } = useAudience();
@@ -22,11 +21,11 @@ export function Hero() {
 
   const trustAnchor = audience === "b2b"
     ? "Ein Ansprechpartner statt Vertragskomplexität. Sie entscheiden selbst, ob und wie Sie weitergehen."
-    : "Ein Ansprechpartner statt Tarif-Dschungel. Du entscheidest selbst, ob und wie du weitergehst.";
+    : "Ein Ansprechpartner statt Tarif-Dschungel. Sie entscheiden selbst, ob und wie Sie weitergehen.";
 
   const reassurance = audience === "b2b"
     ? "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen"
-    : "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei dir";
+    : "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen";
 
   return (
     <section className="relative isolate overflow-hidden bg-ink text-white grain">
@@ -47,7 +46,7 @@ export function Hero() {
           <p key={`${audience}-body`} className="hero-enter mt-6 max-w-2xl text-[16.5px] leading-relaxed text-silver sm:text-[18px] [--hero-delay:280ms]">{copy.body}</p>
           <div className="hero-enter mt-7 flex flex-col gap-3 sm:flex-row sm:items-center [--hero-delay:330ms]">
             <Button href={copy.primaryHref} size="lg" iconRight={<ArrowRight />}>{copy.primary}</Button>
-            <Button href={whatsappLink(copy.whatsapp)} target="_blank" variant="secondary" size="lg" icon={<MessageCircle />}>{copy.secondary}</Button>
+            <Button href="/leistungen" variant="secondary" size="lg" iconRight={<ArrowRight />}>{copy.secondary}</Button>
           </div>
           <p className="hero-enter mt-3 text-[12.5px] leading-relaxed text-silver/85 [--hero-delay:360ms]">{reassurance}</p>
           <ul key={`${audience}-checks`} className="hero-enter mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver [--hero-delay:390ms]">
