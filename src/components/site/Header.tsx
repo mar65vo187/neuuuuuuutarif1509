@@ -92,14 +92,14 @@ export function Header() {
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
               {NAV.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                return <Link key={item.href} href={item.href} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
+                return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
               })}
             </nav>
             <div className="hidden items-center gap-2 lg:flex">
               <a href={whatsappLink("Hallo TarifWerk, ich hätte eine Frage.")} target="_blank" rel="noopener noreferrer" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-white" aria-label="WhatsApp schreiben"><MessageCircle className="h-[18px] w-[18px]" /></a>
               <Button href="/anfrage" size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
             </div>
-            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls={open ? "mobile-menu" : undefined} aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls="mobile-menu" aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           </div>
         </div>
       </header>
