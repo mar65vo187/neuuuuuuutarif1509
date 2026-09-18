@@ -64,9 +64,9 @@ export const SERVICES: Service[] = [
     "featured": false,
     "eyebrow": "Verbunden im Alltag",
     "headline": "Gut verbunden. Klar entschieden.",
-    "intro": "Internet inklusive Glasfaser, Mobilfunk und TV: Wir prüfen mit dir Verfügbarkeit, Netz, Datenvolumen, Nutzung und Vertragsbedingungen. Damit deine Verbindung zu deinem Alltag oder deinem Unternehmen passt.",
+    "intro": "Internet inklusive Glasfaser, Mobilfunk und TV: Wir prüfen mit Ihnen Verfügbarkeit, Netz, Datenvolumen, Nutzung und Vertragsbedingungen. Damit Ihre Verbindung zu Ihrem Alltag oder Ihrem Unternehmen passt.",
     "checks": [
-      "Verfügbarkeit an deiner Adresse klären",
+      "Verfügbarkeit an Ihrer Adresse klären",
       "Bandbreite und TV-Bedarf bestimmen",
       "Laufzeiten, Fristen und Gesamtkosten vergleichen",
       "Kündigung und Wechsel gemeinsam vorbereiten",
@@ -86,18 +86,18 @@ export const SERVICES: Service[] = [
       }
     ],
     "seoTitle": "Internet, Mobilfunk & TV: Beratung | TarifWerk",
-    "seoDescription": "Internet, Glasfaser, Mobilfunk oder TV: Lass Verfügbarkeit und Vertragsbedingungen persönlich einordnen. Jetzt Beratung zu deinem Anschluss anfragen.",
+    "seoDescription": "Internet, Glasfaser, Mobilfunk oder TV: Lassen Sie Verfügbarkeit und Vertragsbedingungen persönlich einordnen. Jetzt Beratung zu Ihrem Anschluss anfragen.",
     "tickerLabel": "Internet, Mobilfunk, TV"
   },
   {
     "key": "energie",
     "slug": "strom-gas",
     "name": "Strom & Gas",
-    "short": "Deine Energieverträge. Verständlich sortiert.",
+    "short": "Ihre Energieverträge. Verständlich sortiert.",
     "featured": false,
     "eyebrow": "Energie im Alltag",
-    "headline": "Klare Sicht auf deine Energiekosten.",
-    "intro": "Wir schauen auf Verbrauch, Konditionen und Kündigungsfristen. Du erfährst, welche Optionen zu dir passen und ob ein Wechsel sinnvoll ist.",
+    "headline": "Klare Sicht auf Ihre Energiekosten.",
+    "intro": "Wir schauen auf Verbrauch, Konditionen und Kündigungsfristen. Sie erfahren, welche Optionen zu Ihnen passen und ob ein Wechsel sinnvoll ist.",
     "checks": [
       "Abrechnung und Abschläge einordnen",
       "Preisbestandteile und Boni nachvollziehen",
@@ -112,27 +112,27 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Kümmert ihr euch um den Wechsel?",
-        "a": "Wenn du möchtest, begleiten wir den kompletten Prozess."
+        "a": "Wenn Sie möchten, begleiten wir den kompletten Prozess."
       }
     ],
     "seoTitle": "Strom & Gas: Persönliche Tarifberatung | TarifWerk",
-    "seoDescription": "Verbrauch, Preise und Kündigungsfristen verständlich prüfen: Finde heraus, ob ein Strom- oder Gaswechsel zu dir passt. Jetzt Erstgespräch anfragen.",
+    "seoDescription": "Verbrauch, Preise und Kündigungsfristen verständlich prüfen: Finde heraus, ob ein Strom- oder Gaswechsel zu Ihnen passt. Jetzt Erstgespräch anfragen.",
     "tickerLabel": "Alltagstarife (Strom & Gas)"
   },
   {
     "key": "versicherungen",
     "slug": "versicherungen",
     "name": "Versicherungen",
-    "short": "Schutz für das, was dir wichtig ist.",
+    "short": "Schutz für das, was Ihnen wichtig ist.",
     "featured": true,
     "eyebrow": "Sicherheit & Vorsorge",
     "headline": "Absicherung mit Augenmaß.",
-    "intro": "Welche Risiken möchtest du absichern? Wir sortieren mit dir vorhandene Verträge und deinen Bedarf und binden passende Fachpartner ein.",
+    "intro": "Welche Risiken möchten Sie absichern? Wir sortieren mit Ihnen vorhandene Verträge und Ihren Bedarf und binden passende Fachpartner ein.",
     "checks": [
       "Bestehende Verträge und Bedarf ordnen",
       "Mögliche Lücken und Doppelungen erkennen",
       "Beiträge und Leistungen verständlich vergleichen",
-      "Veränderungen in deinem Leben berücksichtigen"
+      "Veränderungen in Ihrem Leben berücksichtigen"
     ],
     "forWhom": [
       "Junge Familien",
@@ -142,11 +142,11 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Verkauft ihr mir Verträge, die ich nicht brauche?",
-        "a": "Nein. Wir sagen dir auch, wenn du etwas kündigen solltest."
+        "a": "Nein. Wir sagen Ihnen auch, wenn Sie etwas kündigen sollten."
       }
     ],
     "seoTitle": "Versicherungen verständlich prüfen | TarifWerk",
-    "seoDescription": "Lass bestehende Versicherungen und deinen Absicherungsbedarf verständlich einordnen. Frage jetzt dein Erstgespräch mit TarifWerk an.",
+    "seoDescription": "Lassen Sie bestehende Versicherungen und Ihren Absicherungsbedarf verständlich einordnen. Frage jetzt dein Erstgespräch mit TarifWerk an.",
     "tickerLabel": "Versicherungen"
   },
   {
@@ -156,8 +156,8 @@ export const SERVICES: Service[] = [
     "short": "Ein gutes Gefühl beginnt zu Hause.",
     "featured": false,
     "eyebrow": "Zuhause & Sicherheit",
-    "headline": "Sicherheit, die zu deinem Objekt passt.",
-    "intro": "Alarmanlagen, Überwachung und Smart Home: Wir klären deinen Bedarf und helfen bei der Einordnung passender Lösungen und Fachpartner.",
+    "headline": "Sicherheit, die zu Ihrem Objekt passt.",
+    "intro": "Alarmanlagen, Überwachung und Smart Home: Wir klären Ihren Bedarf und helfen bei der Einordnung passender Lösungen und Fachpartner.",
     "checks": [
       "Bedarf und mögliche Schwachstellen besprechen",
       "Funk, Kabel und Smart Home vergleichen",
@@ -171,11 +171,11 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Wie läuft die erste Beratung ab?",
-        "a": "Wir klären deinen Bedarf und stimmen die nächsten Schritte persönlich mit dir ab."
+        "a": "Wir klären Ihren Bedarf und stimmen die nächsten Schritte persönlich mit Ihnen ab."
       }
     ],
     "seoTitle": "Sicherheitslösungen: Persönliche Beratung | TarifWerk",
-    "seoDescription": "Alarmanlage, Überwachung oder Smart Home: Kläre deinen Bedarf und passende nächste Schritte mit Fachpartnern. Jetzt Beratung anfragen.",
+    "seoDescription": "Alarmanlage, Überwachung oder Smart Home: Klären Sie Ihren Bedarf und passende nächste Schritte mit Fachpartnern. Jetzt Beratung anfragen.",
     "tickerLabel": "Rund um Sicherheit"
   },
   {
@@ -185,8 +185,8 @@ export const SERVICES: Service[] = [
     "short": "Räume zum Wohlfühlen.",
     "featured": false,
     "eyebrow": "Wohnen & Komfort",
-    "headline": "Ein gutes Klima. Nach deinem Maß.",
-    "intro": "Raumgröße, Nutzung und Budget bestimmen, welche Klimaanlage passt. Wir helfen dir bei der Orientierung und der Abstimmung mit Fachpartnern.",
+    "headline": "Ein gutes Klima. Nach Ihrem Maß.",
+    "intro": "Raumgröße, Nutzung und Budget bestimmen, welche Klimaanlage passt. Wir helfen Ihnen bei der Orientierung und der Abstimmung mit Fachpartnern.",
     "checks": [
       "Raumgröße und Nutzung berücksichtigen",
       "Lösungen und Energieverbrauch vergleichen",
@@ -200,11 +200,11 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Wie läuft die erste Beratung ab?",
-        "a": "Wir klären deinen Bedarf und stimmen die nächsten Schritte persönlich mit dir ab."
+        "a": "Wir klären Ihren Bedarf und stimmen die nächsten Schritte persönlich mit Ihnen ab."
       }
     ],
     "seoTitle": "Klimaanlagen: Bedarf & Optionen klären | TarifWerk",
-    "seoDescription": "Welche Klimaanlage passt zu Raum, Nutzung und Budget? Lass deine Möglichkeiten mit passenden Fachpartnern einordnen. Jetzt Erstgespräch anfragen.",
+    "seoDescription": "Welche Klimaanlage passt zu Raum, Nutzung und Budget? Lassen Sie Ihre Möglichkeiten mit passenden Fachpartnern einordnen. Jetzt Erstgespräch anfragen.",
     "tickerLabel": "Klimaanlagen"
   },
   {
@@ -215,9 +215,9 @@ export const SERVICES: Service[] = [
     "featured": true,
     "eyebrow": "Energie & Zukunft",
     "headline": "Strom und Wärme gemeinsam durchdenken.",
-    "intro": "Passt eine Solaranlage mit Wärmepumpe zu deinem Zuhause? Wir betrachten Dach, Gebäude, Verbrauch, Budget und Angebote gemeinsam und stimmen die nächsten Schritte mit passenden Fachpartnern ab.",
+    "intro": "Passt eine Solaranlage mit Wärmepumpe zu Ihrem Zuhause? Wir betrachten Dach, Gebäude, Verbrauch, Budget und Angebote gemeinsam und stimmen die nächsten Schritte mit passenden Fachpartnern ab.",
     "checks": [
-      "Dachfläche und deinen Strombedarf einordnen",
+      "Dachfläche und Ihren Strombedarf einordnen",
       "Photovoltaik und Speicher zusammen betrachten",
       "Wirtschaftlichkeit nachvollziehbar prüfen lassen",
       "Angebote und Umsetzung mit Fachpartnern besprechen",
@@ -237,7 +237,7 @@ export const SERVICES: Service[] = [
       },
       {
         "q": "Muss ich mich für einen Anbieter entscheiden?",
-        "a": "Nein. Wir arbeiten unabhängig mit mehreren Partnern und zeigen dir passende Optionen."
+        "a": "Nein. Wir arbeiten unabhängig mit mehreren Partnern und zeigen Ihnen passende Optionen."
       }
     ],
     "seoTitle": "Photovoltaik & Wärmepumpe: Beratung | TarifWerk",
@@ -257,7 +257,7 @@ export const SERVICES: Service[] = [
     "checks": [
       "Physische Metalle und andere Formen unterscheiden",
       "Kaufpreise, Aufschläge und Lagerung verstehen",
-      "Risiken und deinen Zeithorizont besprechen",
+      "Risiken und Ihren Zeithorizont besprechen",
       "Seriöse Angebote nachvollziehbar einordnen"
     ],
     "forWhom": [
@@ -268,7 +268,7 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Ist Gold immer eine gute Idee?",
-        "a": "Nein. Edelmetalle sind ein Baustein, kein Allheilmittel. Wir sagen dir offen, wenn andere Themen für dich Vorrang haben."
+        "a": "Nein. Edelmetalle sind ein Baustein, kein Allheilmittel. Wir sagen Ihnen offen, wenn andere Themen für Sie Vorrang haben."
       },
       {
         "q": "Garantiert ihr Wertsteigerungen?",
@@ -283,11 +283,11 @@ export const SERVICES: Service[] = [
     "key": "immobilien",
     "slug": "immobilien",
     "name": "Immobilien",
-    "short": "Raum für deine nächsten Schritte.",
+    "short": "Raum für Ihre nächsten Schritte.",
     "featured": true,
     "eyebrow": "Wohnen & Vermögen",
     "headline": "Ein neues Kapitel. Gut durchdacht.",
-    "intro": "Eigenheim, Kapitalanlage oder eine erste Orientierung: Wir sortieren deine Fragen und bringen dich mit passenden Fachpartnern zusammen.",
+    "intro": "Eigenheim, Kapitalanlage oder eine erste Orientierung: Wir sortieren Ihre Fragen und bringen Sie mit passenden Fachpartnern zusammen.",
     "checks": [
       "Ziele, Budget und Nebenkosten einordnen",
       "Lage, Zustand und laufende Kosten mitdenken",
@@ -302,7 +302,7 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Vermittelt ihr auch Objekte?",
-        "a": "Wir arbeiten mit ausgewählten Marktteilnehmern zusammen und zeigen dir Optionen, die zu deiner Situation passen. Die Entscheidung bleibt immer bei dir."
+        "a": "Wir arbeiten mit ausgewählten Marktteilnehmern zusammen und zeigen Ihnen Optionen, die zu Ihrer Situation passen. Die Entscheidung bleibt immer bei Ihnen."
       },
       {
         "q": "Was kostet die Erstberatung?",
@@ -310,13 +310,13 @@ export const SERVICES: Service[] = [
       }
     ],
     "seoTitle": "Immobilien: Persönliche Orientierung | TarifWerk",
-    "seoDescription": "Eigenheim oder Kapitalanlage? Sortiere deine Immobilienfragen und finde passende Fachpartner. Jetzt deine persönliche Erstorientierung anfragen.",
+    "seoDescription": "Eigenheim oder Kapitalanlage? Sortieren Sie Ihre Immobilienfragen und finden Sie passende Fachpartner. Jetzt Ihre persönliche Erstorientierung anfragen.",
     "tickerLabel": "Immobilien"
   }
 ];
 
 export const SERVICE_IMAGES: Partial<Record<ServiceKey, { src: string; alt: string }>> = {
-  "versicherungen": { "src": "/assets/architecture.webp", "alt": "Illustratives Wohnhaus – Schutz für das, was dir wichtig ist" },
+  "versicherungen": { "src": "/assets/architecture.webp", "alt": "Illustratives Wohnhaus – Schutz für das, was Ihnen wichtig ist" },
   "solar": {
     "src": "/assets/energy.webp",
     "alt": "Illustratives Wohnhaus mit Photovoltaikanlage und Wärmepumpe"
@@ -385,23 +385,23 @@ export type Region = (typeof REGIONS)[number];
 export const FAQ = [
   {
     "q": "Was kostet das erste Gespräch?",
-    "a": "Erstorientierung und Tarifcheck sind kostenlos und unverbindlich. Bei einer konkreten Vermittlung erklären wir dir die jeweiligen Konditionen und die Vergütung vor deiner Entscheidung."
+    "a": "Erstorientierung und Tarifcheck sind kostenlos und unverbindlich. Bei einer konkreten Vermittlung erklären wir Ihnen die jeweiligen Konditionen und die Vergütung vor Ihrer Entscheidung."
   },
   {
     "q": "Vergleicht TarifWerk den gesamten Markt?",
-    "a": "Nein. Wir arbeiten mit verschiedenen großen und kleineren Marktteilnehmern, aber nicht mit jedem Anbieter am Markt. Welche Partner und Optionen für dein Anliegen verfügbar sind, sagen wir dir offen."
+    "a": "Nein. Wir arbeiten mit verschiedenen großen und kleineren Marktteilnehmern, aber nicht mit jedem Anbieter am Markt. Welche Partner und Optionen für Ihr Anliegen verfügbar sind, sagen wir Ihnen offen."
   },
   {
     "q": "Bleibt mein Berater auch nach dem Abschluss erreichbar?",
-    "a": "Ja. Dein persönlicher Berater bleibt dein Ansprechpartner – bei Rückfragen, Änderungen und weiteren Themen, die für dich relevant werden."
+    "a": "Ja. Ihr persönlicher Berater bleibt Ihr Ansprechpartner – bei Rückfragen, Änderungen und weiteren Themen, die für Sie relevant werden."
   },
   {
     "q": "Wie läuft eine Terminanfrage ab?",
-    "a": "Du teilst uns dein Anliegen und deine Wunschzeit mit. Ein Mitarbeiter meldet sich und bestätigt den Termin persönlich. Deine Anfrage ist noch keine verbindliche Terminbuchung."
+    "a": "Sie teilen uns Ihr Anliegen und Ihre Wunschzeit mit. Ein Mitarbeiter meldet sich und bestätigt den Termin persönlich. Ihre Anfrage ist noch keine verbindliche Terminbuchung."
   },
   {
     "q": "Beratet ihr auch Selbstständige und Unternehmen?",
-    "a": "Ja. Wir begleiten Privatkunden, Selbstständige und Unternehmen. Wir sprechen über deinen konkreten Bedarf und stimmen die passenden nächsten Schritte mit dir ab."
+    "a": "Ja. Wir begleiten Privatkunden, Selbstständige und Unternehmen. Wir sprechen über Ihren konkreten Bedarf und stimmen die passenden nächsten Schritte mit Ihnen ab."
   },
   {
     "q": "Kann ich mich deutschlandweit beraten lassen?",
@@ -409,15 +409,15 @@ export const FAQ = [
   },
   {
     "q": "Wie verdient TarifWerk Geld?",
-    "a": "Bei erfolgreicher Vermittlung erhalten wir in vielen Bereichen eine Provision vom jeweiligen Anbieter. Erstorientierung und Tarifcheck sind kostenfrei. Welche Vergütung für dein Anliegen relevant ist und welche Kriterien wir für eine Empfehlung nutzen, erklären wir dir nachvollziehbar."
+    "a": "Bei erfolgreicher Vermittlung erhalten wir in vielen Bereichen eine Provision vom jeweiligen Anbieter. Erstorientierung und Tarifcheck sind kostenfrei. Welche Vergütung für Ihr Anliegen relevant ist und welche Kriterien wir für eine Empfehlung nutzen, erklären wir Ihnen nachvollziehbar."
   },
   {
     "q": "Wie entscheidet ihr, was ihr empfehlt?",
-    "a": "Wir starten mit deiner Situation und legen die relevanten Kriterien fest – zum Beispiel Leistung, Gesamtkosten, Laufzeit, Bedarf und Umsetzbarkeit. Danach erklären wir dir, warum wir eine verfügbare Option für passend halten."
+    "a": "Wir starten mit Ihrer Situation und legen die relevanten Kriterien fest – zum Beispiel Leistung, Gesamtkosten, Laufzeit, Bedarf und Umsetzbarkeit. Danach erklären wir Ihnen, warum wir eine verfügbare Option für passend halten."
   },
   {
     "q": "Muss ich mich sofort entscheiden?",
-    "a": "Nein. Ziel des ersten Gesprächs ist, dass du deine Situation und die nächsten Möglichkeiten besser einschätzen kannst. Ob du etwas umsetzt, entscheidest du danach selbst."
+    "a": "Nein. Ziel des ersten Gesprächs ist, dass Sie Ihre Situation und die nächsten Möglichkeiten besser einschätzen können. Ob Sie etwas umsetzen, entscheiden Sie danach selbst."
   }
 ];
 
@@ -426,10 +426,10 @@ export const FAQ = [
 /* ------------------------------------------------------------------ */
 
 export const PROCESS = [
-  { step: "01", title: "Du schilderst deine Situation", text: "Kurz sagen, worum es geht, was heute besteht und was dir wichtig ist." },
+  { step: "01", title: "Sie schildern Ihre Situation", text: "Kurz sagen, worum es geht, was heute besteht und was Ihnen wichtig ist." },
   { step: "02", title: "Wir sortieren die Fakten", text: "Bedarf, bestehende Verträge, relevante Kosten, Fristen und Rahmenbedingungen kommen auf den Tisch." },
-  { step: "03", title: "Du siehst die Unterschiede", text: "Wir erklären konkrete Optionen und warum sie zu deiner Situation passen – oder eben nicht." },
-  { step: "04", title: "Wir begleiten den nächsten Schritt", text: "Wenn du dich entscheidest, koordinieren wir die Umsetzung und bleiben auch danach erreichbar." },
+  { step: "03", title: "Sie sehen die Unterschiede", text: "Wir erklären konkrete Optionen und warum sie zu Ihrer Situation passen – oder eben nicht." },
+  { step: "04", title: "Wir begleiten den nächsten Schritt", text: "Wenn Sie sich entscheiden, koordinieren wir die Umsetzung und bleiben auch danach erreichbar." },
 ];
 
 /* ------------------------------------------------------------------ */
