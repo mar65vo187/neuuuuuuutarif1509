@@ -3,7 +3,7 @@
 import { BarChart3, BadgeEuro, CalendarClock, Coins, Loader2, PiggyBank, ShieldCheck, TrendingUp, UsersRound } from "lucide-react";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { COMPENSATION_TIERS, TEAM_LEVELS } from "@/lib/compensation";
+import { COMPENSATION_TIERS, TEAM_LEVELS } from "@/lib/compensation-model";
 import { ProfileImage } from "@/components/advisors/ProfileImage";
 
 type Row = {
