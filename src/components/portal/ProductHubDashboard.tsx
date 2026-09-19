@@ -135,6 +135,13 @@ function lines(value: FormDataEntryValue | null) {
   return String(value ?? "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
 }
 
+function objectionPairs(value: FormDataEntryValue | null) {
+  return lines(value).map((line) => {
+    const [objection, ...answerParts] = line.split("|").map((part) => part.trim());
+    return { objection, answer: answerParts.join(" | ") };
+  }).filter((item) => item.objection && item.answer);
+}
+
 function channels(value: FormDataEntryValue | null): MarketingChannel[] {
   return lines(value).map((line) => {
     const [channel, rawStatus, ...note] = line.split("|").map((part) => part.trim());
@@ -331,6 +338,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           <div className="mt-4 grid gap-5 text-[13px] lg:grid-cols-2">
             <div><p className="font-bold">Verkaufsargumente</p>{product.salesArguments.length ? <ul className="mt-2 space-y-1.5 text-steel">{product.salesArguments.map((item) => <li key={item}>• {item}</li>)}</ul> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
             <div><p className="font-bold">Benötigte Unterlagen</p>{product.requiredDocuments.length ? <ul className="mt-2 space-y-1.5 text-steel">{product.requiredDocuments.map((item) => <li key={item}>• {item}</li>)}</ul> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
+            <div><p className="font-bold">Typische Einwände</p>{product.objections.length ? <div className="mt-2 space-y-2">{product.objections.map((item) => <div key={item.objection} className="rounded-xl bg-paper p-3"><p className="font-semibold">{item.objection}</p><p className="mt-1 text-steel">{item.answer}</p></div>)}</div> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
             <div><p className="font-bold">Abschluss-Checkliste</p>{product.checklist.length ? <ol className="mt-2 space-y-1.5 text-steel">{product.checklist.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
             <div><p className="font-bold">Abschlussweg</p><p className="mt-2 whitespace-pre-line leading-relaxed text-steel">{product.completionProcess || "Noch nicht hinterlegt."}</p>{product.submissionUrl && <a href={product.submissionUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-semibold text-electric-deep hover:underline">Partnerportal öffnen</a>}</div>
           </div>
@@ -403,7 +411,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           socialIdeas: lines(form.get("socialIdeas")),
           checklist: lines(form.get("checklist")),
           requiredDocuments: lines(form.get("requiredDocuments")),
-          objections: selectedProduct.objections,
+          objections: objectionPairs(form.get("objections")),
           trainingRequired: form.get("trainingRequired") === "on",
           highlight: form.get("highlight"),
         }), "/api/portal/admin/catalog", "PATCH")} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
@@ -430,6 +438,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label">WhatsApp-Vorlage<textarea name="whatsappTemplate" rows={4} maxLength={2500} defaultValue={selectedProduct.whatsappTemplate} className="field" /></label>
             <label className="label sm:col-span-2">E-Mail-Vorlage<textarea name="emailTemplate" rows={4} maxLength={4000} defaultValue={selectedProduct.emailTemplate} className="field" /></label>
             <label className="label sm:col-span-2">Social-Ideen · eine Zeile pro Idee<textarea name="socialIdeas" rows={3} defaultValue={selectedProduct.socialIdeas.join("\n")} className="field" /></label>
+            <label className="label sm:col-span-2">Einwände · Einwand|Antwort<textarea name="objections" rows={4} defaultValue={selectedProduct.objections.map((item) => `${item.objection}|${item.answer}`).join("\n")} className="field" /></label>
             <label className="label sm:col-span-2">Abschlussprozess<textarea name="completionProcess" rows={4} defaultValue={selectedProduct.completionProcess} className="field" /></label>
             <label className="label">Checkliste<textarea name="checklist" rows={4} defaultValue={selectedProduct.checklist.join("\n")} className="field" /></label>
             <label className="label">Unterlagen<textarea name="requiredDocuments" rows={4} defaultValue={selectedProduct.requiredDocuments.join("\n")} className="field" /></label>
@@ -513,7 +522,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           salesArguments: lines(form.get("salesArguments")), shortPitch: form.get("shortPitch"), phonePitch: form.get("phonePitch"), d2dPitch: form.get("d2dPitch"), b2bPitch: form.get("b2bPitch"),
           whatsappTemplate: form.get("whatsappTemplate"), emailTemplate: form.get("emailTemplate"), socialIdeas: lines(form.get("socialIdeas")),
           checklist: lines(form.get("checklist")), requiredDocuments: lines(form.get("requiredDocuments")),
-          objections: [], trainingRequired: form.get("trainingRequired") === "on", highlight: form.get("highlight"),
+          objections: objectionPairs(form.get("objections")), trainingRequired: form.get("trainingRequired") === "on", highlight: form.get("highlight"),
         }))} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3"><PackageSearch className="h-5 w-5 text-electric-deep" /><h3 className="text-[17px] font-extrabold">Produkt anlegen</h3></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -537,6 +546,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label">WhatsApp-Vorlage<textarea name="whatsappTemplate" rows={4} maxLength={2500} className="field" /></label>
             <label className="label sm:col-span-2">E-Mail-Vorlage<textarea name="emailTemplate" rows={4} maxLength={4000} className="field" /></label>
             <label className="label sm:col-span-2">Social-Ideen · eine Zeile pro Idee<textarea name="socialIdeas" rows={3} className="field" /></label>
+            <label className="label sm:col-span-2">Einwände · Einwand|Antwort<textarea name="objections" rows={4} className="field" placeholder={"Zu teuer|Wir prüfen zuerst, ob der Mehrwert zum Bedarf passt.\nIch möchte warten|Kein Problem – wir klären nur die Fakten, die Entscheidung bleibt beim Kunden."} /></label>
             <label className="label sm:col-span-2">Abschlussprozess<textarea name="completionProcess" rows={4} maxLength={8000} className="field" placeholder="1. Bedarf prüfen&#10;2. Daten aufnehmen&#10;3. Antrag einreichen" /></label>
             <label className="label">Checkliste · eine Zeile pro Punkt<textarea name="checklist" rows={4} className="field" /></label>
             <label className="label">Unterlagen · eine Zeile pro Punkt<textarea name="requiredDocuments" rows={4} className="field" /></label>
