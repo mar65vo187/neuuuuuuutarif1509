@@ -23,6 +23,7 @@ import {
   type Customer,
 } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
+import { isCompensationOwner } from "@/lib/compensation";
 import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -389,9 +390,11 @@ export async function createOrder(input: {
         if (requiredIds.some((id) => !completedIds.has(id))) throw new Error("Für dieses Produkt fehlt Ihnen noch eine gültige Pflichtschulung.");
       }
     }
-    const expected = input.expectedCommission === null || input.expectedCommission === undefined || input.expectedCommission === ""
-      ? product?.expectedCommission ?? null
-      : String(input.expectedCommission);
+    const canOverrideCommission = isCompensationOwner(user);
+    const manualExpected = canOverrideCommission && input.expectedCommission !== null && input.expectedCommission !== undefined && input.expectedCommission !== ""
+      ? String(input.expectedCommission)
+      : null;
+    const expected = product?.expectedCommission ?? manualExpected;
     const [created] = await tx.insert(orders).values({
       orderNumber: orderNumber(),
       customerId: customer.id,
