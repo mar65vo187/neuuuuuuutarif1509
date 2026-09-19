@@ -15,10 +15,16 @@ export default async function AdministrationPage() {
   let loadError: string | null = null;
   try {
     const rows = await listAdminAccounts();
-    accounts = rows.map((row) => ({ ...row, advisor: row.advisor ? {
+    accounts = rows.map((row) => ({
+      ...row,
+      address: row.address ?? "",
+      note: row.note ?? "",
+      advisoryAreas: row.advisoryAreas ?? [],
+      advisor: row.advisor ? {
       ...row.advisor, quote: row.advisor.quote ?? "", phone: row.advisor.phone ?? "",
       whatsapp: row.advisor.whatsapp ?? "", email: row.advisor.email ?? "",
-    } : null }));
+      } : null,
+    }));
   } catch { loadError = "Die Benutzer konnten gerade nicht geladen werden. Bitte erneut versuchen."; }
   return <UserManagement currentUserId={user.id} initialAccounts={accounts} initialError={loadError} />;
 }

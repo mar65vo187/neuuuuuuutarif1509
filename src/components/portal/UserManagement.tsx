@@ -10,13 +10,15 @@ import { SERVICES } from "@/lib/content";
 
 type FormState = {
   name: string; email: string; password: string; role: "admin" | "berater"; active: boolean;
+  age: string; address: string; note: string; advisoryAreas: string;
   hasProfile: boolean; slug: string; title: string; city: string; region: string; regions: string;
   topics: string; bio: string; quote: string; phone: string; whatsapp: string; publicEmail: string;
   initials: string; isFounder: boolean; profileActive: boolean; sortOrder: string;
 };
 
 const emptyForm = (): FormState => ({
-  name: "", email: "", password: "", role: "berater", active: true, hasProfile: false,
+  name: "", email: "", password: "", role: "berater", active: true,
+  age: "", address: "", note: "", advisoryAreas: "", hasProfile: false,
   slug: "", title: "Berater", city: "", region: "Deutschlandweit", regions: "Deutschlandweit (digital)",
   topics: "", bio: "", quote: "", phone: "", whatsapp: "", publicEmail: "", initials: "",
   isFounder: false, profileActive: true, sortOrder: "100",
@@ -25,7 +27,8 @@ const emptyForm = (): FormState => ({
 function formFromAccount(account: AdminAccount): FormState {
   const profile = account.advisor;
   return { ...emptyForm(), name: account.name, email: account.email, role: account.role, active: account.active,
-    hasProfile: Boolean(profile), slug: profile?.slug ?? "", title: profile?.title ?? "Berater",
+    age: account.age === null ? "" : String(account.age), address: account.address, note: account.note,
+    advisoryAreas: account.advisoryAreas.join("\n"), hasProfile: Boolean(profile), slug: profile?.slug ?? "", title: profile?.title ?? "Berater",
     city: profile?.city ?? "", region: profile?.region ?? "Deutschlandweit", regions: profile?.regions.join("\n") ?? "Deutschlandweit (digital)",
     topics: profile?.topics.join("\n") ?? "", bio: profile?.bio ?? "", quote: profile?.quote ?? "",
     phone: profile?.phone ?? "", whatsapp: profile?.whatsapp ?? "", publicEmail: profile?.email ?? "",
@@ -48,6 +51,8 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
   const [form, setForm] = useState<FormState>(emptyForm);
   const [image, setImage] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [employeeImage, setEmployeeImage] = useState<File | null>(null);
+  const employeeFileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const saving = useRef(false);
@@ -59,15 +64,32 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     const topics = form.topics.split("\n").map((entry) => entry.trim()).filter(Boolean);
     update("topics", topics.includes(topic) ? topics.filter((entry) => entry !== topic).join("\n") : [...topics, topic].join("\n"));
   };
+  const toggleAdvisoryArea = (topic: string) => {
+    const topics = form.advisoryAreas.split("\n").map((entry) => entry.trim()).filter(Boolean);
+    update("advisoryAreas", topics.includes(topic) ? topics.filter((entry) => entry !== topic).join("\n") : [...topics, topic].join("\n"));
+  };
 
   function choose(account?: AdminAccount) {
     setDeleteConfirmation(false);
     setSelectedId(account?.id ?? null);
     setForm(account ? formFromAccount(account) : emptyForm());
     setImage(null);
+    setEmployeeImage(null);
     if (fileInput.current) fileInput.current.value = "";
+    if (employeeFileInput.current) employeeFileInput.current.value = "";
     setError(null);
     setSuccess(null);
+  }
+
+  function selectEmployeeImage(file: File | null) {
+    if (saving.current) return;
+    if (file && (file.size === 0 || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+      setError("Bitte ein JPG-, PNG- oder WebP-Bild mit höchstens 5 MB auswählen.");
+      setEmployeeImage(null);
+      if (employeeFileInput.current) employeeFileInput.current.value = "";
+      return;
+    }
+    setEmployeeImage(file); setError(null); setSuccess(null);
   }
 
   function selectImage(file: File | null) {
@@ -93,10 +115,14 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     setBusy(true); setError(null); setSuccess(null);
     let accountSaved = false;
     try {
-      if (selectedId === currentUserId && form.password && image) throw new Error("Bitte das Profilbild zuerst speichern und das eigene Passwort anschließend separat ändern.");
+      if (selectedId === currentUserId && form.password && (image || employeeImage)) throw new Error("Bitte Bilder zuerst speichern und das eigene Passwort anschließend separat in den Einstellungen ändern.");
       const lines = (value: string) => [...new Set(value.split(/\n|;/).map((entry) => entry.trim()).filter(Boolean))];
       const data = {
         name: form.name, email: form.email, role: form.role, active: form.active,
+        age: form.age ? Number(form.age) : null,
+        address: form.address,
+        note: form.note,
+        advisoryAreas: lines(form.advisoryAreas),
         ...(form.password || !selectedId ? { password: form.password } : {}),
         advisor: form.hasProfile ? {
           slug: form.slug, title: form.title, city: form.city, region: form.region,
@@ -113,6 +139,12 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
       setSelectedId(result.user.id);
       update("password", "");
       if (result.signInAgain) { window.location.replace("/portal/login?next=/portal/verwaltung"); return; }
+      if (employeeImage) {
+        const upload = new FormData(); upload.append("image", employeeImage);
+        await api(`/api/portal/admin/users/${result.user.id}/image`, { method: "POST", body: upload });
+        setEmployeeImage(null);
+        if (employeeFileInput.current) employeeFileInput.current.value = "";
+      }
       if (image && result.user.advisorId) {
         const upload = new FormData(); upload.append("image", image);
         await api(`/api/portal/admin/advisors/${result.user.advisorId}/image`, { method: "POST", body: upload });
@@ -120,7 +152,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
         if (fileInput.current) fileInput.current.value = "";
       }
       await reload();
-      setSuccess("Benutzer und Beraterprofil wurden gespeichert." );
+      setSuccess("Mitarbeiterdaten und Beraterprofil wurden gespeichert." );
     } catch (problem) {
       const message = problem instanceof Error ? problem.message : "Verbindung fehlgeschlagen. Bitte erneut versuchen.";
       setError(accountSaved ? `Der Benutzer wurde gespeichert. ${message}` : message);
@@ -140,6 +172,20 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
       choose();
       setSuccess(`Der Portalzugang wurde gelöscht.${result.profileDeleted ? " Das zugehörige Beraterprofil und Profilbild wurden gelöscht." : hadProfile ? " Ein gemeinsam genutztes Beraterprofil bleibt erhalten." : ""} Zugeordnete Kundenanfragen wurden dir übertragen. Notizen und Chatnachrichten bleiben erhalten.`);
     } catch (problem) { setError(problem instanceof Error ? problem.message : "Der Benutzer konnte nicht gelöscht werden."); }
+    finally { saving.current = false; setBusy(false); }
+  }
+
+  async function removeEmployeeImage() {
+    if (!selectedId || saving.current) return;
+    saving.current = true;
+    setBusy(true); setError(null); setSuccess(null);
+    try {
+      await api(`/api/portal/admin/users/${selectedId}/image`, { method: "DELETE" });
+      setEmployeeImage(null);
+      if (employeeFileInput.current) employeeFileInput.current.value = "";
+      await reload();
+      setSuccess("Das interne Mitarbeiterbild wurde entfernt.");
+    } catch (problem) { setError(problem instanceof Error ? problem.message : "Das Bild konnte nicht entfernt werden."); }
     finally { saving.current = false; setBusy(false); }
   }
 
@@ -183,9 +229,31 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
               <label className="label">E-Mail für die Anmeldung<input required type="email" maxLength={200} autoComplete="off" className="field" value={form.email} onChange={(event) => update("email", event.target.value)} /></label>
               <label className="label">{selectedId ? "Neues Passwort (leer = unverändert)" : "Passwort (mindestens 12 Zeichen)"}<input required={!selectedId} type="password" minLength={12} maxLength={200} autoComplete="new-password" className="field" value={form.password} onChange={(event) => update("password", event.target.value)} /></label>
               <label className="label">Rolle<select className="field" value={form.role} disabled={selectedId === currentUserId} onChange={(event) => update("role", event.target.value as FormState["role"])}><option value="berater">Mitarbeiter</option><option value="admin">Administrator</option></select></label>
+              <label className="label">Alter<input type="number" min={16} max={100} className="field" value={form.age} onChange={(event) => update("age", event.target.value)} placeholder="optional" /></label>
+              <label className="label sm:col-span-2">Adresse<input maxLength={500} className="field" value={form.address} onChange={(event) => update("address", event.target.value)} placeholder="Straße, Hausnummer, PLZ, Ort" /></label>
             </div>
+
+            <div className="mt-5">
+              <p className="label">Interne Beratungsbereiche</p>
+              <p className="mb-3 text-[12.5px] text-steel">Diese Auswahl ist nur intern sichtbar und bestimmt, in welchen Bereichen die Person beraten soll.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {SERVICES.map((service) => {
+                  const active = form.advisoryAreas.split("\n").map((entry) => entry.trim()).includes(service.name);
+                  return <label key={service.key} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-[13.5px] transition-colors ${active ? "border-electric bg-electric/5" : "border-line bg-white hover:border-ink/30"}`}><input type="checkbox" checked={active} onChange={() => toggleAdvisoryArea(service.name)} />{service.name}</label>;
+                })}
+              </div>
+            </div>
+
+            <label className="label mt-5">Interne Notiz<textarea rows={3} maxLength={4000} className="field" value={form.note} onChange={(event) => update("note", event.target.value)} placeholder="Nur für Administratoren sichtbar" /></label>
+
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <AdvisorAvatar initials={form.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "?"} imageUrl={selected?.imageUrl ?? null} name={form.name || undefined} />
+              <label className="label">Internes Mitarbeiterbild<input ref={employeeFileInput} type="file" accept="image/jpeg,image/png,image/webp" className="field" onChange={(event) => selectEmployeeImage(event.target.files?.[0] ?? null)} /></label>
+              {selected?.imageUrl && <button type="button" onClick={removeEmployeeImage} className="text-[13.5px] font-semibold text-electric-deep">Internes Bild entfernen</button>}
+            </div>
+
             <label className="mt-4 inline-flex items-center gap-2 text-[14px] text-ink"><input type="checkbox" checked={form.active} disabled={selectedId === currentUserId} onChange={(event) => update("active", event.target.checked)} /> Portalzugang aktiv</label>
-            <p className="mt-2 text-[12.5px] text-steel">Mitarbeiter können im Portal Anfragen bearbeiten. Nur Administratoren dürfen Benutzer, Beraterprofile und Profilbilder verwalten.</p>
+            <p className="mt-2 text-[12.5px] text-steel">Nur Administratoren können Mitarbeiter anlegen, Rollen vergeben, interne Daten bearbeiten oder Benutzer deaktivieren. Das interne Bild und die Notiz werden nicht öffentlich angezeigt.</p>
           </Card>
           <Card>
             <label className="inline-flex items-center gap-2 text-[18px] font-extrabold text-ink"><input type="checkbox" checked={form.hasProfile} disabled={Boolean(selected?.advisorId)} onChange={(event) => { update("hasProfile", event.target.checked); if (!event.target.checked) { setImage(null); if (fileInput.current) fileInput.current.value = ""; } }} /> Öffentliches Beraterprofil</label>

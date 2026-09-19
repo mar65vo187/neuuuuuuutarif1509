@@ -178,18 +178,22 @@ export async function getDashboardStats(user?: SessionUser) {
 /*  Team-Chat                                                          */
 /* ------------------------------------------------------------------ */
 
-export async function listTeamMessages(limit = 100) {
-  await requireUser();
+export async function listTeamMessages(channel: "all" | "admins" = "all", limit = 100, user?: SessionUser) {
+  const current = user ?? await requireUser();
+  if (channel === "admins" && current.role !== "admin") throw new Error("FORBIDDEN");
   const rows = await db
     .select({
       id: teamMessages.id,
       body: teamMessages.body,
+      channel: teamMessages.channel,
       createdAt: teamMessages.createdAt,
       employeeId: teamMessages.employeeId,
       authorName: employees.name,
+      authorImageUrl: employees.imageUrl,
     })
     .from(teamMessages)
     .leftJoin(employees, eq(teamMessages.employeeId, employees.id))
+    .where(eq(teamMessages.channel, channel))
     .orderBy(desc(teamMessages.createdAt))
     .limit(Number.isSafeInteger(limit) ? Math.max(1, Math.min(limit, 200)) : 100);
   return rows.reverse();

@@ -8,6 +8,7 @@ if (!databaseUrl) throw new Error("DATABASE_URL fehlt für die Migrationsprüfun
 
 const requiredTables = [
   "employees",
+  "employee_images",
   "advisors",
   "advisor_images",
   "leads",

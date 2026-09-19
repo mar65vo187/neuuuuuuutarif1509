@@ -83,8 +83,21 @@ export const employees = pgTable("employees", {
   passwordHash: text("password_hash").notNull(),
   role: employeeRoleEnum("role").notNull().default("berater"),
   advisorId: integer("advisor_id").references(() => advisors.id, { onDelete: "set null" }),
+  age: integer("age"),
+  address: text("address").notNull().default(""),
+  note: text("note").notNull().default(""),
+  advisoryAreas: text("advisory_areas").array().notNull().default([]),
+  imageUrl: text("image_url"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const employeeImages = pgTable("employee_images", {
+  employeeId: integer("employee_id").primaryKey().references(() => employees.id, { onDelete: "cascade" }),
+  contentType: text("content_type").notNull(),
+  data: bytea("data").notNull(),
+  digest: text("digest").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /* ------------------------------------------------------------------ */
@@ -134,6 +147,7 @@ export const leadNotes = pgTable("lead_notes", {
 export const teamMessages = pgTable("team_messages", {
   id: serial("id").primaryKey(),
   employeeId: integer("employee_id").references(() => employees.id, { onDelete: "set null" }),
+  channel: text("channel").$type<"all" | "admins">().notNull().default("all"),
   body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -144,6 +158,7 @@ export const teamMessages = pgTable("team_messages", {
 
 export type Advisor = typeof advisors.$inferSelect;
 export type Employee = typeof employees.$inferSelect;
+export type EmployeeImage = typeof employeeImages.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
 export type LeadNote = typeof leadNotes.$inferSelect;
 export type TeamMessage = typeof teamMessages.$inferSelect;
