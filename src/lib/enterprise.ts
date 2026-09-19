@@ -458,6 +458,9 @@ export async function updateOrder(id: number, input: {
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(orders).where(and(eq(orders.id, id), orderAccess(user))).limit(1).for("update");
     if (!existing) throw new Error("Auftrag nicht gefunden.");
+    if (input.status && input.status !== existing.status && ["cancelled", "storno"].includes(existing.status)) {
+      throw new Error("Stornierte Aufträge können nicht reaktiviert werden. Bitte einen neuen Auftrag anlegen.");
+    }
     const patch: Partial<typeof orders.$inferInsert> = { updatedAt: new Date() };
     if (input.status && input.status !== existing.status) {
       patch.status = input.status;
