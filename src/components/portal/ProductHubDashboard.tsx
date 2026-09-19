@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  BadgeEuro, BookOpenCheck, BriefcaseBusiness, Building2, ChevronDown, CircleDollarSign,
+  BadgeEuro, BookOpenCheck, BriefcaseBusiness, Building2, ChevronDown, CircleDollarSign, Columns3,
   FileSpreadsheet, GraduationCap, Loader2, Megaphone, PackageSearch, PiggyBank, Plus, Search,
   ShieldCheck, Sparkles, Upload, UsersRound,
 } from "lucide-react";
@@ -29,6 +29,13 @@ type Product = {
   marketingConditions: string;
   salesArguments: string[];
   objections: Array<{ objection: string; answer: string }>;
+  shortPitch: string;
+  phonePitch: string;
+  d2dPitch: string;
+  b2bPitch: string;
+  whatsappTemplate: string;
+  emailTemplate: string;
+  socialIdeas: string[];
   checklist: string[];
   requiredDocuments: string[];
   trainingRequired: boolean;
@@ -66,6 +73,7 @@ type Update = {
   body: string;
   important: boolean;
   createdAt: string;
+  readAt: string | null;
 };
 type OwnerData = {
   potentialPool: number;
@@ -89,6 +97,7 @@ type OwnerData = {
 type HubData = {
   owner: boolean;
   payoutPercent: number;
+  advisoryAreas: string[];
   products: Product[];
   providers: Provider[];
   updates: Update[];
@@ -194,6 +203,8 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   const [csvName, setCsvName] = useState("");
   const [selectedProductId, setSelectedProductId] = useState(data.products[0]?.id ?? 0);
   const [selectedProviderId, setSelectedProviderId] = useState(data.providers[0]?.id ?? 0);
+  const [compareIds, setCompareIds] = useState<number[]>(data.products.slice(0, 2).map((product) => product.id));
+  const [readBusy, setReadBusy] = useState<number | null>(null);
 
   const categories = useMemo(() => Array.from(new Set(data.products.map((product) => product.category))).sort(), [data.products]);
   const filtered = useMemo(() => {
@@ -238,6 +249,19 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   const activeProducts = data.products.filter((product) => ["active", "new", "test"].includes(product.lifecycleStatus)).length;
   const selectedProduct = data.products.find((product) => product.id === selectedProductId) ?? data.products[0];
   const selectedProvider = data.providers.find((item) => item.id === selectedProviderId) ?? data.providers[0];
+  const compareProducts = compareIds.map((id) => data.products.find((product) => product.id === id)).filter((product): product is Product => Boolean(product));
+
+  async function markUpdateRead(id: number) {
+    setReadBusy(id); setError(null);
+    try {
+      await post(`/api/portal/catalog/updates/${id}/read`, {});
+      router.refresh();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Lesestatus konnte nicht gespeichert werden.");
+    } finally {
+      setReadBusy(null);
+    }
+  }
 
   return <div className="space-y-6">
     {(error || success) && <div role={error ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-[13.5px] ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>{error ?? success}</div>}
@@ -265,6 +289,29 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
         <select className="field" value={provider} onChange={(event) => setProvider(event.target.value)}><option value="all">Alle Partner</option>{data.providers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
       </div>
     </section>
+
+    {data.products.length > 1 && <section className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
+      <div className="flex items-center gap-3"><Columns3 className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Produkte direkt vergleichen</h2><p className="text-[12.5px] text-steel">Bis zu drei Produkte nebeneinander – Bedarf und Eignung bleiben wichtiger als Provision.</p></div></div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {[0,1,2].map((slot) => <select key={slot} className="field" value={compareIds[slot] ?? ""} onChange={(event) => {
+          const value = Number(event.target.value);
+          setCompareIds((current) => {
+            const next = [...current];
+            if (value) next[slot] = value; else next.splice(slot, 1);
+            return Array.from(new Set(next)).slice(0,3);
+          });
+        }}><option value="">Produkt {slot + 1}</option>{data.products.map((product) => <option key={product.id} value={product.id}>{product.providerName} · {product.name}</option>)}</select>)}
+      </div>
+      {compareProducts.length > 1 && <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[760px] text-[12.5px]"><thead><tr><th className="w-40 border-b border-line p-3 text-left text-steel">Kriterium</th>{compareProducts.map((product) => <th key={product.id} className="border-b border-line p-3 text-left"><p className="font-extrabold">{product.name}</p><p className="text-[11px] font-normal text-steel">{product.providerName}</p></th>)}</tr></thead><tbody>{[
+        ["Bereich", (p: Product) => p.category],
+        ["Zielgruppe", (p: Product) => p.audience === "both" ? "Privat & Business" : p.audience === "business" ? "Business" : "Privat"],
+        ["Region", (p: Product) => p.region],
+        ["Status", (p: Product) => statusLabel[p.lifecycleStatus] ?? p.lifecycleStatus],
+        ["Schulung", (p: Product) => p.trainingRequired ? "Erforderlich" : "Keine Pflicht"],
+        ["Vermarktung", (p: Product) => p.marketingChannels.filter((channel) => channel.status !== "blocked").map((channel) => channel.channel).join(", ") || "–"],
+        ["Provision", (p: Product) => data.owner ? money(p.ownerGrossCommission ?? 0) : p.employeeCommissionEstimate !== null ? money(p.employeeCommissionEstimate) : "–"],
+      ].map(([label, getter]) => <tr key={String(label)}><td className="border-b border-line p-3 font-semibold text-steel">{String(label)}</td>{compareProducts.map((product) => <td key={product.id} className="border-b border-line p-3">{(getter as (p: Product) => string)(product)}</td>)}</tr>)}</tbody></table></div>}
+    </section>}
 
     <section className="grid gap-4 xl:grid-cols-2">
       {filtered.map((product) => <article key={product.id} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
