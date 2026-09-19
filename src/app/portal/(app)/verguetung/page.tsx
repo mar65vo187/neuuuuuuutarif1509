@@ -25,6 +25,6 @@ export default async function CompensationPage() {
         Stufenmodell, Anbieter-Provision, Storno-Rücklage, Treue-Sparplan und Teamstruktur in einer nachvollziehbaren Übersicht.
       </p>
     </header>
-    <CompensationDashboard rows={serialized} isOwner={isCompensationOwner(user)} />
+    <CompensationDashboard rows={serialized} isOwner={isCompensationOwner(user)} asOf={new Date().toISOString()} />
   </div>;
 }
