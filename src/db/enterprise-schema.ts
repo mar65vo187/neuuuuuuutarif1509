@@ -172,11 +172,13 @@ export const benefitPoolLedger = pgTable("benefit_pool_ledger", {
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   note: text("note").notNull().default(""),
   reference: text("reference"),
+  sourceKey: text("source_key"),
   createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("benefit_pool_ledger_created_idx").on(table.createdAt),
   index("benefit_pool_ledger_category_idx").on(table.category, table.createdAt),
+  uniqueIndex("benefit_pool_ledger_source_key_unique").on(table.sourceKey),
 ]);
 
 export const productUpdates = pgTable("product_updates", {
