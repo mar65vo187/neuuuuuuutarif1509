@@ -6,6 +6,7 @@ import {
   auditEvents,
   automationRules,
   automationRuns,
+  benefitPoolLedger,
   commissionEvents,
   trainingModules,
   productCatalogProfiles,
@@ -23,6 +24,7 @@ import {
   type Customer,
 } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
+import { isCompensationOwner } from "@/lib/compensation";
 import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -389,9 +391,11 @@ export async function createOrder(input: {
         if (requiredIds.some((id) => !completedIds.has(id))) throw new Error("Für dieses Produkt fehlt Ihnen noch eine gültige Pflichtschulung.");
       }
     }
-    const expected = input.expectedCommission === null || input.expectedCommission === undefined || input.expectedCommission === ""
-      ? product?.expectedCommission ?? null
-      : String(input.expectedCommission);
+    const canOverrideCommission = isCompensationOwner(user);
+    const manualExpected = canOverrideCommission && input.expectedCommission !== null && input.expectedCommission !== undefined && input.expectedCommission !== ""
+      ? String(input.expectedCommission)
+      : null;
+    const expected = product?.expectedCommission ?? manualExpected;
     const [created] = await tx.insert(orders).values({
       orderNumber: orderNumber(),
       customerId: customer.id,
@@ -454,6 +458,9 @@ export async function updateOrder(id: number, input: {
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(orders).where(and(eq(orders.id, id), orderAccess(user))).limit(1).for("update");
     if (!existing) throw new Error("Auftrag nicht gefunden.");
+    if (input.status && input.status !== existing.status && ["cancelled", "storno"].includes(existing.status)) {
+      throw new Error("Stornierte Aufträge können nicht reaktiviert werden. Bitte einen neuen Auftrag anlegen.");
+    }
     const patch: Partial<typeof orders.$inferInsert> = { updatedAt: new Date() };
     if (input.status && input.status !== existing.status) {
       patch.status = input.status;
@@ -484,6 +491,11 @@ export async function updateOrder(id: number, input: {
       if (["cancelled", "storno"].includes(input.status)) {
         const [existingChargeback] = await tx.select({ id: commissionEvents.id }).from(commissionEvents)
           .where(and(eq(commissionEvents.orderId, id), eq(commissionEvents.type, "chargeback"))).limit(1);
+        const [saleEvent] = await tx.select({
+          id: commissionEvents.id,
+          paidAmount: commissionEvents.paidAmount,
+        }).from(commissionEvents)
+          .where(and(eq(commissionEvents.orderId, id), eq(commissionEvents.type, "sale"))).limit(1);
         if (!existingChargeback) {
           const amount = Number(existing.expectedCommission ?? 0);
           await tx.insert(commissionEvents).values({
@@ -492,6 +504,29 @@ export async function updateOrder(id: number, input: {
             type: "chargeback",
             status: "open",
             expectedAmount: amount ? String(-Math.abs(amount)) : null,
+          });
+        }
+        const paidAmount = Number(saleEvent?.paidAmount ?? 0);
+        if (saleEvent && paidAmount > 0) {
+          const reversalAmount = Math.round((paidAmount * 0.15 + Number.EPSILON) * 100) / 100;
+          await tx.insert(benefitPoolLedger).values({
+            entryType: "spend",
+            category: "growth_pool",
+            amount: String(reversalAmount),
+            note: "Automatische Gegenbuchung des 15-%-Pools wegen Storno.",
+            reference: existing.orderNumber,
+            sourceKey: `commission-chargeback:${saleEvent.id}`,
+            createdByEmployeeId: user.id,
+          }).onConflictDoUpdate({
+            target: benefitPoolLedger.sourceKey,
+            set: {
+              entryType: "spend",
+              category: "growth_pool",
+              amount: String(reversalAmount),
+              note: "Automatische Gegenbuchung des 15-%-Pools wegen Storno.",
+              reference: existing.orderNumber,
+              createdByEmployeeId: user.id,
+            },
           });
         }
       }
