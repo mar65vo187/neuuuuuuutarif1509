@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
@@ -178,11 +178,28 @@ export async function getProductHubData(user: SessionUser, search = "") {
 
   const accessibleProductIds = new Set(accessibleProductRows.map((product) => product.id));
   const accessibleProviderIds = new Set(accessibleProductRows.map((product) => product.providerId));
-  const updates = user.role === "admin" || advisoryAreas.length === 0
+  const scopedUpdates = user.role === "admin" || advisoryAreas.length === 0
     ? updateRows
     : updateRows.filter((update) =>
         (update.productId !== null && accessibleProductIds.has(update.productId)) ||
         (update.productId === null && update.providerId !== null && accessibleProviderIds.has(update.providerId)));
+
+  const readerRows = owner && scopedUpdates.length
+    ? await db.select({
+        updateId: productUpdateReads.updateId,
+        employeeName: employees.name,
+      }).from(productUpdateReads)
+        .innerJoin(employees, eq(productUpdateReads.employeeId, employees.id))
+        .where(inArray(productUpdateReads.updateId, scopedUpdates.map((update) => update.id)))
+        .orderBy(employees.name)
+    : [];
+  const readersByUpdate = new Map<number, string[]>();
+  for (const reader of readerRows) {
+    const names = readersByUpdate.get(reader.updateId) ?? [];
+    names.push(reader.employeeName);
+    readersByUpdate.set(reader.updateId, names);
+  }
+  const updates = scopedUpdates.map((update) => ({ ...update, readers: readersByUpdate.get(update.id) ?? [] }));
   const accessibleProviders = user.role === "admin" || advisoryAreas.length === 0
     ? providerRows
     : providerRows.filter((provider) => accessibleProviderIds.has(provider.id));
