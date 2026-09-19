@@ -15,19 +15,26 @@ export function OrderCreateForm({
   providers,
   products,
   initialLeadId,
+  initialProductId,
+  initialProviderId,
+  canEditCommission = false,
 }: {
   customers: CustomerOption[];
   leads: LeadOption[];
   providers: ProviderOption[];
   products: ProductOption[];
   initialLeadId?: number;
+  initialProductId?: number;
+  initialProviderId?: number;
+  canEditCommission?: boolean;
 }) {
   const router = useRouter();
   const saving = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<"customer" | "lead">(initialLeadId ? "lead" : "customer");
-  const [providerId, setProviderId] = useState<number>(providers[0]?.id ?? 0);
+  const [providerId, setProviderId] = useState<number>(initialProviderId ?? providers[0]?.id ?? 0);
+  const [productId, setProductId] = useState<number>(initialProductId ?? 0);
   const availableProducts = useMemo(() => products.filter((product) => product.providerId === providerId), [products, providerId]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -44,7 +51,7 @@ export function OrderCreateForm({
         providerId: Number(data.get("providerId")),
         productId: Number(data.get("productId")) || undefined,
         externalOrderId: String(data.get("externalOrderId") ?? ""),
-        expectedCommission: String(data.get("expectedCommission") ?? "") || undefined,
+        expectedCommission: canEditCommission ? String(data.get("expectedCommission") ?? "") || undefined : undefined,
         note: String(data.get("note") ?? ""),
       };
       const response = await fetch("/api/portal/enterprise/orders", {
@@ -93,19 +100,23 @@ export function OrderCreateForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="label">Provider
-          <select name="providerId" required className="field" value={providerId || ""} onChange={(e) => setProviderId(Number(e.target.value))}>
+          <select name="providerId" required className="field" value={providerId || ""} onChange={(e) => {
+            const nextProviderId = Number(e.target.value);
+            setProviderId(nextProviderId);
+            if (!products.some((product) => product.id === productId && product.providerId === nextProviderId)) setProductId(0);
+          }}>
             <option value="">Bitte auswählen</option>
             {providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.name} · {provider.category}</option>)}
           </select>
         </label>
         <label className="label">Produkt
-          <select name="productId" className="field">
+          <select name="productId" className="field" value={productId || ""} onChange={(event) => setProductId(Number(event.target.value) || 0)}>
             <option value="">Ohne konkretes Produkt</option>
             {availableProducts.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
           </select>
         </label>
         <label className="label">Externe Auftrags-ID<input name="externalOrderId" maxLength={160} className="field" /></label>
-        <label className="label">Erwartete Provision (€)<input name="expectedCommission" inputMode="decimal" placeholder="z. B. 240,00" className="field" /></label>
+        {canEditCommission ? <label className="label">Provider-Provision überschreiben (€)<input name="expectedCommission" inputMode="decimal" placeholder="nur Owner, optional" className="field" /></label> : <div className="rounded-xl border border-line bg-paper px-4 py-3 text-[12.5px] text-steel">Die Provisionsbasis wird automatisch aus dem internen Produktkatalog übernommen.</div>}
       </div>
       <label className="label">Interne Notiz<textarea name="note" rows={3} maxLength={2000} className="field" /></label>
       {providers.length === 0 && <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-800">Es ist noch kein Provider hinterlegt. Ein Administrator kann Provider unter System & Integrationen anlegen.</p>}
