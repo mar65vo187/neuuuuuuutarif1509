@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -11,6 +12,10 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { employees, leads } from "./schema";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() { return "bytea"; },
+});
 
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
@@ -188,6 +193,102 @@ export const productUpdates = pgTable("product_updates", {
   index("product_updates_created_idx").on(table.createdAt),
   index("product_updates_product_idx").on(table.productId, table.createdAt),
 ]);
+
+export const incentiveCampaigns = pgTable("incentive_campaigns", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  goalType: text("goal_type").notNull().default("orders"),
+  goalValue: numeric("goal_value", { precision: 12, scale: 2 }).notNull(),
+  rewardType: text("reward_type").notNull().default("bonus"),
+  rewardDescription: text("reward_description").notNull(),
+  budget: numeric("budget", { precision: 12, scale: 2 }),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  audience: text("audience").notNull().default("all"),
+  active: boolean("active").notNull().default(true),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("incentive_campaign_active_idx").on(table.active, table.startsAt, table.endsAt)]);
+
+export const trainingModules = pgTable("training_modules", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  category: text("category").notNull(),
+  description: text("description").notNull().default(""),
+  content: text("content").notNull().default(""),
+  productId: integer("product_id").references(() => products.id, { onDelete: "set null" }),
+  required: boolean("required").notNull().default(false),
+  validMonths: integer("valid_months"),
+  active: boolean("active").notNull().default(true),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("training_module_product_idx").on(table.productId, table.active)]);
+
+export const employeeTrainingCompletions = pgTable("employee_training_completions", {
+  id: serial("id").primaryKey(),
+  moduleId: integer("module_id").notNull().references(() => trainingModules.id, { onDelete: "cascade" }),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("completed"),
+  completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  recordedByEmployeeId: integer("recorded_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  note: text("note").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("employee_training_module_unique").on(table.moduleId, table.employeeId),
+  index("employee_training_employee_idx").on(table.employeeId, table.status, table.expiresAt),
+]);
+
+export const employeeBenefits = pgTable("employee_benefits", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  benefitKey: text("benefit_key").notNull(),
+  label: text("label").notNull(),
+  status: text("status").notNull().default("eligible"),
+  details: text("details").notNull().default(""),
+  validFrom: timestamp("valid_from", { withTimezone: true }),
+  validTo: timestamp("valid_to", { withTimezone: true }),
+  updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("employee_benefit_unique").on(table.employeeId, table.benefitKey),
+  index("employee_benefit_employee_idx").on(table.employeeId, table.status),
+]);
+
+export const internalDocuments = pgTable("internal_documents", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  fileName: text("file_name").notNull(),
+  contentType: text("content_type").notNull(),
+  data: bytea("data").notNull(),
+  digest: text("digest").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  version: integer("version").notNull().default(1),
+  productId: integer("product_id").references(() => products.id, { onDelete: "set null" }),
+  providerId: integer("provider_id").references(() => providers.id, { onDelete: "set null" }),
+  visibility: text("visibility").notNull().default("team"),
+  active: boolean("active").notNull().default(true),
+  uploadedByEmployeeId: integer("uploaded_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("internal_documents_category_idx").on(table.category, table.active, table.createdAt),
+  index("internal_documents_product_idx").on(table.productId, table.active, table.createdAt),
+]);
+
+export const reconciliationImports = pgTable("reconciliation_imports", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").notNull().references(() => providers.id, { onDelete: "restrict" }),
+  sourceName: text("source_name").notNull(),
+  rowCount: integer("row_count").notNull(),
+  matchedCount: integer("matched_count").notNull().default(0),
+  issueCount: integer("issue_count").notNull().default(0),
+  importedByEmployeeId: integer("imported_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("reconciliation_import_provider_idx").on(table.providerId, table.createdAt)]);
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
