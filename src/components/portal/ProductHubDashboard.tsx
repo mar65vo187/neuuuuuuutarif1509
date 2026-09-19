@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  BadgeEuro, BookOpenCheck, BriefcaseBusiness, Building2, Car, ChevronDown, CircleDollarSign,
+  BadgeEuro, BookOpenCheck, BriefcaseBusiness, Building2, ChevronDown, CircleDollarSign,
   FileSpreadsheet, GraduationCap, Loader2, Megaphone, PackageSearch, PiggyBank, Plus, Search,
   ShieldCheck, Sparkles, Upload, UsersRound,
 } from "lucide-react";
