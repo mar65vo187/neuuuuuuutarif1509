@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ co
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
   const code = decodeURIComponent((await context.params).code).trim();
-  if (!/^TW-[A-Z0-9-]{6,120}$/i.test(code)) return NextResponse.json({ ok: false, error: "Ungültiger Nachweiscode." }, { status: 400 });
+  if (!/^TW-[A-Z0-9-]{3,120}$/i.test(code)) return NextResponse.json({ ok: false, error: "Ungültiger Nachweiscode." }, { status: 400 });
 
   const [row] = await db.select({
     employeeId: employeeTrainingCompletions.employeeId,
