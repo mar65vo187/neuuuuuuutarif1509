@@ -334,6 +334,20 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <div><p className="font-bold">Abschluss-Checkliste</p>{product.checklist.length ? <ol className="mt-2 space-y-1.5 text-steel">{product.checklist.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
             <div><p className="font-bold">Abschlussweg</p><p className="mt-2 whitespace-pre-line leading-relaxed text-steel">{product.completionProcess || "Noch nicht hinterlegt."}</p>{product.submissionUrl && <a href={product.submissionUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-semibold text-electric-deep hover:underline">Partnerportal öffnen</a>}</div>
           </div>
+          {(product.shortPitch || product.phonePitch || product.d2dPitch || product.b2bPitch || product.whatsappTemplate || product.emailTemplate || product.socialIdeas.length > 0) && <div className="mt-5 rounded-2xl border border-electric/15 bg-electric/[0.035] p-4">
+            <p className="font-bold">Marketing- & Gesprächs-Kit</p>
+            <div className="mt-3 grid gap-4 lg:grid-cols-2">
+              {[
+                { label: "Kurzpitch", content: product.shortPitch },
+                { label: "Telefonpitch", content: product.phonePitch },
+                { label: "D2D-Pitch", content: product.d2dPitch },
+                { label: "B2B-Pitch", content: product.b2bPitch },
+                { label: "WhatsApp-Vorlage", content: product.whatsappTemplate },
+                { label: "E-Mail-Vorlage", content: product.emailTemplate },
+              ].filter((item) => item.content).map((item) => <div key={item.label}><p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-electric-deep">{item.label}</p><p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-steel">{item.content}</p></div>)}
+              {product.socialIdeas.length > 0 && <div><p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-electric-deep">Social-Ideen</p><ul className="mt-1 space-y-1 text-[12.5px] text-steel">{product.socialIdeas.map((idea) => <li key={idea}>• {idea}</li>)}</ul></div>}
+            </div>
+          </div>}
           {product.marketingConditions && <div className="mt-4 rounded-2xl border border-line bg-paper p-4"><p className="font-bold">Vermarktungsbedingungen</p><p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-steel">{product.marketingConditions}</p></div>}
         </details>
       </article>)}
@@ -345,7 +359,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
         <div className="mt-5 divide-y divide-line">{data.providers.map((item) => <div key={item.id} className="py-3 first:pt-0"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">{item.name}</p><span className="text-[11.5px] text-steel">{item.partnerType} · {item.category}</span></div><p className="mt-1 text-[12.5px] text-steel">{item.supportContact || item.contactEmail || item.contactPhone || "Kontakt noch nicht hinterlegt."}</p>{item.portalUrl && <a className="mt-1 inline-flex text-[12.5px] font-semibold text-electric-deep hover:underline" href={item.portalUrl} target="_blank" rel="noreferrer">Partnerportal öffnen</a>}</div>)}</div>
       </div>
       <div className="rounded-[24px] border border-line bg-white p-5 sm:p-6"><div className="flex items-center gap-3"><Megaphone className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Produkt-News</h2><p className="text-[12.5px] text-steel">Provisionen, Prozesse, Aktionen und Produktänderungen.</p></div></div>
-        <div className="mt-5 space-y-3">{data.updates.length ? data.updates.slice(0,12).map((item) => <div key={item.id} className={`rounded-2xl border p-4 ${item.important ? "border-electric/30 bg-electric/5" : "border-line bg-paper"}`}><div className="flex items-center justify-between gap-3"><p className="text-[13.5px] font-bold">{item.title}</p>{item.important && <Sparkles className="h-4 w-4 text-electric-deep" />}</div>{item.body && <p className="mt-1 text-[12.5px] leading-relaxed text-steel">{item.body}</p>}<p className="mt-2 text-[11px] text-steel">{date(item.createdAt)}</p></div>) : <p className="text-[13px] text-steel">Noch keine Produkt-News vorhanden.</p>}</div>
+        <div className="mt-5 space-y-3">{data.updates.length ? data.updates.slice(0,12).map((item) => <div key={item.id} className={`rounded-2xl border p-4 ${item.important ? "border-electric/30 bg-electric/5" : "border-line bg-paper"}`}><div className="flex items-center justify-between gap-3"><p className="text-[13.5px] font-bold">{item.title}</p>{item.important && <Sparkles className="h-4 w-4 text-electric-deep" />}</div>{item.body && <p className="mt-1 text-[12.5px] leading-relaxed text-steel">{item.body}</p>}<div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p className="text-[11px] text-steel">{date(item.createdAt)}{item.readAt ? ` · gelesen ${date(item.readAt)}` : item.important ? " · Lesebestätigung offen" : ""}</p>{item.important && !item.readAt && <button type="button" disabled={readBusy === item.id} onClick={() => void markUpdateRead(item.id)} className="inline-flex h-8 items-center rounded-full border border-electric/20 bg-white px-3 text-[11.5px] font-bold text-electric-deep hover:bg-electric/5 disabled:opacity-50">{readBusy === item.id ? "Speichert…" : "Als gelesen bestätigen"}</button>}</div></div>) : <p className="text-[13px] text-steel">Noch keine Produkt-News vorhanden.</p>}</div>
       </div>
     </section>
 
@@ -380,6 +394,13 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           marketingChannels: channels(form.get("marketingChannels")),
           marketingConditions: form.get("marketingConditions"),
           salesArguments: lines(form.get("salesArguments")),
+          shortPitch: form.get("shortPitch"),
+          phonePitch: form.get("phonePitch"),
+          d2dPitch: form.get("d2dPitch"),
+          b2bPitch: form.get("b2bPitch"),
+          whatsappTemplate: form.get("whatsappTemplate"),
+          emailTemplate: form.get("emailTemplate"),
+          socialIdeas: lines(form.get("socialIdeas")),
           checklist: lines(form.get("checklist")),
           requiredDocuments: lines(form.get("requiredDocuments")),
           objections: selectedProduct.objections,
@@ -402,6 +423,13 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label sm:col-span-2">Vertriebskanäle · Kanal|allowed/conditional/blocked|Hinweis<textarea name="marketingChannels" rows={4} defaultValue={selectedProduct.marketingChannels.map((entry) => [entry.channel, entry.status, entry.note].filter(Boolean).join("|")).join("\n")} className="field" /></label>
             <label className="label sm:col-span-2">Vermarktungsbedingungen<textarea name="marketingConditions" rows={3} defaultValue={selectedProduct.marketingConditions} className="field" /></label>
             <label className="label sm:col-span-2">Verkaufsargumente<textarea name="salesArguments" rows={3} defaultValue={selectedProduct.salesArguments.join("\n")} className="field" /></label>
+            <label className="label sm:col-span-2">Kurzpitch<textarea name="shortPitch" rows={2} maxLength={1200} defaultValue={selectedProduct.shortPitch} className="field" /></label>
+            <label className="label">Telefonpitch<textarea name="phonePitch" rows={4} maxLength={3000} defaultValue={selectedProduct.phonePitch} className="field" /></label>
+            <label className="label">D2D-Pitch<textarea name="d2dPitch" rows={4} maxLength={3000} defaultValue={selectedProduct.d2dPitch} className="field" /></label>
+            <label className="label">B2B-Pitch<textarea name="b2bPitch" rows={4} maxLength={3000} defaultValue={selectedProduct.b2bPitch} className="field" /></label>
+            <label className="label">WhatsApp-Vorlage<textarea name="whatsappTemplate" rows={4} maxLength={2500} defaultValue={selectedProduct.whatsappTemplate} className="field" /></label>
+            <label className="label sm:col-span-2">E-Mail-Vorlage<textarea name="emailTemplate" rows={4} maxLength={4000} defaultValue={selectedProduct.emailTemplate} className="field" /></label>
+            <label className="label sm:col-span-2">Social-Ideen · eine Zeile pro Idee<textarea name="socialIdeas" rows={3} defaultValue={selectedProduct.socialIdeas.join("\n")} className="field" /></label>
             <label className="label sm:col-span-2">Abschlussprozess<textarea name="completionProcess" rows={4} defaultValue={selectedProduct.completionProcess} className="field" /></label>
             <label className="label">Checkliste<textarea name="checklist" rows={4} defaultValue={selectedProduct.checklist.join("\n")} className="field" /></label>
             <label className="label">Unterlagen<textarea name="requiredDocuments" rows={4} defaultValue={selectedProduct.requiredDocuments.join("\n")} className="field" /></label>
@@ -482,7 +510,9 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           audience: form.get("audience"), lifecycleStatus: form.get("lifecycleStatus"), description: form.get("description"), region: form.get("region"),
           submissionUrl: form.get("submissionUrl"), supportContact: form.get("supportContact"), completionProcess: form.get("completionProcess"),
           marketingChannels: channels(form.get("marketingChannels")), marketingConditions: form.get("marketingConditions"),
-          salesArguments: lines(form.get("salesArguments")), checklist: lines(form.get("checklist")), requiredDocuments: lines(form.get("requiredDocuments")),
+          salesArguments: lines(form.get("salesArguments")), shortPitch: form.get("shortPitch"), phonePitch: form.get("phonePitch"), d2dPitch: form.get("d2dPitch"), b2bPitch: form.get("b2bPitch"),
+          whatsappTemplate: form.get("whatsappTemplate"), emailTemplate: form.get("emailTemplate"), socialIdeas: lines(form.get("socialIdeas")),
+          checklist: lines(form.get("checklist")), requiredDocuments: lines(form.get("requiredDocuments")),
           objections: [], trainingRequired: form.get("trainingRequired") === "on", highlight: form.get("highlight"),
         }))} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3"><PackageSearch className="h-5 w-5 text-electric-deep" /><h3 className="text-[17px] font-extrabold">Produkt anlegen</h3></div>
@@ -500,6 +530,13 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label sm:col-span-2">Vertriebskanäle · Kanal|allowed/conditional/blocked|Hinweis<textarea name="marketingChannels" rows={4} className="field" placeholder={"Door-to-Door|allowed\nTelefonvertrieb|conditional|Nur nach Freigabe\nMeta Ads|blocked"} /></label>
             <label className="label sm:col-span-2">Vermarktungsbedingungen<textarea name="marketingConditions" rows={3} maxLength={5000} className="field" /></label>
             <label className="label sm:col-span-2">Verkaufsargumente · eine Zeile pro Punkt<textarea name="salesArguments" rows={3} className="field" /></label>
+            <label className="label sm:col-span-2">Kurzpitch<textarea name="shortPitch" rows={2} maxLength={1200} className="field" /></label>
+            <label className="label">Telefonpitch<textarea name="phonePitch" rows={4} maxLength={3000} className="field" /></label>
+            <label className="label">D2D-Pitch<textarea name="d2dPitch" rows={4} maxLength={3000} className="field" /></label>
+            <label className="label">B2B-Pitch<textarea name="b2bPitch" rows={4} maxLength={3000} className="field" /></label>
+            <label className="label">WhatsApp-Vorlage<textarea name="whatsappTemplate" rows={4} maxLength={2500} className="field" /></label>
+            <label className="label sm:col-span-2">E-Mail-Vorlage<textarea name="emailTemplate" rows={4} maxLength={4000} className="field" /></label>
+            <label className="label sm:col-span-2">Social-Ideen · eine Zeile pro Idee<textarea name="socialIdeas" rows={3} className="field" /></label>
             <label className="label sm:col-span-2">Abschlussprozess<textarea name="completionProcess" rows={4} maxLength={8000} className="field" placeholder="1. Bedarf prüfen&#10;2. Daten aufnehmen&#10;3. Antrag einreichen" /></label>
             <label className="label">Checkliste · eine Zeile pro Punkt<textarea name="checklist" rows={4} className="field" /></label>
             <label className="label">Unterlagen · eine Zeile pro Punkt<textarea name="requiredDocuments" rows={4} className="field" /></label>
