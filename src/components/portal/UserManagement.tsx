@@ -64,6 +64,10 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     const topics = form.topics.split("\n").map((entry) => entry.trim()).filter(Boolean);
     update("topics", topics.includes(topic) ? topics.filter((entry) => entry !== topic).join("\n") : [...topics, topic].join("\n"));
   };
+  const toggleAdvisoryArea = (topic: string) => {
+    const topics = form.advisoryAreas.split("\n").map((entry) => entry.trim()).filter(Boolean);
+    update("advisoryAreas", topics.includes(topic) ? topics.filter((entry) => entry !== topic).join("\n") : [...topics, topic].join("\n"));
+  };
 
   function choose(account?: AdminAccount) {
     setDeleteConfirmation(false);
@@ -225,9 +229,31 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
               <label className="label">E-Mail für die Anmeldung<input required type="email" maxLength={200} autoComplete="off" className="field" value={form.email} onChange={(event) => update("email", event.target.value)} /></label>
               <label className="label">{selectedId ? "Neues Passwort (leer = unverändert)" : "Passwort (mindestens 12 Zeichen)"}<input required={!selectedId} type="password" minLength={12} maxLength={200} autoComplete="new-password" className="field" value={form.password} onChange={(event) => update("password", event.target.value)} /></label>
               <label className="label">Rolle<select className="field" value={form.role} disabled={selectedId === currentUserId} onChange={(event) => update("role", event.target.value as FormState["role"])}><option value="berater">Mitarbeiter</option><option value="admin">Administrator</option></select></label>
+              <label className="label">Alter<input type="number" min={16} max={100} className="field" value={form.age} onChange={(event) => update("age", event.target.value)} placeholder="optional" /></label>
+              <label className="label sm:col-span-2">Adresse<input maxLength={500} className="field" value={form.address} onChange={(event) => update("address", event.target.value)} placeholder="Straße, Hausnummer, PLZ, Ort" /></label>
             </div>
+
+            <div className="mt-5">
+              <p className="label">Interne Beratungsbereiche</p>
+              <p className="mb-3 text-[12.5px] text-steel">Diese Auswahl ist nur intern sichtbar und bestimmt, in welchen Bereichen die Person beraten soll.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {SERVICES.map((service) => {
+                  const active = form.advisoryAreas.split("\n").map((entry) => entry.trim()).includes(service.name);
+                  return <label key={service.key} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-[13.5px] transition-colors ${active ? "border-electric bg-electric/5" : "border-line bg-white hover:border-ink/30"}`}><input type="checkbox" checked={active} onChange={() => toggleAdvisoryArea(service.name)} />{service.name}</label>;
+                })}
+              </div>
+            </div>
+
+            <label className="label mt-5">Interne Notiz<textarea rows={3} maxLength={4000} className="field" value={form.note} onChange={(event) => update("note", event.target.value)} placeholder="Nur für Administratoren sichtbar" /></label>
+
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <AdvisorAvatar initials={form.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "?"} imageUrl={selected?.imageUrl ?? null} name={form.name || undefined} />
+              <label className="label">Internes Mitarbeiterbild<input ref={employeeFileInput} type="file" accept="image/jpeg,image/png,image/webp" className="field" onChange={(event) => selectEmployeeImage(event.target.files?.[0] ?? null)} /></label>
+              {selected?.imageUrl && <button type="button" onClick={removeEmployeeImage} className="text-[13.5px] font-semibold text-electric-deep">Internes Bild entfernen</button>}
+            </div>
+
             <label className="mt-4 inline-flex items-center gap-2 text-[14px] text-ink"><input type="checkbox" checked={form.active} disabled={selectedId === currentUserId} onChange={(event) => update("active", event.target.checked)} /> Portalzugang aktiv</label>
-            <p className="mt-2 text-[12.5px] text-steel">Mitarbeiter können im Portal Anfragen bearbeiten. Nur Administratoren dürfen Benutzer, Beraterprofile und Profilbilder verwalten.</p>
+            <p className="mt-2 text-[12.5px] text-steel">Nur Administratoren können Mitarbeiter anlegen, Rollen vergeben, interne Daten bearbeiten oder Benutzer deaktivieren. Das interne Bild und die Notiz werden nicht öffentlich angezeigt.</p>
           </Card>
           <Card>
             <label className="inline-flex items-center gap-2 text-[18px] font-extrabold text-ink"><input type="checkbox" checked={form.hasProfile} disabled={Boolean(selected?.advisorId)} onChange={(event) => { update("hasProfile", event.target.checked); if (!event.target.checked) { setImage(null); if (fileInput.current) fileInput.current.value = ""; } }} /> Öffentliches Beraterprofil</label>
