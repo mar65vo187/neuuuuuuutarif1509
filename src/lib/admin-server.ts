@@ -5,8 +5,17 @@ import { advisors, employees } from "@/db/schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 
 export const accountSelection = {
-  id: employees.id, name: employees.name, email: employees.email,
-  role: employees.role, active: employees.active, advisorId: employees.advisorId,
+  id: employees.id,
+  name: employees.name,
+  email: employees.email,
+  role: employees.role,
+  active: employees.active,
+  advisorId: employees.advisorId,
+  age: employees.age,
+  address: employees.address,
+  note: employees.note,
+  advisoryAreas: employees.advisoryAreas,
+  imageUrl: employees.imageUrl,
 };
 
 export async function listAdminAccounts() {
