@@ -141,12 +141,14 @@ export async function getOperationsHubData(user: SessionUser) {
     ? await db.select({ id: employees.id, name: employees.name, email: employees.email }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
     : [{ id: user.id, name: user.name, email: user.email }];
 
-  const catalog = admin
-    ? await Promise.all([
-        db.select({ id: products.id, name: products.name, providerId: products.providerId }).from(products).where(eq(products.active, true)).orderBy(products.name),
-        db.select({ id: providers.id, name: providers.name }).from(providers).where(eq(providers.active, true)).orderBy(providers.name),
-      ])
-    : [[], []] as const;
+  let productRows: Array<{ id: number; name: string; providerId: number }> = [];
+  let providerRows: Array<{ id: number; name: string }> = [];
+  if (admin) {
+    [productRows, providerRows] = await Promise.all([
+      db.select({ id: products.id, name: products.name, providerId: products.providerId }).from(products).where(eq(products.active, true)).orderBy(products.name),
+      db.select({ id: providers.id, name: providers.name }).from(providers).where(eq(providers.active, true)).orderBy(providers.name),
+    ]);
+  }
 
   let ownerCockpit: null | {
     providerGross: number;
@@ -241,8 +243,8 @@ export async function getOperationsHubData(user: SessionUser) {
     benefits: benefitRows,
     documents: documentRows,
     employees: employeeRows,
-    products: catalog[0],
-    providers: catalog[1],
+    products: productRows,
+    providers: providerRows,
     reconciliation,
     ownerCockpit,
   };
