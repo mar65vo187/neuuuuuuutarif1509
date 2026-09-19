@@ -6,6 +6,7 @@ import {
   auditEvents,
   automationRules,
   automationRuns,
+  benefitPoolLedger,
   commissionEvents,
   trainingModules,
   productCatalogProfiles,
@@ -487,6 +488,11 @@ export async function updateOrder(id: number, input: {
       if (["cancelled", "storno"].includes(input.status)) {
         const [existingChargeback] = await tx.select({ id: commissionEvents.id }).from(commissionEvents)
           .where(and(eq(commissionEvents.orderId, id), eq(commissionEvents.type, "chargeback"))).limit(1);
+        const [saleEvent] = await tx.select({
+          id: commissionEvents.id,
+          paidAmount: commissionEvents.paidAmount,
+        }).from(commissionEvents)
+          .where(and(eq(commissionEvents.orderId, id), eq(commissionEvents.type, "sale"))).limit(1);
         if (!existingChargeback) {
           const amount = Number(existing.expectedCommission ?? 0);
           await tx.insert(commissionEvents).values({
@@ -495,6 +501,29 @@ export async function updateOrder(id: number, input: {
             type: "chargeback",
             status: "open",
             expectedAmount: amount ? String(-Math.abs(amount)) : null,
+          });
+        }
+        const paidAmount = Number(saleEvent?.paidAmount ?? 0);
+        if (saleEvent && paidAmount > 0) {
+          const reversalAmount = Math.round((paidAmount * 0.15 + Number.EPSILON) * 100) / 100;
+          await tx.insert(benefitPoolLedger).values({
+            entryType: "spend",
+            category: "growth_pool",
+            amount: String(reversalAmount),
+            note: "Automatische Gegenbuchung des 15-%-Pools wegen Storno.",
+            reference: existing.orderNumber,
+            sourceKey: `commission-chargeback:${saleEvent.id}`,
+            createdByEmployeeId: user.id,
+          }).onConflictDoUpdate({
+            target: benefitPoolLedger.sourceKey,
+            set: {
+              entryType: "spend",
+              category: "growth_pool",
+              amount: String(reversalAmount),
+              note: "Automatische Gegenbuchung des 15-%-Pools wegen Storno.",
+              reference: existing.orderNumber,
+              createdByEmployeeId: user.id,
+            },
           });
         }
       }
