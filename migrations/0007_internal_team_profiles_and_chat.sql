@@ -1,6 +1,12 @@
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS age integer;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS address text;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS note text;
+UPDATE employees SET address = '' WHERE address IS NULL;
+UPDATE employees SET note = '' WHERE note IS NULL;
+ALTER TABLE employees ALTER COLUMN address SET DEFAULT '';
+ALTER TABLE employees ALTER COLUMN address SET NOT NULL;
+ALTER TABLE employees ALTER COLUMN note SET DEFAULT '';
+ALTER TABLE employees ALTER COLUMN note SET NOT NULL;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS advisory_areas text[] DEFAULT '{}' NOT NULL;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS image_url text;
 
