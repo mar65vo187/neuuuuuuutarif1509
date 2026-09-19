@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Award, BookOpenCheck, Building2, CheckCircle2, CircleDollarSign, FileDown, FileUp,
+  Award, BookOpenCheck, CheckCircle2, CircleDollarSign, FileDown, FileUp,
   GraduationCap, Loader2, Plus, ReceiptText, ShieldCheck, Target, UsersRound, WalletCards,
 } from "lucide-react";
 import { useMemo, useRef, useState, type FormEvent } from "react";
