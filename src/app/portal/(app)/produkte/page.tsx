@@ -32,6 +32,7 @@ export default async function ProductsPage() {
       updates: data.updates.map((update) => ({
         ...update,
         createdAt: update.createdAt.toISOString(),
+        readAt: update.readAt?.toISOString() ?? null,
       })),
       ownerData: data.ownerData ? {
         ...data.ownerData,
