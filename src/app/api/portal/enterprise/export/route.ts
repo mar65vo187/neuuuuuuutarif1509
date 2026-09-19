@@ -5,6 +5,7 @@ import { commissionEvents, orders } from "@/db/enterprise-schema";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers, listOrders } from "@/lib/enterprise";
 import { hasPermission } from "@/lib/enterprise-access";
+import { isCompensationOwner } from "@/lib/compensation";
 
 function cell(value: unknown) {
   const text = value === null || value === undefined ? "" : String(value);
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
   const type = request.nextUrl.searchParams.get("type") ?? "orders";
+  const owner = isCompensationOwner(user);
   let body: string;
   let filename: string;
 
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
     ]);
     filename = "tarifwerk-kunden.csv";
   } else if (type === "commissions") {
-    if (!await hasPermission(user, "report.finance")) return NextResponse.json({ ok: false, error: "Keine Finanzberechtigung." }, { status: 403 });
+    if (!owner || !await hasPermission(user, "report.finance")) return NextResponse.json({ ok: false, error: "Nur der Owner-Account darf Provider-Provisionen exportieren." }, { status: 403 });
     const access = user.role === "admin" ? sql`true` : eq(orders.advisorEmployeeId, user.id);
     const rows = await db.select({
       orderNumber: orders.orderNumber,
@@ -51,8 +53,8 @@ export async function GET(request: NextRequest) {
     filename = "tarifwerk-provisionen.csv";
   } else {
     const rows = await listOrders(user, undefined, 300);
-    body = csv([
-      ["Auftragsnummer", "Kundennummer", "Kunde", "Provider", "Produkt", "Status", "Providerstatus", "Externe ID", "Provision", "Erstellt"],
+    body = owner ? csv([
+      ["Auftragsnummer", "Kundennummer", "Kunde", "Provider", "Produkt", "Status", "Providerstatus", "Externe ID", "Provider-Provision", "Erstellt"],
       ...rows.map((r) => [
         r.order.orderNumber,
         r.customer.customerNumber,
@@ -63,6 +65,19 @@ export async function GET(request: NextRequest) {
         r.order.providerStatus,
         r.order.externalOrderId,
         r.order.expectedCommission,
+        r.order.createdAt.toISOString(),
+      ]),
+    ]) : csv([
+      ["Auftragsnummer", "Kundennummer", "Kunde", "Provider", "Produkt", "Status", "Providerstatus", "Externe ID", "Erstellt"],
+      ...rows.map((r) => [
+        r.order.orderNumber,
+        r.customer.customerNumber,
+        r.customer.companyName || [r.customer.firstName, r.customer.lastName].filter(Boolean).join(" "),
+        r.providerName,
+        r.productName,
+        r.order.status,
+        r.order.providerStatus,
+        r.order.externalOrderId,
         r.order.createdAt.toISOString(),
       ]),
     ]);
