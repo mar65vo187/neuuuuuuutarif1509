@@ -1,38 +1,25 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
+const config: NextConfig = {
   reactStrictMode: true,
-  poweredByHeader: false,
+  compress: true,
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "images.pexels.com" }],
-    formats: ["image/avif", "image/webp"],
-    deviceSizes: [360, 640, 750, 828, 1080, 1200, 1440, 1920],
-    imageSizes: [32, 48, 64, 96, 128, 256, 384],
-    qualities: [60, 70, 75, 80],
-    minimumCacheTTL: 86400,
-  },
-  async redirects() {
-    return [{ source: "/admin", destination: "/portal/verwaltung", permanent: false }];
+    domains: ['cdn.tarifwerk.eu', 'images.unsplash.com'],
+    deviceSizes: [640, 768, 1024, 1280, 1600],
+    imageSizes: [64, 128, 256, 384, 512],
   },
   async headers() {
     return [
       {
-        source: "/assets/:path*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" },
-        ],
+        source: '/:all*(js|css|png|jpg|jpeg|svg|webp|avif)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        ],
+        source: '/(.*)',
+        headers: [{ key: 'Content-Security-Policy', value: "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:" }],
       },
     ];
   },
 };
 
-export default nextConfig;
+export default config;
