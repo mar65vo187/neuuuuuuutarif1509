@@ -124,7 +124,7 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
       loyaltyStartedAt,
       loyaltyVestingYears,
       teamLevel: person.teamLevel ?? "berater",
-      note: person.note ?? "",
+      note: owner ? (person.note ?? "") : "",
       providerGross,
       confirmedGross,
       paidGross,
