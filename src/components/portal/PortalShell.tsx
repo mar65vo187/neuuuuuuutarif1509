@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
-  KeyRound, ListTodo, LogOut, MessageSquare, Settings2, ShieldCheck, TrendingUp, UserRoundCog, WalletCards,
+  KeyRound, ListTodo, LogOut, MessageSquare, PackageSearch, Settings2, ShieldCheck, TrendingUp, UserRoundCog, WalletCards,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -14,7 +14,7 @@ const NAV = [
   { href: "/portal", label: "Übersicht", icon: BarChart3, exact: true },
   { href: "/portal/leads", label: "Anfragen & Termine", icon: Inbox },
   { href: "/portal/kunden", label: "Kunden", icon: ContactRound },
-  { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness },
+  { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness },\n  { href: "/portal/produkte", label: "Produkte & Partner", icon: PackageSearch },
   { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
   { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards },
   { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
