@@ -55,6 +55,22 @@ export const hubProductCreateSchema = z.object({
 
 export const hubCreateSchema = z.discriminatedUnion("kind", [hubProviderCreateSchema, hubProductCreateSchema]);
 
+export const hubProviderUpdateSchema = hubProviderCreateSchema.omit({ kind: true }).partial().extend({
+  kind: z.literal("provider"),
+  id,
+  active: z.boolean().optional(),
+});
+
+export const hubProductUpdateSchema = hubProductCreateSchema.omit({ kind: true, providerId: true }).partial().extend({
+  kind: z.literal("product"),
+  id,
+  providerId: id.optional(),
+  active: z.boolean().optional(),
+});
+
+export const hubUpdateSchema = z.discriminatedUnion("kind", [hubProviderUpdateSchema, hubProductUpdateSchema])
+  .refine((value) => Object.keys(value).some((key) => !["kind", "id"].includes(key)), { message: "Keine Änderung angegeben." });
+
 export const commissionImportSchema = z.object({
   providerId: id,
   sourceName: text(240).min(2),

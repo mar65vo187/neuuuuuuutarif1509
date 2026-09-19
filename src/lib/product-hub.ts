@@ -113,9 +113,10 @@ export async function getProductHubData(user: SessionUser, search = "") {
 
   const enrichedProducts = productRows.map((product) => {
     const rate = latestRate.get(product.id);
-    const gross = Number(rate?.grossAmount ?? product.expectedCommission ?? 0);
+    const { expectedCommission, ...safeProduct } = product;
+    const gross = Number(rate?.grossAmount ?? expectedCommission ?? 0);
     return {
-      ...product,
+      ...safeProduct,
       audience: product.audience ?? "both",
       lifecycleStatus: product.lifecycleStatus ?? (product.active ? "active" : "ended"),
       description: product.description ?? "",

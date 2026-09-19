@@ -4,6 +4,7 @@ import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { updateOrder } from "@/lib/enterprise";
 import { requirePermission } from "@/lib/enterprise-access";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
+import { isCompensationOwner } from "@/lib/compensation";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     const parsed = orderUpdateSchema.safeParse(await readJsonBody(request, 32 * 1024));
     if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Bitte Eingaben prüfen." }, { status: 422 });
     const order = await updateOrder(id, parsed.data, user);
-    return NextResponse.json({ ok: true, order });
+    const safeOrder = isCompensationOwner(user) ? order : { ...order, expectedCommission: null };
+    return NextResponse.json({ ok: true, order: safeOrder });
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
     const status = typeof (error as { status?: unknown })?.status === "number" ? (error as { status: number }).status : 500;

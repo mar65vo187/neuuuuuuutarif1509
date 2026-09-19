@@ -19,7 +19,7 @@ async function post(url: string, body: unknown) {
   if (!response.ok || !json.ok) throw new Error(json.error ?? "Speichern fehlgeschlagen.");
 }
 
-export function SystemManager({ providers, products, automations }: { providers: Provider[]; products: Product[]; automations: Automation[] }) {
+export function SystemManager({ providers, products, automations, canManageCommission }: { providers: Provider[]; products: Product[]; automations: Automation[]; canManageCommission: boolean }) {
   const router = useRouter();
   const saving = useRef(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export function SystemManager({ providers, products, automations }: { providers:
         name: data.get("name"),
         category: data.get("category"),
         sku: data.get("sku"),
-        expectedCommission: data.get("expectedCommission") || undefined,
+        expectedCommission: canManageCommission ? data.get("expectedCommission") || undefined : undefined,
       });
       event.currentTarget.reset();
       router.refresh();
@@ -95,7 +95,7 @@ export function SystemManager({ providers, products, automations }: { providers:
           <label className="label">Produktname<input name="name" required maxLength={180} className="field" /></label>
           <label className="label">Kategorie<input name="category" required maxLength={80} className="field" /></label>
           <label className="label">SKU / Tarif-ID<input name="sku" maxLength={120} className="field" /></label>
-          <label className="label">Standardprovision (€)<input name="expectedCommission" inputMode="decimal" className="field" /></label>
+          {canManageCommission && <label className="label">Standardprovision (€)<input name="expectedCommission" inputMode="decimal" className="field" /></label>}
         </div>
         <button disabled={busy !== null || providers.length === 0} className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric disabled:opacity-50">{busy === "product" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Produkt speichern</button>
       </form>

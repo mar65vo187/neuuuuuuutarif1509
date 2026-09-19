@@ -4,18 +4,22 @@ import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/portal/ui";
 import { OrderCreateForm } from "@/components/portal/OrderCreateForm";
 import { getCurrentUser } from "@/lib/auth";
+import { isCompensationOwner } from "@/lib/compensation";
 import { listCatalog, listCustomers } from "@/lib/enterprise";
 import { listLeads } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ lead?: string; customer?: string }> }) {
+export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ lead?: string; customer?: string; product?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fauftraege%2Fneu");
   const params = await searchParams;
   const initialLeadId = params.lead && /^\d+$/.test(params.lead) ? Number(params.lead) : undefined;
   const initialCustomerId = params.customer && /^\d+$/.test(params.customer) ? Number(params.customer) : undefined;
+  const initialProductId = params.product && /^\d+$/.test(params.product) ? Number(params.product) : undefined;
   const [customerRows, leadRows, catalog] = await Promise.all([listCustomers(user, undefined, 200), listLeads({}, user), listCatalog()]);
+  const initialProduct = initialProductId ? catalog.products.find((product) => product.id === initialProductId) : undefined;
+  const owner = isCompensationOwner(user);
   const customerOptions = customerRows.map((customer) => ({
     id: customer.id,
     customerNumber: customer.customerNumber,
@@ -32,8 +36,11 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
       customers={customerOptions}
       leads={leadRows.map((lead) => ({ id: lead.id, label: `${lead.name} · ${lead.topic || "ohne Thema"}` }))}
       providers={catalog.providers.map((provider) => ({ id: provider.id, name: provider.name, category: provider.category }))}
-      products={catalog.products.map((product) => ({ id: product.id, providerId: product.providerId, name: product.name, category: product.category, expectedCommission: product.expectedCommission }))}
+      products={catalog.products.map((product) => ({ id: product.id, providerId: product.providerId, name: product.name, category: product.category, expectedCommission: owner ? product.expectedCommission : null }))}
       initialLeadId={initialLeadId}
+      initialProductId={initialProduct?.id}
+      initialProviderId={initialProduct?.providerId}
+      canEditCommission={owner}
     /></Card>
   </div>;
 }
