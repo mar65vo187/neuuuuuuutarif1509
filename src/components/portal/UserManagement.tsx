@@ -10,13 +10,15 @@ import { SERVICES } from "@/lib/content";
 
 type FormState = {
   name: string; email: string; password: string; role: "admin" | "berater"; active: boolean;
+  age: string; address: string; note: string; advisoryAreas: string;
   hasProfile: boolean; slug: string; title: string; city: string; region: string; regions: string;
   topics: string; bio: string; quote: string; phone: string; whatsapp: string; publicEmail: string;
   initials: string; isFounder: boolean; profileActive: boolean; sortOrder: string;
 };
 
 const emptyForm = (): FormState => ({
-  name: "", email: "", password: "", role: "berater", active: true, hasProfile: false,
+  name: "", email: "", password: "", role: "berater", active: true,
+  age: "", address: "", note: "", advisoryAreas: "", hasProfile: false,
   slug: "", title: "Berater", city: "", region: "Deutschlandweit", regions: "Deutschlandweit (digital)",
   topics: "", bio: "", quote: "", phone: "", whatsapp: "", publicEmail: "", initials: "",
   isFounder: false, profileActive: true, sortOrder: "100",
@@ -25,7 +27,8 @@ const emptyForm = (): FormState => ({
 function formFromAccount(account: AdminAccount): FormState {
   const profile = account.advisor;
   return { ...emptyForm(), name: account.name, email: account.email, role: account.role, active: account.active,
-    hasProfile: Boolean(profile), slug: profile?.slug ?? "", title: profile?.title ?? "Berater",
+    age: account.age === null ? "" : String(account.age), address: account.address, note: account.note,
+    advisoryAreas: account.advisoryAreas.join("\n"), hasProfile: Boolean(profile), slug: profile?.slug ?? "", title: profile?.title ?? "Berater",
     city: profile?.city ?? "", region: profile?.region ?? "Deutschlandweit", regions: profile?.regions.join("\n") ?? "Deutschlandweit (digital)",
     topics: profile?.topics.join("\n") ?? "", bio: profile?.bio ?? "", quote: profile?.quote ?? "",
     phone: profile?.phone ?? "", whatsapp: profile?.whatsapp ?? "", publicEmail: profile?.email ?? "",
@@ -48,6 +51,8 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
   const [form, setForm] = useState<FormState>(emptyForm);
   const [image, setImage] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [employeeImage, setEmployeeImage] = useState<File | null>(null);
+  const employeeFileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const saving = useRef(false);
@@ -65,9 +70,22 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     setSelectedId(account?.id ?? null);
     setForm(account ? formFromAccount(account) : emptyForm());
     setImage(null);
+    setEmployeeImage(null);
     if (fileInput.current) fileInput.current.value = "";
+    if (employeeFileInput.current) employeeFileInput.current.value = "";
     setError(null);
     setSuccess(null);
+  }
+
+  function selectEmployeeImage(file: File | null) {
+    if (saving.current) return;
+    if (file && (file.size === 0 || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+      setError("Bitte ein JPG-, PNG- oder WebP-Bild mit höchstens 5 MB auswählen.");
+      setEmployeeImage(null);
+      if (employeeFileInput.current) employeeFileInput.current.value = "";
+      return;
+    }
+    setEmployeeImage(file); setError(null); setSuccess(null);
   }
 
   function selectImage(file: File | null) {
@@ -97,6 +115,10 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
       const lines = (value: string) => [...new Set(value.split(/\n|;/).map((entry) => entry.trim()).filter(Boolean))];
       const data = {
         name: form.name, email: form.email, role: form.role, active: form.active,
+        age: form.age ? Number(form.age) : null,
+        address: form.address,
+        note: form.note,
+        advisoryAreas: lines(form.advisoryAreas),
         ...(form.password || !selectedId ? { password: form.password } : {}),
         advisor: form.hasProfile ? {
           slug: form.slug, title: form.title, city: form.city, region: form.region,
@@ -113,6 +135,12 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
       setSelectedId(result.user.id);
       update("password", "");
       if (result.signInAgain) { window.location.replace("/portal/login?next=/portal/verwaltung"); return; }
+      if (employeeImage) {
+        const upload = new FormData(); upload.append("image", employeeImage);
+        await api(`/api/portal/admin/users/${result.user.id}/image`, { method: "POST", body: upload });
+        setEmployeeImage(null);
+        if (employeeFileInput.current) employeeFileInput.current.value = "";
+      }
       if (image && result.user.advisorId) {
         const upload = new FormData(); upload.append("image", image);
         await api(`/api/portal/admin/advisors/${result.user.advisorId}/image`, { method: "POST", body: upload });
@@ -120,7 +148,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
         if (fileInput.current) fileInput.current.value = "";
       }
       await reload();
-      setSuccess("Benutzer und Beraterprofil wurden gespeichert." );
+      setSuccess("Mitarbeiterdaten und Beraterprofil wurden gespeichert." );
     } catch (problem) {
       const message = problem instanceof Error ? problem.message : "Verbindung fehlgeschlagen. Bitte erneut versuchen.";
       setError(accountSaved ? `Der Benutzer wurde gespeichert. ${message}` : message);
@@ -140,6 +168,20 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
       choose();
       setSuccess(`Der Portalzugang wurde gelöscht.${result.profileDeleted ? " Das zugehörige Beraterprofil und Profilbild wurden gelöscht." : hadProfile ? " Ein gemeinsam genutztes Beraterprofil bleibt erhalten." : ""} Zugeordnete Kundenanfragen wurden dir übertragen. Notizen und Chatnachrichten bleiben erhalten.`);
     } catch (problem) { setError(problem instanceof Error ? problem.message : "Der Benutzer konnte nicht gelöscht werden."); }
+    finally { saving.current = false; setBusy(false); }
+  }
+
+  async function removeEmployeeImage() {
+    if (!selectedId || saving.current) return;
+    saving.current = true;
+    setBusy(true); setError(null); setSuccess(null);
+    try {
+      await api(`/api/portal/admin/users/${selectedId}/image`, { method: "DELETE" });
+      setEmployeeImage(null);
+      if (employeeFileInput.current) employeeFileInput.current.value = "";
+      await reload();
+      setSuccess("Das interne Mitarbeiterbild wurde entfernt.");
+    } catch (problem) { setError(problem instanceof Error ? problem.message : "Das Bild konnte nicht entfernt werden."); }
     finally { saving.current = false; setBusy(false); }
   }
 
