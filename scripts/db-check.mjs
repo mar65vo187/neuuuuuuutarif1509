@@ -19,7 +19,7 @@ try {
   const requiredTables = [
     "employees", "employee_images", "advisors", "advisor_images", "leads", "lead_notes", "team_messages",
     "referrers", "referrals", "customers", "customer_lead_links", "providers", "products",
-    "orders", "order_status_history", "commission_events", "tasks", "audit_events",
+    "orders", "order_status_history", "commission_events", "employee_compensation_profiles", "compensation_history", "tasks", "audit_events",
     "automation_rules", "automation_runs", "outbox_events", "notification_queue",
     "reconciliation_issues", "mfa_credentials", "login_events", "referral_rewards",
     "referral_reward_events",
