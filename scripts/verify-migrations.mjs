@@ -26,6 +26,7 @@ const requiredTables = [
   "commission_events",
   "employee_compensation_profiles",
   "compensation_history",
+  "loyalty_bonus_ledger",
   "tasks",
   "audit_events",
   "automation_rules",
