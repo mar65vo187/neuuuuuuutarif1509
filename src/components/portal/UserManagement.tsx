@@ -115,7 +115,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     setBusy(true); setError(null); setSuccess(null);
     let accountSaved = false;
     try {
-      if (selectedId === currentUserId && form.password && image) throw new Error("Bitte das Profilbild zuerst speichern und das eigene Passwort anschließend separat ändern.");
+      if (selectedId === currentUserId && form.password && (image || employeeImage)) throw new Error("Bitte Bilder zuerst speichern und das eigene Passwort anschließend separat in den Einstellungen ändern.");
       const lines = (value: string) => [...new Set(value.split(/\n|;/).map((entry) => entry.trim()).filter(Boolean))];
       const data = {
         name: form.name, email: form.email, role: form.role, active: form.active,
