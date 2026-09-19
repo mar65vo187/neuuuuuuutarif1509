@@ -4,10 +4,10 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 try {
   const tables = await pool.query(
     "select tablename from pg_tables where schemaname='public' and tablename = any($1::text[])",
-    [["employee_compensation_profiles","compensation_history"]],
+    [["employee_compensation_profiles","compensation_history","loyalty_bonus_ledger"]],
   );
   const present = new Set(tables.rows.map((row) => row.tablename));
-  for (const table of ["employee_compensation_profiles","compensation_history"]) {
+  for (const table of ["employee_compensation_profiles","compensation_history","loyalty_bonus_ledger"]) {
     if (!present.has(table)) throw new Error("Missing table: " + table);
   }
 
@@ -37,7 +37,19 @@ try {
   }
   if (!invalidRejected) throw new Error("Invalid payout tier was not rejected");
 
-  console.log("Compensation schema and constraints verified.");
+  await pool.query("insert into loyalty_bonus_ledger (employee_id,type,amount,note) values ($1,'credit',100,'test credit'),($1,'payout',20,'test payout')", [id]);
+  const loyalty = await pool.query("select coalesce(sum(case when type='credit' then amount else -amount end),0)::numeric as balance from loyalty_bonus_ledger where employee_id=$1", [id]);
+  if (Number(loyalty.rows[0].balance) !== 80) throw new Error("Loyalty ledger balance failed");
+
+  let negativeRejected = false;
+  try {
+    await pool.query("insert into loyalty_bonus_ledger (employee_id,type,amount,note) values ($1,'credit',-1,'invalid')", [id]);
+  } catch {
+    negativeRejected = true;
+  }
+  if (!negativeRejected) throw new Error("Negative loyalty amount was not rejected");
+
+  console.log("Compensation schema, loyalty ledger and constraints verified.");
 } finally {
   await pool.end();
 }
