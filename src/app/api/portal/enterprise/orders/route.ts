@@ -4,6 +4,7 @@ import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { createOrder } from "@/lib/enterprise";
 import { requirePermission } from "@/lib/enterprise-access";
 import { orderCreateSchema } from "@/lib/enterprise-validation";
+import { isCompensationOwner } from "@/lib/compensation";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,8 @@ export async function POST(request: NextRequest) {
       ...data,
       expectedCommission: typeof data.expectedCommission === "string" ? data.expectedCommission.replace(",", ".") : data.expectedCommission,
     }, user);
-    return NextResponse.json({ ok: true, order }, { status: 201 });
+    const safeOrder = isCompensationOwner(user) ? order : { ...order, expectedCommission: null };
+    return NextResponse.json({ ok: true, order: safeOrder }, { status: 201 });
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
     const status = typeof (error as { status?: unknown })?.status === "number" ? (error as { status: number }).status : 500;
