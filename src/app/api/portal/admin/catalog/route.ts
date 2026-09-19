@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { productCatalogProfiles, products, productUpdates, providerProfiles, providers } from "@/db/enterprise-schema";
 import { adminFailure, authorizeAdmin, lockAdminMutation, readAdminJson } from "@/lib/admin-server";
 import { writeAudit } from "@/lib/enterprise";
+import { isCompensationOwner } from "@/lib/compensation";
 import { hubCreateSchema, hubUpdateSchema } from "@/lib/product-hub-validation";
 
 export const dynamic = "force-dynamic";
@@ -122,17 +123,20 @@ export async function PATCH(request: NextRequest) {
         if (parsed.data.active !== undefined) providerPatch.active = parsed.data.active;
         await tx.update(providers).set(providerPatch).where(eq(providers.id, existing.id));
 
+        const [currentProfile] = await tx.select().from(providerProfiles)
+          .where(eq(providerProfiles.providerId, existing.id)).limit(1);
+        const owner = isCompensationOwner(admin);
         const profilePatch = {
-          partnerType: parsed.data.partnerType ?? "provider",
-          websiteUrl: parsed.data.websiteUrl === undefined ? null : parsed.data.websiteUrl || null,
-          portalUrl: parsed.data.portalUrl === undefined ? null : parsed.data.portalUrl || null,
-          contactName: parsed.data.contactName === undefined ? null : parsed.data.contactName || null,
-          contactPhone: parsed.data.contactPhone === undefined ? null : parsed.data.contactPhone || null,
-          contactEmail: parsed.data.contactEmail === undefined ? null : parsed.data.contactEmail || null,
-          supportContact: parsed.data.supportContact === undefined ? null : parsed.data.supportContact || null,
-          billingPath: parsed.data.billingPath === undefined ? null : parsed.data.billingPath || null,
-          regions: parsed.data.regions ?? [],
-          notes: parsed.data.notes ?? "",
+          partnerType: parsed.data.partnerType ?? currentProfile?.partnerType ?? "provider",
+          websiteUrl: parsed.data.websiteUrl === undefined ? currentProfile?.websiteUrl ?? null : parsed.data.websiteUrl || null,
+          portalUrl: parsed.data.portalUrl === undefined ? currentProfile?.portalUrl ?? null : parsed.data.portalUrl || null,
+          contactName: parsed.data.contactName === undefined ? currentProfile?.contactName ?? null : parsed.data.contactName || null,
+          contactPhone: parsed.data.contactPhone === undefined ? currentProfile?.contactPhone ?? null : parsed.data.contactPhone || null,
+          contactEmail: parsed.data.contactEmail === undefined ? currentProfile?.contactEmail ?? null : parsed.data.contactEmail || null,
+          supportContact: parsed.data.supportContact === undefined ? currentProfile?.supportContact ?? null : parsed.data.supportContact || null,
+          billingPath: parsed.data.billingPath === undefined ? currentProfile?.billingPath ?? null : parsed.data.billingPath || null,
+          regions: parsed.data.regions ?? currentProfile?.regions ?? [],
+          notes: owner && parsed.data.notes !== undefined ? parsed.data.notes : currentProfile?.notes ?? "",
           updatedByEmployeeId: admin.id,
           updatedAt: new Date(),
         };
