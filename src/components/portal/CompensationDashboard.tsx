@@ -27,6 +27,9 @@ type Row = {
   companyOperatingAmount: number;
   savingsProjection: number;
   loyaltyEligibleAt: string;
+  loyaltyCredits: number;
+  loyaltyPayouts: number;
+  loyaltyBalance: number;
 };
 
 const money = (value: number) => value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -49,6 +52,10 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
   const savingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [loyaltySaving, setLoyaltySaving] = useState(false);
+  const loyaltySavingRef = useRef(false);
+  const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
+  const [loyaltySuccess, setLoyaltySuccess] = useState<string | null>(null);
 
   const simulation = useMemo(() => {
     const gross = Math.max(0, Number(providerAmount.replace(",", ".")) || 0);
@@ -97,6 +104,43 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
     } finally {
       savingRef.current = false;
       setSaving(false);
+    }
+  }
+
+  async function updateLoyalty(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || loyaltySavingRef.current) return;
+    loyaltySavingRef.current = true;
+    setLoyaltySaving(true);
+    setLoyaltyError(null);
+    setLoyaltySuccess(null);
+    const data = new FormData(event.currentTarget);
+    try {
+      const response = await fetch(`/api/portal/compensation/${selected.employeeId}/loyalty`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          type: String(data.get("type")),
+          amount: Number(data.get("amount")),
+          note: String(data.get("note") ?? ""),
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const json = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (response.status === 401) {
+        window.location.replace("/portal/login?next=%2Fportal%2Fverguetung");
+        return;
+      }
+      if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Treueguthaben konnte nicht geändert werden.");
+      setLoyaltySuccess("Treueguthaben wurde aktualisiert.");
+      event.currentTarget.reset();
+      router.refresh();
+    } catch (problem) {
+      setLoyaltyError(problem instanceof Error ? problem.message : "Treueguthaben konnte nicht geändert werden.");
+    } finally {
+      loyaltySavingRef.current = false;
+      setLoyaltySaving(false);
     }
   }
 
@@ -163,7 +207,10 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
         <div className="mt-6 flex items-end justify-between"><div><p className="text-[12px] text-steel">Start</p><p className="font-bold">{date(selected.loyaltyStartedAt)}</p></div><div className="text-right"><p className="text-[12px] text-steel">Auszahlungsreife</p><p className="font-bold">{date(selected.loyaltyEligibleAt)}</p></div></div>
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-paper"><div className="h-full rounded-full bg-electric" style={{ width: `${loyaltyProgress}%` }} /></div>
         <div className="mt-2 flex justify-between text-[11.5px] text-steel"><span>{loyaltyYears} Jahre erreicht</span><span>{selected.loyaltyVestingYears} Jahre Ziel</span></div>
-        <div className="mt-5 rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Aktuelle Sparprojektion</p><p className="mt-1 text-[25px] font-extrabold">{money(selected.savingsProjection)}</p><p className="mt-1 text-[11.5px] text-steel">Auf Basis der bisher erfassten Provider-Provisionen und der hinterlegten Sparquote.</p></div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Echtes Treueguthaben</p><p className="mt-1 text-[25px] font-extrabold">{money(selected.loyaltyBalance)}</p><p className="mt-1 text-[11.5px] text-steel">{money(selected.loyaltyCredits)} gutgeschrieben · {money(selected.loyaltyPayouts)} ausgezahlt/korrigiert</p></div>
+          <div className="rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Sparprojektion</p><p className="mt-1 text-[25px] font-extrabold">{money(selected.savingsProjection)}</p><p className="mt-1 text-[11.5px] text-steel">Rechnerisch auf Basis der erfassten Provider-Provisionen und der hinterlegten Sparquote.</p></div>
+        </div>
       </div>
     </section>
 
@@ -196,6 +243,21 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
             {error && <p role="alert" className="sm:col-span-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">{error}</p>}
             {success && <p role="status" className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800">{success}</p>}
             <button disabled={saving} className="sm:col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-50">{saving && <Loader2 className="h-4 w-4 animate-spin" />} Vergütung speichern</button>
+          </form>
+        </div>
+
+        <div className="mt-6 border-t border-line pt-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div><h3 className="text-[16px] font-extrabold">Treueguthaben verwalten</h3><p className="mt-1 text-[12.5px] text-steel">Gutschriften sind sofort sichtbar. Eine Auszahlung wird serverseitig erst nach Ablauf der 10-Jahres-Frist zugelassen.</p></div>
+            <div className="text-right"><p className="text-[11.5px] text-steel">Aktueller Saldo</p><p className="text-[22px] font-extrabold">{money(selected.loyaltyBalance)}</p></div>
+          </div>
+          <form key={`loyalty-${selected.employeeId}`} onSubmit={updateLoyalty} className="mt-4 grid gap-4 sm:grid-cols-3">
+            <label className="label">Buchung<select name="type" className="field"><option value="credit">Treuegutschrift</option><option value="payout">Auszahlung</option><option value="correction_debit">Korrektur / Abzug</option></select></label>
+            <label className="label">Betrag (€)<input name="amount" type="number" min="0.01" max="1000000" step="0.01" required className="field" /></label>
+            <label className="label">Grund / Notiz<input name="note" minLength={3} maxLength={500} required className="field" placeholder="z. B. Jahresgutschrift 2026" /></label>
+            {loyaltyError && <p role="alert" className="sm:col-span-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">{loyaltyError}</p>}
+            {loyaltySuccess && <p role="status" className="sm:col-span-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800">{loyaltySuccess}</p>}
+            <button disabled={loyaltySaving} className="sm:col-span-3 inline-flex h-11 items-center justify-center gap-2 rounded-full border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:border-electric hover:text-electric-deep disabled:opacity-50">{loyaltySaving && <Loader2 className="h-4 w-4 animate-spin" />} Buchung speichern</button>
           </form>
         </div>
       </section>
