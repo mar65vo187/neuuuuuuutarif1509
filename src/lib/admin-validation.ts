@@ -26,6 +26,10 @@ const accountFields = {
   email,
   role: z.enum(["admin", "berater"]),
   active: z.boolean(),
+  age: z.number().int().min(16).max(100).nullable().default(null),
+  address: optionalText(500),
+  note: optionalText(4000),
+  advisoryAreas: z.array(text(120).min(2)).max(30).default([]),
   advisor: publicProfileSchema.nullable().default(null),
 };
 export const createAccountSchema = z.object({
@@ -45,6 +49,11 @@ export type AdminAccount = {
   role: "admin" | "berater";
   active: boolean;
   advisorId: number | null;
+  age: number | null;
+  address: string;
+  note: string;
+  advisoryAreas: string[];
+  imageUrl: string | null;
   advisor: AdminProfile | null;
 };
 
