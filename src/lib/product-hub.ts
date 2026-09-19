@@ -159,7 +159,7 @@ export async function getProductHubData(user: SessionUser, search = "") {
     };
   });
 
-  const updates = await db.select({
+  const updateRows = await db.select({
     id: productUpdates.id,
     productId: productUpdates.productId,
     providerId: productUpdates.providerId,
@@ -175,6 +175,17 @@ export async function getProductHubData(user: SessionUser, search = "") {
       eq(productUpdateReads.employeeId, user.id),
     ))
     .orderBy(desc(productUpdates.createdAt)).limit(40);
+
+  const accessibleProductIds = new Set(accessibleProductRows.map((product) => product.id));
+  const accessibleProviderIds = new Set(accessibleProductRows.map((product) => product.providerId));
+  const updates = user.role === "admin" || advisoryAreas.length === 0
+    ? updateRows
+    : updateRows.filter((update) =>
+        (update.productId !== null && accessibleProductIds.has(update.productId)) ||
+        (update.productId === null && update.providerId !== null && accessibleProviderIds.has(update.providerId)));
+  const accessibleProviders = user.role === "admin" || advisoryAreas.length === 0
+    ? providerRows
+    : providerRows.filter((provider) => accessibleProviderIds.has(provider.id));
 
   let ownerData: null | {
     potentialPool: number;
@@ -244,7 +255,7 @@ export async function getProductHubData(user: SessionUser, search = "") {
     payoutPercent,
     advisoryAreas,
     products: enrichedProducts,
-    providers: providerRows.map((provider) => ({
+    providers: accessibleProviders.map((provider) => ({
       ...provider,
       partnerType: provider.partnerType ?? "provider",
       regions: provider.regions ?? [],
