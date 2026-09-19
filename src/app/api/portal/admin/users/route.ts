@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/db";
 import { advisors, employees } from "@/db/schema";
+import { employeeCompensationProfiles } from "@/db/enterprise-schema";
 import { hashPassword } from "@/lib/auth";
 import { createAccountSchema } from "@/lib/admin-validation";
 import { accountSelection, adminFailure, lockAdminMutation, authorizeAdmin, listAdminAccounts, readAdminJson } from "@/lib/admin-server";
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
         advisorId = profile.id;
       }
       const [created] = await tx.insert(employees).values({ ...account, passwordHash, advisorId }).returning(accountSelection);
+      await tx.insert(employeeCompensationProfiles).values({ employeeId: created.id }).onConflictDoNothing();
       return created;
     });
     return NextResponse.json({ ok: true, user }, { status: 201 });
