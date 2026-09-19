@@ -176,6 +176,17 @@ export const compensationHistory = pgTable("compensation_history", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("compensation_history_employee_idx").on(table.employeeId, table.createdAt)]);
 
+
+export const loyaltyBonusLedger = pgTable("loyalty_bonus_ledger", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  type: text("type").$type<"credit" | "payout" | "correction_debit">().notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("loyalty_bonus_ledger_employee_idx").on(table.employeeId, table.createdAt)]);
+
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   entityType: text("entity_type").notNull(),
