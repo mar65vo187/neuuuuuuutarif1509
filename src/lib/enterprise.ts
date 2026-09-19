@@ -7,6 +7,9 @@ import {
   automationRules,
   automationRuns,
   commissionEvents,
+  trainingModules,
+  productCatalogProfiles,
+  employeeTrainingCompletions,
   customerLeadLinks,
   customers,
   notificationQueue,
@@ -366,6 +369,25 @@ export async function createOrder(input: {
     if (input.productId) {
       [product] = await tx.select().from(products).where(and(eq(products.id, input.productId), eq(products.providerId, provider.id), eq(products.active, true))).limit(1);
       if (!product) throw new Error("Produkt nicht gefunden.");
+
+      const [catalogProfile] = await tx.select({ trainingRequired: productCatalogProfiles.trainingRequired })
+        .from(productCatalogProfiles).where(eq(productCatalogProfiles.productId, product.id)).limit(1);
+      if (catalogProfile?.trainingRequired) {
+        const requiredModules = await tx.select({ id: trainingModules.id }).from(trainingModules)
+          .where(and(eq(trainingModules.productId, product.id), eq(trainingModules.required, true), eq(trainingModules.active, true)));
+        if (!requiredModules.length) throw new Error("Für dieses Produkt ist eine Schulungsfreigabe erforderlich, aber noch keine Pflichtschulung hinterlegt.");
+        const requiredIds = requiredModules.map((module) => module.id);
+        const completions = await tx.select({ moduleId: employeeTrainingCompletions.moduleId })
+          .from(employeeTrainingCompletions)
+          .where(and(
+            eq(employeeTrainingCompletions.employeeId, user.id),
+            eq(employeeTrainingCompletions.status, "completed"),
+            inArray(employeeTrainingCompletions.moduleId, requiredIds),
+            or(isNull(employeeTrainingCompletions.expiresAt), gte(employeeTrainingCompletions.expiresAt, new Date())),
+          ));
+        const completedIds = new Set(completions.map((completion) => completion.moduleId));
+        if (requiredIds.some((id) => !completedIds.has(id))) throw new Error("Für dieses Produkt fehlt Ihnen noch eine gültige Pflichtschulung.");
+      }
     }
     const expected = input.expectedCommission === null || input.expectedCommission === undefined || input.expectedCommission === ""
       ? product?.expectedCommission ?? null
