@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
         advisorId = profile.id;
       }
       const [created] = await tx.insert(employees).values({ ...account, passwordHash, advisorId }).returning(accountSelection);
+      await tx.execute(sql`insert into employee_compensation_profiles (employee_id) values (${created.id}) on conflict (employee_id) do nothing`);
       return created;
     });
     return NextResponse.json({ ok: true, user }, { status: 201 });

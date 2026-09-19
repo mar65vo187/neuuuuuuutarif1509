@@ -152,6 +152,41 @@ export const commissionEvents = pgTable("commission_events", {
   index("commission_status_idx").on(table.status, table.dueDate),
 ]);
 
+
+export const employeeCompensationProfiles = pgTable("employee_compensation_profiles", {
+  employeeId: integer("employee_id").primaryKey().references(() => employees.id, { onDelete: "cascade" }),
+  payoutPercent: numeric("payout_percent", { precision: 5, scale: 2 }).notNull().default("82.00"),
+  reservePercent: numeric("reserve_percent", { precision: 5, scale: 2 }).notNull().default("8.00"),
+  savingsPercent: numeric("savings_percent", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  loyaltyStartedAt: timestamp("loyalty_started_at", { withTimezone: true }).notNull().defaultNow(),
+  loyaltyVestingYears: integer("loyalty_vesting_years").notNull().default(10),
+  teamLevel: text("team_level").notNull().default("berater"),
+  note: text("note").notNull().default(""),
+  updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("employee_compensation_updated_idx").on(table.updatedAt)]);
+
+export const compensationHistory = pgTable("compensation_history", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  changedByEmployeeId: integer("changed_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  oldValues: jsonb("old_values").$type<Record<string, unknown>>(),
+  newValues: jsonb("new_values").$type<Record<string, unknown>>().notNull(),
+  reason: text("reason").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("compensation_history_employee_idx").on(table.employeeId, table.createdAt)]);
+
+
+export const loyaltyBonusLedger = pgTable("loyalty_bonus_ledger", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  type: text("type").$type<"credit" | "payout" | "correction_debit">().notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("loyalty_bonus_ledger_employee_idx").on(table.employeeId, table.createdAt)]);
+
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   entityType: text("entity_type").notNull(),
