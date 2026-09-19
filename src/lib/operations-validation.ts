@@ -73,3 +73,10 @@ export const reconciliationImportSchema = z.object({
     reference: text(240).optional(),
   })).min(1).max(5000),
 });
+
+
+export const commissionPaidSchema = z.object({
+  amount: z.coerce.number().finite().positive().max(100000000),
+  providerReference: text(240).optional(),
+  note: text(1000).optional(),
+});
