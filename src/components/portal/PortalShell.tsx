@@ -59,9 +59,9 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
   const openHelp = (path = pathname) => { setHelpPath(path); setHelpOpen(true); };
 
   return (
-    <div className="min-h-screen bg-paper text-ink lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-ink px-5 py-3 text-white lg:h-screen lg:flex-col lg:items-stretch lg:justify-start lg:border-b-0 lg:border-r lg:border-white/8 lg:px-5 lg:py-6">
-        <Logo size={30} href="/portal" />
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(79,141,255,0.08),transparent_32%),#f5f7fa] text-ink lg:grid lg:grid-cols-[284px_1fr]">
+      <aside className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-[radial-gradient(circle_at_top_left,rgba(79,141,255,0.16),transparent_32%),#060b16] px-5 py-3 text-white lg:h-screen lg:flex-col lg:items-stretch lg:justify-start lg:border-b-0 lg:border-r lg:border-white/8 lg:px-5 lg:py-6">
+        <div className="flex items-center gap-3"><Logo size={30} href="/portal" /><div className="hidden lg:block"><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-electric-soft">TarifWerk OS</p><p className="mt-0.5 text-[11.5px] text-silver">Sales & Operations</p></div></div>
         <div className="hidden lg:mt-6 lg:block"><label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" /><input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.055] pl-9 pr-3 text-[12.5px] text-white placeholder:text-silver/65 focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/15" placeholder="Bereich suchen…" aria-label="Portalbereich suchen" /></label></div>
         <nav className="no-scrollbar flex max-w-[calc(100vw-120px)] gap-1 overflow-x-auto lg:mt-5 lg:max-w-none lg:flex-col lg:overflow-y-auto" aria-label="Portal">
           {navigation.map((n) => {
