@@ -4,6 +4,7 @@ import { Hero } from "@/components/home/Hero";
 import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
 import { PremiumGuidance } from "@/components/home/PremiumGuidance";
+import { TrustEngine } from "@/components/home/TrustEngine";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
   AudienceEverydaySection,
@@ -66,6 +67,7 @@ export default async function HomePage({ searchParams }: Props) {
         <Hero />
         <AudienceTrustStrip />
         <PremiumGuidance />
+        <TrustEngine />
         <TopicTicker />
         <AudienceFocusSection />
         <AudienceEverydaySection />
