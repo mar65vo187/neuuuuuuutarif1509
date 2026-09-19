@@ -111,11 +111,11 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
   return <div className="space-y-6">
     <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       {[
-        ["Aktuelle Stufe", `${currentTier.name} · ${pct(selected.payoutPercent)}`, TrendingUp],
-        ["Storno-Rücklage", pct(selected.reservePercent), ShieldCheck],
-        ["Provider-Basis", money(selected.providerGross), Coins],
-        ["Treue-Sparquote", pct(selected.savingsPercent), PiggyBank],
-      ].map(([label, value, Icon]) => <div key={String(label)} className="rounded-[22px] border border-line bg-white p-5">
+        { label: "Aktuelle Stufe", value: `${currentTier.name} · ${pct(selected.payoutPercent)}`, Icon: TrendingUp },
+        { label: "Storno-Rücklage", value: pct(selected.reservePercent), Icon: ShieldCheck },
+        { label: "Provider-Basis", value: money(selected.providerGross), Icon: Coins },
+        { label: "Treue-Sparquote", value: pct(selected.savingsPercent), Icon: PiggyBank },
+      ].map(({ label, value, Icon }) => <div key={label} className="rounded-[22px] border border-line bg-white p-5">
         <div className="flex items-center justify-between"><p className="text-[12.5px] font-semibold text-steel">{label}</p><Icon className="h-4.5 w-4.5 text-electric-deep" /></div>
         <p className="mt-3 text-[24px] font-extrabold tracking-tight text-ink">{value}</p>
       </div>)}
