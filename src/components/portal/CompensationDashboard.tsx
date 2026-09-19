@@ -4,6 +4,7 @@ import { BarChart3, BadgeEuro, CalendarClock, Coins, Loader2, PiggyBank, ShieldC
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { COMPENSATION_TIERS, TEAM_LEVELS } from "@/lib/compensation";
+import { ProfileImage } from "@/components/advisors/ProfileImage";
 
 type Row = {
   employeeId: number;
@@ -35,11 +36,11 @@ const date = (value: string) => new Date(value).toLocaleDateString("de-DE", { da
 function Avatar({ row }: { row: Row }) {
   const initials = row.name.trim().split(/\s+/).map((part) => part[0]).slice(0,2).join("").toUpperCase();
   return <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-platinum to-electric text-[11px] font-extrabold text-ink">
-    {row.imageUrl ? <img src={row.imageUrl} alt="" className="h-full w-full object-cover" /> : initials}
+    {row.imageUrl ? <ProfileImage src={row.imageUrl} initials={initials} alt="" /> : initials}
   </span>;
 }
 
-export function CompensationDashboard({ rows, isOwner }: { rows: Row[]; isOwner: boolean }) {
+export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; isOwner: boolean; asOf: string }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(rows[0]?.employeeId ?? 0);
   const selected = rows.find((row) => row.employeeId === selectedId) ?? rows[0];
@@ -104,7 +105,7 @@ export function CompensationDashboard({ rows, isOwner }: { rows: Row[]; isOwner:
   }
 
   const currentTier = COMPENSATION_TIERS.find((tier) => tier.percent === selected.payoutPercent) ?? COMPENSATION_TIERS[0];
-  const loyaltyYears = Math.max(0, Math.floor((Date.now() - new Date(selected.loyaltyStartedAt).getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
+  const loyaltyYears = Math.max(0, Math.floor((new Date(asOf).getTime() - new Date(selected.loyaltyStartedAt).getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
   const loyaltyProgress = Math.min(100, Math.max(0, loyaltyYears / selected.loyaltyVestingYears * 100));
 
   return <div className="space-y-6">
