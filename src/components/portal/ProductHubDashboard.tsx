@@ -5,6 +5,7 @@ import {
   FileSpreadsheet, GraduationCap, Loader2, Megaphone, PackageSearch, PiggyBank, Plus, Search,
   ShieldCheck, Sparkles, Upload, UsersRound,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -104,9 +105,9 @@ const channelLabel: Record<MarketingChannel["status"], string> = {
   allowed: "Erlaubt", conditional: "Mit Bedingungen", blocked: "Nicht erlaubt",
 };
 
-async function post(url: string, body: unknown) {
+async function post(url: string, body: unknown, method: "POST" | "PATCH" = "POST") {
   const response = await fetch(url, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
     body: JSON.stringify(body),
@@ -191,6 +192,8 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   const [provider, setProvider] = useState("all");
   const [csvRows, setCsvRows] = useState<Array<{ productId?: number; externalProductId?: string; productName: string; category: string; grossAmount: number }>>([]);
   const [csvName, setCsvName] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState(data.products[0]?.id ?? 0);
+  const [selectedProviderId, setSelectedProviderId] = useState(data.providers[0]?.id ?? 0);
 
   const categories = useMemo(() => Array.from(new Set(data.products.map((product) => product.category))).sort(), [data.products]);
   const filtered = useMemo(() => {
@@ -202,14 +205,14 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
     );
   }, [data.products, query, category, provider]);
 
-  async function submit(event: FormEvent<HTMLFormElement>, kind: string, build: (data: FormData) => unknown, url = "/api/portal/admin/catalog") {
+  async function submit(event: FormEvent<HTMLFormElement>, kind: string, build: (data: FormData) => unknown, url = "/api/portal/admin/catalog", method: "POST" | "PATCH" = "POST") {
     event.preventDefault();
     if (busyRef.current) return;
     busyRef.current = true; setBusy(kind); setError(null); setSuccess(null);
     const form = event.currentTarget;
     const formData = new FormData(form);
     try {
-      await post(url, build(formData));
+      await post(url, build(formData), method);
       setSuccess("Gespeichert. Die Änderung ist jetzt im Backoffice verfügbar.");
       form.reset();
       router.refresh();
@@ -233,6 +236,8 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   }
 
   const activeProducts = data.products.filter((product) => ["active", "new", "test"].includes(product.lifecycleStatus)).length;
+  const selectedProduct = data.products.find((product) => product.id === selectedProductId) ?? data.products[0];
+  const selectedProvider = data.providers.find((item) => item.id === selectedProviderId) ?? data.providers[0];
 
   return <div className="space-y-6">
     {(error || success) && <div role={error ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-[13.5px] ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>{error ?? success}</div>}
@@ -273,6 +278,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">{data.owner ? "Provider-Provision" : "Ihr Provisionswert"}</p><p className="mt-1 text-[16px] font-extrabold">{data.owner ? money(product.ownerGrossCommission ?? 0) : product.employeeCommissionEstimate !== null ? money(product.employeeCommissionEstimate) : "–"}</p>{data.owner && <p className="mt-1 text-[11px] text-steel">davon 15 % interner Benefit-/Growth-Pool: {money(product.ownerPoolAmount ?? 0)}</p>}</div>
         </div>
         {product.marketingChannels.length > 0 && <div className="mt-4"><p className="text-[12px] font-bold uppercase tracking-[0.1em] text-steel">Vermarktung</p><div className="mt-2 flex flex-wrap gap-2">{product.marketingChannels.map((channel, index) => <span key={channel.channel + index} title={channel.note} className={`chip ${channel.status === "allowed" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : channel.status === "conditional" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-red-200 bg-red-50 text-red-700"}`}>{channel.channel} · {channelLabel[channel.status]}</span>)}</div></div>}
+        {["active", "new", "test", "phasing_out"].includes(product.lifecycleStatus) && <div className="mt-4"><Link href={`/portal/auftraege/neu?product=${product.id}`} className="inline-flex h-10 items-center justify-center rounded-full bg-ink px-4 text-[12.5px] font-semibold text-white hover:bg-electric">Auftrag mit diesem Produkt starten</Link></div>}
         <details className="mt-5 border-t border-line pt-4">
           <summary className="flex cursor-pointer list-none items-center justify-between text-[13.5px] font-bold">Produktwissen öffnen <ChevronDown className="h-4 w-4" /></summary>
           <div className="mt-4 grid gap-5 text-[13px] lg:grid-cols-2">
@@ -309,6 +315,95 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
 
     {isAdmin && <section className="space-y-5">
       <div><p className="eyebrow text-electric-deep">Administration</p><h2 className="mt-2 text-[21px] font-extrabold">Produkt- und Partnerdaten pflegen</h2></div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        {selectedProduct && <form key={`edit-product-${selectedProduct.id}`} onSubmit={(event) => submit(event, "product-edit", (form) => ({
+          kind: "product",
+          id: selectedProduct.id,
+          providerId: Number(form.get("providerId")),
+          name: form.get("name"),
+          category: form.get("category"),
+          sku: form.get("sku"),
+          audience: form.get("audience"),
+          lifecycleStatus: form.get("lifecycleStatus"),
+          description: form.get("description"),
+          region: form.get("region"),
+          submissionUrl: form.get("submissionUrl"),
+          supportContact: form.get("supportContact"),
+          completionProcess: form.get("completionProcess"),
+          marketingChannels: channels(form.get("marketingChannels")),
+          marketingConditions: form.get("marketingConditions"),
+          salesArguments: lines(form.get("salesArguments")),
+          checklist: lines(form.get("checklist")),
+          requiredDocuments: lines(form.get("requiredDocuments")),
+          objections: selectedProduct.objections,
+          trainingRequired: form.get("trainingRequired") === "on",
+          highlight: form.get("highlight"),
+        }), "/api/portal/admin/catalog", "PATCH")} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
+          <div className="flex items-center gap-3"><PackageSearch className="h-5 w-5 text-electric-deep" /><div><h3 className="text-[17px] font-extrabold">Bestehende Produkte bearbeiten</h3><p className="text-[12px] text-steel">Status, Vermarktung, Schulung und Abschlussweg zentral pflegen.</p></div></div>
+          <label className="label mt-4">Produkt auswählen<select className="field" value={selectedProduct.id} onChange={(event) => setSelectedProductId(Number(event.target.value))}>{data.products.map((item) => <option key={item.id} value={item.id}>{item.providerName} · {item.name}</option>)}</select></label>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="label">Partner<select name="providerId" defaultValue={selectedProduct.providerId} className="field">{data.providers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="label">Produktname<input name="name" defaultValue={selectedProduct.name} required className="field" /></label>
+            <label className="label">Bereich<input name="category" defaultValue={selectedProduct.category} required className="field" /></label>
+            <label className="label">SKU / Tarif-ID<input name="sku" defaultValue={selectedProduct.sku ?? ""} className="field" /></label>
+            <label className="label">Zielgruppe<select name="audience" defaultValue={selectedProduct.audience} className="field"><option value="both">Privat & Business</option><option value="private">Privat</option><option value="business">Business</option></select></label>
+            <label className="label">Status<select name="lifecycleStatus" defaultValue={selectedProduct.lifecycleStatus} className="field"><option value="active">Aktiv</option><option value="new">Neu</option><option value="test">Testphase</option><option value="paused">Pausiert</option><option value="do_not_market">Nicht vermarkten</option><option value="phasing_out">Auslaufend</option><option value="ended">Beendet</option></select></label>
+            <label className="label sm:col-span-2">Beschreibung<textarea name="description" rows={3} defaultValue={selectedProduct.description} className="field" /></label>
+            <label className="label">Region<input name="region" defaultValue={selectedProduct.region} className="field" /></label>
+            <label className="label">Einreichungsportal<input name="submissionUrl" type="url" defaultValue={selectedProduct.submissionUrl ?? ""} className="field" /></label>
+            <label className="label sm:col-span-2">Supportkontakt<input name="supportContact" defaultValue={selectedProduct.supportContact ?? ""} className="field" /></label>
+            <label className="label sm:col-span-2">Vertriebskanäle · Kanal|allowed/conditional/blocked|Hinweis<textarea name="marketingChannels" rows={4} defaultValue={selectedProduct.marketingChannels.map((entry) => [entry.channel, entry.status, entry.note].filter(Boolean).join("|")).join("\n")} className="field" /></label>
+            <label className="label sm:col-span-2">Vermarktungsbedingungen<textarea name="marketingConditions" rows={3} defaultValue={selectedProduct.marketingConditions} className="field" /></label>
+            <label className="label sm:col-span-2">Verkaufsargumente<textarea name="salesArguments" rows={3} defaultValue={selectedProduct.salesArguments.join("\n")} className="field" /></label>
+            <label className="label sm:col-span-2">Abschlussprozess<textarea name="completionProcess" rows={4} defaultValue={selectedProduct.completionProcess} className="field" /></label>
+            <label className="label">Checkliste<textarea name="checklist" rows={4} defaultValue={selectedProduct.checklist.join("\n")} className="field" /></label>
+            <label className="label">Unterlagen<textarea name="requiredDocuments" rows={4} defaultValue={selectedProduct.requiredDocuments.join("\n")} className="field" /></label>
+            <label className="label">Badge / Hinweis<input name="highlight" defaultValue={selectedProduct.highlight ?? ""} className="field" /></label>
+            <label className="flex items-center gap-2 self-end rounded-xl border border-line px-3 py-3 text-[13px] font-semibold"><input name="trainingRequired" type="checkbox" defaultChecked={selectedProduct.trainingRequired} /> Schulung erforderlich</label>
+          </div>
+          <button disabled={busy !== null} className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-white hover:bg-electric disabled:opacity-50">{busy === "product-edit" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Produkt aktualisieren</button>
+        </form>}
+
+        {selectedProvider && <form key={`edit-provider-${selectedProvider.id}`} onSubmit={(event) => submit(event, "provider-edit", (form) => ({
+          kind: "provider",
+          id: selectedProvider.id,
+          name: form.get("name"),
+          category: form.get("category"),
+          externalPartnerId: form.get("externalPartnerId"),
+          partnerType: form.get("partnerType"),
+          websiteUrl: form.get("websiteUrl"),
+          portalUrl: form.get("portalUrl"),
+          contactName: form.get("contactName"),
+          contactPhone: form.get("contactPhone"),
+          contactEmail: form.get("contactEmail"),
+          supportContact: form.get("supportContact"),
+          billingPath: form.get("billingPath"),
+          regions: lines(form.get("regions")),
+          notes: form.get("notes"),
+          active: form.get("active") === "on",
+        }), "/api/portal/admin/catalog", "PATCH")} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
+          <div className="flex items-center gap-3"><Building2 className="h-5 w-5 text-electric-deep" /><div><h3 className="text-[17px] font-extrabold">Partner bearbeiten</h3><p className="text-[12px] text-steel">Kontakt, Portal, Regionen und Aktivstatus verwalten.</p></div></div>
+          <label className="label mt-4">Partner auswählen<select className="field" value={selectedProvider.id} onChange={(event) => setSelectedProviderId(Number(event.target.value))}>{data.providers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="label">Name<input name="name" defaultValue={selectedProvider.name} required className="field" /></label>
+            <label className="label">Bereich<input name="category" defaultValue={selectedProvider.category} required className="field" /></label>
+            <label className="label">Partnerart<input name="partnerType" defaultValue={selectedProvider.partnerType} className="field" /></label>
+            <label className="label">Interne Partner-ID<input name="externalPartnerId" defaultValue={selectedProvider.externalPartnerId ?? ""} className="field" /></label>
+            <label className="label">Website<input name="websiteUrl" type="url" defaultValue={selectedProvider.websiteUrl ?? ""} className="field" /></label>
+            <label className="label">Partnerportal<input name="portalUrl" type="url" defaultValue={selectedProvider.portalUrl ?? ""} className="field" /></label>
+            <label className="label">Ansprechpartner<input name="contactName" defaultValue={selectedProvider.contactName ?? ""} className="field" /></label>
+            <label className="label">E-Mail<input name="contactEmail" type="email" defaultValue={selectedProvider.contactEmail ?? ""} className="field" /></label>
+            <label className="label">Telefon<input name="contactPhone" defaultValue={selectedProvider.contactPhone ?? ""} className="field" /></label>
+            <label className="label">Support<input name="supportContact" defaultValue={selectedProvider.supportContact ?? ""} className="field" /></label>
+            <label className="label sm:col-span-2">Regionen<textarea name="regions" rows={2} defaultValue={selectedProvider.regions.join("\n")} className="field" /></label>
+            <label className="label sm:col-span-2">Abrechnungs-/Einreichungsweg<textarea name="billingPath" rows={2} defaultValue={selectedProvider.billingPath ?? ""} className="field" /></label>
+            {data.owner && <label className="label sm:col-span-2">Owner-Notiz<textarea name="notes" rows={2} defaultValue={selectedProvider.notes} className="field" /></label>}
+            <label className="flex items-center gap-2 rounded-xl border border-line px-3 py-3 text-[13px] font-semibold"><input name="active" type="checkbox" defaultChecked={selectedProvider.active} /> Partner aktiv</label>
+          </div>
+          <button disabled={busy !== null} className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-white hover:bg-electric disabled:opacity-50">{busy === "provider-edit" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Partner aktualisieren</button>
+        </form>}
+      </div>
+
       <div className="grid gap-5 xl:grid-cols-2">
         <form onSubmit={(event) => submit(event, "provider", (form) => ({
           kind: "provider", name: form.get("name"), category: form.get("category"), externalPartnerId: form.get("externalPartnerId"),
