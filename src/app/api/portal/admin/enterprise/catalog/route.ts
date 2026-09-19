@@ -4,6 +4,7 @@ import { products, providers } from "@/db/enterprise-schema";
 import { authorizeAdmin, adminFailure, readAdminJson } from "@/lib/admin-server";
 import { catalogCreateSchema } from "@/lib/enterprise-validation";
 import { writeAudit } from "@/lib/enterprise";
+import { isCompensationOwner } from "@/lib/compensation";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,9 @@ export async function POST(request: NextRequest) {
         name: parsed.data.name,
         category: parsed.data.category,
         sku: parsed.data.sku || null,
-        expectedCommission: parsed.data.expectedCommission === undefined ? null : String(parsed.data.expectedCommission).replace(",", "."),
+        expectedCommission: isCompensationOwner(admin) && parsed.data.expectedCommission !== undefined
+          ? String(parsed.data.expectedCommission).replace(",", ".")
+          : null,
       }).returning();
       await writeAudit(tx, admin.id, "product.created", "product", created.id, undefined, { name: created.name, providerId: created.providerId });
       return { kind: "product", item: created };
