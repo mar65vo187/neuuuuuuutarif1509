@@ -24,6 +24,8 @@ const requiredTables = [
   "orders",
   "order_status_history",
   "commission_events",
+  "employee_compensation_profiles",
+  "compensation_history",
   "tasks",
   "audit_events",
   "automation_rules",
