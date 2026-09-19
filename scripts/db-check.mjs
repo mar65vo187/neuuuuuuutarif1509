@@ -28,9 +28,13 @@ try {
     // Identifiers are a fixed internal allowlist, never user input.
     await pool.query(`SELECT * FROM ${table} LIMIT 0`);
   }
-  const result = await pool.query("SELECT id FROM employees WHERE lower(email) = $1 AND role = 'admin' AND active = true", [process.env.PORTAL_ADMIN_EMAIL.trim().toLowerCase()]);
+  const adminEmail = process.env.PORTAL_ADMIN_EMAIL.trim().toLowerCase();
+  const ownerEmail = (process.env.PORTAL_OWNER_EMAIL || process.env.PORTAL_ADMIN_EMAIL).trim().toLowerCase();
+  const result = await pool.query("SELECT id FROM employees WHERE lower(email) = $1 AND role = 'admin' AND active = true", [adminEmail]);
   if (!result.rowCount) throw new Error("Kein aktiver Admin für PORTAL_ADMIN_EMAIL vorhanden. npm run db:seed ausführen bzw. Kontostatus prüfen.");
-  console.log("PostgreSQL erreichbar; alle Portal- und Enterprise-Migrationen sowie aktiver Admin geprüft.");
+  const owner = await pool.query("SELECT id FROM employees WHERE lower(email) = $1 AND role = 'admin' AND active = true", [ownerEmail]);
+  if (!owner.rowCount) throw new Error("Kein aktiver Owner-Admin für PORTAL_OWNER_EMAIL/PORTAL_ADMIN_EMAIL vorhanden.");
+  console.log("PostgreSQL erreichbar; Portal-Schema sowie aktiver Admin und Vergütungs-Owner geprüft.");
 } catch (error) {
   // Driver error messages may contain connection details; expose only a safe code.
   if (pool && error.code) console.error(`Datenbankprüfung fehlgeschlagen (${String(error.code).replace(/[^A-Z0-9_]/gi, "").slice(0,40)}). Verbindung, Berechtigungen und Migrationen prüfen.`);
