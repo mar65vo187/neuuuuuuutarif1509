@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
       const completedAt = new Date();
       const status = parsed.data.action === "revoke" ? "revoked" : "completed";
       const expiresAt = status === "completed" && module.validMonths ? addMonths(completedAt, module.validMonths) : null;
+      const certificateCode = status === "completed" ? `TW-${module.id}-${employee.id}-${randomBytes(6).toString("hex").toUpperCase()}` : null;
       const [saved] = await tx.insert(employeeTrainingCompletions).values({
         moduleId: module.id,
         employeeId: employee.id,
@@ -53,9 +55,10 @@ export async function POST(request: NextRequest) {
         expiresAt,
         recordedByEmployeeId: admin.id,
         note: parsed.data.note || "",
+        certificateCode,
       }).onConflictDoUpdate({
         target: [employeeTrainingCompletions.moduleId, employeeTrainingCompletions.employeeId],
-        set: { status, completedAt, expiresAt, recordedByEmployeeId: admin.id, note: parsed.data.note || "" },
+        set: { status, completedAt, expiresAt, recordedByEmployeeId: admin.id, note: parsed.data.note || "", certificateCode },
       }).returning({ id: employeeTrainingCompletions.id });
       await writeAudit(tx, admin.id, `training.${status}`, "employee_training", saved.id, undefined, { moduleId: module.id, employeeId: employee.id, expiresAt });
       return saved;
