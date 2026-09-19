@@ -88,6 +88,107 @@ export const products = pgTable("products", {
   uniqueIndex("products_provider_name_unique").on(table.providerId, table.name),
 ]);
 
+
+export const providerProfiles = pgTable("provider_profiles", {
+  providerId: integer("provider_id").primaryKey().references(() => providers.id, { onDelete: "cascade" }),
+  partnerType: text("partner_type").notNull().default("provider"),
+  websiteUrl: text("website_url"),
+  portalUrl: text("portal_url"),
+  contactName: text("contact_name"),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
+  supportContact: text("support_contact"),
+  billingPath: text("billing_path"),
+  regions: text("regions").array().notNull().default([]),
+  notes: text("notes").notNull().default(""),
+  updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const productCatalogProfiles = pgTable("product_catalog_profiles", {
+  productId: integer("product_id").primaryKey().references(() => products.id, { onDelete: "cascade" }),
+  audience: text("audience").notNull().default("both"),
+  lifecycleStatus: text("lifecycle_status").notNull().default("active"),
+  description: text("description").notNull().default(""),
+  region: text("region").notNull().default("Deutschland"),
+  submissionUrl: text("submission_url"),
+  supportContact: text("support_contact"),
+  completionProcess: text("completion_process").notNull().default(""),
+  marketingChannels: jsonb("marketing_channels").$type<Array<{ channel: string; status: "allowed" | "conditional" | "blocked"; note?: string }>>().notNull().default([]),
+  marketingConditions: text("marketing_conditions").notNull().default(""),
+  salesArguments: jsonb("sales_arguments").$type<string[]>().notNull().default([]),
+  objections: jsonb("objections").$type<Array<{ objection: string; answer: string }>>().notNull().default([]),
+  checklist: jsonb("checklist").$type<string[]>().notNull().default([]),
+  requiredDocuments: jsonb("required_documents").$type<string[]>().notNull().default([]),
+  trainingRequired: boolean("training_required").notNull().default(false),
+  highlight: text("highlight"),
+  updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("product_catalog_status_idx").on(table.lifecycleStatus, table.updatedAt)]);
+
+export const commissionListVersions = pgTable("commission_list_versions", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").notNull().references(() => providers.id, { onDelete: "restrict" }),
+  version: integer("version").notNull(),
+  sourceName: text("source_name").notNull(),
+  sourceType: text("source_type").notNull().default("manual"),
+  validFrom: timestamp("valid_from", { withTimezone: true }),
+  validTo: timestamp("valid_to", { withTimezone: true }),
+  ownerPoolPercent: numeric("owner_pool_percent", { precision: 5, scale: 2 }).notNull().default("15.00"),
+  importedByEmployeeId: integer("imported_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("commission_list_provider_version_unique").on(table.providerId, table.version),
+  index("commission_list_provider_idx").on(table.providerId, table.createdAt),
+]);
+
+export const commissionRateVersions = pgTable("commission_rate_versions", {
+  id: serial("id").primaryKey(),
+  commissionListVersionId: integer("commission_list_version_id").notNull().references(() => commissionListVersions.id, { onDelete: "cascade" }),
+  productId: integer("product_id").references(() => products.id, { onDelete: "set null" }),
+  externalProductId: text("external_product_id"),
+  productName: text("product_name").notNull(),
+  category: text("category").notNull(),
+  grossAmount: numeric("gross_amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("EUR"),
+  validFrom: timestamp("valid_from", { withTimezone: true }),
+  validTo: timestamp("valid_to", { withTimezone: true }),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("commission_rate_product_idx").on(table.productId, table.createdAt),
+  index("commission_rate_list_idx").on(table.commissionListVersionId),
+]);
+
+export const benefitPoolLedger = pgTable("benefit_pool_ledger", {
+  id: serial("id").primaryKey(),
+  entryType: text("entry_type").notNull(),
+  category: text("category").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  note: text("note").notNull().default(""),
+  reference: text("reference"),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("benefit_pool_ledger_created_idx").on(table.createdAt),
+  index("benefit_pool_ledger_category_idx").on(table.category, table.createdAt),
+]);
+
+export const productUpdates = pgTable("product_updates", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id, { onDelete: "cascade" }),
+  providerId: integer("provider_id").references(() => providers.id, { onDelete: "cascade" }),
+  updateType: text("update_type").notNull().default("info"),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  important: boolean("important").notNull().default(false),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("product_updates_created_idx").on(table.createdAt),
+  index("product_updates_product_idx").on(table.productId, table.createdAt),
+]);
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
