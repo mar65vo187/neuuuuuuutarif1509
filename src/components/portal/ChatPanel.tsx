@@ -14,7 +14,7 @@ type Msg = {
   authorImageUrl: string | null;
 };
 
-export function ChatPanel({ isAdmin }: { isAdmin: boolean }) {
+export function ChatPanel({ isAdmin = false }: { isAdmin?: boolean } = {}) {
   const [channel, setChannel] = useState<Channel>("all");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [me, setMe] = useState<number | null>(null);
