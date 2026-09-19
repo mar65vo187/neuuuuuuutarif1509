@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
-import { commissionEvents, employeeCompensationProfiles } from "@/db/enterprise-schema";
+import { commissionEvents, employeeCompensationProfiles, loyaltyBonusLedger } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 
 export { COMPENSATION_TIERS, TEAM_LEVELS, DEFAULT_PAYOUT_PERCENT, DEFAULT_RESERVE_PERCENT, DEFAULT_LOYALTY_YEARS } from "@/lib/compensation-model";
@@ -41,6 +41,9 @@ export type CompensationRow = {
   companyOperatingAmount: number;
   savingsProjection: number;
   loyaltyEligibleAt: Date;
+  loyaltyCredits: number;
+  loyaltyPayouts: number;
+  loyaltyBalance: number;
 };
 
 function addYears(date: Date, years: number) {
@@ -84,7 +87,18 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
     .where(inArray(commissionEvents.employeeId, ids))
     .groupBy(commissionEvents.employeeId);
 
+  const loyaltyRows = await db
+    .select({
+      employeeId: loyaltyBonusLedger.employeeId,
+      credits: sql<string>`coalesce(sum(case when ${loyaltyBonusLedger.type} = 'credit' then ${loyaltyBonusLedger.amount} else 0 end), 0)::text`,
+      payouts: sql<string>`coalesce(sum(case when ${loyaltyBonusLedger.type} in ('payout','correction_debit') then ${loyaltyBonusLedger.amount} else 0 end), 0)::text`,
+    })
+    .from(loyaltyBonusLedger)
+    .where(inArray(loyaltyBonusLedger.employeeId, ids))
+    .groupBy(loyaltyBonusLedger.employeeId);
+
   const commissions = new Map(commissionRows.map((row) => [row.employeeId, row]));
+  const loyalty = new Map(loyaltyRows.map((row) => [row.employeeId, row]));
   return people.map((person) => {
     const payoutPercent = Number(person.payoutPercent ?? DEFAULT_PAYOUT_PERCENT);
     const reservePercent = Number(person.reservePercent ?? DEFAULT_RESERVE_PERCENT);
@@ -95,6 +109,9 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
     const providerGross = Number(amounts?.providerGross ?? 0);
     const confirmedGross = Number(amounts?.confirmedGross ?? 0);
     const paidGross = Number(amounts?.paidGross ?? 0);
+    const loyaltyAmounts = loyalty.get(person.employeeId);
+    const loyaltyCredits = Number(loyaltyAmounts?.credits ?? 0);
+    const loyaltyPayouts = Number(loyaltyAmounts?.payouts ?? 0);
     return {
       employeeId: person.employeeId,
       name: person.name,
@@ -116,6 +133,9 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
       companyOperatingAmount: Math.max(0, providerGross * (100 - payoutPercent - reservePercent) / 100),
       savingsProjection: providerGross * savingsPercent / 100,
       loyaltyEligibleAt: addYears(loyaltyStartedAt, loyaltyVestingYears),
+      loyaltyCredits,
+      loyaltyPayouts,
+      loyaltyBalance: Math.max(0, loyaltyCredits - loyaltyPayouts),
     };
   });
 }
