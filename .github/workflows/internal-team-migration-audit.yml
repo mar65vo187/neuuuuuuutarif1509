@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/internal-team-admin-chat-20260919
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
