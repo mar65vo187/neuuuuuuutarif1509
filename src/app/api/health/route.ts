@@ -16,6 +16,12 @@ export async function GET() {
     await db.execute(sql`select employee_id from employee_compensation_profiles limit 0`);
     await db.execute(sql`select id from compensation_history limit 0`);
     await db.execute(sql`select id from loyalty_bonus_ledger limit 0`);
+    await db.execute(sql`select provider_id from provider_profiles limit 0`);
+    await db.execute(sql`select product_id from product_catalog_profiles limit 0`);
+    await db.execute(sql`select id from commission_list_versions limit 0`);
+    await db.execute(sql`select id from commission_rate_versions limit 0`);
+    await db.execute(sql`select id from benefit_pool_ledger limit 0`);
+    await db.execute(sql`select id from product_updates limit 0`);
     await db.execute(sql`select employee_id from employee_images limit 0`);
     await db.execute(sql`select channel from team_messages limit 0`);
     return Response.json({ ok: true });
