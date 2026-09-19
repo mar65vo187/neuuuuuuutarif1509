@@ -66,11 +66,6 @@ export function ChatPanel({ isAdmin }: { isAdmin: boolean }) {
   }, [channel]);
 
   useEffect(() => {
-    setMessages([]);
-    setLoaded(false);
-    setError(null);
-    loadRequest.current?.abort();
-    loadRequest.current = null;
     const first = setTimeout(() => { void load(); }, 0);
     const timer = setInterval(load, 6000);
     return () => {
@@ -86,6 +81,17 @@ export function ChatPanel({ isAdmin }: { isAdmin: boolean }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
+
+  const switchChannel = (next: Channel) => {
+    if (next === channel) return;
+    loadRequest.current?.abort();
+    loadRequest.current = null;
+    setMessages([]);
+    setLoaded(false);
+    setError(null);
+    setText("");
+    setChannel(next);
+  };
 
   const send = async (event: FormEvent) => {
     event.preventDefault();
@@ -138,7 +144,7 @@ export function ChatPanel({ isAdmin }: { isAdmin: boolean }) {
             type="button"
             role="tab"
             aria-selected={channel === "all"}
-            onClick={() => setChannel("all")}
+            onClick={() => switchChannel("all")}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[13.5px] font-semibold transition-colors ${channel === "all" ? "bg-ink text-white" : "bg-white text-ink hover:bg-ink/5"}`}
           >
             <Users className="h-4 w-4" /> Alle
@@ -147,7 +153,7 @@ export function ChatPanel({ isAdmin }: { isAdmin: boolean }) {
             type="button"
             role="tab"
             aria-selected={channel === "admins"}
-            onClick={() => setChannel("admins")}
+            onClick={() => switchChannel("admins")}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[13.5px] font-semibold transition-colors ${channel === "admins" ? "bg-ink text-white" : "bg-white text-ink hover:bg-ink/5"}`}
           >
             <LockKeyhole className="h-4 w-4" /> Nur Admins
