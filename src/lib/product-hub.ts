@@ -1,4 +1,4 @@
-import { desc, eq, ilike, or, sql } from "drizzle-orm";
+import { desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   benefitPoolLedger,
@@ -8,6 +8,7 @@ import {
   productCatalogProfiles,
   productUpdates,
   products,
+  orders,
   providerProfiles,
   providers,
 } from "@/db/enterprise-schema";
@@ -165,10 +166,30 @@ export async function getProductHubData(user: SessionUser, search = "") {
       validTo: Date | null;
       createdAt: Date;
     }>;
+    productPerformance: Array<{
+      productId: number;
+      totalOrders: number;
+      activeOrders: number;
+      cancelledOrders: number;
+      conversionRate: number;
+      stornoRate: number;
+      averageCycleHours: number;
+      providerGross: number;
+    }>;
+    providerPerformance: Array<{
+      providerId: number;
+      totalOrders: number;
+      activeOrders: number;
+      cancelledOrders: number;
+      conversionRate: number;
+      stornoRate: number;
+      averageCycleHours: number;
+      providerGross: number;
+    }>;
   } = null;
 
   if (owner) {
-    const [ledgerRows, byCategoryRows, listRows] = await Promise.all([
+    const [ledgerRows, byCategoryRows, listRows, productPerformanceRows, providerPerformanceRows] = await Promise.all([
       db.select({
         entryType: benefitPoolLedger.entryType,
         total: sql<string>`coalesce(sum(${benefitPoolLedger.amount}),0)::text`,
@@ -193,6 +214,22 @@ export async function getProductHubData(user: SessionUser, search = "") {
         .innerJoin(providers, eq(commissionListVersions.providerId, providers.id))
         .orderBy(desc(commissionListVersions.createdAt))
         .limit(30),
+      db.select({
+        productId: orders.productId,
+        totalOrders: sql<number>`count(*)::int`,
+        activeOrders: sql<number>`count(*) filter (where ${orders.status} = 'active')::int`,
+        cancelledOrders: sql<number>`count(*) filter (where ${orders.status} in ('cancelled','storno'))::int`,
+        averageCycleHours: sql<string>`coalesce(avg(extract(epoch from (${orders.activatedAt} - ${orders.createdAt})) / 3600) filter (where ${orders.activatedAt} is not null),0)::text`,
+        providerGross: sql<string>`coalesce(sum(coalesce(${orders.expectedCommission},0)),0)::text`,
+      }).from(orders).where(isNotNull(orders.productId)).groupBy(orders.productId),
+      db.select({
+        providerId: orders.providerId,
+        totalOrders: sql<number>`count(*)::int`,
+        activeOrders: sql<number>`count(*) filter (where ${orders.status} = 'active')::int`,
+        cancelledOrders: sql<number>`count(*) filter (where ${orders.status} in ('cancelled','storno'))::int`,
+        averageCycleHours: sql<string>`coalesce(avg(extract(epoch from (${orders.activatedAt} - ${orders.createdAt})) / 3600) filter (where ${orders.activatedAt} is not null),0)::text`,
+        providerGross: sql<string>`coalesce(sum(coalesce(${orders.expectedCommission},0)),0)::text`,
+      }).from(orders).groupBy(orders.providerId),
     ]);
 
     const totals = new Map(ledgerRows.map((row) => [row.entryType, Number(row.total)]));
@@ -207,6 +244,38 @@ export async function getProductHubData(user: SessionUser, search = "") {
       poolReserved: reserved,
       poolByCategory: byCategoryRows.map((row) => ({ category: row.category, amount: Number(row.total) })),
       commissionLists: listRows,
+      productPerformance: productPerformanceRows
+        .filter((row): row is typeof row & { productId: number } => row.productId !== null)
+        .map((row) => {
+          const total = Number(row.totalOrders ?? 0);
+          const active = Number(row.activeOrders ?? 0);
+          const cancelled = Number(row.cancelledOrders ?? 0);
+          return {
+            productId: row.productId,
+            totalOrders: total,
+            activeOrders: active,
+            cancelledOrders: cancelled,
+            conversionRate: total ? Math.round(active / total * 1000) / 10 : 0,
+            stornoRate: total ? Math.round(cancelled / total * 1000) / 10 : 0,
+            averageCycleHours: Math.round(Number(row.averageCycleHours ?? 0) * 10) / 10,
+            providerGross: Number(row.providerGross ?? 0),
+          };
+        }),
+      providerPerformance: providerPerformanceRows.map((row) => {
+        const total = Number(row.totalOrders ?? 0);
+        const active = Number(row.activeOrders ?? 0);
+        const cancelled = Number(row.cancelledOrders ?? 0);
+        return {
+          providerId: row.providerId,
+          totalOrders: total,
+          activeOrders: active,
+          cancelledOrders: cancelled,
+          conversionRate: total ? Math.round(active / total * 1000) / 10 : 0,
+          stornoRate: total ? Math.round(cancelled / total * 1000) / 10 : 0,
+          averageCycleHours: Math.round(Number(row.averageCycleHours ?? 0) * 10) / 10,
+          providerGross: Number(row.providerGross ?? 0),
+        };
+      }),
     };
   }
 
