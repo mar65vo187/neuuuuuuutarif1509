@@ -66,14 +66,14 @@ export default async function HomePage({ searchParams }: Props) {
       <AudienceProvider initialAudience={initialAudience}>
         <Hero />
         <AudienceTrustStrip />
-        <PremiumGuidance />
-        <TrustEngine />
         <TopicTicker />
         <AudienceFocusSection />
         <AudienceEverydaySection />
-        <AudienceManifesto />
+        <TrustEngine />
+        <PremiumGuidance />
         <FinderTeaser />
         <AudienceProcess />
+        <AudienceManifesto />
         <Founder />
         <ReferralHomeTeaser />
         <AudienceFaqSection />
