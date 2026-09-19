@@ -17,14 +17,15 @@ export async function GET() {
     await db.execute(sql`select id from compensation_history limit 0`);
     await db.execute(sql`select id from loyalty_bonus_ledger limit 0`);
     await db.execute(sql`select provider_id from provider_profiles limit 0`);
-    await db.execute(sql`select product_id from product_catalog_profiles limit 0`);
+    await db.execute(sql`select product_id, short_pitch, phone_pitch, d2d_pitch, b2b_pitch, whatsapp_template, email_template, social_ideas from product_catalog_profiles limit 0`);
     await db.execute(sql`select id from commission_list_versions limit 0`);
     await db.execute(sql`select id from commission_rate_versions limit 0`);
     await db.execute(sql`select id from benefit_pool_ledger limit 0`);
     await db.execute(sql`select id from product_updates limit 0`);
+    await db.execute(sql`select update_id from product_update_reads limit 0`);
     await db.execute(sql`select id from incentive_campaigns limit 0`);
     await db.execute(sql`select id from training_modules limit 0`);
-    await db.execute(sql`select id from employee_training_completions limit 0`);
+    await db.execute(sql`select id, certificate_code from employee_training_completions limit 0`);
     await db.execute(sql`select id from employee_benefits limit 0`);
     await db.execute(sql`select id from internal_documents limit 0`);
     await db.execute(sql`select id from reconciliation_imports limit 0`);

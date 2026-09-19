@@ -33,6 +33,7 @@ const requiredTables = [
   "commission_rate_versions",
   "benefit_pool_ledger",
   "product_updates",
+  "product_update_reads",
   "incentive_campaigns",
   "training_modules",
   "employee_training_completions",

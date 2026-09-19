@@ -123,6 +123,13 @@ export const productCatalogProfiles = pgTable("product_catalog_profiles", {
   marketingConditions: text("marketing_conditions").notNull().default(""),
   salesArguments: jsonb("sales_arguments").$type<string[]>().notNull().default([]),
   objections: jsonb("objections").$type<Array<{ objection: string; answer: string }>>().notNull().default([]),
+  shortPitch: text("short_pitch").notNull().default(""),
+  phonePitch: text("phone_pitch").notNull().default(""),
+  d2dPitch: text("d2d_pitch").notNull().default(""),
+  b2bPitch: text("b2b_pitch").notNull().default(""),
+  whatsappTemplate: text("whatsapp_template").notNull().default(""),
+  emailTemplate: text("email_template").notNull().default(""),
+  socialIdeas: jsonb("social_ideas").$type<string[]>().notNull().default([]),
   checklist: jsonb("checklist").$type<string[]>().notNull().default([]),
   requiredDocuments: jsonb("required_documents").$type<string[]>().notNull().default([]),
   trainingRequired: boolean("training_required").notNull().default(false),
@@ -196,6 +203,15 @@ export const productUpdates = pgTable("product_updates", {
   index("product_updates_product_idx").on(table.productId, table.createdAt),
 ]);
 
+export const productUpdateReads = pgTable("product_update_reads", {
+  updateId: integer("update_id").notNull().references(() => productUpdates.id, { onDelete: "cascade" }),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("product_update_reads_unique").on(table.updateId, table.employeeId),
+  index("product_update_reads_employee_idx").on(table.employeeId, table.readAt),
+]);
+
 export const incentiveCampaigns = pgTable("incentive_campaigns", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -238,6 +254,7 @@ export const employeeTrainingCompletions = pgTable("employee_training_completion
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   recordedByEmployeeId: integer("recorded_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
   note: text("note").notNull().default(""),
+  certificateCode: text("certificate_code"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("employee_training_module_unique").on(table.moduleId, table.employeeId),

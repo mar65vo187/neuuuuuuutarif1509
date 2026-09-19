@@ -64,6 +64,7 @@ export async function getOperationsHubData(user: SessionUser) {
       completedAt: employeeTrainingCompletions.completedAt,
       expiresAt: employeeTrainingCompletions.expiresAt,
       note: employeeTrainingCompletions.note,
+      certificateCode: employeeTrainingCompletions.certificateCode,
     }).from(employeeTrainingCompletions)
       .innerJoin(employees, eq(employeeTrainingCompletions.employeeId, employees.id))
       .where(admin ? eq(employees.active, true) : eq(employeeTrainingCompletions.employeeId, user.id))

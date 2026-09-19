@@ -1,11 +1,13 @@
-import { desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { employees } from "@/db/schema";
 import {
   benefitPoolLedger,
   commissionListVersions,
   commissionRateVersions,
   employeeCompensationProfiles,
   productCatalogProfiles,
+  productUpdateReads,
   productUpdates,
   products,
   providerProfiles,
@@ -25,6 +27,9 @@ export type MarketingChannel = {
 export async function getProductHubData(user: SessionUser, search = "") {
   const owner = isCompensationOwner(user);
   const query = search.trim();
+  const [employeeAccess] = await db.select({ advisoryAreas: employees.advisoryAreas })
+    .from(employees).where(eq(employees.id, user.id)).limit(1);
+  const advisoryAreas = (employeeAccess?.advisoryAreas ?? []).map((area) => area.trim().toLowerCase()).filter(Boolean);
 
   const productRows = await db.select({
     id: products.id,
@@ -46,6 +51,13 @@ export async function getProductHubData(user: SessionUser, search = "") {
     marketingConditions: productCatalogProfiles.marketingConditions,
     salesArguments: productCatalogProfiles.salesArguments,
     objections: productCatalogProfiles.objections,
+    shortPitch: productCatalogProfiles.shortPitch,
+    phonePitch: productCatalogProfiles.phonePitch,
+    d2dPitch: productCatalogProfiles.d2dPitch,
+    b2bPitch: productCatalogProfiles.b2bPitch,
+    whatsappTemplate: productCatalogProfiles.whatsappTemplate,
+    emailTemplate: productCatalogProfiles.emailTemplate,
+    socialIdeas: productCatalogProfiles.socialIdeas,
     checklist: productCatalogProfiles.checklist,
     requiredDocuments: productCatalogProfiles.requiredDocuments,
     trainingRequired: productCatalogProfiles.trainingRequired,
@@ -111,7 +123,11 @@ export async function getProductHubData(user: SessionUser, search = "") {
     payoutPercent = Number(profile?.payoutPercent ?? 82);
   }
 
-  const enrichedProducts = productRows.map((product) => {
+  const accessibleProductRows = user.role === "admin" || advisoryAreas.length === 0
+    ? productRows
+    : productRows.filter((product) => advisoryAreas.includes(product.category.trim().toLowerCase()));
+
+  const enrichedProducts = accessibleProductRows.map((product) => {
     const rate = latestRate.get(product.id);
     const { expectedCommission, ...safeProduct } = product;
     const gross = Number(rate?.grossAmount ?? expectedCommission ?? 0);
@@ -126,6 +142,13 @@ export async function getProductHubData(user: SessionUser, search = "") {
       marketingConditions: product.marketingConditions ?? "",
       salesArguments: product.salesArguments ?? [],
       objections: product.objections ?? [],
+      shortPitch: product.shortPitch ?? "",
+      phonePitch: product.phonePitch ?? "",
+      d2dPitch: product.d2dPitch ?? "",
+      b2bPitch: product.b2bPitch ?? "",
+      whatsappTemplate: product.whatsappTemplate ?? "",
+      emailTemplate: product.emailTemplate ?? "",
+      socialIdeas: product.socialIdeas ?? [],
       checklist: product.checklist ?? [],
       requiredDocuments: product.requiredDocuments ?? [],
       trainingRequired: product.trainingRequired ?? false,
@@ -136,7 +159,7 @@ export async function getProductHubData(user: SessionUser, search = "") {
     };
   });
 
-  const updates = await db.select({
+  const updateRows = await db.select({
     id: productUpdates.id,
     productId: productUpdates.productId,
     providerId: productUpdates.providerId,
@@ -145,7 +168,41 @@ export async function getProductHubData(user: SessionUser, search = "") {
     body: productUpdates.body,
     important: productUpdates.important,
     createdAt: productUpdates.createdAt,
-  }).from(productUpdates).orderBy(desc(productUpdates.createdAt)).limit(40);
+    readAt: productUpdateReads.readAt,
+  }).from(productUpdates)
+    .leftJoin(productUpdateReads, and(
+      eq(productUpdateReads.updateId, productUpdates.id),
+      eq(productUpdateReads.employeeId, user.id),
+    ))
+    .orderBy(desc(productUpdates.createdAt)).limit(40);
+
+  const accessibleProductIds = new Set(accessibleProductRows.map((product) => product.id));
+  const accessibleProviderIds = new Set(accessibleProductRows.map((product) => product.providerId));
+  const scopedUpdates = user.role === "admin" || advisoryAreas.length === 0
+    ? updateRows
+    : updateRows.filter((update) =>
+        (update.productId !== null && accessibleProductIds.has(update.productId)) ||
+        (update.productId === null && update.providerId !== null && accessibleProviderIds.has(update.providerId)));
+
+  const readerRows = owner && scopedUpdates.length
+    ? await db.select({
+        updateId: productUpdateReads.updateId,
+        employeeName: employees.name,
+      }).from(productUpdateReads)
+        .innerJoin(employees, eq(productUpdateReads.employeeId, employees.id))
+        .where(inArray(productUpdateReads.updateId, scopedUpdates.map((update) => update.id)))
+        .orderBy(employees.name)
+    : [];
+  const readersByUpdate = new Map<number, string[]>();
+  for (const reader of readerRows) {
+    const names = readersByUpdate.get(reader.updateId) ?? [];
+    names.push(reader.employeeName);
+    readersByUpdate.set(reader.updateId, names);
+  }
+  const updates = scopedUpdates.map((update) => ({ ...update, readers: readersByUpdate.get(update.id) ?? [] }));
+  const accessibleProviders = user.role === "admin" || advisoryAreas.length === 0
+    ? providerRows
+    : providerRows.filter((provider) => accessibleProviderIds.has(provider.id));
 
   let ownerData: null | {
     potentialPool: number;
@@ -213,8 +270,9 @@ export async function getProductHubData(user: SessionUser, search = "") {
   return {
     owner,
     payoutPercent,
+    advisoryAreas,
     products: enrichedProducts,
-    providers: providerRows.map((provider) => ({
+    providers: accessibleProviders.map((provider) => ({
       ...provider,
       partnerType: provider.partnerType ?? "provider",
       regions: provider.regions ?? [],
