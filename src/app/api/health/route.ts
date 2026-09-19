@@ -22,6 +22,7 @@ export async function GET() {
     await db.execute(sql`select id from commission_rate_versions limit 0`);
     await db.execute(sql`select id from benefit_pool_ledger limit 0`);
     await db.execute(sql`select id from product_updates limit 0`);
+    await db.execute(sql`select update_id from product_update_reads limit 0`);
     await db.execute(sql`select id from incentive_campaigns limit 0`);
     await db.execute(sql`select id from training_modules limit 0`);
     await db.execute(sql`select id from employee_training_completions limit 0`);
