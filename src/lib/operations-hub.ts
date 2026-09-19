@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
@@ -173,7 +173,7 @@ export async function getOperationsHubData(user: SessionUser) {
     createdAt: Date;
   }> = [];
 
-  if (admin) {
+  if (owner) {
     reconciliation = await db.select({
       id: reconciliationIssues.id,
       providerId: reconciliationIssues.providerId,
