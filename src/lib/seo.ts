@@ -17,16 +17,16 @@ export const HOME_AUDIENCE_SEO = {
 export const PAGE_SEO: Record<string, PageSeo> = {
   "/": HOME_AUDIENCE_SEO.b2c,
   "/leistungen": { title: "Leistungen: Tarife, Energie, Solar & mehr | TarifWerk", description: "Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen, Immobilien und mehr: persönliche TarifWerk Beratung deutschlandweit." },
-  "/berater": { title: "TarifWerk Berater finden | Persönlich & deutschlandweit", description: "Finde deinen TarifWerk Ansprechpartner nach Thema und Region. Persönliche Beratung vor Ort oder digital deutschlandweit – jetzt unverbindlich anfragen." },
-  "/anfrage": { title: "Kostenlose Beratung anfragen | TarifWerk", description: "Thema wählen, Kontaktdaten senden und persönlich beraten lassen. Jetzt kostenlose und unverbindliche Erstorientierung bei TarifWerk anfragen." },
-  "/ueber-uns": { title: "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden", description: "Lerne TarifWerk und die persönliche Beratung aus Wiesbaden kennen: ein fester Ansprechpartner für Tarife, Energie und wichtige Entscheidungen." },
-  "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Du erklärst verständlich und hörst Menschen zu? Entdecke die Arbeit als Berater bei TarifWerk und stelle dich mit deiner Bewerbung vor." },
-  "/faq": { title: "TarifWerk FAQ | Kosten, Ablauf & Beratung", description: "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung. Erfahre, wie die persönliche Beratung funktioniert." },
+  "/berater": { title: "TarifWerk Berater finden | Persönlich & deutschlandweit", description: "Finden Sie Ihren TarifWerk Ansprechpartner nach Thema und Region. Persönliche Beratung vor Ort oder digital deutschlandweit – unverbindlich anfragen." },
+  "/anfrage": { title: "Kostenlose Beratung anfragen | TarifWerk", description: "Thema wählen, Kontaktdaten senden und persönlich beraten lassen. Kostenlose und unverbindliche Erstorientierung bei TarifWerk anfragen." },
+  "/ueber-uns": { title: "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden", description: "Lernen Sie TarifWerk und die persönliche Beratung aus Wiesbaden kennen: ein fester Ansprechpartner für Tarife, Energie und wichtige Entscheidungen." },
+  "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Sie erklären verständlich und hören Menschen zu? Lernen Sie die Arbeit als Berater bei TarifWerk kennen und bewerben Sie sich bei uns." },
+  "/faq": { title: "TarifWerk FAQ | Kosten, Ablauf & Beratung", description: "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung. Erfahren Sie, wie die persönliche Beratung funktioniert." },
   "/freund-werben": { title: "Freunde werben: bis 1.000 € Wunschgutschein | TarifWerk", description: "TarifWerk empfehlen und bei erfolgreicher Vermittlung je nach Bereich bis zu 1.000 € Wunschgutschein erhalten. Persönlicher Link und transparenter Status." },
-  "/freund-werben/status": { title: "Dein Empfehlungsstatus | TarifWerk", description: "Rufe deinen persönlichen Empfehlungsstatus mit deinem privaten Zugangslink auf und behalte zugeordnete Anfragen und Prämien im Blick.", noindex: true },
-  "/impressum": { title: "Impressum & Kontakt | TarifWerk", description: "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informiere dich über die Verantwortlichkeiten und nutze unsere Kontaktmöglichkeiten.", noindex: true },
-  "/datenschutz": { title: "Datenschutzerklärung | TarifWerk", description: "Erfahre, wie TarifWerk personenbezogene Daten verarbeitet und welche Rechte du hast. Lies die Datenschutzhinweise und kontaktiere uns bei Fragen.", noindex: true },
-  "/agb": { title: "Allgemeine Geschäftsbedingungen | TarifWerk", description: "Lies die Bedingungen zur Beratung und Vermittlung bei TarifWerk. Informiere dich über Ablauf, Vergütung und Termine vor deiner Anfrage.", noindex: true },
+  "/freund-werben/status": { title: "Ihr Empfehlungsstatus | TarifWerk", description: "Rufen Sie Ihren persönlichen Empfehlungsstatus mit Ihrem privaten Zugangslink auf und behalten Sie zugeordnete Anfragen und Prämien im Blick.", noindex: true },
+  "/impressum": { title: "Impressum & Kontakt | TarifWerk", description: "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informationen zu Verantwortlichkeiten und unseren Kontaktmöglichkeiten.", noindex: true },
+  "/datenschutz": { title: "Datenschutzerklärung | TarifWerk", description: "Erfahren Sie, wie TarifWerk personenbezogene Daten verarbeitet, welche Rechte Sie haben und wie Sie uns bei Datenschutzfragen kontaktieren.", noindex: true },
+  "/agb": { title: "Allgemeine Geschäftsbedingungen | TarifWerk", description: "Lesen Sie die Bedingungen zur Beratung und Vermittlung bei TarifWerk sowie Hinweise zu Ablauf, Vergütung und Terminen.", noindex: true },
 };
 
 export function shortenSeoText(text: string, limit: number): string {
