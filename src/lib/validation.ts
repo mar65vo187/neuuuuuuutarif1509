@@ -48,4 +48,5 @@ export const leadUpdateSchema = z.object({
 
 export const chatMessageSchema = z.object({
   body: trimmed(1000).min(1),
+  channel: z.enum(["all", "admins"]).default("all"),
 });
