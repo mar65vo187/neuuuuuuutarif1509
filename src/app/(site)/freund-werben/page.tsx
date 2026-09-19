@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
-import { ArrowRight, CheckCircle2, Gift, Infinity, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgeEuro, Car, CheckCircle2, Dumbbell, Gift, GraduationCap, Infinity, PiggyBank, Plane, ShieldCheck, UsersRound } from "lucide-react";
 import { db } from "@/db";
 import { referrers } from "@/db/referral-schema";
 import { ReferralRegistration } from "@/components/referrals/ReferralPanel";
@@ -127,6 +127,36 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
               <p className="mt-1 text-[12.5px] text-silver">{cash}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+
+    <section className="bg-paper py-16 sm:py-20">
+      <div className="container-x">
+        <div className="rounded-[28px] border border-line bg-white p-6 shadow-soft sm:p-9">
+          <div className="grid gap-8 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
+            <div>
+              <p className="eyebrow text-electric-deep">TarifWerk als Team</p>
+              <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.7rem)] font-extrabold leading-tight text-ink">Sie kennen jemanden, der nicht nur empfehlen, sondern <span className="display-i font-normal text-electric-deep">mit aufbauen</span> möchte?</h2>
+              <p className="mt-4 text-[14.5px] leading-relaxed text-steel">Wir suchen Menschen, die seriös beraten, Verantwortung übernehmen und sich entwickeln möchten. Leistung soll attraktiv vergütet werden – ohne Druckverkauf und ohne undurchsichtige Strukturen.</p>
+              <Link href="/karriere" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[13.5px] font-semibold text-white hover:bg-electric">Karriere & Benefits ansehen <ArrowRight className="h-4 w-4" /></Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                [BadgeEuro, "Attraktive Provisionen"],
+                [UsersRound, "Fairer Teamaufbau"],
+                [GraduationCap, "Schulungen & Coaching"],
+                [Plane, "Reisen & Team-Events"],
+                [Car, "Mobilität / Firmenfahrzeug"],
+                [PiggyBank, "Langfristige Vorsorge"],
+                [Dumbbell, "Wellpass & Gesundheit"],
+              ].map(([Icon, label]) => {
+                const BenefitIcon = Icon as typeof BadgeEuro;
+                return <div key={String(label)} className="flex items-center gap-3 rounded-2xl border border-line bg-paper p-4"><span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-electric-deep"><BenefitIcon className="h-4.5 w-4.5" /></span><p className="text-[12.5px] font-bold text-ink">{String(label)}</p></div>;
+              })}
+            </div>
+          </div>
+          <p className="mt-6 border-t border-line pt-5 text-[11.5px] leading-relaxed text-steel">Benefits richten sich nach Rolle, Stufe, Kooperations-/Beschäftigungsmodell, Zielerreichung und Verfügbarkeit. Konkrete Konditionen werden im persönlichen Gespräch transparent festgehalten.</p>
         </div>
       </div>
     </section>
