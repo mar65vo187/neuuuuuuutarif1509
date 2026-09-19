@@ -5,6 +5,7 @@ import { Card, formatDate } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { listOrders } from "@/lib/enterprise";
 import { ORDER_STATUSES } from "@/lib/enterprise-validation";
+import { isCompensationOwner } from "@/lib/compensation";
 
 const LABELS: Record<string, string> = {
   draft:"Entwurf", documents_missing:"Unterlagen fehlen", ready_to_submit:"Einreichbereit", submitted:"Eingereicht",
@@ -20,6 +21,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const { status, q } = await searchParams;
   const validStatus = status && ORDER_STATUSES.includes(status as typeof ORDER_STATUSES[number]) ? status : undefined;
   const rows = await listOrders(user, { status: validStatus, search: q }, 200);
+  const owner = isCompensationOwner(user);
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
@@ -37,7 +39,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         return <li key={row.order.id}><Link href={`/portal/auftraege/${row.order.id}`} className="grid gap-3 px-5 py-4 hover:bg-paper sm:grid-cols-[1fr_auto] sm:items-center">
           <div><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{row.order.orderNumber}</p><span className="text-[12px] text-steel">{customerName}</span></div>
           <p className="mt-0.5 text-[13px] text-steel">{row.providerName} · {row.productName || "ohne Produkt"} · {row.advisorName || "ohne Berater"} · {formatDate(row.order.updatedAt)}</p></div>
-          <div className="flex items-center gap-2"><span className="chip border-line bg-white">{LABELS[row.order.status] ?? row.order.status}</span>{row.order.expectedCommission && <span className="text-[13px] font-semibold">{Number(row.order.expectedCommission).toLocaleString("de-DE",{style:"currency",currency:"EUR"})}</span>}</div>
+          <div className="flex items-center gap-2"><span className="chip border-line bg-white">{LABELS[row.order.status] ?? row.order.status}</span>{owner && row.order.expectedCommission && <span className="text-[13px] font-semibold">{Number(row.order.expectedCommission).toLocaleString("de-DE",{style:"currency",currency:"EUR"})}</span>}</div>
         </Link></li>;
       })}</ul>}
     </Card>
