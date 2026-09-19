@@ -1,6 +1,3 @@
-User-Agent: *
+User-agent: *
 Allow: /
-Allow: /api/advisors/
-Disallow: /api/
-
 Sitemap: https://www.tarifwerk.eu/sitemap.xml
