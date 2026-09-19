@@ -110,15 +110,15 @@ export function OperationsHubDashboard({ data, currentUserId }: { data: Data; cu
     {data.owner && data.ownerCockpit && <section className="rounded-[26px] border border-line bg-ink p-6 text-white sm:p-8">
       <div className="flex items-end justify-between gap-4"><div><p className="eyebrow text-electric-soft">Owner Cockpit</p><h2 className="mt-2 text-[23px] font-extrabold">Betrieb auf einen Blick</h2></div><ShieldCheck className="h-7 w-7 text-electric-soft" /></div>
       <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
-        ["Provider erwartet", money(data.ownerCockpit.providerGross), CircleDollarSign],
-        ["Provider bestätigt", money(data.ownerCockpit.confirmed), ReceiptText],
-        ["Provider ausgezahlt", money(data.ownerCockpit.paid), WalletCards],
-        ["Benefit-Pool verfügbar", money(data.ownerCockpit.poolBalance), Award],
-        ["Teams", String(data.ownerCockpit.teamCount), UsersRound],
-        ["Aktive Incentives", String(data.ownerCockpit.activeIncentives), Target],
-        ["Stornos", String(data.ownerCockpit.storno), ShieldCheck],
-        ["Offene Abweichungen", String(data.ownerCockpit.openReconciliation), ReceiptText],
-      ].map(([label, value, Icon]) => <div key={String(label)} className="rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between"><p className="text-[11.5px] text-silver">{label}</p><Icon className="h-4 w-4 text-electric-soft" /></div><p className="mt-2 text-[21px] font-extrabold">{value}</p></div>)}</div>
+        { label: "Provider erwartet", value: money(data.ownerCockpit.providerGross), Icon: CircleDollarSign },
+        { label: "Provider bestätigt", value: money(data.ownerCockpit.confirmed), Icon: ReceiptText },
+        { label: "Provider ausgezahlt", value: money(data.ownerCockpit.paid), Icon: WalletCards },
+        { label: "Benefit-Pool verfügbar", value: money(data.ownerCockpit.poolBalance), Icon: Award },
+        { label: "Teams", value: String(data.ownerCockpit.teamCount), Icon: UsersRound },
+        { label: "Aktive Incentives", value: String(data.ownerCockpit.activeIncentives), Icon: Target },
+        { label: "Stornos", value: String(data.ownerCockpit.storno), Icon: ShieldCheck },
+        { label: "Offene Abweichungen", value: String(data.ownerCockpit.openReconciliation), Icon: ReceiptText },
+      ].map(({ label, value, Icon }) => <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between"><p className="text-[11.5px] text-silver">{label}</p><Icon className="h-4 w-4 text-electric-soft" /></div><p className="mt-2 text-[21px] font-extrabold">{value}</p></div>)}</div>
     </section>}
 
     <section className="grid gap-5 xl:grid-cols-2">
