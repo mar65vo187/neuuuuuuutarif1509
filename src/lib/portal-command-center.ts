@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
-import { auditEvents, commissionEvents, customerCrmProfiles, customerOpportunities, customers, orders, tasks } from "@/db/enterprise-schema";
+import { auditEvents, commissionEvents, customerCrmProfiles, customerOpportunities, customers, orders, providers, tasks } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { leadAccessCondition } from "@/lib/queries";
@@ -69,6 +69,7 @@ export type CommandCenterData = {
     overdueTasks: number;
     activeOrders: number;
     attentionOrders: number;
+    providerWarnings: number;
     customers: number;
     wins30: number;
     hotLeads: number;
@@ -148,6 +149,15 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     db.select({
       active: sql<number>`count(*) filter (where ${orders.status} = 'active')::int`,
       attention: sql<number>`count(*) filter (where ${orders.status} not in ('active','rejected','cancelled','storno') and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < ${ago7d}))::int`,
+      providerWarnings: sql<number>`count(*) filter (
+        where ${orders.status} not in ('draft','active','rejected','cancelled','storno')
+          and (
+            (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
+            or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
+            or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
+            or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
+          )
+      )::int`,
     }).from(orders).where(orderCondition),
     db.select({
       count: sql<number>`count(*)::int`,
@@ -200,11 +210,17 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       id: orders.id,
       orderNumber: orders.orderNumber,
       status: orders.status,
+      providerStatus: orders.providerStatus,
+      externalOrderId: orders.externalOrderId,
+      submittedAt: orders.submittedAt,
+      acceptedAt: orders.acceptedAt,
       updatedAt: orders.updatedAt,
+      providerName: providers.name,
     }).from(orders)
+      .innerJoin(providers, eq(orders.providerId, providers.id))
       .where(and(orderCondition, sql`${orders.status} not in ('active','rejected','cancelled','storno')`))
       .orderBy(asc(orders.updatedAt))
-      .limit(12),
+      .limit(24),
     db.select({
       id: customers.id,
       customerNumber: customers.customerNumber,
@@ -335,13 +351,41 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
 
   for (const order of attentionOrders) {
     const stale = order.updatedAt.getTime() < ago7d.getTime();
-    if (order.status !== "documents_missing" && !stale) continue;
+    const missingExternalReference = !order.externalOrderId && Boolean(order.submittedAt) && order.submittedAt!.getTime() < now.getTime() - DAY;
+    const missingProviderStatus = !order.providerStatus && Boolean(order.submittedAt) && order.submittedAt!.getTime() < now.getTime() - 2 * DAY;
+    const activationStalled = order.status === "activation_pending" && stale;
+    const documentsStalled = order.status === "documents_missing" && order.updatedAt.getTime() < now.getTime() - 2 * DAY;
+
+    let subtitle = "";
+    let priority: FocusItem["priority"] = "normal";
+    if (documentsStalled) {
+      subtitle = order.providerName + " · fehlende Unterlagen seit mehr als 2 Tagen";
+      priority = "critical";
+    } else if (activationStalled) {
+      subtitle = order.providerName + " · Aktivierung seit mehr als 7 Tagen ohne Bewegung";
+      priority = "high";
+    } else if (missingProviderStatus) {
+      subtitle = order.providerName + " · nach Einreichung fehlt ein Provider-Status";
+      priority = "high";
+    } else if (missingExternalReference) {
+      subtitle = order.providerName + " · nach Einreichung fehlt die Provider-Referenz";
+      priority = "high";
+    } else if (stale) {
+      subtitle = order.providerName + " · seit mehr als 7 Tagen ohne Aktualisierung";
+      priority = "normal";
+    } else if (order.status === "documents_missing") {
+      subtitle = order.providerName + " · Unterlagen fehlen";
+      priority = "high";
+    } else {
+      continue;
+    }
+
     focus.push({
       key: `order-${order.id}`,
       kind: "order",
-      priority: order.status === "documents_missing" ? "high" : "normal",
+      priority,
       title: order.orderNumber,
-      subtitle: order.status === "documents_missing" ? "Unterlagen fehlen" : "Seit mehr als 7 Tagen ohne Aktualisierung",
+      subtitle,
       href: `/portal/auftraege/${order.id}`,
       entityType: "order",
       entityId: order.id,
@@ -483,6 +527,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       overdueTasks: taskMetricsRows[0]?.overdue ?? 0,
       activeOrders: orderMetricsRows[0]?.active ?? 0,
       attentionOrders: orderMetricsRows[0]?.attention ?? 0,
+      providerWarnings: orderMetricsRows[0]?.providerWarnings ?? 0,
       customers: customerRows[0]?.count ?? 0,
       wins30: leadMetricsRows[0]?.wins30 ?? 0,
       hotLeads: leadMetricsRows[0]?.hotLeads ?? 0,
