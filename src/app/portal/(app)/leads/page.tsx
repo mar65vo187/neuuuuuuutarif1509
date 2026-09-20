@@ -26,6 +26,7 @@ type LeadSearchParams = {
   priority?: string;
   next?: string;
   product?: string;
+  relation?: string;
   q?: string;
   sort?: string;
 };
@@ -41,11 +42,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const next = params.next && NEXT_FILTERS.has(params.next) ? params.next : undefined;
   const parsedProductId = params.product ? Number(params.product) : undefined;
   const productId = parsedProductId && Number.isSafeInteger(parsedProductId) && parsedProductId > 0 ? parsedProductId : undefined;
+  const relation = params.relation && ["interest", "existing", "sold"].includes(params.relation) ? params.relation : undefined;
   const q = params.q?.trim().slice(0, 120) || undefined;
   const sort = params.sort && SORTS.has(params.sort) ? params.sort : "newest";
 
   const [rows, savedViews, assignees, overview, productOptions] = await Promise.all([
-    listLeads({ status: s, type: t, priority, next, productId, q, sort }, user),
+    listLeads({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort }, user),
     listSavedViews(user, "leads"),
     user.role === "admin"
       ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
@@ -60,6 +62,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     priority,
     next,
     product: productId ? String(productId) : undefined,
+    relation,
     q,
     sort: sort !== "newest" ? sort : undefined,
   };
@@ -122,7 +125,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       </div>
 
       <Card>
-        <form className="grid gap-3 lg:grid-cols-[1.35fr_repeat(4,minmax(0,1fr))_auto]" method="get">
+        <form className="grid gap-3 lg:grid-cols-[1.35fr_repeat(5,minmax(0,1fr))_auto]" method="get">
           {s && <input type="hidden" name="status" value={s} />}
           {t && <input type="hidden" name="type" value={t} />}
           <label className="relative">
@@ -142,6 +145,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <select name="product" defaultValue={productId ? String(productId) : ""} className="field h-11">
             <option value="">Alle Produkte</option>
             {productOptions.map((product) => <option key={product.id} value={product.id}>{product.category} · {product.providerName} · {product.name}</option>)}
+          </select>
+          <select name="relation" defaultValue={relation ?? ""} className="field h-11">
+            <option value="">Jede Produktbeziehung</option>
+            <option value="existing">Hat bereits</option>
+            <option value="interest">Interesse</option>
+            <option value="sold">Über TarifWerk abgeschlossen</option>
           </select>
           <select name="sort" defaultValue={sort} className="field h-11">
             <option value="newest">Neueste zuerst</option>
