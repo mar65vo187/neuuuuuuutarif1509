@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
-import { db } from "@/db";
+import { db, pool } from "@/db";
 import { advisors, leadNotes, leads } from "@/db/schema";
 import { referrers, referrals } from "@/db/referral-schema";
 import { referralCustomerHash } from "@/lib/referrals";
@@ -10,32 +11,75 @@ import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { routeNewLead } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-/* Einfaches In-Memory-Rate-Limit (Best-Effort pro Instanz) */
 const buckets = new Map<string, { count: number; reset: number }>();
 const LIMIT = 8;
 const WINDOW_MS = 10 * 60 * 1000;
 
-function rateLimited(ip: string) {
+function localRateLimited(key: string) {
   const now = Date.now();
-  for (const [key, bucket] of buckets) {
-    if (bucket.reset <= now) buckets.delete(key);
+  for (const [bucketKey, bucket] of buckets) {
+    if (bucket.reset <= now) buckets.delete(bucketKey);
   }
-  if (buckets.size >= 10000 && !buckets.has(ip)) return true;
-  const b = buckets.get(ip);
-  if (!b || b.reset < now) {
-    buckets.set(ip, { count: 1, reset: now + WINDOW_MS });
+  if (buckets.size >= 10000 && !buckets.has(key)) return true;
+  const current = buckets.get(key);
+  if (!current || current.reset < now) {
+    buckets.set(key, { count: 1, reset: now + WINDOW_MS });
     return false;
   }
-  b.count += 1;
-  return b.count > LIMIT;
+  current.count += 1;
+  return current.count > LIMIT;
+}
+
+async function sharedRateLimit(networkKey: string) {
+  const keyHash = createHash("sha256").update("lead-intake:v1:" + networkKey).digest("hex");
+  try {
+    const result = await pool.query<{ request_count: number; reset_at: Date }>(
+      `
+        WITH updated AS (
+          INSERT INTO public_intake_rate_limits (key_hash, window_started_at, request_count, updated_at)
+          VALUES ($1, now(), 1, now())
+          ON CONFLICT (key_hash) DO UPDATE SET
+            request_count = CASE
+              WHEN public_intake_rate_limits.window_started_at <= now() - interval '10 minutes' THEN 1
+              ELSE public_intake_rate_limits.request_count + 1
+            END,
+            window_started_at = CASE
+              WHEN public_intake_rate_limits.window_started_at <= now() - interval '10 minutes' THEN now()
+              ELSE public_intake_rate_limits.window_started_at
+            END,
+            updated_at = now()
+          RETURNING request_count, window_started_at
+        )
+        SELECT request_count, window_started_at + interval '10 minutes' AS reset_at
+        FROM updated
+      `,
+      [keyHash],
+    );
+    const row = result.rows[0];
+    if (!row) return { limited: localRateLimited(keyHash), retryAfter: 60 };
+    const retryAfter = Math.max(1, Math.ceil((new Date(row.reset_at).getTime() - Date.now()) / 1000));
+    return { limited: row.request_count > LIMIT, retryAfter };
+  } catch {
+    console.error("[leads] shared rate limit unavailable");
+    return { limited: localRateLimited(keyHash), retryAfter: 60 };
+  }
 }
 
 export async function POST(req: NextRequest) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json({ ok: false, error: "Zu viele Anfragen. Bitte versuche es in ein paar Minuten erneut." }, { status: 429 });
+  const networkKey = (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")?.trim()
+    || "unknown"
+  ).slice(0, 100);
+  const limit = await sharedRateLimit(networkKey);
+  if (limit.limited) {
+    return NextResponse.json(
+      { ok: false, error: "Zu viele Anfragen. Bitte versuche es in ein paar Minuten erneut." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
   }
 
   let body: unknown;
