@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
       }
       const [created] = await tx.insert(employees).values({ ...account, passwordHash, advisorId }).returning(accountSelection);
       await tx.execute(sql`insert into employee_compensation_profiles (employee_id) values (${created.id}) on conflict (employee_id) do nothing`);
+      if (created.role === "berater") {
+        await tx.execute(sql`
+          insert into employee_role_assignments (employee_id, role_id)
+          select ${created.id}, id from role_definitions where key = 'advisor'
+          on conflict (employee_id, role_id) do nothing
+        `);
+      }
       await writeAudit(tx, admin.id, "employee.created", "employee", created.id, undefined, {
         name: created.name,
         email: created.email,
