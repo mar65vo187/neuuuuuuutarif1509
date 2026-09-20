@@ -205,7 +205,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             priority: lead.priority,
             contactOutcome: lead.contactOutcome,
             nextActionAt: lead.nextActionAt?.toISOString() ?? null,
-            nextActionOverdue: Boolean(lead.nextActionAt && lead.nextActionAt.getTime() < Date.now() && !["abgeschlossen", "verloren"].includes(lead.status)),
+            nextActionOverdue: lead.nextActionOverdue,
             tags: lead.tags,
             existingProductNames: lead.existingProductNames,
             interestProductNames: lead.interestProductNames,
