@@ -215,6 +215,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             region: lead.region,
             preferredChannel: lead.preferredChannel,
             preferredTime: lead.preferredTime,
+            phone: lead.phone,
+            email: lead.email,
             createdAt: lead.createdAt.toISOString(),
             advisorName: lead.advisorName,
             assignedName: lead.assignedName,
