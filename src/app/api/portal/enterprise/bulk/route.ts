@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           return rows.length;
         }
         if (action === "assign_employee") {
-          if (user.role !== "admin" || !employeeId) throw new Error("Nur Administratoren dürfen Leads gezielt zuweisen.");
+          if (!employeeId) throw new Error("Bitte einen Mitarbeiter für die Zuweisung auswählen.");
           const [target] = await tx.select({ id: employees.id }).from(employees)
             .where(and(eq(employees.id, employeeId), eq(employees.active, true))).limit(1);
           if (!target) throw new Error("Mitarbeiter nicht gefunden oder nicht aktiv.");
