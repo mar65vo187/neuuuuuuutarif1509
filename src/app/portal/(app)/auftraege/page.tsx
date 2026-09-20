@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Download, Plus, Search } from "lucide-react";
-import { Card, formatDate } from "@/components/portal/ui";
+import { Card } from "@/components/portal/ui";
+import { OrderBulkList } from "@/components/portal/OrderBulkList";
 import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { getCurrentUser } from "@/lib/auth";
 import { listOrders } from "@/lib/enterprise";
@@ -40,14 +41,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     </form>
     <SavedViewsBar area="orders" basePath="/portal/auftraege" views={savedViews} currentFilters={{ ...(validStatus ? { status: validStatus } : {}), ...(q?.trim() ? { q: q.trim() } : {}) }} />
     <Card className="p-0 sm:p-0">{rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Aufträge gefunden.</p> :
-      <ul className="divide-y divide-line">{rows.map((row) => {
-        const customerName = row.customer.companyName || [row.customer.firstName, row.customer.lastName].filter(Boolean).join(" ");
-        return <li key={row.order.id}><Link href={`/portal/auftraege/${row.order.id}`} className="grid gap-3 px-5 py-4 hover:bg-paper sm:grid-cols-[1fr_auto] sm:items-center">
-          <div><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{row.order.orderNumber}</p><span className="text-[12px] text-steel">{customerName}</span></div>
-          <p className="mt-0.5 text-[13px] text-steel">{row.providerName} · {row.productName || "ohne Produkt"} · {row.advisorName || "ohne Berater"} · {formatDate(row.order.updatedAt)}</p></div>
-          <div className="flex items-center gap-2"><span className="chip border-line bg-white">{LABELS[row.order.status] ?? row.order.status}</span>{owner && row.order.expectedCommission && <span className="text-[13px] font-semibold">{Number(row.order.expectedCommission).toLocaleString("de-DE",{style:"currency",currency:"EUR"})}</span>}</div>
-        </Link></li>;
-      })}</ul>}
+      <OrderBulkList showCommission={owner} rows={rows.map((row) => ({
+        id: row.order.id,
+        orderNumber: row.order.orderNumber,
+        customerName: row.customer.companyName || [row.customer.firstName, row.customer.lastName].filter(Boolean).join(" "),
+        providerName: row.providerName,
+        productName: row.productName,
+        advisorName: row.advisorName,
+        updatedAt: row.order.updatedAt.toISOString(),
+        status: row.order.status,
+        expectedCommission: owner ? row.order.expectedCommission : null,
+      }))} />}
     </Card>
   </div>;
 }
