@@ -51,6 +51,12 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const referralSourceCustomerId = typeof meta.referralSourceCustomerId === "number" ? meta.referralSourceCustomerId : null;
   const referralSourceName = typeof meta.referralSourceName === "string" ? meta.referralSourceName : null;
   const referralRelationship = typeof meta.referralRelationship === "string" ? meta.referralRelationship : null;
+  const companyName = typeof meta.companyName === "string" ? meta.companyName : "";
+  const companySize = typeof meta.companySize === "string" ? meta.companySize : "";
+  const landingPath = typeof meta.landingPath === "string" ? meta.landingPath : "";
+  const referrerHost = typeof meta.referrerHost === "string" ? meta.referrerHost : "";
+  const utmSource = typeof meta.utmSource === "string" ? meta.utmSource : "";
+  const utmCampaign = typeof meta.utmCampaign === "string" ? meta.utmCampaign : "";
   const intelligence = getLeadIntelligence(lead);
   const intelligenceTone = {
     critical: "border-red-200 bg-red-50 text-red-900",
@@ -164,7 +170,24 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               {typeof meta.job === "string" && meta.job && (
                 <div><dt className="text-[12px] font-semibold uppercase tracking-wider text-steel">Aktueller Beruf</dt><dd className="mt-0.5 font-medium">{meta.job}</dd></div>
               )}
+              {companyName && (
+                <div><dt className="text-[12px] font-semibold uppercase tracking-wider text-steel">Unternehmen</dt><dd className="mt-0.5 font-medium">{companyName}</dd></div>
+              )}
+              {companySize && (
+                <div><dt className="text-[12px] font-semibold uppercase tracking-wider text-steel">Unternehmensgröße</dt><dd className="mt-0.5 font-medium">{companySize === "solo" ? "Selbstständig / 1 Person" : companySize + " Mitarbeitende"}</dd></div>
+              )}
             </dl>
+            {(landingPath || referrerHost || utmSource || utmCampaign) && (
+              <div className="mt-5 rounded-xl border border-line bg-paper/70 p-4">
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-steel">Website-Kontext</p>
+                <div className="mt-2 grid gap-2 text-[12.5px] sm:grid-cols-2">
+                  {landingPath && <p><span className="font-bold">Einstieg:</span> {landingPath}</p>}
+                  {referrerHost && <p><span className="font-bold">Verweis:</span> {referrerHost}</p>}
+                  {utmSource && <p><span className="font-bold">Quelle:</span> {utmSource}</p>}
+                  {utmCampaign && <p><span className="font-bold">Kampagne:</span> {utmCampaign}</p>}
+                </div>
+              </div>
+            )}
             {lead.message && (
               <div className="mt-5 rounded-xl bg-paper p-4">
                 <p className="text-[12px] font-semibold uppercase tracking-wider text-steel">Nachricht</p>
