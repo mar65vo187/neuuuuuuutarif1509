@@ -1400,6 +1400,8 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     reconciliationRows,
     incompleteProductRows,
     expiringTrainingRows,
+    attributionSourceRows,
+    attributionCampaignRows,
   ] = await Promise.all([
     db.select({
       status: orders.status,
@@ -1470,6 +1472,37 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       gte(employeeTrainingCompletions.expiresAt, now),
       lte(employeeTrainingCompletions.expiresAt, new Date(now.getTime() + 30 * 24 * 60 * 60_000)),
     )),
+    db.select({
+      source: sql<string>`coalesce(
+        nullif(${leads.meta}->>'utmSource',''),
+        nullif(${leads.meta}->>'referrerHost',''),
+        nullif(${leads.source},''),
+        'Direkt / unbekannt'
+      )`,
+      total: sql<number>`count(*)::int`,
+      qualified: sql<number>`count(*) filter (where ${leads.status} in ('termin_bestaetigt','in_beratung','abgeschlossen'))::int`,
+      completed: sql<number>`count(*) filter (where ${leads.status}='abgeschlossen')::int`,
+      business: sql<number>`count(*) filter (where ${leads.meta}->>'audience'='b2b')::int`,
+    }).from(leads)
+      .where(leadCondition)
+      .groupBy(sql`coalesce(nullif(${leads.meta}->>'utmSource',''), nullif(${leads.meta}->>'referrerHost',''), nullif(${leads.source},''), 'Direkt / unbekannt')`)
+      .orderBy(desc(sql`count(*)`))
+      .limit(20),
+    db.select({
+      campaign: sql<string>`coalesce(
+        nullif(${leads.meta}->>'utmCampaign',''),
+        case when ${leads.source} like 'campaign:%' then ${leads.source} else null end,
+        'Ohne Kampagne'
+      )`,
+      total: sql<number>`count(*)::int`,
+      qualified: sql<number>`count(*) filter (where ${leads.status} in ('termin_bestaetigt','in_beratung','abgeschlossen'))::int`,
+      completed: sql<number>`count(*) filter (where ${leads.status}='abgeschlossen')::int`,
+      lost: sql<number>`count(*) filter (where ${leads.status}='verloren')::int`,
+    }).from(leads)
+      .where(leadCondition)
+      .groupBy(sql`coalesce(nullif(${leads.meta}->>'utmCampaign',''), case when ${leads.source} like 'campaign:%' then ${leads.source} else null end, 'Ohne Kampagne')`)
+      .orderBy(desc(sql`count(*)`))
+      .limit(20),
   ]);
 
   const total = orderRows.reduce((sum, row) => sum + row.count, 0);
@@ -1511,6 +1544,18 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       openReconciliation: reconciliationRows[0]?.count ?? 0,
       incompleteProducts: incompleteProductRows[0]?.count ?? 0,
       expiringTrainings30d: expiringTrainingRows[0]?.count ?? 0,
+    },
+    attribution: {
+      bySource: attributionSourceRows.map((row) => ({
+        ...row,
+        conversionRate: row.total ? Math.round((row.completed / row.total) * 1000) / 10 : 0,
+        qualificationRate: row.total ? Math.round((row.qualified / row.total) * 1000) / 10 : 0,
+      })),
+      byCampaign: attributionCampaignRows.map((row) => ({
+        ...row,
+        conversionRate: row.total ? Math.round((row.completed / row.total) * 1000) / 10 : 0,
+        qualificationRate: row.total ? Math.round((row.qualified / row.total) * 1000) / 10 : 0,
+      })),
     },
     byStatus: orderRows,
     byProvider: providerRows,
