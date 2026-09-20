@@ -49,14 +49,23 @@ All modules share the same principles:
 | 10 | Personalization | Audience/intent-driven UI with transparent logic and non-manipulative UX |
 | Hardening | Whole platform | E2E, load, recovery, accessibility and security review |
 
-## Agent 1 — active milestone
+## Current implementation status
 
-1. Make every public B2C/B2B route audience-safe.
-2. Remove persona leakage between Privat and Business.
-3. Reduce unnecessary client-side state/hydration where possible.
-4. Keep primary conversion paths explicit and measurable.
-5. Verify responsive, reduced-motion, keyboard and semantic behavior.
-6. Run full production build + lint + tests before handoff.
+| Agent | Status | Implemented baseline |
+| --- | --- | --- |
+| 1 · Frontend & Web | implemented | B2C/B2B journeys, conversion flow, accessibility/performance guards, audience-safe routing |
+| 2 · Backoffice & Ops | implemented | dark portal shell, RBAC, ownership, audit, operations controls |
+| 3 · CRM | implemented | Lead/Customer 360, call intelligence, referrals, retention, next actions |
+| 4 · AI & Automation | implemented | explainable work assistant, deterministic provider warnings, human-approved automation templates |
+| 5 · Security & Compliance | implemented | session controls, MFA, CSP/HSTS, rate limits, audit and privacy controls |
+| 6 · DevOps & Cloud | implemented | readiness/health, release manifests, backup-restore smoke, gated production promotion |
+| 7 · Finance | implemented | commission/reconciliation controls and immutable financial ledger |
+| 8 · BI | implemented | canonical KPI catalog, metric lineage, data-quality coverage and historical run-rate inputs |
+| 9 · Marketing | implemented | technical SEO, first-party attribution, campaign landing flows, spend/CPL/CPA cockpit |
+| 10 · Personalization | implemented | audience journeys plus transparent session-only intent continuation |
+| Enterprise Hardening | active | full CI/build/migration/recovery gates are present; continue load, visual and production-environment verification as infrastructure allows |
+
+"Implemented" means the production-grade baseline exists in the repository and is covered by automated quality gates. It does not mean a business outcome, ranking, revenue level or uptime percentage is guaranteed.
 
 ## Architecture rule
 
