@@ -290,6 +290,21 @@ export const productUpdateReads = pgTable("product_update_reads", {
   index("product_update_reads_employee_idx").on(table.employeeId, table.readAt),
 ]);
 
+export const marketingCampaignSpend = pgTable("marketing_campaign_spend", {
+  id: serial("id").primaryKey(),
+  campaignKey: text("campaign_key").notNull(),
+  source: text("source").notNull(),
+  medium: text("medium").notNull().default(""),
+  amountCents: integer("amount_cents").notNull(),
+  spentAt: timestamp("spent_at", { withTimezone: true }).notNull().defaultNow(),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("marketing_campaign_spend_period_idx").on(table.spentAt, table.campaignKey),
+  index("marketing_campaign_spend_source_idx").on(table.source, table.spentAt),
+]);
+
 export const incentiveCampaigns = pgTable("incentive_campaigns", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
