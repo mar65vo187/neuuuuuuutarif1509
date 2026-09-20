@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { eq, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db, pool } from "@/db";
 import { employees } from "@/db/schema";
 import { loginEvents, mfaCredentials } from "@/db/enterprise-schema";
 import { isSameOriginRequest, setSessionCookie, verifyPassword } from "@/lib/auth";
@@ -12,22 +12,87 @@ import { loginSchema } from "@/lib/validation";
 export const dynamic = "force-dynamic";
 
 const WINDOW_MS = 15 * 60 * 1000;
+const LIMIT = 10;
 const attempts = new Map<string, { count: number; reset: number }>();
-const DUMMY_HASH = `scrypt$${"0".repeat(32)}$${"0".repeat(128)}`;
-let lastCleanup = 0;
+const DUMMY_HASH = `scrypt${"0".repeat(32)}${"0".repeat(128)}`;
 
-function digest(value: string) {
-  return createHash("sha256").update(value).digest("hex");
+function secret() {
+  const value = process.env.SESSION_SECRET;
+  if (!value || value.length < 32) throw new Error("SESSION_SECRET fehlt oder ist zu kurz.");
+  return value;
+}
+
+function digest(value: string, purpose: string) {
+  return createHmac("sha256", secret()).update(`${purpose}:${value}`).digest("hex");
+}
+
+function localLimit(key: string) {
+  const now = Date.now();
+  for (const [bucketKey, value] of attempts) if (value.reset <= now) attempts.delete(bucketKey);
+  const attempt = attempts.get(key);
+  if (!attempt || attempt.reset <= now) {
+    attempts.set(key, { count: 1, reset: now + WINDOW_MS });
+    return { limited: false, retryAfter: Math.ceil(WINDOW_MS / 1000) };
+  }
+  attempt.count += 1;
+  return { limited: attempt.count > LIMIT, retryAfter: Math.max(1, Math.ceil((attempt.reset - now) / 1000)) };
+}
+
+async function consumeLoginLimit(rawKey: string) {
+  const keyHash = digest(rawKey, "portal-login-limit");
+  try {
+    const result = await pool.query<{ request_count: number; reset_at: Date }>(
+      `
+        WITH cleanup AS (
+          DELETE FROM portal_login_rate_limits
+          WHERE updated_at < now() - interval '24 hours'
+        ),
+        updated AS (
+          INSERT INTO portal_login_rate_limits (key_hash, window_started_at, request_count, updated_at)
+          VALUES ($1, now(), 1, now())
+          ON CONFLICT (key_hash) DO UPDATE SET
+            request_count = CASE
+              WHEN portal_login_rate_limits.window_started_at <= now() - interval '15 minutes' THEN 1
+              ELSE portal_login_rate_limits.request_count + 1
+            END,
+            window_started_at = CASE
+              WHEN portal_login_rate_limits.window_started_at <= now() - interval '15 minutes' THEN now()
+              ELSE portal_login_rate_limits.window_started_at
+            END,
+            updated_at = now()
+          RETURNING request_count, window_started_at
+        )
+        SELECT request_count, window_started_at + interval '15 minutes' AS reset_at
+        FROM updated
+      `,
+      [keyHash],
+    );
+    const row = result.rows[0];
+    if (!row) return localLimit(keyHash);
+    return {
+      limited: row.request_count > LIMIT,
+      retryAfter: Math.max(1, Math.ceil((new Date(row.reset_at).getTime() - Date.now()) / 1000)),
+      keyHash,
+    };
+  } catch {
+    return { ...localLimit(keyHash), keyHash };
+  }
+}
+
+async function clearLoginLimit(rawKey: string) {
+  const keyHash = digest(rawKey, "portal-login-limit");
+  await pool.query("DELETE FROM portal_login_rate_limits WHERE key_hash = $1", [keyHash]).catch(() => undefined);
+  attempts.delete(keyHash);
 }
 
 async function logLogin(data: { employeeId?: number | null; email: string; success: boolean; reason: string; ip: string; userAgent: string | null }) {
   try {
     await db.insert(loginEvents).values({
       employeeId: data.employeeId ?? null,
-      emailHash: digest(data.email),
+      emailHash: digest(data.email, "login-email"),
       success: data.success,
       reason: data.reason,
-      ipHash: digest(data.ip),
+      ipHash: digest(data.ip, "login-ip"),
       userAgent: data.userAgent?.slice(0, 300) ?? null,
     });
   } catch {
@@ -55,35 +120,28 @@ export async function POST(req: NextRequest) {
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Bitte E-Mail, Passwort und gegebenenfalls 2FA-Code prüfen." }, { status: 422 });
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 100) || "unknown";
+  const ip = (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")?.trim()
+    || "unknown"
+  ).slice(0, 100);
   const userAgent = req.headers.get("user-agent");
-  const now = Date.now();
-  if (now - lastCleanup > 60000 || attempts.size > 10000) {
-    for (const [key, value] of attempts) if (value.reset <= now) attempts.delete(key);
-    while (attempts.size > 10000) {
-      const oldest = attempts.keys().next().value;
-      if (!oldest) break;
-      attempts.delete(oldest);
-    }
-    lastCleanup = now;
+  let ipLimit: { limited: boolean; retryAfter: number };
+  let accountLimit: { limited: boolean; retryAfter: number };
+  try {
+    [ipLimit, accountLimit] = await Promise.all([
+      consumeLoginLimit("ip:" + ip),
+      consumeLoginLimit("account:" + parsed.data.email),
+    ]);
+  } catch {
+    return NextResponse.json({ ok: false, error: "Anmeldung derzeit nicht möglich. Bitte später erneut versuchen." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-  const keys = [`ip:${ip}`, `account:${parsed.data.email}`];
-  for (const key of keys) {
-    const attempt = attempts.get(key);
-    if (attempt && attempt.reset > now && attempt.count >= 10) {
-      return NextResponse.json(
-        { ok: false, error: "Zu viele Versuche. Bitte in 15 Minuten erneut probieren." },
-        { status: 429, headers: { "Retry-After": String(Math.ceil((attempt.reset - now) / 1000)), "Cache-Control": "no-store" } },
-      );
-    }
+  if (ipLimit.limited || accountLimit.limited) {
+    return NextResponse.json(
+      { ok: false, error: "Zu viele Anmeldeversuche. Bitte später erneut versuchen." },
+      { status: 429, headers: { "Retry-After": String(Math.max(ipLimit.retryAfter, accountLimit.retryAfter)), "Cache-Control": "no-store" } },
+    );
   }
-  for (const key of keys) {
-    const attempt = attempts.get(key);
-    if (!attempt || attempt.reset <= now) attempts.set(key, { count: 1, reset: now + WINDOW_MS });
-    else attempt.count += 1;
-  }
-
-  const reservedIpAttempt = attempts.get(keys[0]);
   try {
     const [user] = await db.select().from(employees).where(eq(sql`lower(${employees.email})`, parsed.data.email)).limit(1);
     const validPassword = await verifyPassword(parsed.data.password, user?.passwordHash ?? DUMMY_HASH);
@@ -114,18 +172,15 @@ export async function POST(req: NextRequest) {
 
     const forwardedProtocol = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
     const secure = forwardedProtocol ? forwardedProtocol === "https" : req.nextUrl.protocol === "https:";
-    await setSessionCookie(user.id, secure, user.passwordHash);
-    attempts.delete(`account:${parsed.data.email}`);
-    if (reservedIpAttempt && attempts.get(keys[0]) === reservedIpAttempt) {
-      reservedIpAttempt.count = Math.max(0, reservedIpAttempt.count - 1);
-    }
+    await setSessionCookie(user.id, secure, user.passwordHash, {
+      mfaVerified: Boolean(mfa?.enabled),
+      ip,
+      userAgent,
+    });
+    await clearLoginLimit("account:" + parsed.data.email);
     await logLogin({ employeeId: user.id, email: parsed.data.email, success: true, reason: mfa?.enabled ? "password_mfa" : "password", ip, userAgent });
     return NextResponse.json({ ok: true, user: { id: user.id, name: user.name, role: user.role } }, { headers: { "Cache-Control": "no-store" } });
   } catch {
-    for (const key of keys) {
-      const attempt = attempts.get(key);
-      if (attempt) attempt.count = Math.max(0, attempt.count - 1);
-    }
     console.error("[login] Authentication service is unavailable; verify database and session configuration.");
     return NextResponse.json({ ok: false, error: "Anmeldung derzeit nicht möglich. Bitte später erneut versuchen." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
