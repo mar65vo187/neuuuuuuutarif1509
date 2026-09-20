@@ -24,6 +24,10 @@ export function normalizeContactPhone(value: string | null | undefined) {
   return digits.length >= 7 ? digits : "";
 }
 
+function normalizedPhoneExpression(phoneExpression: SQLWrapper) {
+  return sql`replace(replace(replace(replace(replace(replace(replace(coalesce(${phoneExpression}, ''), ' ', ''), '+', ''), '-', ''), '(', ''), ')', ''), '/', ''), '.', '')`;
+}
+
 function duplicateConditions(
   emailExpression: SQLWrapper,
   phoneExpression: SQLWrapper,
@@ -32,7 +36,7 @@ function duplicateConditions(
 ) {
   const conditions: SQL[] = [];
   if (email) conditions.push(sql`lower(trim(coalesce(${emailExpression}, ''))) = ${email}`);
-  if (phone) conditions.push(sql`regexp_replace(coalesce(${phoneExpression}, ''), '\\D', '', 'g') = ${phone}`);
+  if (phone) conditions.push(sql`${normalizedPhoneExpression(phoneExpression)} = ${phone}`);
   return conditions;
 }
 
