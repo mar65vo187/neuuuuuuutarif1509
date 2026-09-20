@@ -27,7 +27,7 @@ const tx = {
 const db = { async transaction(fn) { locked = false; return fn(tx); } };
 const deps = {
   "next/server": { NextRequest, NextResponse }, "drizzle-orm": orm, "@/db": { db }, "@/db/schema": schema,
-  "@/lib/auth": { getCurrentUser: async () => ({ id: 1, role: "admin", active: true }), isSameOriginRequest: () => true, hashPassword: () => "not-persisted-test-hash" },
+  "@/lib/auth": { getCurrentUser: async () => ({ id: 1, role: "admin", active: true, mfaVerified: true }), isSameOriginRequest: () => true, hashPassword: () => "not-persisted-test-hash" },
 };
 const server = load("../../src/lib/admin-server.ts", deps);
 const validation = load("../../src/lib/admin-validation.ts", { zod });
