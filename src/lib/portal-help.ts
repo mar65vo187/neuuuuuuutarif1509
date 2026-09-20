@@ -121,9 +121,9 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/system",
-    title: "System",
-    purpose: "Katalog-, Automations- und Audit-Funktionen administrativ kontrollieren.",
-    actions: ["Systemdaten und Kataloge prüfen", "Automationen verwalten", "Audit-Ereignisse nachvollziehen", "Technische Auffälligkeiten erkennen"],
+    title: "Automationen & Audit",
+    purpose: "Katalog, sichere Automationen, Qualitäts-Wächter, Integrationen und Audit-Funktionen administrativ kontrollieren.",
+    actions: ["Systemdaten und Kataloge prüfen", "Automationen verwalten", "Täglichen Qualitäts-Wächter kontrollieren", "Audit-Ereignisse nachvollziehen", "Technische Auffälligkeiten erkennen"],
     tips: ["Audit-Historien nicht manipulieren oder als normale Notizen verwenden.", "Ändern Sie Automationen nur mit klarer fachlicher Wirkung."],
   },
   {
