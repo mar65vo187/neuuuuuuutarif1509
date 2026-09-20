@@ -38,7 +38,7 @@ const NAV_SECTIONS = [
       { href: "/portal/betrieb", label: "Team & Betrieb", icon: UsersRound },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Interne Chats", icon: MessageSquare },
-      { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, anyPermission: ["employee.manage"] },
+      { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
     ],
   },
   {
