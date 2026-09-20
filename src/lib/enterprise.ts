@@ -282,6 +282,59 @@ export async function createCustomer(input: {
   });
 }
 
+export async function updateCustomer(id: number, input: {
+  firstName?: string | null;
+  lastName?: string | null;
+  companyName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  preferredChannel?: string | null;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(customers)
+      .where(and(eq(customers.id, id), customerAccess(user), isNull(customers.archivedAt)))
+      .limit(1)
+      .for("update");
+    if (!existing) throw new Error("Kunde nicht gefunden.");
+
+    const patch: Partial<typeof customers.$inferInsert> = { updatedAt: new Date() };
+    const normalize = (value: string | null | undefined) => value === undefined ? undefined : value?.trim() || null;
+
+    if (input.firstName !== undefined) patch.firstName = normalize(input.firstName);
+    if (input.lastName !== undefined) patch.lastName = normalize(input.lastName);
+    if (input.companyName !== undefined) patch.companyName = normalize(input.companyName);
+    if (input.email !== undefined) patch.email = normalize(input.email)?.toLowerCase() ?? null;
+    if (input.phone !== undefined) patch.phone = normalize(input.phone);
+    if (input.city !== undefined) patch.city = normalize(input.city);
+    if (input.postalCode !== undefined) patch.postalCode = normalize(input.postalCode);
+    if (input.preferredChannel !== undefined) patch.preferredChannel = normalize(input.preferredChannel);
+
+    const [updated] = await tx.update(customers).set(patch).where(eq(customers.id, id)).returning();
+    await writeAudit(tx, user.id, "customer.updated", "customer", id, {
+      firstName: existing.firstName,
+      lastName: existing.lastName,
+      companyName: existing.companyName,
+      email: existing.email,
+      phone: existing.phone,
+      city: existing.city,
+      postalCode: existing.postalCode,
+      preferredChannel: existing.preferredChannel,
+    }, {
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      companyName: updated.companyName,
+      email: updated.email,
+      phone: updated.phone,
+      city: updated.city,
+      postalCode: updated.postalCode,
+      preferredChannel: updated.preferredChannel,
+    });
+    return updated;
+  });
+}
+
 export async function createCustomerReferral(input: {
   sourceCustomerId: number;
   name?: string;
