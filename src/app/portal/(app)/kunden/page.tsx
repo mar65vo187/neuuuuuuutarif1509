@@ -4,7 +4,7 @@ import { Download, Network, Plus, Search } from "lucide-react";
 import { Card, formatDate } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers } from "@/lib/enterprise";
-import { hasPermission } from "@/lib/enterprise-access";
+import { hasPermission, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +13,16 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   if (!user) redirect("/portal/login?next=%2Fportal%2Fkunden");
   const { q } = await searchParams;
   const rows = await listCustomers(user, q, 150);
-  const canExport = user.role === "admin" || await hasPermission(user, "customer.export");
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.CUSTOMER_EXPORT] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canExport = user.role === "admin" || capabilities[PORTAL_PERMISSION.CUSTOMER_EXPORT];
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="eyebrow text-electric-deep">CRM · Kundenreise</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Kunden</h1><p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-steel">{rows.length} Kunden · Herkunft, Aufträge und Empfehlungsnetzwerk bleiben miteinander verknüpft.</p></div>
       <div className="flex gap-2">
         {canExport && <a href="/api/portal/enterprise/export?type=customers" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>}
-        <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Kunde anlegen</Link>
+        {canEdit && <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Kunde anlegen</Link>}
       </div>
     </header>
     <form className="relative">
