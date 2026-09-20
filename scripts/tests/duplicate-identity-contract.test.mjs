@@ -18,7 +18,7 @@ test("strong duplicate guard locks normalized e-mail and phone identities", () =
   assert.match(source, /contact:email:/);
   assert.match(source, /contact:phone:/);
   assert.match(source, /pg_advisory_xact_lock\(hashtext/);
-  assert.match(source, /regexp_replace/);
+  assert.match(source, /replace\(replace\(replace/);
   assert.match(source, /status: 409/);
 });
 
