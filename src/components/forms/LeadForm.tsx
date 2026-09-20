@@ -106,6 +106,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         return;
       }
       const leadId = json.id ?? 0;
+      setDone(leadId);
       const params = new URLSearchParams({ audience, type });
       if (leadId > 0) params.set("ref", String(leadId));
       window.location.assign(`/anfrage/danke?${params.toString()}`);
