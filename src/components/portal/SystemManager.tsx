@@ -1,16 +1,17 @@
 "use client";
 
-import { Loader2, Plus } from "lucide-react";
+import { CheckCircle2, Loader2, PauseCircle, PlayCircle, Plus, ShieldCheck, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AUTOMATION_TEMPLATES, SAFE_AUTOMATION_EVENT_LABELS } from "@/lib/automation-templates";
 import { useRef, useState, type FormEvent } from "react";
 
 type Provider = { id: number; name: string; category: string };
 type Product = { id: number; providerId: number; name: string; category: string; expectedCommission: string | null };
 type Automation = { id: number; name: string; eventType: string; active: boolean };
 
-async function post(url: string, body: unknown) {
+async function request(url: string, method: "POST" | "PATCH", body: unknown) {
   const response = await fetch(url, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
@@ -18,6 +19,9 @@ async function post(url: string, body: unknown) {
   const json = await response.json() as { ok: boolean; error?: string };
   if (!response.ok || !json.ok) throw new Error(json.error ?? "Speichern fehlgeschlagen.");
 }
+
+const post = (url: string, body: unknown) => request(url, "POST", body);
+const patch = (url: string, body: unknown) => request(url, "PATCH", body);
 
 export function SystemManager({ providers, products, automations, canManageCommission }: { providers: Provider[]; products: Product[]; automations: Automation[]; canManageCommission: boolean }) {
   const router = useRouter();
@@ -51,6 +55,46 @@ export function SystemManager({ providers, products, automations, canManageCommi
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Speichern fehlgeschlagen.");
     } finally { saving.current = false; setBusy(null); }
+  }
+
+  async function createTemplate(key: string) {
+    if (saving.current) return;
+    const template = AUTOMATION_TEMPLATES.find((item) => item.key === key);
+    if (!template) return;
+    saving.current = true;
+    setBusy("template:" + key);
+    setError(null);
+    try {
+      await post("/api/portal/admin/enterprise/automations", {
+        name: template.name,
+        eventType: template.eventType,
+        active: false,
+        conditions: {},
+        actions: template.actions,
+      });
+      router.refresh();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Vorlage konnte nicht angelegt werden.");
+    } finally {
+      saving.current = false;
+      setBusy(null);
+    }
+  }
+
+  async function setAutomationActive(id: number, active: boolean) {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy("rule:" + id);
+    setError(null);
+    try {
+      await patch("/api/portal/admin/enterprise/automations/" + id, { active });
+      router.refresh();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Automation konnte nicht geändert werden.");
+    } finally {
+      saving.current = false;
+      setBusy(null);
+    }
   }
 
   async function submitAutomation(event: FormEvent<HTMLFormElement>) {
@@ -101,21 +145,44 @@ export function SystemManager({ providers, products, automations, canManageCommi
       </form>
     </div>
 
+    <section className="rounded-[22px] border border-electric/15 bg-[linear-gradient(145deg,rgba(79,141,255,0.08),rgba(13,25,46,0.92))] p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="inline-flex items-center gap-2 text-[10.5px] font-extrabold uppercase tracking-[0.15em] text-electric-soft"><Sparkles className="h-4 w-4" /> Step 4 · Automation Engine</p>
+          <h2 className="mt-2 text-[18px] font-extrabold">Geprüfte Automationsvorlagen</h2>
+          <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-steel">Vorlagen erzeugen ausschließlich interne Aufgaben oder interne Benachrichtigungen. Sie starten deaktiviert und müssen nach Prüfung bewusst aktiviert werden.</p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-1.5 text-[10.5px] font-bold text-emerald-300"><ShieldCheck className="h-3.5 w-3.5" /> Human Approval</span>
+      </div>
+      <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        {AUTOMATION_TEMPLATES.map((template) => {
+          const alreadyExists = automations.some((rule) => rule.name === template.name && rule.eventType === template.eventType);
+          return (
+            <article key={template.key} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="text-[13.5px] font-extrabold">{template.name}</p><p className="mt-1 text-[10.5px] font-bold uppercase tracking-wider text-electric-soft">{SAFE_AUTOMATION_EVENT_LABELS[template.eventType]}</p></div>
+                {alreadyExists && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />}
+              </div>
+              <p className="mt-2 text-[11.5px] leading-relaxed text-steel">{template.description}</p>
+              <p className="mt-3 text-[10.5px] text-steel">{template.actions.length} interne Aktion{template.actions.length === 1 ? "" : "en"} · keine Kundenkommunikation</p>
+              <button type="button" disabled={busy !== null || alreadyExists} onClick={() => void createTemplate(template.key)} className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-[11.5px] font-bold hover:bg-white/10 disabled:opacity-45">
+                {busy === "template:" + template.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                {alreadyExists ? "Bereits vorhanden" : "Als Entwurf anlegen"}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+
     <form onSubmit={submitAutomation} className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
-      <h2 className="text-[16px] font-extrabold">Automation anlegen</h2>
-      <p className="mt-1 text-[12.5px] text-steel">Regeln reagieren auf Geschäftsereignisse und erzeugen automatisch Aufgaben oder Benachrichtigungen.</p>
+      <h2 className="text-[16px] font-extrabold">Eigene interne Automation anlegen</h2>
+      <p className="mt-1 text-[12.5px] text-steel">Nur interne Aufgaben und Benachrichtigungen sind erlaubt. Neue Regeln werden als inaktiver Entwurf gespeichert und erst nach manueller Aktivierung ausgeführt.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="label">Name<input name="name" required maxLength={180} className="field" /></label>
         <label className="label">Event
           <select className="field" value={eventType} onChange={(e) => setEventType(e.target.value)}>
-            <option value="lead.created">Lead erstellt</option>
-            <option value="lead.status.termin_bestaetigt">Termin bestätigt</option>
-            <option value="order.created">Auftrag erstellt</option>
-            <option value="order.status.submitted">Auftrag eingereicht</option>
-            <option value="order.status.documents_missing">Unterlagen fehlen</option>
-            <option value="order.status.accepted">Auftrag angenommen</option>
-            <option value="order.status.active">Auftrag aktiv</option>
-            <option value="order.status.storno">Storno</option>
+            {Object.entries(SAFE_AUTOMATION_EVENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
         <label className="label">Aktion
@@ -138,8 +205,9 @@ export function SystemManager({ providers, products, automations, canManageCommi
       <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6"><h2 className="text-[16px] font-extrabold">Katalog</h2><p className="mt-2 text-[13px] text-steel">{providers.length} Provider · {products.length} Produkte</p>
         <ul className="mt-4 space-y-2">{providers.slice(0,12).map((provider) => <li key={provider.id} className="text-[13.5px]"><span className="font-semibold">{provider.name}</span><span className="text-steel"> · {provider.category} · {products.filter((product) => product.providerId === provider.id).length} Produkte</span></li>)}</ul>
       </div>
-      <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6"><h2 className="text-[16px] font-extrabold">Aktive Automationen</h2>
-        <ul className="mt-4 space-y-2">{automations.map((rule) => <li key={rule.id} className="flex items-center justify-between gap-3 text-[13.5px]"><span className="font-semibold">{rule.name}</span><span className="chip border-line bg-white">{rule.eventType}</span></li>)}</ul>
+      <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6"><h2 className="text-[16px] font-extrabold">Automationen & Freigabe</h2>
+        <p className="mt-1 text-[11.5px] text-steel">Aktivierung und Deaktivierung werden im Audit-Log protokolliert.</p>
+        <ul className="mt-4 space-y-2">{automations.length ? automations.map((rule) => <li key={rule.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper/50 p-3 text-[13px]"><div><p className="font-extrabold">{rule.name}</p><p className="mt-0.5 text-[10.5px] text-steel">{SAFE_AUTOMATION_EVENT_LABELS[rule.eventType as keyof typeof SAFE_AUTOMATION_EVENT_LABELS] ?? rule.eventType}</p></div><div className="flex items-center gap-2"><span className={"chip " + (rule.active ? "border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-300" : "border-line bg-white text-steel")}>{rule.active ? "Aktiv" : "Entwurf"}</span><button type="button" disabled={busy !== null} onClick={() => void setAutomationActive(rule.id, !rule.active)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-white px-3 text-[11px] font-bold hover:border-electric/30 disabled:opacity-50">{busy === "rule:" + rule.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : rule.active ? <PauseCircle className="h-3.5 w-3.5" /> : <PlayCircle className="h-3.5 w-3.5" />}{rule.active ? "Deaktivieren" : "Aktivieren"}</button></div></li>) : <li className="text-[12px] text-steel">Noch keine Automationen angelegt.</li>}</ul>
       </div>
     </div>
   </div>;
