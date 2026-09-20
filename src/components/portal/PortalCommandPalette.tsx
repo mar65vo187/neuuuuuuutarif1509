@@ -55,7 +55,6 @@ export function PortalCommandPalette({
 
   useEffect(() => {
     if (!open) return;
-    setActiveIndex(0);
     const timer = window.setTimeout(() => inputRef.current?.focus(), 40);
     return () => window.clearTimeout(timer);
   }, [open]);
@@ -63,12 +62,7 @@ export function PortalCommandPalette({
   useEffect(() => {
     if (!open) return;
     const value = query.trim();
-    if (value.length < 2) {
-      setResults([]);
-      setLoading(false);
-      setError("");
-      return;
-    }
+    if (value.length < 2) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setLoading(true);
@@ -120,7 +114,16 @@ export function PortalCommandPalette({
           <input
             ref={inputRef}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              setQuery(next);
+              setActiveIndex(0);
+              if (next.trim().length < 2) {
+                setResults([]);
+                setLoading(false);
+                setError("");
+              }
+            }}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
