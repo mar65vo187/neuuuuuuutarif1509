@@ -23,7 +23,7 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/betrieb",
-    title: "Team & Betrieb",
+    title: "Team & Betriebsqualität",
     purpose: "Teams, Incentives, Schulungen, Benefits, Dokumente und Provider-Abgleiche operativ steuern.",
     actions: ["Teams und Teamleads zuordnen", "Pflichtschulungen und Produktfreigaben pflegen", "Incentives und Mitarbeiter-Benefits verwalten", "Interne Dokumente hochladen", "Provider-Abrechnungen auf Differenzen prüfen"],
     tips: ["Pflichtschulungen sperren Produkte technisch, bis eine gültige Freigabe vorliegt.", "Provider-Abweichungen sollten zeitnah geklärt und dokumentiert werden."],
@@ -37,14 +37,14 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/finanzen",
-    title: "Provisionen",
+    title: "Provisionsübersicht",
     purpose: "Erwartete, bestätigte und ausgezahlte Provisionen kontrollieren.",
     actions: ["Provisionsstatus nachvollziehen", "Bestätigte und ausgezahlte Werte vergleichen", "Eigene Vergütung bzw. Owner-Gesamtwerte prüfen", "Abweichungen über den Provider-Abgleich klären"],
-    tips: ["Erwartete Provision ist noch keine Auszahlung.", "Nutzen Sie den Provider-Abgleich im Bereich Team & Betrieb für externe Abrechnungen."],
+    tips: ["Erwartete Provision ist noch keine Auszahlung.", "Nutzen Sie den Provider-Abgleich im Bereich Team & Betriebsqualität für externe Abrechnungen."],
   },
   {
     href: "/portal/reporting",
-    title: "Reporting",
+    title: "Auswertungen",
     purpose: "Leistung, Pipeline, Abschlussentwicklung und operative Trends auswerten.",
     actions: ["Zeiträume vergleichen", "Leads und Aufträge gemeinsam betrachten", "Engpässe und Auffälligkeiten erkennen", "Entscheidungen auf Daten statt Bauchgefühl stützen"],
     tips: ["Ein einzelner starker Monat ist kein langfristiger Trend.", "Qualität, Storno und Bearbeitungsdauer gehören neben Umsatz in jede Bewertung."],
@@ -58,7 +58,7 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/leads",
-    title: "Anfragen & Termine",
+    title: "Leads & Termine",
     purpose: "Neue Kontakte qualifizieren, zuordnen und in Beratung oder Auftrag überführen.",
     actions: ["Neue Anfragen priorisieren", "Kontaktstatus pflegen", "Berater zuweisen", "Termine und nächste Schritte dokumentieren"],
     tips: ["Jede offene Anfrage sollte einen klaren nächsten Schritt haben.", "Dokumentieren Sie Gesprächsergebnisse direkt statt später aus dem Gedächtnis."],
@@ -79,14 +79,14 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/inbox",
-    title: "Inbox",
+    title: "Benachrichtigungen",
     purpose: "Automationshinweise und persönliche Systemmeldungen an einem Ort bündeln.",
     actions: ["Neue Hinweise lesen", "Benachrichtigungen als gelesen markieren", "Automationsausgaben außerhalb von Team-Chats nachvollziehen"],
     tips: ["Die Inbox ist für operative Hinweise gedacht – dauerhafte Regeln gehören in System oder Dokumentcenter.", "Automationen sollten nur Meldungen erzeugen, die eine konkrete Handlung oder Information auslösen."],
   },
   {
     href: "/portal/chat",
-    title: "Interne Chats",
+    title: "Team-Chat",
     purpose: "Teamkommunikation von Kunden- und Auftragsdaten getrennt halten.",
     actions: ["Mit dem gesamten Team kommunizieren", "Admin-interne Themen im Admin-Kanal besprechen", "Wichtige operative Hinweise austauschen"],
     tips: ["Vertrauliche Owner-Zahlen gehören nicht in allgemeine Team-Chats.", "Dauerhafte Prozessregeln sollten zusätzlich im Produkt- oder Dokumentcenter stehen."],
@@ -121,8 +121,8 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal",
-    title: "Command Center",
-    purpose: "Prioritäten, Pipeline, Teamlast und nächste Aktionen als tägliches Arbeitscockpit bündeln.",
+    title: "Übersicht & Fokus",
+    purpose: "Prioritäten, Tagesarbeit, Kundenpflege, Qualität und nächste Aktionen als tägliche Arbeitsübersicht bündeln.",
     actions: ["Offene Arbeit priorisieren", "Neue Anfragen erkennen", "Pipeline und Aufgaben im Blick behalten", "Von hier in die Fachbereiche springen"],
     tips: ["Beginnen Sie den Arbeitstag mit offenen Anfragen und überfälligen Aufgaben.", "Kennzahlen sind Hinweise – Details und Ursachen finden Sie in den jeweiligen Fachbereichen."],
   },
