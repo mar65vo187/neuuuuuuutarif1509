@@ -13,24 +13,52 @@ import { PortalCommandPalette } from "@/components/portal/PortalCommandPalette";
 import type { SessionUser } from "@/lib/auth";
 import { getPortalHelp } from "@/lib/portal-help";
 
-const NAV = [
-  { href: "/portal", label: "Command Center", icon: BarChart3, exact: true },
-  { href: "/portal/leads", label: "Anfragen & Termine", icon: Inbox },
-  { href: "/portal/kunden", label: "Kunden", icon: ContactRound },
-  { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness },
-  { href: "/portal/produkte", label: "Produkte & Partner", icon: PackageSearch },
-  { href: "/portal/betrieb", label: "Team & Betrieb", icon: UsersRound },
-  { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
-  { href: "/portal/inbox", label: "Inbox", icon: Bell },
-  { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards },
-  { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
-  { href: "/portal/reporting", label: "Reporting", icon: LineChart },
-  { href: "/portal/chat", label: "Interne Chats", icon: MessageSquare },
-  { href: "/portal/einstellungen", label: "Einstellungen", icon: KeyRound },
-  { href: "/portal/sicherheit", label: "Sicherheit", icon: ShieldCheck },
-  { href: "/portal/empfehlungen", label: "Empfehlungen", icon: Gift, adminOnly: true },
-  { href: "/portal/system", label: "System", icon: Settings2, adminOnly: true },
-];
+const NAV_SECTIONS = [
+  {
+    label: "Täglich arbeiten",
+    items: [
+      { href: "/portal", label: "Command Center", icon: BarChart3, exact: true },
+      { href: "/portal/leads", label: "Anfragen & Termine", icon: Inbox },
+      { href: "/portal/kunden", label: "Kunden", icon: ContactRound },
+      { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness },
+      { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
+      { href: "/portal/inbox", label: "Inbox", icon: Bell },
+    ],
+  },
+  {
+    label: "Vertrieb & Wissen",
+    items: [
+      { href: "/portal/produkte", label: "Produkte & Partner", icon: PackageSearch },
+      { href: "/portal/empfehlungen", label: "Empfehlungen", icon: Gift, adminOnly: true },
+    ],
+  },
+  {
+    label: "Team & Entwicklung",
+    items: [
+      { href: "/portal/betrieb", label: "Team & Betrieb", icon: UsersRound },
+      { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
+      { href: "/portal/chat", label: "Interne Chats", icon: MessageSquare },
+      { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
+    ],
+  },
+  {
+    label: "Steuerung",
+    items: [
+      { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards },
+      { href: "/portal/reporting", label: "Reporting", icon: LineChart },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { href: "/portal/einstellungen", label: "Einstellungen", icon: KeyRound },
+      { href: "/portal/sicherheit", label: "Sicherheit", icon: ShieldCheck },
+      { href: "/portal/system", label: "System", icon: Settings2, adminOnly: true },
+    ],
+  },
+] as const;
+
+const NAV = NAV_SECTIONS.flatMap((section) => section.items);
 
 export function PortalShell({ user, children, openCount, notificationCount }: { user: SessionUser; children: ReactNode; openCount: number; notificationCount: number }) {
   const pathname = usePathname();
@@ -67,7 +95,14 @@ export function PortalShell({ user, children, openCount, notificationCount }: { 
     }
   };
 
-  const navigation = NAV.filter((item) => (!item.adminOnly || user.role === "admin") && (!navQuery.trim() || item.label.toLowerCase().includes(navQuery.trim().toLowerCase())));
+  const normalizedNavQuery = navQuery.trim().toLowerCase();
+  const navigationSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) =>
+      (!("adminOnly" in item) || !item.adminOnly || user.role === "admin")
+      && (!normalizedNavQuery || item.label.toLowerCase().includes(normalizedNavQuery)),
+    ),
+  })).filter((section) => section.items.length > 0);
   const currentHelp = getPortalHelp(pathname);
   const selectedHelp = getPortalHelp(helpPath);
   const openHelp = (path = pathname) => { setHelpPath(path); setHelpOpen(true); };
@@ -77,34 +112,32 @@ export function PortalShell({ user, children, openCount, notificationCount }: { 
       <aside className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-[radial-gradient(circle_at_top_left,rgba(79,141,255,0.16),transparent_32%),#060b16] px-5 py-3 text-white lg:h-screen lg:flex-col lg:items-stretch lg:justify-start lg:border-b-0 lg:border-r lg:border-white/8 lg:px-5 lg:py-6">
         <div className="flex items-center gap-3"><Logo size={30} href="/portal" /><div className="hidden lg:block"><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-electric-soft">TarifWerk OS</p><p className="mt-0.5 text-[11.5px] text-silver">Sales & Operations</p></div></div>
         <div className="hidden lg:mt-6 lg:block"><label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" /><input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.055] pl-9 pr-3 text-[12.5px] text-white placeholder:text-silver/65 focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/15" placeholder="Bereich suchen…" aria-label="Portalbereich suchen" /></label></div>
-        <nav className="no-scrollbar flex max-w-[calc(100vw-120px)] gap-1 overflow-x-auto lg:mt-5 lg:max-w-none lg:flex-col lg:overflow-y-auto" aria-label="Portal">
-          {navigation.map((n) => {
-            const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
-            const Icon = n.icon;
-            return (
-              <div key={n.href} className={`group/nav flex shrink-0 items-center rounded-xl transition ${active ? "bg-white/10" : "hover:bg-white/6"}`}>
-                <Link href={n.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`inline-flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${active ? "text-white" : "text-silver hover:text-white"}`}>
-                  <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-electric-soft" : ""}`} />
-                  <span className="hidden lg:inline">{n.label}</span>
-                  {n.href === "/portal/leads" && openCount > 0 && <span className="ml-auto hidden rounded-full bg-electric px-2 py-0.5 text-[11px] font-bold text-white lg:inline">{openCount}</span>}
-                  {n.href === "/portal/inbox" && notificationCount > 0 && <span className="ml-auto hidden rounded-full bg-champagne px-2 py-0.5 text-[11px] font-extrabold text-ink lg:inline">{notificationCount > 99 ? "99+" : notificationCount}</span>}
-                </Link>
-                <button type="button" onClick={() => openHelp(n.href)} className="mr-1 hidden h-8 w-8 shrink-0 place-items-center rounded-lg text-silver/55 transition hover:bg-champagne/10 hover:text-champagne-soft lg:grid" aria-label={`Info zu ${n.label}`} title={`Info zu ${n.label}`}><Lightbulb className="h-3.5 w-3.5" /></button>
+        <nav className="no-scrollbar flex max-w-[calc(100vw-120px)] gap-1 overflow-x-auto lg:mt-5 lg:max-w-none lg:flex-col lg:gap-4 lg:overflow-y-auto" aria-label="Portal">
+          {navigationSections.map((section) => (
+            <div key={section.label} className="contents lg:block">
+              <p className="mb-1 hidden px-3 text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-silver/45 lg:block">{section.label}</p>
+              <div className="contents lg:block lg:space-y-0.5">
+                {section.items.map((n) => {
+                  const exact = "exact" in n && n.exact;
+                  const active = exact ? pathname === n.href : pathname.startsWith(n.href);
+                  const Icon = n.icon;
+                  return (
+                    <div key={n.href} className={`group/nav flex shrink-0 items-center rounded-xl transition ${active ? "bg-white/10" : "hover:bg-white/6"}`}>
+                      <Link href={n.href}
+                        aria-current={active ? "page" : undefined}
+                        className={`inline-flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${active ? "text-white" : "text-silver hover:text-white"}`}>
+                        <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-electric-soft" : ""}`} />
+                        <span className="hidden lg:inline">{n.label}</span>
+                        {n.href === "/portal/leads" && openCount > 0 && <span className="ml-auto hidden rounded-full bg-electric px-2 py-0.5 text-[11px] font-bold text-white lg:inline">{openCount}</span>}
+                        {n.href === "/portal/inbox" && notificationCount > 0 && <span className="ml-auto hidden rounded-full bg-champagne px-2 py-0.5 text-[11px] font-extrabold text-ink lg:inline">{notificationCount > 99 ? "99+" : notificationCount}</span>}
+                      </Link>
+                      <button type="button" onClick={() => openHelp(n.href)} className="mr-1 hidden h-8 w-8 shrink-0 place-items-center rounded-lg text-silver/55 transition hover:bg-champagne/10 hover:text-champagne-soft lg:grid" aria-label={`Info zu ${n.label}`} title={`Info zu ${n.label}`}><Lightbulb className="h-3.5 w-3.5" /></button>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-          {user.role === "admin" && (
-            <Link
-              href="/portal/verwaltung"
-              aria-current={pathname.startsWith("/portal/verwaltung") ? "page" : undefined}
-              className={`inline-flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${pathname.startsWith("/portal/verwaltung") ? "bg-white/10 text-white" : "text-silver hover:bg-white/6 hover:text-white"}`}
-            >
-              <UserRoundCog className="h-4.5 w-4.5" />
-              <span className="hidden lg:inline">Mitarbeiter verwalten</span>
-            </Link>
-          )}
+            </div>
+          ))}
         </nav>
         <div className="hidden lg:mt-auto lg:block">
           <Link href="/" className="inline-flex items-center gap-2 text-[13px] text-silver hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Website öffnen</Link>
