@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Check, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { AudienceToggle, useAudience } from "@/components/home/AudienceProvider";
+import { useAudience } from "@/components/home/AudienceProvider";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
 
 export function Hero() {
@@ -37,7 +37,6 @@ export function Hero() {
 
       <div className="container-x relative grid min-h-[78svh] items-center gap-10 pb-12 pt-[106px] lg:min-h-[82svh] lg:grid-cols-12 lg:gap-10 lg:pb-14 lg:pt-[120px]">
         <div className="lg:col-span-7">
-          <div className="hero-enter [--hero-delay:60ms]"><AudienceToggle className="mb-5" /></div>
           <p className="eyebrow hero-enter max-w-xl text-electric-soft [--hero-delay:110ms]"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{copy.eyebrow}</p>
           <h1 id="home-hero-title" key={audience} className="mt-5 max-w-[940px] text-[clamp(2.7rem,6.3vw,5.65rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
             <span className="hero-enter block text-gradient-silver [--hero-delay:150ms]">{copy.lines[0]}</span>
