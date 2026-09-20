@@ -20,13 +20,13 @@ test("brand SEO uses one stable TarifWerk identity", () => {
 });
 
 test("campaign system has dedicated landing pages and CRM attribution", () => {
-  const campaigns = read("src/lib/campaigns.ts");
-  const page = read("src/app/(site)/kampagne/[slug]/page.tsx");
+  const campaigns = read("src/lib/marketing-campaigns.ts");
+  const page = read("src/app/kampagne/[slug]/page.tsx");
   const enterprise = read("src/lib/enterprise.ts");
   const reporting = read("src/app/portal/(app)/reporting/page.tsx");
   const sitemap = read("src/app/sitemap.ts");
 
-  for (const slug of ["internet-check", "energie-check", "solar-waermepumpe", "business-check"]) {
+  for (const slug of ["tarifcheck", "energie-check", "solar-check", "business-check"]) {
     assert.match(campaigns, new RegExp('slug: "' + slug + '"'));
   }
   assert.match(page, /campaign\.slug/);
