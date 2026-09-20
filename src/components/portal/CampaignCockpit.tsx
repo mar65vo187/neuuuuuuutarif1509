@@ -33,9 +33,8 @@ function campaignUrl(origin: string, campaign: Campaign, source: string, medium:
   return url.href;
 }
 
-export function CampaignCockpit({ campaigns }: { campaigns: Campaign[] }) {
+export function CampaignCockpit({ campaigns, origin }: { campaigns: Campaign[]; origin: string }) {
   const [copied, setCopied] = useState("");
-  const origin = typeof window === "undefined" ? "https://www.tarifwerk.eu" : window.location.origin;
 
   const rows = useMemo(() => campaigns.map((campaign) => ({
     campaign,
