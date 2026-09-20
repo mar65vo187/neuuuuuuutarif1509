@@ -58,7 +58,6 @@ const NAV_SECTIONS = [
   },
 ] as const;
 
-const NAV = NAV_SECTIONS.flatMap((section) => section.items);
 
 export function PortalShell({ user, children, openCount, notificationCount }: { user: SessionUser; children: ReactNode; openCount: number; notificationCount: number }) {
   const pathname = usePathname();
