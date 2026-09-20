@@ -227,6 +227,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     <>
       {cropRequest && (
         <ImageCropEditor
+          key={`${cropRequest.target}:${cropRequest.file.name}:${cropRequest.file.lastModified}:${cropRequest.file.size}`}
           file={cropRequest.file}
           title={cropRequest.target === "employee" ? "Internes Mitarbeiterbild zuschneiden" : "Öffentliches Profilbild zuschneiden"}
           onCancel={cancelCrop}
