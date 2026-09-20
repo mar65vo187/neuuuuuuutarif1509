@@ -2,10 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Download, Plus, Search } from "lucide-react";
 import { Card, formatDate } from "@/components/portal/ui";
+import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { getCurrentUser } from "@/lib/auth";
 import { listOrders } from "@/lib/enterprise";
 import { ORDER_STATUSES } from "@/lib/enterprise-validation";
 import { isCompensationOwner } from "@/lib/compensation";
+import { listSavedViews } from "@/lib/portal-productivity";
 
 const LABELS: Record<string, string> = {
   draft:"Entwurf", documents_missing:"Unterlagen fehlen", ready_to_submit:"Einreichbereit", submitted:"Eingereicht",
@@ -20,7 +22,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   if (!user) redirect("/portal/login?next=%2Fportal%2Fauftraege");
   const { status, q } = await searchParams;
   const validStatus = status && ORDER_STATUSES.includes(status as typeof ORDER_STATUSES[number]) ? status : undefined;
-  const rows = await listOrders(user, { status: validStatus, search: q }, 200);
+  const [rows, savedViews] = await Promise.all([
+    listOrders(user, { status: validStatus, search: q }, 200),
+    listSavedViews(user, "orders"),
+  ]);
   const owner = isCompensationOwner(user);
 
   return <div className="space-y-6">
@@ -33,6 +38,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <div className="relative"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" /><input name="q" defaultValue={q ?? ""} className="field pl-11" placeholder="Auftrag, Kunde, externe ID …" /></div>
       <select name="status" defaultValue={validStatus ?? ""} className="field"><option value="">Alle Status</option>{ORDER_STATUSES.map((value) => <option key={value} value={value}>{LABELS[value]}</option>)}</select>
     </form>
+    <SavedViewsBar area="orders" basePath="/portal/auftraege" views={savedViews} currentFilters={{ ...(validStatus ? { status: validStatus } : {}), ...(q?.trim() ? { q: q.trim() } : {}) }} />
     <Card className="p-0 sm:p-0">{rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Aufträge gefunden.</p> :
       <ul className="divide-y divide-line">{rows.map((row) => {
         const customerName = row.customer.companyName || [row.customer.firstName, row.customer.lastName].filter(Boolean).join(" ");
