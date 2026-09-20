@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
-import { getCurrentUser, hashPassword, isSameOriginRequest, setSessionCookie, verifyPassword } from "@/lib/auth";
+import { getCurrentUser, hashPassword, isSameOriginRequest, revokeAllPortalSessions, setSessionCookie, verifyPassword } from "@/lib/auth";
+import { writeAudit } from "@/lib/enterprise";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 
 export const dynamic = "force-dynamic";
@@ -49,11 +50,24 @@ export async function POST(request: NextRequest) {
     if (!valid) return NextResponse.json({ ok: false, error: "Das aktuelle Passwort ist nicht korrekt." }, { status: 422 });
 
     const passwordHash = hashPassword(parsed.data.newPassword);
-    await db.update(employees).set({ passwordHash }).where(eq(employees.id, user.id));
+    await db.transaction(async (tx) => {
+      await tx.update(employees).set({ passwordHash }).where(eq(employees.id, user.id));
+      await writeAudit(tx, user.id, "account.password.changed", "employee", user.id);
+    });
+    await revokeAllPortalSessions(user.id);
 
     const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
     const secure = forwardedProtocol ? forwardedProtocol === "https" : request.nextUrl.protocol === "https:";
-    await setSessionCookie(user.id, secure, passwordHash);
+    const ip = (
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")?.trim()
+      || "unknown"
+    ).slice(0, 100);
+    await setSessionCookie(user.id, secure, passwordHash, {
+      mfaVerified: Boolean(user.mfaVerified),
+      ip,
+      userAgent: request.headers.get("user-agent"),
+    });
 
     return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
   } catch {
