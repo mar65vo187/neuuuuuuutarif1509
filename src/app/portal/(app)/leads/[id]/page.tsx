@@ -30,7 +30,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <div>
           <div className="flex flex-wrap items-center gap-2"><TypeBadge type={lead.type} /><StatusBadge status={lead.status} /><span className="text-[12.5px] text-steel">#{lead.id}</span></div>
           <h1 className="mt-3 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">{lead.name}</h1>
-          <p className="text-[14px] text-steel">Eingegangen {formatDate(lead.createdAt)} · Quelle: {lead.source ?? "website"}{lead.advisorName ? ` · Wunschberater: ${lead.advisorName}` : ""}</p>
+          <p className="text-[14px] text-steel">Eingegangen {formatDate(lead.createdAt)} · Quelle: {lead.source ?? "website"} · Angelegt von: {lead.createdByName ?? "Website / System"}{lead.advisorName ? ` · Wunschberater: ${lead.advisorName}` : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {waDigits && <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[13.5px] font-semibold text-ink-900"><MessageCircle className="h-4 w-4" /> WhatsApp</a>}
@@ -53,7 +53,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 ["Wunschzeit", lead.preferredTime],
                 ["E-Mail", lead.email],
                 ["Telefon", lead.phone],
-                ["Bearbeitet von", lead.assignedName ?? "noch niemand"],
+                ["Angelegt von", lead.createdByName ?? "Website / System"],
+                ["Zuständig", lead.assignedName ?? "noch niemand"],
               ].map(([k, v]) => (
                 <div key={k as string}>
                   <dt className="text-[12px] font-semibold uppercase tracking-wider text-steel">{k}</dt>
