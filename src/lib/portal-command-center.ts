@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
-import { auditEvents, commissionEvents, customers, orders, tasks } from "@/db/enterprise-schema";
+import { auditEvents, commissionEvents, customerCrmProfiles, customerOpportunities, customers, orders, tasks } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { leadAccessCondition } from "@/lib/queries";
@@ -16,7 +16,7 @@ const customerAccess = (user: SessionUser) => user.role === "admin" ? sql`true` 
 
 export type FocusItem = {
   key: string;
-  kind: "lead" | "task" | "order";
+  kind: "lead" | "task" | "order" | "customer";
   priority: "critical" | "high" | "normal";
   title: string;
   subtitle: string;
@@ -71,6 +71,9 @@ export type CommandCenterData = {
     dueLeadFollowUpsToday: number;
     leadsMissingNextAction: number;
     leadsWithoutProduct: number;
+    dueCustomerReviews: number;
+    openCustomerOpportunities: number;
+    atRiskCustomers: number;
   };
   leadPipeline: Array<{ status: string; count: number }>;
   orderPipeline: Array<{ status: string; count: number }>;
@@ -114,12 +117,14 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     taskMetricsRows,
     orderMetricsRows,
     customerRows,
+    customerOpportunityRows,
     leadPipeline,
     orderPipeline,
     dailyRows,
     attentionLeads,
     attentionTasks,
     attentionOrders,
+    attentionCustomers,
     momentumRows,
   ] = await Promise.all([
     db.select({
@@ -140,7 +145,22 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       active: sql<number>`count(*) filter (where ${orders.status} = 'active')::int`,
       attention: sql<number>`count(*) filter (where ${orders.status} not in ('active','rejected','cancelled','storno') and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < ${ago7d}))::int`,
     }).from(orders).where(orderCondition),
-    db.select({ count: sql<number>`count(*)::int` }).from(customers).where(and(customerCondition, sql`${customers.archivedAt} is null`)),
+    db.select({
+      count: sql<number>`count(*)::int`,
+      dueReviews: sql<number>`count(*) filter (where ${customerCrmProfiles.nextReviewAt} is not null and ${customerCrmProfiles.nextReviewAt} < ${now})::int`,
+      atRisk: sql<number>`count(*) filter (where ${customerCrmProfiles.relationshipStatus} = 'at_risk' or ${customerCrmProfiles.riskLevel} in ('high','critical'))::int`,
+    }).from(customers)
+      .leftJoin(customerCrmProfiles, eq(customerCrmProfiles.customerId, customers.id))
+      .where(and(customerCondition, sql`${customers.archivedAt} is null`)),
+    db.select({
+      count: sql<number>`count(*)::int`,
+    }).from(customerOpportunities)
+      .innerJoin(customers, eq(customerOpportunities.customerId, customers.id))
+      .where(and(
+        customerCondition,
+        inArray(customerOpportunities.status, ["open", "qualified", "later"]),
+        sql`${customers.archivedAt} is null`,
+      )),
     db.select({ status: leads.status, count: sql<number>`count(*)::int` }).from(leads).where(leadAccess).groupBy(leads.status),
     db.select({ status: orders.status, count: sql<number>`count(*)::int` }).from(orders).where(orderCondition).groupBy(orders.status),
     db.select({
@@ -180,6 +200,29 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     }).from(orders)
       .where(and(orderCondition, sql`${orders.status} not in ('active','rejected','cancelled','storno')`))
       .orderBy(asc(orders.updatedAt))
+      .limit(12),
+    db.select({
+      id: customers.id,
+      customerNumber: customers.customerNumber,
+      firstName: customers.firstName,
+      lastName: customers.lastName,
+      companyName: customers.companyName,
+      nextReviewAt: customerCrmProfiles.nextReviewAt,
+      relationshipStatus: customerCrmProfiles.relationshipStatus,
+      riskLevel: customerCrmProfiles.riskLevel,
+      lastContactAt: customerCrmProfiles.lastContactAt,
+    }).from(customers)
+      .leftJoin(customerCrmProfiles, eq(customerCrmProfiles.customerId, customers.id))
+      .where(and(
+        customerCondition,
+        sql`${customers.archivedAt} is null`,
+        or(
+          sql`${customerCrmProfiles.nextReviewAt} is not null and ${customerCrmProfiles.nextReviewAt} < ${now}`,
+          eq(customerCrmProfiles.relationshipStatus, "at_risk"),
+          inArray(customerCrmProfiles.riskLevel, ["high", "critical"]),
+        ),
+      ))
+      .orderBy(asc(customerCrmProfiles.nextReviewAt), desc(customers.updatedAt))
       .limit(12),
     db.select({
       day: sql<string>`to_char(timezone('Europe/Berlin', ${leads.createdAt}), 'YYYY-MM-DD')`,
@@ -293,6 +336,26 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       subtitle: order.status === "documents_missing" ? "Unterlagen fehlen" : "Seit mehr als 7 Tagen ohne Aktualisierung",
       href: `/portal/auftraege/${order.id}`,
       timestamp: order.updatedAt.toISOString(),
+    });
+  }
+
+  for (const customer of attentionCustomers) {
+    const reviewDue = Boolean(customer.nextReviewAt && customer.nextReviewAt.getTime() < now.getTime());
+    const criticalRisk = customer.riskLevel === "critical";
+    const highRisk = customer.riskLevel === "high" || customer.relationshipStatus === "at_risk";
+    const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.customerNumber;
+    focus.push({
+      key: "customer-" + customer.id,
+      kind: "customer",
+      priority: criticalRisk ? "critical" : highRisk || reviewDue ? "high" : "normal",
+      title: name,
+      subtitle: criticalRisk
+        ? "Kundenbeziehung als kritisch markiert"
+        : highRisk
+          ? "Kundenbeziehung benötigt Aufmerksamkeit"
+          : "Bestandscheck ist fällig",
+      href: "/portal/kunden/" + customer.id,
+      timestamp: customer.nextReviewAt?.toISOString() ?? customer.lastContactAt?.toISOString() ?? null,
     });
   }
 
@@ -410,6 +473,9 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       dueLeadFollowUpsToday: leadMetricsRows[0]?.dueToday ?? 0,
       leadsMissingNextAction: leadMetricsRows[0]?.missingNext ?? 0,
       leadsWithoutProduct: leadMetricsRows[0]?.withoutProduct ?? 0,
+      dueCustomerReviews: customerRows[0]?.dueReviews ?? 0,
+      openCustomerOpportunities: customerOpportunityRows[0]?.count ?? 0,
+      atRiskCustomers: customerRows[0]?.atRisk ?? 0,
     },
     leadPipeline: leadPipeline.map((row) => ({ status: row.status, count: row.count })),
     orderPipeline: orderPipeline.map((row) => ({ status: row.status, count: row.count })),
