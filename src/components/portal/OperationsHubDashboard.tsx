@@ -13,7 +13,7 @@ type Training = { id: number; title: string; category: string; description: stri
 type Completion = { moduleId: number; employeeId: number; employeeName: string; status: string; completedAt: string; expiresAt: string | null; note: string; certificateCode: string | null };
 type Benefit = { id: number; employeeId: number; employeeName: string; benefitKey: string; label: string; status: string; details: string; validFrom: string | null; validTo: string | null };
 type DocumentRow = { id: number; category: string; title: string; fileName: string; contentType: string; digest: string; sizeBytes: number; version: number; productId: number | null; productName: string | null; providerId: number | null; providerName: string | null; visibility: string; createdAt: string };
-type Reconciliation = { id: number; providerId: number | null; type: string; status: string; expectedAmount: string | null; reportedAmount: string | null; differenceAmount: string | null; reference: string | null; note: string | null; createdAt: string };
+type Reconciliation = { id: number; orderId: number | null; providerId: number | null; type: string; status: string; expectedAmount: string | null; reportedAmount: string | null; differenceAmount: string | null; reference: string | null; note: string | null; createdAt: string };
 type Data = {
   owner: boolean;
   admin: boolean;
@@ -42,6 +42,13 @@ async function postJson(url: string, body: unknown) {
   const json = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
   if (response.status === 401) { window.location.replace("/portal/login?next=%2Fportal%2Fbetrieb"); throw new Error("Bitte erneut anmelden."); }
   if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Speichern fehlgeschlagen.");
+}
+
+async function patchJson(url: string, body: unknown) {
+  const response = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+  const json = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+  if (response.status === 401) { window.location.replace("/portal/login?next=%2Fportal%2Fbetrieb"); throw new Error("Bitte erneut anmelden."); }
+  if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Abweichung konnte nicht abgeschlossen werden.");
 }
 
 function parseReconciliationCsv(text: string) {
@@ -83,6 +90,20 @@ export function OperationsHubDashboard({ data, currentUserId }: { data: Data; cu
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Speichern fehlgeschlagen." });
     } finally { busyRef.current = false; setBusy(null); }
+  }
+
+  async function resolveIssue(issueId: number, action: "accept_reported" | "keep_expected" | "dismiss") {
+    if (busyRef.current) return;
+    busyRef.current = true; setBusy(`reconciliation-${issueId}`); setMessage(null);
+    try {
+      await patchJson(`/api/portal/admin/operations/reconciliation/${issueId}`, { action });
+      setMessage({ type: "success", text: "Abweichung abgeschlossen und im Audit-Log dokumentiert." });
+      router.refresh();
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Abweichung konnte nicht abgeschlossen werden." });
+    } finally {
+      busyRef.current = false; setBusy(null);
+    }
   }
 
   async function uploadDocument(event: FormEvent<HTMLFormElement>) {
@@ -162,7 +183,7 @@ export function OperationsHubDashboard({ data, currentUserId }: { data: Data; cu
 
     {data.owner && <section className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
       <div className="flex items-center gap-3"><ReceiptText className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Provider-Abgleich</h2><p className="text-[12.5px] text-steel">Offene Differenzen aus importierten Provider-Abrechnungen.</p></div></div>
-      <div className="mt-5 space-y-2">{data.reconciliation.length ? data.reconciliation.map((item) => <div key={item.id} className="grid gap-2 rounded-2xl border border-line bg-paper p-4 sm:grid-cols-[1fr_auto]"><div><p className="font-bold">{item.type} · {item.reference || "ohne Referenz"}</p><p className="mt-1 text-[12px] text-steel">{item.note || "Abweichung prüfen."}</p></div><div className="text-right text-[12px]"><p>Erwartet: <strong>{money(Number(item.expectedAmount ?? 0))}</strong></p><p>Gemeldet: <strong>{money(Number(item.reportedAmount ?? 0))}</strong></p><p className="text-steel">Differenz: {money(Number(item.differenceAmount ?? 0))}</p></div></div>) : <p className="text-[13px] text-steel">Keine offenen Abweichungen.</p>}</div>
+      <div className="mt-5 space-y-3">{data.reconciliation.length ? data.reconciliation.map((item) => <div key={item.id} className="rounded-2xl border border-line bg-paper p-4"><div className="grid gap-2 sm:grid-cols-[1fr_auto]"><div><p className="font-bold">{item.type} · {item.reference || "ohne Referenz"}</p><p className="mt-1 text-[12px] text-steel">{item.note || "Abweichung prüfen."}</p></div><div className="text-right text-[12px]"><p>Erwartet: <strong>{money(Number(item.expectedAmount ?? 0))}</strong></p><p>Gemeldet: <strong>{money(Number(item.reportedAmount ?? 0))}</strong></p><p className="text-steel">Differenz: {money(Number(item.differenceAmount ?? 0))}</p></div></div><div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">{item.orderId && item.reportedAmount !== null && <button type="button" disabled={busy !== null} onClick={() => void resolveIssue(item.id, "accept_reported")} className="inline-flex h-9 items-center rounded-full bg-ink px-4 text-[12px] font-semibold text-white hover:bg-electric disabled:opacity-50">Provider-Betrag übernehmen</button>}<button type="button" disabled={busy !== null} onClick={() => void resolveIssue(item.id, "keep_expected")} className="inline-flex h-9 items-center rounded-full border border-line bg-white px-4 text-[12px] font-semibold hover:border-electric/30">Sollwert beibehalten</button><button type="button" disabled={busy !== null} onClick={() => void resolveIssue(item.id, "dismiss")} className="inline-flex h-9 items-center px-3 text-[12px] font-semibold text-steel hover:text-ink">Ignorieren / schließen</button></div></div>) : <p className="text-[13px] text-steel">Keine offenen Abweichungen.</p>}</div>
     </section>}
 
     {data.admin && <section className="space-y-5">
