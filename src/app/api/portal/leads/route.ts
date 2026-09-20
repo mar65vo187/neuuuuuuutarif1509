@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
         preferredTime: data.preferredTime || null,
         advisorId,
         assignedEmployeeId: user.id,
+        createdByEmployeeId: user.id,
         source: "portal",
       }).returning({ id: leads.id });
       await tx.insert(leadNotes).values({ leadId: lead.id, employeeId: user.id, kind: "system", body: `${user.name} hat den Lead im Mitarbeiterportal angelegt.` });
