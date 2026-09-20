@@ -12,7 +12,7 @@ export default async function ChatPage() {
     <div className="space-y-6">
       <header>
         <p className="eyebrow text-electric-deep">Intern</p>
-        <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Interne Chats</h1>
+        <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Team-Chat</h1>
         <p className="text-[14px] text-steel">
           Im Team-Chat lesen und schreiben alle Mitarbeiter. Der Admin-Chat ist ausschließlich für Administratoren sichtbar.
         </p>
