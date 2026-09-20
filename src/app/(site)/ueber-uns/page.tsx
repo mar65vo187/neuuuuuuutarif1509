@@ -73,7 +73,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
               Vor-Ort-Termine stimmen wir individuell ab – abhängig von Thema, Region und Verfügbarkeit.
             </p>
             <div className="mt-6">
-              <Button href="/berater" iconRight={<ArrowRight />}>Ansprechpartner finden</Button>
+              <Button href={`/berater?audience=${audience}`} iconRight={<ArrowRight />}>Ansprechpartner finden</Button>
             </div>
           </Reveal>
           <Reveal className="lg:col-span-6" delay={0.1}>
