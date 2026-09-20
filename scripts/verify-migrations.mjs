@@ -68,6 +68,8 @@ const requiredTables = [
   "referral_rewards",
   "referral_reward_events",
   "public_intake_rate_limits",
+  "portal_sessions",
+  "portal_login_rate_limits",
 ];
 
 const pool = new Pool({
