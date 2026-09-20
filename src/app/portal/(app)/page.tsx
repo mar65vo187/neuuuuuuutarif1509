@@ -1,94 +1,211 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarCheck, Inbox, TrendingUp, Users } from "lucide-react";
-import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
-import { BarSeries, TopicBars } from "@/components/portal/Charts";
+import {
+  AlertTriangle, ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, ContactRound,
+  Euro, Inbox, ListTodo, Plus, Sparkles, TrendingUp, UsersRound,
+} from "lucide-react";
+import { BarSeries } from "@/components/portal/Charts";
+import { QuickTaskComposer } from "@/components/portal/QuickTaskComposer";
+import { Card } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
-import { getDashboardStats } from "@/lib/queries";
+import { LEAD_STATUS_LABELS } from "@/lib/content";
+import { getCommandCenterData, type FocusItem } from "@/lib/portal-command-center";
 
 export const dynamic = "force-dynamic";
+
+const ORDER_LABELS: Record<string, string> = {
+  draft: "Entwurf",
+  documents_missing: "Unterlagen fehlen",
+  ready_to_submit: "Versandbereit",
+  submitted: "Eingereicht",
+  provider_review: "Provider-Prüfung",
+  accepted: "Angenommen",
+  activation_pending: "Aktivierung offen",
+  active: "Aktiv",
+  rejected: "Abgelehnt",
+  cancelled: "Storniert",
+  storno: "Rückbelastung",
+};
+
+const PRIORITY_STYLE: Record<FocusItem["priority"], string> = {
+  critical: "border-red-200 bg-red-50 text-red-800",
+  high: "border-amber-200 bg-amber-50 text-amber-800",
+  normal: "border-line bg-paper text-steel",
+};
+
+const KIND_LABEL: Record<FocusItem["kind"], string> = {
+  lead: "Lead",
+  task: "Aufgabe",
+  order: "Auftrag",
+};
+
+function money(value: number) {
+  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+function dateTime(value: string | null) {
+  if (!value) return "ohne Termin";
+  return new Date(value).toLocaleString("de-DE", {
+    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+  });
+}
 
 export default async function PortalDashboard() {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal");
-  const stats = await getDashboardStats(user);
-  const hour = new Date().getHours();
-  const greet = hour < 11 ? "Guten Morgen" : hour < 18 ? "Hallo" : "Guten Abend";
+
+  const data = await getCommandCenterData(user);
+  const workOrders = data.orderPipeline
+    .filter((row) => !["active", "rejected", "cancelled", "storno"].includes(row.status))
+    .reduce((sum, row) => sum + row.count, 0);
+  const attention = data.metrics.untouchedLeads24h + data.metrics.overdueTasks + data.metrics.attentionOrders;
 
   const kpis = [
-    { label: "Offene Anfragen", value: stats.open, icon: Inbox, hint: "neu + kontaktiert" },
-    { label: "Bestätigte Termine", value: stats.confirmed, icon: CalendarCheck, hint: "warten auf Gespräch" },
-    { label: "In Beratung", value: stats.inConsult, icon: Users, hint: "aktive Kunden" },
-    { label: "Abschlussquote", value: stats.conversion === null ? "–" : `${stats.conversion}%`, icon: TrendingUp, hint: `${stats.won} abgeschlossen` },
+    { label: "Offene Leads", value: data.metrics.openLeads, hint: data.metrics.newLeads24h + " neu in 24h", href: "/portal/leads", Icon: Inbox },
+    { label: "Aufträge in Arbeit", value: workOrders, hint: data.metrics.activeOrders + " bereits aktiv", href: "/portal/auftraege", Icon: BriefcaseBusiness },
+    { label: "Aufgaben fällig", value: data.metrics.dueTasks24h, hint: "nächste 24 Stunden", href: "/portal/aufgaben", Icon: Clock3 },
+    { label: "Aufmerksamkeit", value: attention, hint: data.metrics.overdueTasks + " Tasks überfällig", href: "#fokus", Icon: AlertTriangle, attention: attention > 0 },
+    { label: "Kunden", value: data.metrics.customers, hint: "aktive Kundenakten", href: "/portal/kunden", Icon: ContactRound },
+    { label: "Abschlüsse 30T", value: data.metrics.wins30, hint: "abgeschlossene Leads", href: "/portal/reporting", Icon: TrendingUp },
   ];
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-7">
+      <header className="grid gap-5 xl:grid-cols-[1fr_auto] xl:items-end">
         <div>
-          <p className="eyebrow text-electric-deep">Übersicht</p>
-          <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">{greet}, {user?.name.split(" ")[0]}.</h1>
-          <p className="text-[14.5px] text-steel">{stats.total} Anfragen insgesamt · {stats.byType.termin ?? 0} Terminwünsche · {stats.byType.bewerbung ?? 0} Bewerbungen</p>
+          <p className="eyebrow text-electric-deep"><Sparkles className="h-3.5 w-3.5" /> TarifWerk Command Center</p>
+          <h1 className="mt-2 text-[clamp(1.8rem,3.6vw,2.8rem)] font-extrabold tracking-tight">Willkommen zurück, {user.name.split(" ")[0]}.</h1>
+          <p className="mt-1 max-w-3xl text-[14px] leading-relaxed text-steel">
+            Ein Arbeitsbild statt zehn Einzelansichten: Prioritäten, Pipeline, Teamlast und nächste Aktionen auf einen Blick.
+          </p>
         </div>
-        <Link href="/portal/leads?status=neu" className="inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-white hover:bg-electric">
-          Neue Anfragen bearbeiten <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13px] font-semibold hover:border-electric/30 hover:text-electric-deep"><Plus className="h-4 w-4" /> Lead</Link>
+          <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13px] font-semibold hover:border-electric/30 hover:text-electric-deep"><Plus className="h-4 w-4" /> Kunde</Link>
+          <Link href="/portal/auftraege/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Auftrag</Link>
+        </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((k) => {
-          const Icon = k.icon;
-          return (
-            <Card key={k.label}>
-              <div className="flex items-center justify-between">
-                <p className="text-[13px] font-semibold text-steel">{k.label}</p>
-                <Icon className="h-4.5 w-4.5 text-electric-deep" />
-              </div>
-              <p className="mt-3 text-[34px] font-extrabold leading-none tracking-tight">{k.value}</p>
-              <p className="mt-2 text-[12.5px] text-steel">{k.hint}</p>
-            </Card>
-          );
-        })}
-      </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" aria-label="Kennzahlen">
+        {kpis.map(({ label, value, hint, href, Icon, attention: isAttention }) => (
+          <Link key={label} href={href} className={"rounded-[20px] border p-4 transition hover:-translate-y-0.5 hover:shadow-soft " + (isAttention ? "border-amber-200 bg-amber-50/70" : "border-line bg-white")}>
+            <div className="flex items-center justify-between gap-3"><p className="text-[12px] font-semibold text-steel">{label}</p><Icon className={"h-4 w-4 " + (isAttention ? "text-amber-600" : "text-electric-deep")} /></div>
+            <p className="mt-3 text-[30px] font-extrabold leading-none tracking-tight">{value}</p>
+            <p className="mt-2 text-[11.5px] text-steel">{hint}</p>
+          </Link>
+        ))}
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-extrabold">Anfragen – letzte 14 Tage</h2>
-            <span className="text-[12.5px] text-steel">{stats.series.reduce((s, d) => s + d.count, 0)} gesamt</span>
+      <section id="fokus" className="grid gap-4 xl:grid-cols-[1.45fr_0.75fr]">
+        <Card className="p-0 sm:p-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
+            <div>
+              <p className="eyebrow text-electric-deep">Smart Focus</p>
+              <h2 className="mt-1 text-[18px] font-extrabold">Was jetzt Aufmerksamkeit braucht</h2>
+            </div>
+            <Link href="/portal/aufgaben" className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-electric-deep hover:underline">Alle Aufgaben <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
-          <div className="mt-5"><BarSeries data={stats.series} /></div>
+          {data.focus.length ? (
+            <ul className="divide-y divide-line">
+              {data.focus.map((item) => (
+                <li key={item.key}>
+                  <Link href={item.href} className="grid gap-3 px-5 py-4 transition hover:bg-paper sm:grid-cols-[auto_1fr_auto] sm:items-center sm:px-6">
+                    <span className={"chip w-fit " + PRIORITY_STYLE[item.priority]}>{item.priority === "critical" ? "Kritisch" : item.priority === "high" ? "Hoch" : "Beobachten"}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] font-bold">{item.title}</span>
+                      <span className="mt-0.5 block text-[12px] leading-relaxed text-steel">{KIND_LABEL[item.kind]} · {item.subtitle}</span>
+                    </span>
+                    <span className="text-[11px] text-steel sm:text-right">{dateTime(item.timestamp)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="grid min-h-56 place-items-center px-6 py-10 text-center">
+              <div><CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" /><p className="mt-3 font-bold">Aktuell kein kritischer Rückstand.</p><p className="mt-1 text-[12.5px] text-steel">Überfällige Tasks, alte neue Leads und festhängende Aufträge erscheinen automatisch hier.</p></div>
+            </div>
+          )}
         </Card>
-        <Card className="lg:col-span-2">
-          <h2 className="text-[16px] font-extrabold">Themen-Auswertung</h2>
-          <p className="text-[12.5px] text-steel">Wonach am häufigsten gefragt wird</p>
-          <div className="mt-5"><TopicBars data={stats.topics} /></div>
-        </Card>
-      </div>
 
-      <Card>
-        <div className="flex items-center justify-between">
-          <h2 className="text-[16px] font-extrabold">Zuletzt eingegangen</h2>
-          <Link href="/portal/leads" className="text-[13.5px] font-semibold text-electric-deep hover:underline">Alle anzeigen</Link>
-        </div>
-        {stats.recent.length === 0 ? (
-          <p className="mt-6 rounded-xl border border-dashed border-line p-8 text-center text-[14.5px] text-steel">Noch keine Anfragen. Sobald jemand über die Website anfragt, erscheint es hier.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-line">
-            {stats.recent.map((l) => (
-              <li key={l.id}>
-                <Link href={`/portal/leads/${l.id}`} className="flex flex-col gap-2 py-3 transition-colors hover:bg-paper sm:flex-row sm:items-center sm:justify-between sm:rounded-xl sm:px-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-[15px] font-semibold">{l.name} <span className="font-normal text-steel">· {l.topic ?? "Ohne Thema"}</span></p>
-                    <p className="text-[12.5px] text-steel">{formatDate(l.createdAt)} · {l.region ?? "Region offen"}{l.advisorName ? ` · für ${l.advisorName}` : ""}</p>
-                  </div>
-                  <div className="flex items-center gap-2"><TypeBadge type={l.type} /><StatusBadge status={l.status} /></div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+        <Card>
+          <div className="flex items-center gap-2"><ListTodo className="h-4.5 w-4.5 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Schnelle Aufgabe</h2></div>
+          <p className="mt-1 text-[12px] text-steel">Eine Wiedervorlage ohne Seitenwechsel anlegen.</p>
+          <div className="mt-4">
+            <QuickTaskComposer assignees={data.taskAssignees} currentUserId={user.id} />
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <Card>
+          <div className="flex items-center justify-between gap-3">
+            <div><h2 className="text-[16px] font-extrabold">Lead-Eingang · 14 Tage</h2><p className="text-[12px] text-steel">Tatsächliche neue Anfragen in deinem Sichtbereich.</p></div>
+            <span className="text-[12px] font-bold text-steel">{data.leadSeries.reduce((sum, row) => sum + row.count, 0)} gesamt</span>
+          </div>
+          <div className="mt-5"><BarSeries data={data.leadSeries} /></div>
+        </Card>
+
+        <Card>
+          <h2 className="text-[16px] font-extrabold">Pipeline kompakt</h2>
+          <p className="text-[12px] text-steel">Leads und Aufträge ohne Wechsel in Reporting.</p>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <div>
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-steel">Leads</p>
+              <ul className="mt-2 space-y-2">
+                {data.leadPipeline.filter((row) => row.count > 0).map((row) => <li key={row.status} className="flex items-center justify-between gap-3 text-[12.5px]"><span className="truncate">{LEAD_STATUS_LABELS[row.status] ?? row.status}</span><strong>{row.count}</strong></li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-steel">Aufträge</p>
+              <ul className="mt-2 space-y-2">
+                {data.orderPipeline.filter((row) => row.count > 0).map((row) => <li key={row.status} className="flex items-center justify-between gap-3 text-[12.5px]"><span className="truncate">{ORDER_LABELS[row.status] ?? row.status}</span><strong>{row.count}</strong></li>)}
+              </ul>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {data.finance && (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Owner Finanzüberblick">
+          {[
+            ["Bestätigt", money(data.finance.confirmed)],
+            ["Ausgezahlt", money(data.finance.paid)],
+            ["Offen", money(data.finance.outstanding)],
+            ["Überfällig", money(data.finance.overdue)],
+          ].map(([label, value], index) => (
+            <Link key={label} href="/portal/finanzen" className={"rounded-[20px] border p-4 " + (index === 3 && data.finance!.overdue > 0 ? "border-amber-200 bg-amber-50" : "border-line bg-white")}>
+              <div className="flex items-center justify-between"><p className="text-[12px] font-semibold text-steel">{label}</p><Euro className="h-4 w-4 text-electric-deep" /></div>
+              <p className="mt-3 text-[22px] font-extrabold tracking-tight">{value}</p>
+            </Link>
+          ))}
+        </section>
+      )}
+
+      {user.role === "admin" && (
+        <Card className="p-0 sm:p-0">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+            <div className="flex items-center gap-2"><UsersRound className="h-4.5 w-4.5 text-electric-deep" /><div><h2 className="text-[16px] font-extrabold">Team Pulse</h2><p className="text-[11.5px] text-steel">Arbeitslast und Engpässe statt Bauchgefühl.</p></div></div>
+            <Link href="/portal/betrieb" className="text-[12px] font-bold text-electric-deep hover:underline">Team steuern</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-[12.5px]">
+              <thead><tr className="border-b border-line bg-paper/60 text-steel"><th className="px-5 py-3 font-semibold sm:px-6">Mitarbeiter</th><th className="px-4 py-3 font-semibold">Offene Leads</th><th className="px-4 py-3 font-semibold">Offene Tasks</th><th className="px-4 py-3 font-semibold">Überfällig</th><th className="px-4 py-3 font-semibold">Aufträge in Arbeit</th><th className="px-4 py-3 font-semibold">Aktiviert 30T</th></tr></thead>
+              <tbody>
+                {data.team.map((row) => (
+                  <tr key={row.employeeId} className="border-b border-line last:border-0 hover:bg-paper/70">
+                    <td className="px-5 py-3.5 sm:px-6"><p className="font-bold">{row.name}</p><p className="text-[10.5px] uppercase tracking-wider text-steel">{row.role === "admin" ? "Admin" : "Berater"}</p></td>
+                    <td className="px-4 py-3.5 font-semibold">{row.openLeads}</td>
+                    <td className="px-4 py-3.5 font-semibold">{row.openTasks}</td>
+                    <td className={"px-4 py-3.5 font-extrabold " + (row.overdueTasks > 0 ? "text-red-700" : "text-emerald-700")}>{row.overdueTasks}</td>
+                    <td className="px-4 py-3.5 font-semibold">{row.activeOrders}</td>
+                    <td className="px-4 py-3.5 font-semibold">{row.wins30}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
