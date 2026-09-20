@@ -25,7 +25,14 @@ const KIND_LABEL: Record<FocusItem["kind"], string> = {
 
 function recommendation(item: FocusItem) {
   if (item.kind === "lead") return "Lead-Akte öffnen, Kontaktstatus prüfen und einen konkreten nächsten Schritt mit Termin dokumentieren.";
-  if (item.kind === "order") return "Auftrag öffnen, Blockade oder Provider-Status prüfen und die nächste verantwortliche Aktion festhalten.";
+  if (item.kind === "order") {
+    const reason = item.subtitle.toLowerCase();
+    if (reason.includes("provider-referenz")) return "Auftrag öffnen, Provider-Referenz prüfen bzw. nachtragen und den nächsten Prüfzeitpunkt dokumentieren.";
+    if (reason.includes("provider-status")) return "Auftrag öffnen, Provider-Portal oder Ansprechpartner prüfen und den aktuellen Status nachvollziehbar dokumentieren.";
+    if (reason.includes("aktivierung")) return "Aktivierungsstand beim Provider prüfen und eine klare Wiedervorlage für den nächsten Eskalationsschritt setzen.";
+    if (reason.includes("unterlagen")) return "Fehlende Unterlagen identifizieren, Verantwortlichkeit klären und den Kunden oder Provider gezielt nachfassen.";
+    return "Auftrag öffnen, Blockade oder Provider-Status prüfen und die nächste verantwortliche Aktion festhalten.";
+  }
   if (item.kind === "customer") return "Customer-360-Akte öffnen, aktuellen Bedarf bzw. Bestandscheck durchführen und nächsten Review terminieren.";
   return "Bestehende Aufgabe öffnen, bearbeiten oder nachvollziehbar neu terminieren.";
 }
