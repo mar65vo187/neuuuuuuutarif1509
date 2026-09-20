@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { AlarmClock, CalendarCheck, Check, Flame, Loader2, PhoneCall, Save, Tags, UserPlus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
 import { STATUS_STYLES } from "./ui";
 
@@ -44,12 +44,6 @@ export function LeadActions({
   const [nextAction, setNextAction] = useState(nextActionInput);
   const [tagText, setTagText] = useState(tags.join(", "));
   const saving = useRef(false);
-
-  useEffect(() => setSlot(confirmedSlot ?? ""), [confirmedSlot]);
-  useEffect(() => setCrmPriority(priority), [priority]);
-  useEffect(() => setOutcome(contactOutcome), [contactOutcome]);
-  useEffect(() => setNextAction(nextActionInput), [nextActionInput]);
-  useEffect(() => setTagText(tags.join(", ")), [tags]);
 
   const patch = async (key: string, body: Record<string, unknown>) => {
     if (saving.current) return false;
