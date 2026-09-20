@@ -59,30 +59,39 @@ export async function getEmployeeRace(now = new Date()) {
         date_trunc('month', timezone('Europe/Berlin', now())) AT TIME ZONE 'Europe/Berlin' AS starts_at,
         (date_trunc('month', timezone('Europe/Berlin', now())) + interval '1 month') AT TIME ZONE 'Europe/Berlin' AS ends_at
     ),
-    lead_scores AS (
+    eligible_leads AS (
       SELECT
+        l.id,
         l.created_by_employee_id AS employee_id,
-        count(*) FILTER (
-          WHERE nullif(trim(coalesce(l.topic, '')), '') IS NOT NULL
-            AND (
-              nullif(trim(coalesce(l.email, '')), '') IS NOT NULL
-              OR nullif(trim(coalesce(l.phone, '')), '') IS NOT NULL
+        coalesce(l.meta->>'audience', 'b2c') AS audience,
+        row_number() OVER (
+          PARTITION BY
+            l.created_by_employee_id,
+            coalesce(
+              nullif(lower(trim(l.email)), ''),
+              nullif(regexp_replace(coalesce(l.phone, ''), '[^0-9+]', '', 'g'), ''),
+              'lead:' || l.id::text
             )
-        )::int AS qualified_leads,
-        count(*) FILTER (
-          WHERE nullif(trim(coalesce(l.topic, '')), '') IS NOT NULL
-            AND (
-              nullif(trim(coalesce(l.email, '')), '') IS NOT NULL
-              OR nullif(trim(coalesce(l.phone, '')), '') IS NOT NULL
-            )
-            AND coalesce(l.meta->>'audience', 'b2c') = 'b2b'
-        )::int AS b2b_leads
+          ORDER BY l.created_at, l.id
+        ) AS contact_rank
       FROM leads l
       CROSS JOIN bounds b
       WHERE l.created_at >= b.starts_at
         AND l.created_at < b.ends_at
         AND l.created_by_employee_id IS NOT NULL
-      GROUP BY l.created_by_employee_id
+        AND nullif(trim(coalesce(l.topic, '')), '') IS NOT NULL
+        AND (
+          nullif(trim(coalesce(l.email, '')), '') IS NOT NULL
+          OR nullif(trim(coalesce(l.phone, '')), '') IS NOT NULL
+        )
+    ),
+    lead_scores AS (
+      SELECT
+        employee_id,
+        count(*) FILTER (WHERE contact_rank = 1)::int AS qualified_leads,
+        count(*) FILTER (WHERE contact_rank = 1 AND audience = 'b2b')::int AS b2b_leads
+      FROM eligible_leads
+      GROUP BY employee_id
     ),
     close_scores AS (
       SELECT
