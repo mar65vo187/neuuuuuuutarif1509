@@ -52,6 +52,14 @@ export default async function AdvisorPage({ params, searchParams }: Props) {
     address: { "@type": "PostalAddress", addressLocality: a.city, addressCountry: "DE" },
     knowsAbout: normalizeTopics(a.topics),
     url: `${SITE.url}/berater/${a.slug}`,
+    ...(a.imageUrl ? {
+      image: {
+        "@type": "ImageObject",
+        url: new URL(a.imageUrl, SITE.url).href,
+        contentUrl: new URL(a.imageUrl, SITE.url).href,
+        caption: `${a.name} – TarifWerk Berater`,
+      },
+    } : {}),
   };
 
   return (
