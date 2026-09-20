@@ -53,6 +53,7 @@ export function PortalCommandPalette({
       ...(can("order.create") ? [{ id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness }] : []),
       { id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und offene Nacharbeit", href: "/portal/aufgaben", icon: ListTodo },
       { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
+      { id: "team-challenges", title: "Team-Challenges", subtitle: "Monats-Rennstrecke und Empfehlungsturm", href: "/portal/rennen", icon: Trophy },
       ...(can("report.sales", "report.finance") ? [{ id: "reporting", title: "Auswertungen öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart }] : []),
       ...(role === "admin" ? [{ id: "system", title: "Automationen & Audit öffnen", subtitle: "Automationen, Audit und Integrationen", href: "/portal/system", icon: Settings2 }] : []),
     ];
