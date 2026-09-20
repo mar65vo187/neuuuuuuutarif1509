@@ -35,7 +35,8 @@ export async function POST(request: NextRequest, context: Context) {
     let data: Buffer;
     try {
       data = await sharp(original, { limitInputPixels: 20_000_000, failOn: "warning", animated: false })
-        .rotate().resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+        .rotate()
+        .resize({ width: 1200, height: 1200, fit: "cover", position: "centre" })
         .webp({ quality: 88 }).toBuffer();
     } catch {
       throw new AdminRequestError("Das Bild ist beschädigt oder kann nicht gelesen werden.", 422);
