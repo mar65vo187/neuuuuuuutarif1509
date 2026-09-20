@@ -20,7 +20,7 @@ export default async function ReferralAdminPage() {
 
   return <div className="space-y-6">
     <header>
-      <p className="eyebrow text-electric-deep">Referral Operations</p>
+      <p className="eyebrow text-electric-deep">Empfehlungssteuerung</p>
       <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Empfehlungen & Prämien</h1>
       <p className="mt-1 text-[14px] text-steel">Prämien erst nach Prüfung freigeben. Veröffentlichte Maximalwerte können technisch nicht überschritten werden.</p>
     </header>
