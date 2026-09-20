@@ -359,6 +359,21 @@ export async function createCustomerReferral(input: {
     const note = input.note?.trim() || "";
     const sourceName = source.companyName || [source.firstName, source.lastName].filter(Boolean).join(" ") || source.customerNumber;
 
+    if (email || phone) {
+      const duplicateConditions = [];
+      if (email) duplicateConditions.push(sql`lower(${leads.email}) = ${email}`);
+      if (phone) duplicateConditions.push(eq(leads.phone, phone));
+      const [duplicate] = await tx.select({ id: customerReferrals.id })
+        .from(customerReferrals)
+        .innerJoin(leads, eq(customerReferrals.referredLeadId, leads.id))
+        .where(and(
+          eq(customerReferrals.sourceCustomerId, source.id),
+          or(...duplicateConditions)!,
+        ))
+        .limit(1);
+      if (duplicate) throw new Error("Diese Person wurde von diesem Kunden bereits als Empfehlung erfasst.");
+    }
+
     const [lead] = await tx.insert(leads).values({
       type: "beratung",
       status: "neu",
