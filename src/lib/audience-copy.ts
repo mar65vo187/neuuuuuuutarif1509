@@ -307,6 +307,51 @@ export const SERVICE_AUDIENCE_COPY: Record<AudienceMode, Record<string, string>>
   },
 };
 
+const BUSINESS_SERVICE_FOR_WHOM: Record<string, string[]> = {
+  internet: [
+    "Unternehmen mit mehreren Standorten oder gewachsenem Kommunikationsbedarf",
+    "Teams mit Homeoffice-, Mobilfunk- oder Glasfaserbedarf",
+    "Betriebe mit auslaufenden oder unübersichtlichen Verträgen",
+  ],
+  energie: [
+    "Unternehmen mit höherem Strom- oder Gasverbrauch",
+    "Betriebe mit mehreren Standorten",
+    "Unternehmen, die Preisstruktur und Laufzeiten prüfen möchten",
+  ],
+  versicherungen: [
+    "Selbstständige und Unternehmen",
+    "Betriebe mit gewachsenen Policen",
+    "Unternehmen mit veränderten Risiken, Teams oder Standorten",
+  ],
+  sicherheit: [
+    "Unternehmen mit Zutritts-, Kamera- oder Objektsicherheitsbedarf",
+    "Betriebe mit mehreren Zugängen oder Standorten",
+  ],
+  klima: [
+    "Büros, Praxen und Gewerbeflächen",
+    "Unternehmen mit Kühl- oder Klimatisierungsbedarf",
+  ],
+  solar: [
+    "Unternehmen mit geeigneten Dach- oder Freiflächen",
+    "Betriebe mit höherem Stromverbrauch",
+    "Eigentümer gewerblich genutzter Immobilien",
+  ],
+  edelmetalle: [
+    "Unternehmen, die Sachwerte als möglichen Baustein prüfen",
+    "Selbstständige mit langfristigem Anlagehorizont",
+  ],
+  immobilien: [
+    "Unternehmen mit Flächen- oder Investitionsbedarf",
+    "Kapitalanleger und Bestandshalter",
+    "Eigentümer mit Verkaufs- oder Finanzierungsfragen",
+  ],
+};
+
+export function serviceForWhomForAudience(serviceKey: string, items: string[], audience: AudienceMode) {
+  if (audience === "b2b") return BUSINESS_SERVICE_FOR_WHOM[serviceKey] ?? items;
+  return items;
+}
+
 const BUSINESS_SERVICE_QUESTION_OVERRIDES: Record<string, string> = {
   "Prüft ihr die Verfügbarkeit für mich?": "Prüfen Sie die Verfügbarkeit für uns?",
   "Verkauft ihr mir Verträge, die ich nicht brauche?": "Vermitteln Sie auch Verträge, die wir nicht brauchen?",
