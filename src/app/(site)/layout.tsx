@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { QuickContact } from "@/components/site/QuickContact";
-import { AudienceCookieSync } from "@/components/site/AudienceCookieSync";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
@@ -79,18 +79,18 @@ const websiteJsonLd = {
   publisher: { "@id": `${SITE.url}/#organization` },
 };
 
-export default function SiteLayout({ children }: { children: ReactNode }) {
+export default async function SiteLayout({ children }: { children: ReactNode }) {
+  const audience = await resolveSiteAudience();
   return (
     <>
       <JsonLd data={organizationJsonLd} />
       <JsonLd data={websiteJsonLd} />
-      <AudienceCookieSync />
-      <Header />
+      <Header initialAudience={audience} />
       <main id="main" className="pb-[68px] md:pb-0">
         {children}
       </main>
-      <Footer />
-      <QuickContact />
+      <Footer audience={audience} />
+      <QuickContact audience={audience} />
     </>
   );
 }
