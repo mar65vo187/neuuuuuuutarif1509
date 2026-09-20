@@ -20,7 +20,12 @@ function harness(path, initial = []) {
       LEAD_STATUS_LABELS: { neu: "Neu" },
       LEAD_PRIORITY_LABELS: { normal: "Normal" },
       LEAD_CONTACT_OUTCOME_LABELS: { open: "Noch nicht angerufen" },
-    }, "./ui": { STATUS_STYLES: { neu: "" } },
+    },
+    "@/lib/call-intelligence": {
+      CALL_REACHED_PERSON_LABELS: { customer: "Kunde / Lead selbst" },
+      CALL_REACTION_LABELS: { neutral: "Neutral / offen" },
+    },
+    "./ui": { STATUS_STYLES: { neu: "" } },
   };
   const loaded = { exports: {} };
   const source = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
