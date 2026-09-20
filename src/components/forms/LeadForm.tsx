@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { CHANNELS, LOCATION_OPTIONS, SERVICES, SITE, SITUATIONS, TIME_SLOTS, whatsappLink, normalizeTopic } from "@/lib/content";
+import { withAudience, type AudienceMode } from "@/lib/audience";
 
 type Props = {
   type?: "beratung" | "termin" | "tarifcheck" | "kontakt";
@@ -18,7 +19,7 @@ type Props = {
   source?: string;
   tone?: "light" | "dark";
   title?: string;
-  audience?: "b2c" | "b2b";
+  audience?: AudienceMode;
 };
 
 export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorName, defaultTopic = "", defaultSituation = "", defaultRegion = "", source, tone = "light", title, audience = "b2c" }: Props) {
@@ -138,7 +139,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
           <Button href={whatsappLink(`Hallo TarifWerk, ich habe gerade Anfrage #${done} gestellt.`)} target="_blank" variant="whatsapp" icon={<MessageCircle />}>
             Direkt per WhatsApp
           </Button>
-          <Button href="/" variant={dark ? "secondary" : "dark"} magnetic={false}>
+          <Button href={withAudience("/", audience)} variant={dark ? "secondary" : "dark"} magnetic={false}>
             Zur Startseite
           </Button>
         </div>
@@ -149,13 +150,13 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
   const steps = business ? ["Ihr Thema", "Ihr Kontakt"] : ["Dein Thema", "Dein Kontakt"];
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={submit} noValidate aria-describedby={error ? "lead-form-error" : undefined}>
       {title && <h2 className={`text-[22px] font-extrabold ${dark ? "text-white" : "text-ink"}`}>{title}</h2>}
 
       {/* Fortschritt */}
       <ol className={`${title ? "mt-5" : ""} flex items-center gap-3 text-[12.5px] font-semibold`}>
         {steps.map((s, i) => (
-          <li key={s} className="flex items-center gap-3">
+          <li key={s} className="flex items-center gap-3" aria-current={i === step ? "step" : undefined}>
             <span
               className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${
                 i <= step ? "bg-electric text-white" : dark ? "bg-white/10 text-silver" : "bg-paper-2 text-steel"
@@ -172,7 +173,8 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       <div className="relative mt-7 min-h-[320px]">
         {step === 0 ? (
             <div key="s0" className="hero-enter">
-              <p className={label}>Worum geht es?</p>
+              <fieldset>
+                <legend className={label}>Worum geht es?</legend>
               <div className="flex flex-wrap gap-2">
                 {SERVICES.map((s) => (
                   <button key={s.key} type="button" onClick={() => set("topic", s.name)} aria-pressed={form.topic === s.name} className={chip(form.topic === s.name)}>
@@ -180,8 +182,10 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                   </button>
                 ))}
               </div>
+              </fieldset>
 
-              <p className={`${label} mt-7`}>{business ? "Wo stehen Sie gerade?" : "Wo stehst du gerade?"}</p>
+              <fieldset className="mt-7">
+                <legend className={label}>{business ? "Wo stehen Sie gerade?" : "Wo stehst du gerade?"}</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {SITUATIONS.map((s) => {
                   const on = form.situation === s.value;
@@ -204,9 +208,10 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                   );
                 })}
               </div>
+              </fieldset>
 
-              <p className={`${label} mt-7`}>{business ? "Unternehmensstandort / Region (optional)" : "Region (optional)"}</p>
-              <input type="search" value={form.region} onChange={(e) => set("region", e.target.value)} list="anfrage-standorte" className={`${field} appearance-none`} aria-label={business ? "Unternehmensstandort oder Region wählen" : "Region wählen"} placeholder={business ? "Standort oder Region suchen" : "Stadt oder Region suchen"} autoComplete="address-level2" maxLength={80} />
+              <label htmlFor="lf-region" className={`${label} mt-7`}>{business ? "Unternehmensstandort / Region (optional)" : "Region (optional)"}</label>
+              <input id="lf-region" type="search" value={form.region} onChange={(e) => set("region", e.target.value)} list="anfrage-standorte" className={`${field} appearance-none`} aria-label={business ? "Unternehmensstandort oder Region wählen" : "Region wählen"} placeholder={business ? "Standort oder Region suchen" : "Stadt oder Region suchen"} autoComplete="address-level2" maxLength={80} />
               <datalist id="anfrage-standorte">
                 {LOCATION_OPTIONS.map((r) => <option key={r} value={r} />)}
               </datalist>
@@ -237,7 +242,8 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 </div>
               </div>
 
-              <p className={`${label} mt-5`}>{business ? "Wie möchten Sie sprechen?" : "Wie möchtest du sprechen?"}</p>
+              <fieldset className="mt-5">
+                <legend className={label}>{business ? "Wie möchten Sie sprechen?" : "Wie möchtest du sprechen?"}</legend>
               <div className="flex flex-wrap gap-2">
                 {CHANNELS.map((c) => (
                   <button key={c.value} type="button" onClick={() => set("preferredChannel", c.value)} aria-pressed={form.preferredChannel === c.value} className={chip(form.preferredChannel === c.value)}>
@@ -245,6 +251,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                   </button>
                 ))}
               </div>
+              </fieldset>
 
               {referralCode && (
                 <label className={`mt-5 flex items-start gap-3 text-[13.5px] leading-snug ${muted}`}>
@@ -267,7 +274,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 <input type="checkbox" checked={form.consent} onChange={(e) => set("consent", e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-ink/20 accent-electric" />
                 <span>
                   Ich bin einverstanden, dass TarifWerk meine Angaben zur Bearbeitung meiner Anfrage verarbeitet.{" "}
-                  <Link href="/datenschutz" className="underline underline-offset-2 hover:text-electric">Datenschutz</Link>
+                  <Link href={withAudience("/datenschutz", audience)} className="underline underline-offset-2 hover:text-electric">Datenschutz</Link>
                 </span>
               </label>
             </div>
@@ -275,7 +282,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       </div>
 
       {error && (
-        <p role="alert" className="hero-enter mt-4 rounded-xl border border-red-300/40 bg-red-500/10 px-4 py-3 text-[14px] text-red-500">
+        <p id="lead-form-error" role="alert" className="hero-enter mt-4 rounded-xl border border-red-300/40 bg-red-500/10 px-4 py-3 text-[14px] text-red-500">
           {error}
         </p>
       )}
