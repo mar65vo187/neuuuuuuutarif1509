@@ -63,10 +63,24 @@ All modules share the same principles:
 | 8 · BI | implemented | canonical KPI catalog, metric lineage, data-quality coverage and historical run-rate inputs |
 | 9 · Marketing | implemented | technical SEO, first-party attribution, campaign landing flows, spend/CPL/CPA cockpit |
 | 10 · Personalization | implemented | audience journeys plus transparent session-only intent continuation |
-| Enterprise Hardening | active | full CI/build/migration/recovery gates are present; continue load, visual and production-environment verification as infrastructure allows |
+| Enterprise Hardening | active | CI now includes build, migrations, backup/restore smoke, production-runtime HTTP smoke and bounded concurrency smoke; remaining gates require live production/browser/provider access |
 
 "Implemented" means the production-grade baseline exists in the repository and is covered by automated quality gates. It does not mean a business outcome, ranking, revenue level or uptime percentage is guaranteed.
 
 ## Architecture rule
 
 Do **not** introduce microservices merely to look enterprise. Split services only when independent scaling, security isolation, deployment ownership or reliability boundaries justify the operational cost.
+
+
+## Remaining production-only verification
+
+These items cannot be truthfully completed from repository code alone:
+
+- live production deployment and readiness on the final hosting account;
+- real browser visual regression across production viewports and devices;
+- provider-side backup/PITR verification against the actual production PostgreSQL service;
+- Google Search Console ownership, sitemap submission and index request;
+- DNS/domain verification and final canonical inspection on the live domain;
+- production environment values for BUSINESS_ADDRESS, CRON_SECRET and optional AI/search verification settings.
+
+The repository blocks or exposes readiness for configuration it can verify. External provider/account state must still be confirmed on the real production environment.
