@@ -29,6 +29,20 @@ export const leadSchema = z.object({
   }
 });
 
+export const portalLeadCreateSchema = z.intersection(
+  leadSchema,
+  z.object({
+    status: z.enum(["neu", "kontaktiert", "termin_bestaetigt", "in_beratung", "abgeschlossen", "verloren"]).default("neu"),
+    priority: z.enum(["low", "normal", "high", "hot"]).default("normal"),
+    contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).default("open"),
+    nextActionAt: z.string().datetime().nullable().optional(),
+    tags: z.array(trimmed(40)).max(12).default([]),
+    confirmedSlot: trimmed(160).optional().or(z.literal("")),
+    productId: z.number().int().positive().optional(),
+    productRelation: z.enum(["interest", "existing", "sold"]).optional(),
+  }),
+);
+
 export type LeadInput = z.infer<typeof leadSchema>;
 
 export const loginSchema = z.object({
