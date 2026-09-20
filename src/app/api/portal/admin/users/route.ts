@@ -5,6 +5,7 @@ import { advisors, employees } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { createAccountSchema } from "@/lib/admin-validation";
 import { accountSelection, adminFailure, lockAdminMutation, authorizeAdmin, listAdminAccounts, readAdminJson } from "@/lib/admin-server";
+import { writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,6 +35,13 @@ export async function POST(request: NextRequest) {
       }
       const [created] = await tx.insert(employees).values({ ...account, passwordHash, advisorId }).returning(accountSelection);
       await tx.execute(sql`insert into employee_compensation_profiles (employee_id) values (${created.id}) on conflict (employee_id) do nothing`);
+      await writeAudit(tx, admin.id, "employee.created", "employee", created.id, undefined, {
+        name: created.name,
+        email: created.email,
+        role: created.role,
+        active: created.active,
+        advisorId: created.advisorId,
+      });
       return created;
     });
     return NextResponse.json({ ok: true, user }, { status: 201 });
