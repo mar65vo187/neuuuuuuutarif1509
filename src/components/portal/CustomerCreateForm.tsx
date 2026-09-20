@@ -2,7 +2,8 @@
 
 import { Info, Loader2, Network, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
+import { DuplicateIdentityCheck } from "@/components/portal/DuplicateIdentityCheck";
 
 type ReferrerOption = { id: number; label: string; customerNumber: string };
 
@@ -12,6 +13,14 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<"private" | "business">("private");
+  const [identity, setIdentity] = useState({ firstName: "", lastName: "", companyName: "", email: "", phone: "" });
+  const duplicateName = useMemo(
+    () => type === "business"
+      ? identity.companyName
+      : [identity.firstName, identity.lastName].filter(Boolean).join(" "),
+    [identity.companyName, identity.firstName, identity.lastName, type],
+  );
+  const setIdentityField = (key: keyof typeof identity, value: string) => setIdentity((current) => ({ ...current, [key]: value }));
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,11 +78,11 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
               <option value="business">Geschäftskunde</option>
             </select>
           </label>
-          {type === "business" && <label className="label">Firmenname<input name="companyName" required maxLength={180} className="field" /></label>}
-          <label className="label">Vorname<input name="firstName" required={type === "private"} maxLength={120} className="field" /></label>
-          <label className="label">Nachname<input name="lastName" maxLength={120} className="field" /></label>
-          <label className="label">E-Mail<input name="email" type="email" maxLength={200} className="field" /></label>
-          <label className="label">Telefon<input name="phone" type="tel" maxLength={40} className="field" /></label>
+          {type === "business" && <label className="label">Firmenname<input name="companyName" required maxLength={180} className="field" value={identity.companyName} onChange={(event) => setIdentityField("companyName", event.target.value)} /></label>}
+          <label className="label">Vorname<input name="firstName" required={type === "private"} maxLength={120} className="field" value={identity.firstName} onChange={(event) => setIdentityField("firstName", event.target.value)} /></label>
+          <label className="label">Nachname<input name="lastName" maxLength={120} className="field" value={identity.lastName} onChange={(event) => setIdentityField("lastName", event.target.value)} /></label>
+          <label className="label">E-Mail<input name="email" type="email" maxLength={200} className="field" value={identity.email} onChange={(event) => setIdentityField("email", event.target.value)} /></label>
+          <label className="label">Telefon<input name="phone" type="tel" maxLength={40} className="field" value={identity.phone} onChange={(event) => setIdentityField("phone", event.target.value)} /></label>
           <label className="label">PLZ<input name="postalCode" maxLength={20} className="field" /></label>
           <label className="label">Ort<input name="city" maxLength={120} className="field" /></label>
           <label className="label">Bevorzugter Kanal
@@ -84,6 +93,9 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
               <option value="email">E-Mail</option>
             </select>
           </label>
+        </div>
+        <div className="mt-4">
+          <DuplicateIdentityCheck name={duplicateName} email={identity.email} phone={identity.phone} />
         </div>
       </section>
 
