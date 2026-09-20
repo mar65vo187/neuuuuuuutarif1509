@@ -60,11 +60,11 @@ export function LeadBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?
       <ul className="divide-y divide-line">
         {rows.map((lead) => (
           <li key={lead.id} className={"grid grid-cols-[auto_1fr] items-stretch " + (selectedSet.has(lead.id) ? "bg-electric/[0.035]" : "")}>
-            <label className="grid w-12 place-items-center border-r border-line/70 sm:w-14"><input type="checkbox" checked={selectedSet.has(lead.id)} onChange={() => toggle(lead.id)} className="h-4 w-4 rounded border-line" aria-label={lead.name + " auswählen"} /></label>
+            <label className="grid w-12 place-items-center border-r border-line/70 sm:w-14"><input type="checkbox" checked={selectedSet.has(lead.id)} onChange={() => toggle(lead.id)} className="h-4 w-4 rounded border-line" aria-label={(lead.name || `Lead #${lead.id}`) + " auswählen"} /></label>
             <Link href={"/portal/leads/" + lead.id} className="grid gap-3 px-4 py-4 transition-colors hover:bg-paper sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[15.5px] font-bold">{lead.name}</p>
+                  <p className="text-[15.5px] font-bold">{lead.name || `Lead #${lead.id}`}</p>
                   <span className="text-[12px] text-steel">#{lead.id}</span>
                   {lead.status === "neu" && <span className="h-2 w-2 rounded-full bg-electric" aria-label="neu" />}
                   <span className={`chip px-2 py-0.5 text-[10.5px] ${PRIORITY_STYLES[lead.priority] ?? PRIORITY_STYLES.normal}`}>{LEAD_PRIORITY_LABELS[lead.priority] ?? lead.priority}</span>
