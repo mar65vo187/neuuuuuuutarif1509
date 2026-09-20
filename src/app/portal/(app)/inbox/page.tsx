@@ -18,7 +18,7 @@ export default async function InboxPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow text-electric-deep">Arbeits-Inbox</p>
+          <p className="eyebrow text-electric-deep">Arbeitsmeldungen</p>
           <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Benachrichtigungen</h1>
           <p className="mt-1 text-[14px] text-steel">{unread.length} ungelesen · {rows.length} in dieser Ansicht</p>
         </div>
@@ -28,7 +28,7 @@ export default async function InboxPage() {
       <Card className="p-0 sm:p-0">
         {rows.length === 0 ? (
           <div className="grid min-h-64 place-items-center px-6 text-center">
-            <div><Bell className="mx-auto h-8 w-8 text-electric-deep" /><p className="mt-3 font-bold">Deine Inbox ist leer.</p><p className="mt-1 max-w-md text-[12.5px] text-steel">Automationen können hier persönliche Hinweise ablegen, ohne dass operative Informationen in Chats verloren gehen.</p></div>
+            <div><Bell className="mx-auto h-8 w-8 text-electric-deep" /><p className="mt-3 font-bold">Keine neuen Meldungen.</p><p className="mt-1 max-w-md text-[12.5px] text-steel">Automationen können hier persönliche Hinweise ablegen, ohne dass operative Informationen in Chats verloren gehen.</p></div>
           </div>
         ) : (
           <ul className="divide-y divide-line">
