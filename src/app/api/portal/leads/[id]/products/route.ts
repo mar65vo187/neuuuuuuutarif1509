@@ -8,6 +8,7 @@ import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { emitEvent, writeAudit } from "@/lib/enterprise";
+import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,11 @@ async function context(request: NextRequest, ctx: { params: Promise<{ id: string
   if (!isSameOriginRequest(request)) return { error: NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 }) };
   const user = await getCurrentUser().catch(() => null);
   if (!user) return { error: NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 }) };
+  try { await requirePermission(user, PORTAL_PERMISSION.LEAD_EDIT); }
+  catch (error) {
+    const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: unknown }).status) : 403;
+    return { error: NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Keine Berechtigung." }, { status: Number.isFinite(status) ? status : 403 }) };
+  }
   const { id: raw } = await ctx.params;
   const leadId = Number(raw);
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(leadId) || leadId <= 0 || leadId > 2147483647) {
