@@ -113,6 +113,33 @@ export async function getOperationsHubData(user: SessionUser) {
       .limit(300),
   ]);
 
+  const documentHistoryRows = admin
+    ? await db.select({
+        id: internalDocuments.id,
+        category: internalDocuments.category,
+        title: internalDocuments.title,
+        fileName: internalDocuments.fileName,
+        contentType: internalDocuments.contentType,
+        digest: internalDocuments.digest,
+        sizeBytes: internalDocuments.sizeBytes,
+        version: internalDocuments.version,
+        productId: internalDocuments.productId,
+        productName: products.name,
+        providerId: internalDocuments.providerId,
+        providerName: providers.name,
+        visibility: internalDocuments.visibility,
+        createdAt: internalDocuments.createdAt,
+      }).from(internalDocuments)
+        .leftJoin(products, eq(internalDocuments.productId, products.id))
+        .leftJoin(providers, eq(internalDocuments.providerId, providers.id))
+        .where(and(
+          eq(internalDocuments.active, false),
+          owner ? sql`true` : inArray(internalDocuments.visibility, ["team", "admin"]),
+        ))
+        .orderBy(desc(internalDocuments.createdAt))
+        .limit(150)
+    : [];
+
   const visibleIncentives = admin
     ? incentiveRows
     : incentiveRows.filter((campaign) => {
@@ -293,6 +320,7 @@ export async function getOperationsHubData(user: SessionUser) {
     completions: completionRows,
     benefits: benefitRows,
     documents: documentRows,
+    documentHistory: documentHistoryRows,
     employees: employeeRows,
     products: productRows,
     providers: providerRows,
