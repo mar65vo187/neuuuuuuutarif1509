@@ -180,6 +180,12 @@
       ]
     },
     {
+      "routePattern": "/api/portal/ai",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
       "routePattern": "/api/portal/catalog/updates/[id]/read",
       "methods": [
         "POST"
