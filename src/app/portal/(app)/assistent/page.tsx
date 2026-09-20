@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, ArrowRight, BrainCircuit, CheckCircle2, Clock3, FileWarning, PackageSearch, ShieldCheck, Sparkles, Target, UsersRound } from "lucide-react";
+import { AlertTriangle, ArrowRight, BrainCircuit, CheckCircle2, Clock3, FileWarning, PackageSearch , ShieldCheck, Target, UsersRound } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getCommandCenterData } from "@/lib/portal-command-center";
 import { Card } from "@/components/portal/ui";
