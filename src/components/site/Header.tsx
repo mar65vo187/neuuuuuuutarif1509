@@ -95,7 +95,11 @@ export function Header() {
                 return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
               })}
             </nav>
-            <div className="hidden items-center gap-2 lg:flex">
+            <div className="hidden items-center gap-3 lg:flex">
+              <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1" aria-label="Zielgruppe wählen">
+                <Link href="/?audience=b2c" className="rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-silver transition hover:bg-white/8 hover:text-white">Privat</Link>
+                <Link href="/?audience=b2b" className="rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-silver transition hover:bg-white/8 hover:text-white">Business</Link>
+              </div>
               <Button href="/anfrage" size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
             </div>
             <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls="mobile-menu" aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
@@ -110,7 +114,8 @@ export function Header() {
               return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" aria-hidden="true" /></Link>;
             })}
           </nav>
-          <div className="mt-6 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={`/leistungen/${service.slug}`} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
+          <div className="mt-5 inline-flex w-fit rounded-full border border-white/10 bg-white/[0.04] p-1"><Link href="/?audience=b2c" className="rounded-full px-4 py-2 text-[12px] font-semibold text-white hover:bg-white/8">Privatkunden</Link><Link href="/?audience=b2b" className="rounded-full px-4 py-2 text-[12px] font-semibold text-white hover:bg-white/8">Geschäftskunden</Link></div>
+          <div className="mt-5 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={`/leistungen/${service.slug}`} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
           <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
             <Button href="/anfrage" size="lg" iconRight={<ArrowRight />} className="w-full">Beratung starten</Button>
             <Button href={SITE.phoneHref} variant="secondary" icon={<Phone />} className="w-full">Anrufen</Button>
