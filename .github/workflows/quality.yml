@@ -44,6 +44,16 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Generate release manifest
+        run: npm run release:manifest
+
+      - name: Upload release manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest-${{ github.sha }}
+          path: .tmp/release-manifest.json
+          if-no-files-found: error
+          retention-days: 30
 
   migration:
     runs-on: ubuntu-24.04
@@ -86,3 +96,6 @@ jobs:
 
       - name: Verify product operations schema
         run: node scripts/verify-product-ops-schema.mjs
+
+      - name: PostgreSQL backup and restore smoke
+        run: bash scripts/ci-recovery-smoke.sh
