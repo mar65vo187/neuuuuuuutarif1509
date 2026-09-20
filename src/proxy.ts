@@ -3,6 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { contentSecurityPolicy } from "@/lib/security";
 
 export function proxy(request: NextRequest) {
+  if (request.nextUrl.hostname === "tarifwerk.eu") {
+    const canonical = request.nextUrl.clone();
+    canonical.protocol = "https:";
+    canonical.hostname = "www.tarifwerk.eu";
+    canonical.port = "";
+    return NextResponse.redirect(canonical, 308);
+  }
+
   const headers = new Headers(request.headers);
   // Always replace incoming values; callers cannot choose nonces or portal destinations.
   const nonce = randomBytes(18).toString("base64");
