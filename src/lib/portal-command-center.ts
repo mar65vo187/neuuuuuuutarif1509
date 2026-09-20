@@ -8,6 +8,7 @@ import { leadAccessCondition } from "@/lib/queries";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
+const MOMENTUM_HISTORY_DAYS = 120;
 
 const orderAccess = (user: SessionUser) => user.role === "admin" ? sql`true` : eq(orders.advisorEmployeeId, user.id);
 const taskAccess = (user: SessionUser) => user.role === "admin" ? sql`true` : eq(tasks.assignedToEmployeeId, user.id);
@@ -66,6 +67,10 @@ export type CommandCenterData = {
     attentionOrders: number;
     customers: number;
     wins30: number;
+    hotLeads: number;
+    dueLeadFollowUpsToday: number;
+    leadsMissingNextAction: number;
+    leadsWithoutProduct: number;
   };
   leadPipeline: Array<{ status: string; count: number }>;
   orderPipeline: Array<{ status: string; count: number }>;
@@ -113,6 +118,10 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       new24: sql<number>`count(*) filter (where ${leads.createdAt} >= ${ago24})::int`,
       untouched24: sql<number>`count(*) filter (where ${leads.status} = 'neu' and ${leads.createdAt} < ${ago24})::int`,
       wins30: sql<number>`count(*) filter (where ${leads.status} = 'abgeschlossen' and ${leads.updatedAt} >= ${ago30d})::int`,
+      hotLeads: sql<number>`count(*) filter (where ${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+      dueToday: sql<number>`count(*) filter (where ${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+      missingNext: sql<number>`count(*) filter (where ${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren'))::int`,
+      withoutProduct: sql<number>`count(*) filter (where not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}) and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
     }).from(leads).where(leadAccess),
     db.select({
       due24: sql<number>`count(*) filter (where ${tasks.status} in ('open','in_progress') and ${tasks.dueAt} is not null and ${tasks.dueAt} >= ${now} and ${tasks.dueAt} <= ${next24})::int`,
@@ -169,7 +178,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     }).from(leads)
       .where(and(
         eq(leads.createdByEmployeeId, user.id),
-        gte(leads.createdAt, new Date(now.getTime() - 45 * DAY)),
+        gte(leads.createdAt, new Date(now.getTime() - MOMENTUM_HISTORY_DAYS * DAY)),
       ))
       .groupBy(sql`to_char(timezone('Europe/Berlin', ${leads.createdAt}), 'YYYY-MM-DD')`)
       .orderBy(sql`to_char(timezone('Europe/Berlin', ${leads.createdAt}), 'YYYY-MM-DD')`),
@@ -205,7 +214,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
   let currentStreak = 0;
   const streakStartOffset = today > 0 ? 0 : yesterday > 0 ? -1 : null;
   if (streakStartOffset !== null) {
-    for (let offset = streakStartOffset; offset >= -44; offset--) {
+    for (let offset = streakStartOffset; offset >= -(MOMENTUM_HISTORY_DAYS - 1); offset--) {
       if ((momentumByDay.get(keyForOffset(offset)) ?? 0) <= 0) break;
       currentStreak += 1;
     }
@@ -356,6 +365,10 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       attentionOrders: orderMetricsRows[0]?.attention ?? 0,
       customers: customerRows[0]?.count ?? 0,
       wins30: leadMetricsRows[0]?.wins30 ?? 0,
+      hotLeads: leadMetricsRows[0]?.hotLeads ?? 0,
+      dueLeadFollowUpsToday: leadMetricsRows[0]?.dueToday ?? 0,
+      leadsMissingNextAction: leadMetricsRows[0]?.missingNext ?? 0,
+      leadsWithoutProduct: leadMetricsRows[0]?.withoutProduct ?? 0,
     },
     leadPipeline: leadPipeline.map((row) => ({ status: row.status, count: row.count })),
     orderPipeline: orderPipeline.map((row) => ({ status: row.status, count: row.count })),
