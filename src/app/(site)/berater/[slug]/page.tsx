@@ -110,7 +110,7 @@ export default async function AdvisorPage({ params, searchParams }: Props) {
                   {wa && (
                     <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-2xl bg-[#25D366] px-5 py-4 font-semibold text-ink-900 transition-transform hover:scale-[1.01]">
                       <span className="inline-flex items-center gap-3"><MessageCircle className="h-5 w-5" /> WhatsApp schreiben</span>
-                      <span className="text-[12.5px] font-medium opacity-80">meist schnellste Antwort</span>
+                      <span className="text-[12.5px] font-medium opacity-80">direkter Chat</span>
                     </a>
                   )}
                   {a.phone && (
