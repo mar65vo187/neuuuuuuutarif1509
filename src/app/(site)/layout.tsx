@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { QuickContact } from "@/components/site/QuickContact";
+import { AudienceCookieSync } from "@/components/site/AudienceCookieSync";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
 
 const organizationJsonLd = {
@@ -83,6 +84,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     <>
       <JsonLd data={organizationJsonLd} />
       <JsonLd data={websiteJsonLd} />
+      <AudienceCookieSync />
       <Header />
       <main id="main" className="pb-[68px] md:pb-0">
         {children}
