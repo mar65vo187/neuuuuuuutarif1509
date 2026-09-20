@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowRight, Menu, Phone, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { SITE, SERVICES } from "@/lib/content";
 import { withAudience, type AudienceMode } from "@/lib/audience";
+import { getCampaignLanding } from "@/lib/campaigns";
 
 const NAV = [
   { href: "/leistungen", label: "Leistungen" },
@@ -24,6 +25,8 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const audienceParam = searchParams.get("audience");
 
   const switchAudience = (mode: AudienceMode) => {
     setAudience(mode);
@@ -31,6 +34,18 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
     const url = new URL(window.location.href);
     window.location.assign(withAudience(url.pathname + url.search + url.hash, mode));
   };
+
+  useEffect(() => {
+    const campaignSlug = pathname.startsWith("/kampagne/") ? pathname.split("/")[2] ?? "" : "";
+    const campaignAudience = campaignSlug ? getCampaignLanding(campaignSlug)?.audience : undefined;
+    const requested = audienceParam === "b2b" || audienceParam === "b2c" ? audienceParam : campaignAudience;
+    if (!requested) return;
+    const frame = requestAnimationFrame(() => {
+      setAudience((current) => current === requested ? current : requested);
+      document.cookie = "tarifwerk-audience=" + requested + "; Path=/; Max-Age=2592000; SameSite=Lax";
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [audienceParam, pathname]);
 
   useEffect(() => {
     let frame = 0;
