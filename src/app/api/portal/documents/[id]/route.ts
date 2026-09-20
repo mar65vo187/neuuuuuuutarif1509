@@ -16,7 +16,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
   const [document] = await db.select().from(internalDocuments)
     .where(eq(internalDocuments.id, id)).limit(1);
-  if (!document || !document.active) return NextResponse.json({ ok: false, error: "Dokument nicht gefunden." }, { status: 404 });
+  if (!document) return NextResponse.json({ ok: false, error: "Dokument nicht gefunden." }, { status: 404 });
+  if (!document.active && user.role !== "admin") return NextResponse.json({ ok: false, error: "Dokument nicht gefunden." }, { status: 404 });
   if (document.visibility === "admin" && user.role !== "admin") return NextResponse.json({ ok: false, error: "Kein Zugriff." }, { status: 403 });
   if (document.visibility === "owner" && !isCompensationOwner(user)) return NextResponse.json({ ok: false, error: "Kein Zugriff." }, { status: 403 });
 
