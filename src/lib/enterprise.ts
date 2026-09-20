@@ -33,6 +33,7 @@ import { isCompensationOwner } from "@/lib/compensation";
 import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 import { leadAccessCondition } from "@/lib/queries";
 import { getCustomerIntelligence } from "@/lib/customer-intelligence";
+import { percentage } from "@/lib/bi-metrics";
 import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -1411,6 +1412,10 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     expiringTrainingRows,
     attributionSourceRows,
     attributionCampaignRows,
+    leadCoverageRows,
+    providerReferenceRows,
+    customerOwnerRows,
+    taskCoverageRows,
   ] = await Promise.all([
     db.select({
       status: orders.status,
@@ -1512,6 +1517,37 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       .groupBy(sql`coalesce(nullif(${leads.meta}->>'utmCampaign',''), case when ${leads.source} like 'campaign:%' or ${leads.source} like 'kampagne:%' then ${leads.source} else null end, 'Ohne Kampagne')`)
       .orderBy(desc(sql`count(*)`))
       .limit(20),
+    db.select({
+      total: sql<number>`count(*) filter (where ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+      nextActionCovered: sql<number>`count(*) filter (
+        where ${leads.status} not in ('abgeschlossen','verloren')
+          and (${leads.nextActionAt} is not null or ${leads.status} = 'termin_bestaetigt')
+      )::int`,
+      productCovered: sql<number>`count(*) filter (
+        where ${leads.status} not in ('abgeschlossen','verloren')
+          and exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id})
+      )::int`,
+    }).from(leads).where(leadScope),
+    db.select({
+      total: sql<number>`count(*) filter (
+        where ${orders.status} in ('submitted','provider_review','accepted','activation_pending','active')
+      )::int`,
+      covered: sql<number>`count(*) filter (
+        where ${orders.status} in ('submitted','provider_review','accepted','activation_pending','active')
+          and nullif(trim(${orders.externalOrderId}), '') is not null
+      )::int`,
+    }).from(orders).where(orderScope),
+    db.select({
+      total: sql<number>`count(*)::int`,
+      covered: sql<number>`count(*) filter (where ${customers.ownerEmployeeId} is not null)::int`,
+    }).from(customers).where(and(customerAccess(user), isNull(customers.archivedAt))),
+    db.select({
+      total: sql<number>`count(*) filter (where ${tasks.status} in ('open','in_progress'))::int`,
+      covered: sql<number>`count(*) filter (
+        where ${tasks.status} in ('open','in_progress')
+          and (${tasks.dueAt} is null or ${tasks.dueAt} >= ${now})
+      )::int`,
+    }).from(tasks).where(taskAccess(user)),
   ]);
 
   const total = orderRows.reduce((sum, row) => sum + row.count, 0);
@@ -1553,6 +1589,41 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       openReconciliation: reconciliationRows[0]?.count ?? 0,
       incompleteProducts: incompleteProductRows[0]?.count ?? 0,
       expiringTrainings30d: expiringTrainingRows[0]?.count ?? 0,
+    },
+    qualityCoverage: {
+      nextAction: {
+        covered: leadCoverageRows[0]?.nextActionCovered ?? 0,
+        total: leadCoverageRows[0]?.total ?? 0,
+        percent: percentage(leadCoverageRows[0]?.nextActionCovered ?? 0, leadCoverageRows[0]?.total ?? 0),
+      },
+      productContext: {
+        covered: leadCoverageRows[0]?.productCovered ?? 0,
+        total: leadCoverageRows[0]?.total ?? 0,
+        percent: percentage(leadCoverageRows[0]?.productCovered ?? 0, leadCoverageRows[0]?.total ?? 0),
+      },
+      providerReference: {
+        covered: providerReferenceRows[0]?.covered ?? 0,
+        total: providerReferenceRows[0]?.total ?? 0,
+        percent: percentage(providerReferenceRows[0]?.covered ?? 0, providerReferenceRows[0]?.total ?? 0),
+      },
+      customerOwner: {
+        covered: customerOwnerRows[0]?.covered ?? 0,
+        total: customerOwnerRows[0]?.total ?? 0,
+        percent: percentage(customerOwnerRows[0]?.covered ?? 0, customerOwnerRows[0]?.total ?? 0),
+      },
+      taskOnTime: {
+        covered: taskCoverageRows[0]?.covered ?? 0,
+        total: taskCoverageRows[0]?.total ?? 0,
+        percent: percentage(taskCoverageRows[0]?.covered ?? 0, taskCoverageRows[0]?.total ?? 0),
+      },
+    },
+    velocity: {
+      leadsPerDay: Math.round((leadTotal / boundedDays) * 100) / 100,
+      ordersPerDay: Math.round((total / boundedDays) * 100) / 100,
+      activationsPerDay: Math.round((active / boundedDays) * 100) / 100,
+      previousLeadsPerDay: Math.round((previousLeads / boundedDays) * 100) / 100,
+      previousOrdersPerDay: Math.round((previousOrders / boundedDays) * 100) / 100,
+      previousActivationsPerDay: Math.round(((previousOrderRows[0]?.active ?? 0) / boundedDays) * 100) / 100,
     },
     attribution: {
       bySource: attributionSourceRows.map((row) => ({
