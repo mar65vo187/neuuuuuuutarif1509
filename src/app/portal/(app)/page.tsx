@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   AlertTriangle, ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, ContactRound,
-  Euro, Flame, Inbox, ListTodo, Plus, Sparkles, TrendingUp, Trophy, UsersRound,
+  CalendarClock, Euro, Flame, Inbox, ListTodo, PackageSearch, Plus, Sparkles, Target, TrendingUp, Trophy, UsersRound,
 } from "lucide-react";
 import { BarSeries } from "@/components/portal/Charts";
 import { QuickTaskComposer } from "@/components/portal/QuickTaskComposer";
@@ -67,6 +67,13 @@ export default async function PortalDashboard() {
     { label: "Aufmerksamkeit", value: attention, hint: data.metrics.overdueTasks + " Tasks überfällig", href: "#fokus", Icon: AlertTriangle, attention: attention > 0 },
     { label: "Kunden", value: data.metrics.customers, hint: "aktive Kundenakten", href: "/portal/kunden", Icon: ContactRound },
     { label: "Abschlüsse 30T", value: data.metrics.wins30, hint: "abgeschlossene Leads", href: "/portal/reporting", Icon: TrendingUp },
+  ];
+  const firstFocus = data.focus[0] ?? null;
+  const salesControl = [
+    { label: "Hot Leads", value: data.metrics.hotLeads, hint: "hohe Priorität", href: "/portal/leads?priority=attention", Icon: Flame, tone: "border-champagne/30 bg-champagne/10" },
+    { label: "Heute nachfassen", value: data.metrics.dueLeadFollowUpsToday, hint: "geplante Kontakte", href: "/portal/leads?next=today&sort=next", Icon: CalendarClock, tone: "border-electric/20 bg-electric/[0.06]" },
+    { label: "Ohne nächsten Schritt", value: data.metrics.leadsMissingNextAction, hint: "CRM-Lücke schließen", href: "/portal/leads?next=missing", Icon: Target, tone: "border-amber-200 bg-amber-50/80" },
+    { label: "Ohne Produktprofil", value: data.metrics.leadsWithoutProduct, hint: "Potenzial ergänzen", href: "/portal/leads?relation=none", Icon: PackageSearch, tone: "border-violet-200 bg-violet-50/80" },
   ];
 
   return (
@@ -148,6 +155,59 @@ export default async function PortalDashboard() {
             <p className="mt-2 text-[11.5px] text-steel">{hint}</p>
           </Link>
         ))}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]" aria-label="Tagessteuerung">
+        <Card className="overflow-hidden border-ink/10 bg-ink text-white">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-electric-soft">Jetzt zuerst</p>
+              <h2 className="mt-1 text-[18px] font-extrabold">Dein nächster sinnvoller Schritt</h2>
+            </div>
+            <span className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-electric-soft"><Sparkles className="h-4 w-4" /></span>
+          </div>
+          {firstFocus ? (
+            <div className="mt-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={"chip " + (firstFocus.priority === "critical" ? "border-red-400/40 bg-red-400/10 text-red-100" : firstFocus.priority === "high" ? "border-amber-300/30 bg-amber-300/10 text-amber-100" : "border-white/10 bg-white/[0.05] text-silver")}>{firstFocus.priority === "critical" ? "Kritisch" : firstFocus.priority === "high" ? "Hoch" : "Beobachten"}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-silver">{KIND_LABEL[firstFocus.kind]}</span>
+              </div>
+              <p className="mt-3 text-[20px] font-extrabold leading-tight">{firstFocus.title}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-silver">{firstFocus.subtitle}</p>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-[11px] text-steel">{dateTime(firstFocus.timestamp)}</span>
+                <Link href={firstFocus.href} className="inline-flex h-10 items-center gap-2 rounded-full bg-electric px-4 text-[12.5px] font-extrabold text-white hover:bg-electric-deep">Jetzt bearbeiten <ArrowRight className="h-4 w-4" /></Link>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="font-bold">Keine kritische Arbeit offen.</p>
+              <p className="mt-1 text-[12px] text-silver">Neue Fälligkeiten und Engpässe erscheinen automatisch hier.</p>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow text-electric-deep">Sales Control</p>
+              <h2 className="mt-1 text-[18px] font-extrabold">CRM-Hygiene in einer Minute</h2>
+              <p className="mt-1 text-[12px] text-steel">Vier Listen, die verhindern, dass Umsatzpotenzial zwischen Statusfeldern verloren geht.</p>
+            </div>
+            <Link href="/portal/leads" className="text-[12px] font-bold text-electric-deep hover:underline">Lead CRM öffnen</Link>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {salesControl.map(({ label, value, hint, href, Icon, tone }) => (
+              <Link key={label} href={href} className={"group rounded-2xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-soft " + tone}>
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">{label}</p><p className="mt-1.5 text-[24px] font-extrabold leading-none">{value}</p></div>
+                  <Icon className="h-4 w-4 text-electric-deep transition-transform group-hover:scale-110" />
+                </div>
+                <p className="mt-2 text-[11.5px] text-steel">{hint}</p>
+              </Link>
+            ))}
+          </div>
+        </Card>
       </section>
 
       <section id="fokus" className="grid gap-4 xl:grid-cols-[1.45fr_0.75fr]">
