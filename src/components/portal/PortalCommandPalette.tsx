@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, BriefcaseBusiness, ContactRound, Inbox, ListTodo, Loader2,
-  Search, Settings2, UserRound, X,
+  Search, Settings2, X,
 } from "lucide-react";
 
 type Result = {
