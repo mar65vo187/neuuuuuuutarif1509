@@ -2,6 +2,7 @@
 
 import { CalendarDays, Flag, Maximize2, RefreshCw, Trophy, Volume2, VolumeX } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EMPLOYEE_RACE_RULES, REFERRAL_AVATARS } from "@/lib/gamification-rules";
 
@@ -68,6 +69,7 @@ function playStepSound() {
 }
 
 export function PerformanceGameDashboard({ initial }: { initial: Payload }) {
+  const router = useRouter();
   const [data, setData] = useState(initial);
   const [sound, setSound] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,7 +117,7 @@ export function PerformanceGameDashboard({ initial }: { initial: Payload }) {
                 type="month"
                 value={data.race.period.key}
                 onChange={(event) => {
-                  if (event.target.value) window.location.assign("/portal/rennen?month=" + encodeURIComponent(event.target.value));
+                  if (event.target.value) router.push("/portal/rennen?month=" + encodeURIComponent(event.target.value));
                 }}
                 className="bg-transparent text-white outline-none [color-scheme:dark]"
                 aria-label="Challenge-Monat auswählen"
