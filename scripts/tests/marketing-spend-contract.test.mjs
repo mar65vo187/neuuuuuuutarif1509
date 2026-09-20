@@ -14,7 +14,7 @@ test("marketing spend is stored in an audited dedicated ledger", () => {
   assert.match(route, /isSameOriginRequest/);
 });
 
-test("campaign performance calculates first-party CPL and CPA", () => {
+test("campaign performance calculates first-party CPL, CPA and commission-backed efficiency", () => {
   const source = read("src/lib/marketing-performance.ts");
   assert.match(source, /marketing_campaign_spend/);
   assert.match(source, /utmCampaign/);
@@ -23,15 +23,22 @@ test("campaign performance calculates first-party CPL and CPA", () => {
   assert.match(source, /cpaCents:/);
   assert.match(source, /row\.spend_cents \/ row\.leads/);
   assert.match(source, /row\.spend_cents \/ row\.completed/);
+  assert.match(source, /commission_events/);
+  assert.match(source, /confirmed_commission_cents/);
+  assert.match(source, /paid_commission_cents/);
+  assert.match(source, /confirmedEfficiency/);
 });
 
-test("campaign cockpit exposes spend, CPL and CPA without fake revenue claims", () => {
+test("campaign cockpit exposes spend, acquisition cost and clearly labeled provider commission efficiency", () => {
   const page = read("src/app/portal/(app)/kampagnen/page.tsx");
   const cockpit = read("src/components/portal/CampaignCockpit.tsx");
   assert.match(page, /getMarketingCampaignPerformance/);
   assert.match(cockpit, /Werbekosten erfassen/);
   assert.match(cockpit, /CPL/);
   assert.match(cockpit, /CPA/);
+  assert.match(cockpit, /Prov\. bestätigt/);
+  assert.match(cockpit, /Prov\.\/Spend/);
+  assert.match(cockpit, /keine Umsatz- oder Gewinnkennzahl/);
   assert.match(cockpit, /Nur tatsächlich gebuchte Kosten eintragen/);
   assert.doesNotMatch(cockpit, /ROAS|Umsatzgarantie|garantiert/i);
 });
