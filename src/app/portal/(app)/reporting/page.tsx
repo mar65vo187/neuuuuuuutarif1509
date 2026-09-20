@@ -125,7 +125,7 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
           <div className="mt-4 space-y-2.5">
             {report.attribution.byCampaign.map((row) => (
               <div key={row.campaign} className="rounded-2xl border border-line bg-paper/60 p-3.5">
-                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[12.5px] font-extrabold">{row.campaign.replace(/^campaign:/, "")}</p><p className="mt-0.5 text-[10.5px] text-steel">{row.total} Leads · {row.qualified} qualifiziert · {row.completed} abgeschlossen{row.lost ? " · " + row.lost + " verloren" : ""}</p></div><span className="rounded-full border border-electric/15 bg-electric/[0.06] px-2.5 py-1 text-[11px] font-extrabold text-electric-deep">{row.conversionRate}%</span></div>
+                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[12.5px] font-extrabold">{row.campaign.replace(/^campaign:/, "").replace(/^kampagne:/, "")}</p><p className="mt-0.5 text-[10.5px] text-steel">{row.total} Leads · {row.qualified} qualifiziert · {row.completed} abgeschlossen{row.lost ? " · " + row.lost + " verloren" : ""}</p></div><span className="rounded-full border border-electric/15 bg-electric/[0.06] px-2.5 py-1 text-[11px] font-extrabold text-electric-deep">{row.conversionRate}%</span></div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/8"><div className="h-full rounded-full bg-electric" style={{ width: Math.min(100, row.qualificationRate) + "%" }} /></div>
                 <p className="mt-1.5 text-[10px] text-steel">{row.qualificationRate}% erreichen Termin, Beratung oder Abschluss</p>
               </div>
