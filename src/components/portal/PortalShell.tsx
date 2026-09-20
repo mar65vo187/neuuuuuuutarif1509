@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
+  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart, Megaphone,
   KeyRound, Lightbulb, ListTodo, LogOut, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -30,6 +30,7 @@ const NAV_SECTIONS = [
     label: "Vertrieb & Wissen",
     items: [
       { href: "/portal/produkte", label: "Produkte & Partner", icon: PackageSearch },
+      { href: "/portal/kampagnen", label: "Kampagnen", icon: Megaphone, anyPermission: ["report.sales"] },
       { href: "/portal/empfehlungen", label: "Empfehlungen", icon: Gift, adminOnly: true },
     ],
   },
