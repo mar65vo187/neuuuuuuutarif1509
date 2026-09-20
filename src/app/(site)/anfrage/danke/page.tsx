@@ -5,6 +5,7 @@ import { ConversionEvent } from "@/components/analytics/ConversionEvent";
 import { Button } from "@/components/ui/Button";
 import { SITE, whatsappLink } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
+import { withAudience } from "@/lib/audience";
 
 export const metadata: Metadata = {
   title: { absolute: "Anfrage erhalten | TarifWerk" },
@@ -65,7 +66,7 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
               >
                 Direkt per WhatsApp
               </Button>
-              <Button href="/" variant="secondary" magnetic={false}>
+              <Button href={withAudience("/", audience)} variant="secondary" magnetic={false}>
                 Zur Startseite
               </Button>
             </div>
@@ -73,9 +74,9 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
           </div>
 
           <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-x-5 gap-y-2 text-[12.5px] text-silver">
-            <Link href="/leistungen" className="hover:text-white">Leistungen ansehen</Link>
-            <Link href="/faq" className="hover:text-white">Häufige Fragen</Link>
-            <Link href="/ueber-uns" className="hover:text-white">Über TarifWerk</Link>
+            <Link href={withAudience("/leistungen", audience)} className="hover:text-white">Leistungen ansehen</Link>
+            <Link href={withAudience("/faq", audience)} className="hover:text-white">Häufige Fragen</Link>
+            <Link href={withAudience("/ueber-uns", audience)} className="hover:text-white">Über TarifWerk</Link>
           </div>
         </div>
       </section>
