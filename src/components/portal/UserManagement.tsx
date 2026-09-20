@@ -5,6 +5,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import { Card } from "./ui";
 import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
+import { ImageCropEditor } from "@/components/portal/ImageCropEditor";
 import { normalizeSlug, type AdminAccount } from "@/lib/admin-validation";
 import { SERVICES } from "@/lib/content";
 
@@ -53,6 +54,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
   const fileInput = useRef<HTMLInputElement>(null);
   const [employeeImage, setEmployeeImage] = useState<File | null>(null);
   const employeeFileInput = useRef<HTMLInputElement>(null);
+  const [cropRequest, setCropRequest] = useState<{ target: "employee" | "advisor"; file: File } | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const saving = useRef(false);
@@ -75,6 +77,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
     setForm(account ? formFromAccount(account) : emptyForm());
     setImage(null);
     setEmployeeImage(null);
+    setCropRequest(null);
     if (fileInput.current) fileInput.current.value = "";
     if (employeeFileInput.current) employeeFileInput.current.value = "";
     setError(null);
@@ -83,24 +86,43 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
 
   function selectEmployeeImage(file: File | null) {
     if (saving.current) return;
-    if (file && (file.size === 0 || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+    if (!file) return;
+    if (file.size === 0 || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Bitte ein JPG-, PNG- oder WebP-Bild mit höchstens 5 MB auswählen.");
       setEmployeeImage(null);
       if (employeeFileInput.current) employeeFileInput.current.value = "";
       return;
     }
-    setEmployeeImage(file); setError(null); setSuccess(null);
+    setCropRequest({ target: "employee", file });
+    setError(null); setSuccess(null);
   }
 
   function selectImage(file: File | null) {
     if (saving.current) return;
-    if (file && (file.size === 0 || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+    if (!file) return;
+    if (file.size === 0 || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Bitte ein JPG-, PNG- oder WebP-Bild mit höchstens 5 MB auswählen.");
       setImage(null);
       if (fileInput.current) fileInput.current.value = "";
       return;
     }
-    setImage(file); setError(null); setSuccess(null);
+    setCropRequest({ target: "advisor", file });
+    setError(null); setSuccess(null);
+  }
+
+  function acceptCrop(file: File) {
+    if (!cropRequest) return;
+    if (cropRequest.target === "employee") setEmployeeImage(file);
+    else setImage(file);
+    setCropRequest(null);
+    setError(null);
+    setSuccess("Bild zugeschnitten. Mit „Änderungen speichern“ wird es übernommen.");
+  }
+
+  function cancelCrop() {
+    if (cropRequest?.target === "employee" && employeeFileInput.current) employeeFileInput.current.value = "";
+    if (cropRequest?.target === "advisor" && fileInput.current) fileInput.current.value = "";
+    setCropRequest(null);
   }
 
   async function reload() {
@@ -202,7 +224,16 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {cropRequest && (
+        <ImageCropEditor
+          file={cropRequest.file}
+          title={cropRequest.target === "employee" ? "Internes Mitarbeiterbild zuschneiden" : "Öffentliches Profilbild zuschneiden"}
+          onCancel={cancelCrop}
+          onConfirm={acceptCrop}
+        />
+      )}
+      <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div><h1 className="text-[26px] font-extrabold text-ink">Benutzer & Berater</h1><p className="mt-1 text-[14px] text-steel">Portalzugänge und öffentliche Beraterprofile verwalten.</p></div>
         <Link href="/portal" className="text-[13.5px] font-semibold text-electric-deep">Zur Übersicht</Link>
@@ -248,7 +279,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
 
             <div className="mt-5 flex flex-wrap items-center gap-4">
               <AdvisorAvatar initials={form.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "?"} imageUrl={selected?.imageUrl ?? null} name={form.name || undefined} />
-              <label className="label">Internes Mitarbeiterbild<input ref={employeeFileInput} type="file" accept="image/jpeg,image/png,image/webp" className="field" onChange={(event) => selectEmployeeImage(event.target.files?.[0] ?? null)} /></label>
+              <label className="label">Internes Mitarbeiterbild<input ref={employeeFileInput} type="file" accept="image/jpeg,image/png,image/webp" className="field" onChange={(event) => selectEmployeeImage(event.target.files?.[0] ?? null)} /><span className="mt-1 block text-[11px] font-medium text-steel">Automatischer Editor · einheitlich 1200 × 1200 px</span></label>
               {selected?.imageUrl && <button type="button" onClick={removeEmployeeImage} className="text-[13.5px] font-semibold text-electric-deep">Internes Bild entfernen</button>}
             </div>
 
@@ -287,9 +318,9 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
                 <label className="inline-flex items-center gap-2 text-[14px] text-ink"><input type="checkbox" checked={form.profileActive} onChange={(event) => update("profileActive", event.target.checked)} /> Profil öffentlich sichtbar</label>
                 <label className="inline-flex items-center gap-2 text-[14px] text-ink"><input type="checkbox" checked={form.isFounder} onChange={(event) => update("isFounder", event.target.checked)} /> Gründer</label>
               </div>
-              <div className="mt-5 flex flex-wrap items-center gap-4" onDragOver={(event) => { event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); if (saving.current) return; if (event.dataTransfer.files.length !== 1) { setError("Bitte genau ein Bild ablegen."); return; } const file = event.dataTransfer.files[0]; selectImage(file); if (fileInput.current && file.size > 0 && file.size <= 5 * 1024 * 1024 && ["image/jpeg", "image/png", "image/webp"].includes(file.type)) fileInput.current.files = event.dataTransfer.files; }}>
+              <div className="mt-5 flex flex-wrap items-center gap-4" onDragOver={(event) => { event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); if (saving.current) return; if (event.dataTransfer.files.length !== 1) { setError("Bitte genau ein Bild ablegen."); return; } selectImage(event.dataTransfer.files[0]); }}>
                 <AdvisorAvatar initials={form.initials || "?"} imageUrl={selected?.advisor?.active ? selected.advisor.imageUrl : null} />
-                <label className="label">Profilbild (JPG, PNG oder WebP; maximal 5 MB)<input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="field" onChange={(event) => selectImage(event.target.files?.[0] ?? null)} /></label>
+                <label className="label">Profilbild (JPG, PNG oder WebP; maximal 5 MB)<input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="field" onChange={(event) => selectImage(event.target.files?.[0] ?? null)} /><span className="mt-1 block text-[11px] font-medium text-steel">Vor dem Speichern zuschneiden · einheitlich 1200 × 1200 px</span></label>
                 {selected?.advisor?.imageUrl && <button type="button" onClick={removeImage} className="text-[13.5px] font-semibold text-electric-deep">Bild entfernen</button>}
               </div>
               {selected?.advisor?.active && <Link href={`/berater/${selected.advisor.slug}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex text-[13.5px] font-semibold text-electric-deep">Öffentliches Profil ansehen</Link>}
@@ -304,6 +335,7 @@ export function UserManagement({ currentUserId, initialAccounts, initialError }:
         <label className="mt-4 inline-flex items-center gap-2 text-[14px] text-ink"><input type="checkbox" checked={deleteConfirmation} disabled={busy} onChange={(event) => setDeleteConfirmation(event.target.checked)} /> Ich möchte den Zugang von {selected.name} ({selected.email}) endgültig löschen.</label>
         <button type="button" disabled={busy || !deleteConfirmation} onClick={removeAccount} className="mt-4 inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold text-ink hover:border-ink/40 disabled:opacity-50">Benutzer endgültig löschen</button>
       </Card>}
-    </div>
+      </div>
+    </>
   );
 }
