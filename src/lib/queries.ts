@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees, leadNotes, leads, teamMessages, type Advisor } from "@/db/schema";
 import { SITE } from "@/lib/content";
@@ -34,24 +34,16 @@ export async function getAdvisorBySlug(slug: string): Promise<Advisor | null> {
 /*  Leads (portal)                                                     */
 /* ------------------------------------------------------------------ */
 
-/** Admins see all leads; advisors see their assignments and available requests. */
+/** Admins see all leads; employees only see leads they created themselves. */
 export function leadAccessCondition(user: SessionUser): SQL {
   if (user.role === "admin") return sql`true`;
-  return and(
-    ne(leads.type, "bewerbung"),
-    or(
-      eq(leads.assignedEmployeeId, user.id),
-      and(
-        isNull(leads.assignedEmployeeId),
-        or(isNull(leads.advisorId), user.advisorId === null ? sql`false` : eq(leads.advisorId, user.advisorId)),
-      ),
-    ),
-  )!;
+  return eq(leads.createdByEmployeeId, user.id);
 }
 
 export type LeadRow = typeof leads.$inferSelect & {
   advisorName: string | null;
   assignedName: string | null;
+  createdByName: string | null;
 };
 
 export async function listLeads(filter?: { status?: string; type?: string }, user?: SessionUser) {
@@ -64,6 +56,7 @@ export async function listLeads(filter?: { status?: string; type?: string }, use
       lead: leads,
       advisorName: advisors.name,
       assignedName: employees.name,
+      createdByName: sql<string | null>`(select creator.name from employees creator where creator.id = ${leads.createdByEmployeeId})`,
     })
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
@@ -72,21 +65,26 @@ export async function listLeads(filter?: { status?: string; type?: string }, use
     .orderBy(desc(leads.createdAt))
     .limit(300);
 
-  return rows.map((r) => ({ ...r.lead, advisorName: r.advisorName, assignedName: r.assignedName })) as LeadRow[];
+  return rows.map((r) => ({ ...r.lead, advisorName: r.advisorName, assignedName: r.assignedName, createdByName: r.createdByName })) as LeadRow[];
 }
 
 export async function getLead(id: number, user?: SessionUser) {
   const access = leadAccessCondition(user ?? await requireUser());
   if (!Number.isSafeInteger(id) || id <= 0) return null;
   const [row] = await db
-    .select({ lead: leads, advisorName: advisors.name, assignedName: employees.name })
+    .select({
+      lead: leads,
+      advisorName: advisors.name,
+      assignedName: employees.name,
+      createdByName: sql<string | null>`(select creator.name from employees creator where creator.id = ${leads.createdByEmployeeId})`,
+    })
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
     .leftJoin(employees, eq(leads.assignedEmployeeId, employees.id))
     .where(and(eq(leads.id, id), access))
     .limit(1);
   if (!row) return null;
-  return { ...row.lead, advisorName: row.advisorName, assignedName: row.assignedName } as LeadRow;
+  return { ...row.lead, advisorName: row.advisorName, assignedName: row.assignedName, createdByName: row.createdByName } as LeadRow;
 }
 
 export async function getLeadNotes(leadId: number) {
@@ -124,7 +122,12 @@ export async function getDashboardStats(user?: SessionUser) {
       .orderBy(desc(sql`count(*)`))
       .limit(8),
     db
-      .select({ lead: leads, advisorName: advisors.name, assignedName: employees.name })
+      .select({
+        lead: leads,
+        advisorName: advisors.name,
+        assignedName: employees.name,
+        createdByName: sql<string | null>`(select creator.name from employees creator where creator.id = ${leads.createdByEmployeeId})`,
+      })
       .from(leads)
       .leftJoin(advisors, eq(leads.advisorId, advisors.id))
       .leftJoin(employees, eq(leads.assignedEmployeeId, employees.id))
@@ -169,7 +172,7 @@ export async function getDashboardStats(user?: SessionUser) {
     byStatus,
     byType,
     topics: topicRows.map((r) => ({ topic: r.topic ?? "Ohne Angabe", count: r.count })),
-    recent: recent.map((r) => ({ ...r.lead, advisorName: r.advisorName, assignedName: r.assignedName })) as LeadRow[],
+    recent: recent.map((r) => ({ ...r.lead, advisorName: r.advisorName, assignedName: r.assignedName, createdByName: r.createdByName })) as LeadRow[],
     series,
   };
 }
