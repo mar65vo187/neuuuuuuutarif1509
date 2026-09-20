@@ -15,10 +15,13 @@ export function contentSecurityPolicy(nonce: string, development = false): strin
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://images.pexels.com",
     "font-src 'self' data:",
+    "media-src 'self'",
+    "manifest-src 'self'",
     `connect-src 'self'${development ? " ws: wss:" : ""}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+    ...(development ? [] : ["upgrade-insecure-requests"]),
   ].join("; ");
 }
