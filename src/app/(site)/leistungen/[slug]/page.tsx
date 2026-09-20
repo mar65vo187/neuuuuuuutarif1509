@@ -11,7 +11,8 @@ import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { REGIONS, SERVICES, SERVICE_IMAGES, SITE, getService } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
-import { SERVICE_AUDIENCE_COPY, serviceChecksForAudience, serviceFaqForAudience } from "@/lib/audience-copy";
+import { SERVICE_AUDIENCE_COPY, serviceChecksForAudience, serviceFaqForAudience, serviceForWhomForAudience } from "@/lib/audience-copy";
+import { withAudience } from "@/lib/audience";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ audience?: string | string[] }> };
 
@@ -36,6 +37,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
   const relatedKeys = RELATED_SERVICE_KEYS[s.key] ?? [];
   const checks = serviceChecksForAudience([...s.checks], audience);
   const faq = serviceFaqForAudience([...s.faq], audience);
+  const forWhom = serviceForWhomForAudience(s.key, [...s.forWhom], audience);
   const others = relatedKeys
     .map((key) => SERVICES.find((service) => service.key === key))
     .filter((service): service is (typeof SERVICES)[number] => Boolean(service))
@@ -85,20 +87,20 @@ export default async function ServicePage({ params, searchParams }: Props) {
         <div className="absolute inset-0 grid-lines" aria-hidden />
         {img && (
           <div className="absolute inset-y-0 right-0 hidden w-[46%] lg:block">
-            <Image src={img.src} alt={img.alt} fill sizes="46vw" priority className="object-cover opacity-50" />
+            <Image src={img.src} alt={img.alt} fill sizes="46vw" className="object-cover opacity-50" />
             <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />
           </div>
         )}
         <div className="container-x relative">
           <Reveal className="max-w-2xl">
             <nav aria-label="Breadcrumb" className="text-[13px] text-silver">
-              <Link href={`/leistungen?audience=${audience}`} className="hover:text-white">Leistungen</Link> <span className="mx-2">/</span> <span className="text-white">{s.name}</span>
+              <Link href={withAudience("/leistungen", audience)} className="hover:text-white">Leistungen</Link> <span className="mx-2">/</span> <span className="text-white">{s.name}</span>
             </nav>
             <p className="eyebrow mt-6 text-electric-soft">{s.eyebrow}</p>
             <h1 className="mt-4 text-[clamp(2.2rem,5vw,4.2rem)] font-extrabold leading-[1.0] tracking-[-0.03em]">{s.headline}</h1>
             <p className="mt-6 text-[17px] leading-relaxed text-silver">{SERVICE_AUDIENCE_COPY[audience][s.key] ?? s.intro}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button href={`/berater?thema=${encodeURIComponent(s.name)}&audience=${audience}`} size="lg" iconRight={<ArrowRight />}>
+              <Button href={withAudience(`/berater?thema=${encodeURIComponent(s.name)}`, audience)} size="lg" iconRight={<ArrowRight />}>
                 Berater für {s.name}
               </Button>
             </div>
@@ -131,7 +133,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
           <Reveal className="lg:col-span-5">
             <p className="eyebrow text-electric-deep">Für wen das passt</p>
             <ul className="mt-5 space-y-3">
-              {s.forWhom.map((f) => (
+              {forWhom.map((f) => (
                 <li key={f} className="flex items-start gap-3 text-[16px] text-ink">
                   <Check className="mt-1 h-4 w-4 shrink-0 text-electric-deep" /> {f}
                 </li>
@@ -158,7 +160,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               <ul className="mt-3 space-y-2">
                 {others.map((o) => (
                   <li key={o.key}>
-                    <Link href={`/leistungen/${o.slug}?audience=${audience}`} className="inline-flex items-center gap-2 text-[15px] font-semibold text-platinum hover:text-white">
+                    <Link href={withAudience(`/leistungen/${o.slug}`, audience)} className="inline-flex items-center gap-2 text-[15px] font-semibold text-platinum hover:text-white">
                       {o.name} <ArrowRight className="h-4 w-4" />
                     </Link>
                   </li>
