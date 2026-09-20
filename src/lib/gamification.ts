@@ -29,6 +29,19 @@ export type GamificationPeriod = {
   label: string;
 };
 
+export function gameMonthDate(raw: string | null | undefined, now = new Date()) {
+  if (!raw || !/^\d{4}-\d{2}$/.test(raw)) return now;
+  const [year, month] = raw.split("-").map(Number);
+  if (!year || month < 1 || month > 12) return now;
+  const candidate = new Date(Date.UTC(year, month - 1, 15, 12, 0, 0));
+  const currentKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit" }).format(now);
+  const candidateKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit" }).format(candidate);
+  const earliest = new Date(now);
+  earliest.setUTCMonth(earliest.getUTCMonth() - 23);
+  const earliestKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit" }).format(earliest);
+  return candidateKey > currentKey || candidateKey < earliestKey ? now : candidate;
+}
+
 function berlinPeriod(now = new Date()): GamificationPeriod {
   const key = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Berlin",
@@ -56,8 +69,8 @@ export async function getEmployeeRace(now = new Date()) {
   }>(`
     WITH bounds AS (
       SELECT
-        date_trunc('month', timezone('Europe/Berlin', now())) AT TIME ZONE 'Europe/Berlin' AS starts_at,
-        (date_trunc('month', timezone('Europe/Berlin', now())) + interval '1 month') AT TIME ZONE 'Europe/Berlin' AS ends_at
+        date_trunc('month', timezone('Europe/Berlin', $1::timestamptz)) AT TIME ZONE 'Europe/Berlin' AS starts_at,
+        (date_trunc('month', timezone('Europe/Berlin', $1::timestamptz)) + interval '1 month') AT TIME ZONE 'Europe/Berlin' AS ends_at
     ),
     eligible_leads AS (
       SELECT
@@ -127,7 +140,7 @@ export async function getEmployeeRace(now = new Date()) {
     WHERE e.active = true
       AND e.role = 'berater'
     ORDER BY e.name
-  `);
+  `, [now.toISOString()]);
 
   const rows = result.rows.map((row) => {
     const points =
@@ -169,8 +182,8 @@ export async function getReferralTower(now = new Date()) {
   }>(`
     WITH bounds AS (
       SELECT
-        date_trunc('month', timezone('Europe/Berlin', now())) AT TIME ZONE 'Europe/Berlin' AS starts_at,
-        (date_trunc('month', timezone('Europe/Berlin', now())) + interval '1 month') AT TIME ZONE 'Europe/Berlin' AS ends_at
+        date_trunc('month', timezone('Europe/Berlin', $1::timestamptz)) AT TIME ZONE 'Europe/Berlin' AS starts_at,
+        (date_trunc('month', timezone('Europe/Berlin', $1::timestamptz)) + interval '1 month') AT TIME ZONE 'Europe/Berlin' AS ends_at
     ),
     referral_counts AS (
       SELECT rf.referrer_id, count(*)::int AS referrals
@@ -201,7 +214,7 @@ export async function getReferralTower(now = new Date()) {
       AND (coalesce(rc.referrals, 0) > 0 OR coalesce(sc.successes, 0) > 0)
     ORDER BY coalesce(sc.successes, 0) DESC, coalesce(rc.referrals, 0) DESC, display_name ASC
     LIMIT 100
-  `);
+  `, [now.toISOString()]);
 
   const rows: ReferralTowerRow[] = result.rows.map((row, index) => ({
     displayName: row.display_name.slice(0, 40),
