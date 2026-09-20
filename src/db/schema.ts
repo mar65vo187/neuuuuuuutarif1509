@@ -128,6 +128,12 @@ export const leads = pgTable("leads", {
   meta: jsonb("meta").$type<Record<string, unknown>>(),
   confirmedSlot: text("confirmed_slot"),
   confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  priority: text("priority").notNull().default("normal"),
+  contactOutcome: text("contact_outcome").notNull().default("open"),
+  nextActionAt: timestamp("next_action_at", { withTimezone: true }),
+  lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
