@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
+  BarChart3, Bell, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
   KeyRound, Lightbulb, ListTodo, LogOut, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, UserRoundCog, UsersRound, WalletCards,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -21,6 +21,7 @@ const NAV = [
   { href: "/portal/produkte", label: "Produkte & Partner", icon: PackageSearch },
   { href: "/portal/betrieb", label: "Team & Betrieb", icon: UsersRound },
   { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
+  { href: "/portal/inbox", label: "Inbox", icon: Bell },
   { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards },
   { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
   { href: "/portal/reporting", label: "Reporting", icon: LineChart },
@@ -31,7 +32,7 @@ const NAV = [
   { href: "/portal/system", label: "System", icon: Settings2, adminOnly: true },
 ];
 
-export function PortalShell({ user, children, openCount }: { user: SessionUser; children: ReactNode; openCount: number }) {
+export function PortalShell({ user, children, openCount, notificationCount }: { user: SessionUser; children: ReactNode; openCount: number; notificationCount: number }) {
   const pathname = usePathname();
   const loggingOut = useRef(false);
   const [logoutError, setLogoutError] = useState<string | undefined>();
@@ -88,6 +89,7 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
                   <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-electric-soft" : ""}`} />
                   <span className="hidden lg:inline">{n.label}</span>
                   {n.href === "/portal/leads" && openCount > 0 && <span className="ml-auto hidden rounded-full bg-electric px-2 py-0.5 text-[11px] font-bold text-white lg:inline">{openCount}</span>}
+                  {n.href === "/portal/inbox" && notificationCount > 0 && <span className="ml-auto hidden rounded-full bg-champagne px-2 py-0.5 text-[11px] font-extrabold text-ink lg:inline">{notificationCount > 99 ? "99+" : notificationCount}</span>}
                 </Link>
                 <button type="button" onClick={() => openHelp(n.href)} className="mr-1 hidden h-8 w-8 shrink-0 place-items-center rounded-lg text-silver/55 transition hover:bg-champagne/10 hover:text-champagne-soft lg:grid" aria-label={`Info zu ${n.label}`} title={`Info zu ${n.label}`}><Lightbulb className="h-3.5 w-3.5" /></button>
               </div>
