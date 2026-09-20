@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, BriefcaseBusiness, ContactRound, Inbox, ListTodo, Loader2,
-  Search, Settings2, X,
+  ArrowRight, BriefcaseBusiness, CalendarClock, ContactRound, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
+  PackageSearch, Search, Settings2, X,
 } from "lucide-react";
 
 type Result = {
@@ -40,10 +40,14 @@ export function PortalCommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const shortcuts = useMemo(() => [
+    { id: "today-followups", title: "Heute nachfassen", subtitle: "Fällige Wiedervorlagen direkt abarbeiten", href: "/portal/leads?next=today&sort=next", icon: CalendarClock },
+    { id: "pipeline", title: "Pipeline Board", subtitle: "Leads nach Vertriebsphase steuern", href: "/portal/leads/pipeline", icon: LayoutDashboard },
     { id: "new-lead", title: "Neue Anfrage anlegen", subtitle: "Lead manuell erfassen", href: "/portal/leads/neu", icon: Inbox },
     { id: "new-customer", title: "Neuen Kunden anlegen", subtitle: "Kundenakte erstellen", href: "/portal/kunden/neu", icon: ContactRound },
     { id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness },
     { id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und Follow-ups", href: "/portal/aufgaben", icon: ListTodo },
+    { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
+    { id: "reporting", title: "Reporting öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart },
     ...(role === "admin" ? [{ id: "system", title: "System öffnen", subtitle: "Automationen, Audit und Integrationen", href: "/portal/system", icon: Settings2 }] : []),
   ], [role]);
 
@@ -139,7 +143,7 @@ export function PortalCommandPalette({
               }
             }}
             className="h-16 min-w-0 flex-1 bg-transparent text-[16px] font-semibold outline-none placeholder:text-steel/70"
-            placeholder="Leads, Kunden, Aufträge, Aufgaben suchen…"
+            placeholder="Suchen oder Aktion starten …"
             aria-label="Globale Suche"
           />
           {loading && <Loader2 className="h-4 w-4 animate-spin text-steel" aria-label="Suche läuft" />}
