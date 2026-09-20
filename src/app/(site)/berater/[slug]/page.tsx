@@ -36,6 +36,7 @@ export default async function AdvisorPage({ params, searchParams }: Props) {
   const filters = new URLSearchParams();
   if (thema) filters.set("thema", thema);
   if (region) filters.set("region", region.slice(0, 80));
+  filters.set("audience", audience);
   const a = await getAdvisorBySlug(slug);
   if (!a) notFound();
 
