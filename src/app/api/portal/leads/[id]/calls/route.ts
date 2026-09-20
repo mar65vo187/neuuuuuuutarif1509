@@ -1,31 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { leads, leadNotes } from "@/db/schema";
+import { leads } from "@/db/schema";
 import { leadCallActivities, tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { leadCallActivitySchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
-import {
-  CALL_REACTION_LABELS,
-  CALL_REACHED_PERSON_LABELS,
-  recommendLeadFollowUp,
-} from "@/lib/call-intelligence";
+import { recommendLeadFollowUp } from "@/lib/call-intelligence";
 import { emitEvent, writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
-
-function formatBerlin(value: Date) {
-  return value.toLocaleString("de-DE", {
-    timeZone: "Europe/Berlin",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   if (!isSameOriginRequest(req)) {
@@ -102,8 +87,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       });
 
       const shouldSchedule = data.autoSchedule && recommendation.action === "call_again" && Boolean(recommendation.at);
-      const stopAutoFollowUp = data.autoSchedule && recommendation.action === "no_auto_call";
       const explicitDoNotContact = data.reaction === "do_not_contact";
+      const stopAutoFollowUp = (data.autoSchedule && recommendation.action === "no_auto_call") || explicitDoNotContact;
       const nextActionAt = shouldSchedule ? recommendation.at : stopAutoFollowUp ? null : lead.nextActionAt;
 
       const patch: Partial<typeof leads.$inferInsert> = {
@@ -181,21 +166,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         await tx.update(tasks).set({ status: "cancelled", completedAt: null, updatedAt: now }).where(eq(tasks.id, followUp.id));
       }
 
-      const reachedLabel = CALL_REACHED_PERSON_LABELS[data.reachedPerson];
-      const reactionLabel = CALL_REACTION_LABELS[data.reaction];
-      const recommendationText = recommendation.at
-        ? `Empfohlener Folgekontakt: ${formatBerlin(recommendation.at)}.`
-        : recommendation.action === "appointment"
-          ? "Kein weiterer Rückruf geplant – Terminzeit separat eintragen."
-          : "Keine automatische Wiedervorlage empfohlen.";
-
-      await tx.insert(leadNotes).values({
-        leadId,
-        employeeId: user.id,
-        kind: "system",
-        body: `Anruf #${attemptNumber}: ${reachedLabel} · ${reactionLabel}. ${recommendationText}`,
-      });
-
       await writeAudit(tx, user.id, "lead.call.logged", "lead", leadId, undefined, {
         calledAt: calledAt.toISOString(),
         reachedPerson: data.reachedPerson,
@@ -224,6 +194,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           reason: recommendation.reason,
           action: recommendation.action,
           autoScheduled: shouldSchedule,
+          contactOutcome: recommendation.contactOutcome,
+          priority: patch.priority ?? lead.priority,
         },
       });
     });
