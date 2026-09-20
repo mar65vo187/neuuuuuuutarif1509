@@ -467,6 +467,30 @@ export const commissionEvents = pgTable("commission_events", {
 ]);
 
 
+export const financialLedgerEntries = pgTable("financial_ledger_entries", {
+  id: serial("id").primaryKey(),
+  sourceKey: text("source_key").notNull().unique(),
+  eventType: text("event_type").notNull(),
+  scope: text("scope").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  orderId: integer("order_id").references(() => orders.id, { onDelete: "restrict" }),
+  employeeId: integer("employee_id").references(() => employees.id, { onDelete: "set null" }),
+  actorEmployeeId: integer("actor_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  amount: numeric("amount", { precision: 14, scale: 2 }),
+  currency: text("currency").notNull().default("EUR"),
+  effect: text("effect").notNull().default("none"),
+  reference: text("reference"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("financial_ledger_order_idx").on(table.orderId, table.occurredAt),
+  index("financial_ledger_employee_idx").on(table.employeeId, table.occurredAt),
+  index("financial_ledger_event_idx").on(table.eventType, table.occurredAt),
+  index("financial_ledger_created_idx").on(table.createdAt),
+]);
+
 export const employeeCompensationProfiles = pgTable("employee_compensation_profiles", {
   employeeId: integer("employee_id").primaryKey().references(() => employees.id, { onDelete: "cascade" }),
   payoutPercent: numeric("payout_percent", { precision: 5, scale: 2 }).notNull().default("82.00"),
