@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
     const status = typeof (error as { status?: unknown })?.status === "number" ? (error as { status: number }).status : 500;
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Kunde konnte nicht gespeichert werden." }, { status });
+    const duplicate = typeof error === "object" && error && "duplicate" in error
+      ? (error as { duplicate?: unknown }).duplicate
+      : undefined;
+    return NextResponse.json({
+      ok: false,
+      error: error instanceof Error ? error.message : "Kunde konnte nicht gespeichert werden.",
+      ...(duplicate ? { duplicate } : {}),
+    }, { status });
   }
 }
