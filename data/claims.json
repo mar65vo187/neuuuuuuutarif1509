@@ -4313,7 +4313,7 @@
       "verification": "Supplied source text; no independent verification of business or legal claims."
     },
     {
-      "claim": "Gründer & Senior Sales Consultant",
+      "claim": "Gründer von TarifWerk",
       "source": "input",
       "evidence": {
         "file": "src/lib/content.ts",
