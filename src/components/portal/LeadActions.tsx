@@ -50,7 +50,7 @@ export function LeadActions({
   const [callNote, setCallNote] = useState("");
   const [requestedCallback, setRequestedCallback] = useState("");
   const [autoSchedule, setAutoSchedule] = useState(true);
-  const [callResult, setCallResult] = useState<{ at: string | null; reason: string; action: string; autoScheduled: boolean } | null>(null);
+  const [callResult, setCallResult] = useState<{ at: string | null; reason: string; action: string; autoScheduled: boolean; contactOutcome: string; priority: string } | null>(null);
   const saving = useRef(false);
 
   const patch = async (key: string, body: Record<string, unknown>) => {
@@ -134,13 +134,15 @@ export function LeadActions({
       const json = (await res.json()) as {
         ok: boolean;
         error?: string;
-        recommendation?: { at: string | null; reason: string; action: string; autoScheduled: boolean };
+        recommendation?: { at: string | null; reason: string; action: string; autoScheduled: boolean; contactOutcome: string; priority: string };
       };
       if (!res.ok || !json.ok || !json.recommendation) {
         setError(json.error ?? "Anruf konnte nicht gespeichert werden.");
         return;
       }
       setCallResult(json.recommendation);
+      setOutcome(json.recommendation.contactOutcome);
+      setCrmPriority(json.recommendation.priority);
       if (json.recommendation.at && json.recommendation.autoScheduled) {
         setNextAction(localDateTimeValue(new Date(json.recommendation.at)));
       }
