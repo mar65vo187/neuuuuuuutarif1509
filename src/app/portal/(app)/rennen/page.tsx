@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 import { PerformanceGameDashboard } from "@/components/portal/PerformanceGameDashboard";
 import { getCurrentUser } from "@/lib/auth";
-import { getEmployeeRace, getReferralTower } from "@/lib/gamification";
+import { gameMonthDate, getEmployeeRace, getReferralTower } from "@/lib/gamification";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeamChallengesPage() {
+export default async function TeamChallengesPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Frennen");
 
-  const [race, tower] = await Promise.all([getEmployeeRace(), getReferralTower()]);
+  const selectedDate = gameMonthDate((await searchParams).month);
+  const [race, tower] = await Promise.all([getEmployeeRace(selectedDate), getReferralTower(selectedDate)]);
 
   return (
     <div className="space-y-6">
