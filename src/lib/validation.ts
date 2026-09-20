@@ -103,6 +103,15 @@ export const leadUpdateSchema = z.object({
   message: "Bitte gib eine Änderung an.",
 });
 
+export const leadCallActivitySchema = z.object({
+  calledAt: z.string().datetime().optional(),
+  reachedPerson: z.enum(["customer", "partner_family", "colleague", "gatekeeper", "voicemail", "nobody", "wrong_number", "other"]),
+  reaction: z.enum(["very_interested", "interested", "neutral", "hesitant", "busy", "callback_requested", "appointment_agreed", "no_answer", "annoyed", "not_interested", "do_not_contact"]),
+  note: trimmed(1500).optional().default(""),
+  requestedCallbackAt: z.string().datetime().nullable().optional(),
+  autoSchedule: z.boolean().default(true),
+});
+
 export const chatMessageSchema = z.object({
   body: trimmed(1000).min(1),
   channel: z.enum(["all", "admins"]).default("all"),
