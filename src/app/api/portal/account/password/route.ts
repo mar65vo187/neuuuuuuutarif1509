@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   currentPassword: z.string().min(1).max(200),
-  newPassword: z.string().min(12, "Das neue Passwort muss mindestens 12 Zeichen enthalten.").max(200),
+  newPassword: z.string().min(15, "Das neue Passwort muss mindestens 15 Zeichen enthalten.").max(200),
 }).strict().refine((data) => data.currentPassword !== data.newPassword, {
   path: ["newPassword"],
   message: "Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.",
