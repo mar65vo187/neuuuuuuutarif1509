@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SERVICES, SITE } from "@/lib/content";
 import { getActiveAdvisors } from "@/lib/queries";
 import { LOCAL_PAGE_LIST } from "@/lib/local-pages";
-import { CAMPAIGN_LANDINGS } from "@/lib/campaigns";
+import { MARKETING_CAMPAIGNS } from "@/lib/marketing-campaigns";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.82,
   }));
 
-  const campaignPages: MetadataRoute.Sitemap = CAMPAIGN_LANDINGS.map((campaign) => ({
+  const campaignPages: MetadataRoute.Sitemap = MARKETING_CAMPAIGNS.map((campaign) => ({
     url: `${SITE.url}/kampagne/${campaign.slug}`,
     changeFrequency: "monthly",
     priority: campaign.slug === "business-check" ? 0.86 : 0.84,
