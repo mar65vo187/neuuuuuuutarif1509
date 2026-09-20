@@ -25,6 +25,7 @@ export default async function OperationsHubPage() {
       completions: data.completions.map((item) => ({ ...item, completedAt: item.completedAt.toISOString(), expiresAt: item.expiresAt?.toISOString() ?? null })),
       benefits: data.benefits.map((item) => ({ ...item, validFrom: item.validFrom?.toISOString() ?? null, validTo: item.validTo?.toISOString() ?? null })),
       documents: data.documents.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
+      documentHistory: data.documentHistory.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
       reconciliation: data.reconciliation.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
       ownerCockpit: data.ownerCockpit ? {
         ...data.ownerCockpit,
