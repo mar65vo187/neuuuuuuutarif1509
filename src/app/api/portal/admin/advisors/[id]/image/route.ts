@@ -32,7 +32,8 @@ export async function POST(request: NextRequest, context: Context) {
     try {
       // Fully decode, orient and re-encode: reject corrupt payloads and strip metadata/trailing data.
       data = await sharp(original, { limitInputPixels: 20_000_000, failOn: "warning", animated: false })
-        .rotate().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .rotate()
+        .resize({ width: 1200, height: 1200, fit: "cover", position: "centre" })
         .webp({ quality: 90 }).toBuffer();
     } catch { throw new AdminRequestError("Das Bild ist beschädigt oder kann nicht gelesen werden. Bitte eine andere Datei auswählen.", 422); }
     const digest = createHash("sha256").update(data).digest("hex");
