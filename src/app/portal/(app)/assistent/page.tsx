@@ -131,7 +131,7 @@ export default async function WorkAssistantPage() {
         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-2 text-[11px] font-bold text-emerald-200"><ShieldCheck className="h-4 w-4" /> Human approval aktiv</span>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Assistentenstatus">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Assistentenstatus">
         <Card className="sm:p-5">
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Empfehlungen</p>
           <p className="mt-2 text-[28px] font-extrabold">{items.length}</p>
@@ -141,6 +141,11 @@ export default async function WorkAssistantPage() {
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Kritisch</p>
           <p className="mt-2 text-[28px] font-extrabold">{items.filter((item) => item.priority === "critical").length}</p>
           <p className="mt-1 text-[11.5px] text-steel">zuerst prüfen</p>
+        </Card>
+        <Card className="sm:p-5">
+          <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Providerwarnungen</p>
+          <p className="mt-2 text-[28px] font-extrabold">{m.providerWarnings}</p>
+          <p className="mt-1 text-[11.5px] text-steel">Referenz, Status, Unterlagen oder Aktivierung</p>
         </Card>
         <Card className="sm:p-5">
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Automatische Änderungen</p>
