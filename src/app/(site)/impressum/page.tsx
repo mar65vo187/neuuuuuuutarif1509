@@ -5,6 +5,7 @@ import { SITE } from "@/lib/content";
 export const metadata = pageMetadata("/impressum");
 
 export default function ImpressumPage() {
+  const businessAddress = process.env.BUSINESS_ADDRESS?.trim() || "Wiesbaden, Deutschland";
   return (
     <LegalPage eyebrow="Rechtliches" title="Impressum">
       <section>
@@ -14,9 +15,8 @@ export default function ImpressumPage() {
           <br />
           Inhaber: {SITE.founder}
           <br />
-          Wiesbaden, Deutschland
+          {businessAddress}
         </p>
-        <p className="text-steel">Die vollständige Geschäftsadresse wird auf Anfrage mitgeteilt und vor Veröffentlichung ergänzt.</p>
       </section>
       <section>
         <h2>Kontakt</h2>
