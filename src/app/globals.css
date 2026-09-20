@@ -25,15 +25,18 @@
 }
 
 @layer base {
-  html { scroll-behavior: smooth; scrollbar-gutter: stable; -webkit-text-size-adjust: 100%; }
+  html { scroll-behavior: smooth; scrollbar-gutter: stable; -webkit-text-size-adjust: 100%; overflow-x: clip; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; } }
-  body { @apply bg-paper text-ink antialiased font-sans; font-feature-settings: "ss01", "cv11", "liga"; text-rendering: optimizeLegibility; }
+  body { @apply bg-paper text-ink antialiased font-sans; min-width: 320px; overflow-x: clip; font-feature-settings: "ss01", "cv11", "liga"; text-rendering: optimizeLegibility; }
   ::selection { background: rgba(79, 141, 255, 0.28); color: inherit; }
   :focus-visible { outline: 2px solid var(--color-electric); outline-offset: 3px; border-radius: 6px; }
   h1, h2, h3, h4 { text-wrap: balance; letter-spacing: -0.02em; }
   p { text-wrap: pretty; }
   button { cursor: pointer; }
   input, select, textarea { font: inherit; }
+  main { min-width: 0; }
+  section, header, footer, nav, div { min-width: 0; }
+  [id] { scroll-margin-top: 96px; }
 }
 
 @layer components {
@@ -89,3 +92,11 @@
 @media (max-width: 767px) { .glass, .glass-light { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); } }
 @media (prefers-reduced-motion: reduce) { .reveal-css, .reveal-item-css, .hero-enter, .menu-enter, .float-soft, .animate-marquee, .animate-pulse-dot { animation: none !important; opacity: 1 !important; transform: none !important; } }
 @supports (content-visibility: auto) { main > section:nth-of-type(n + 3) { content-visibility: auto; contain-intrinsic-size: auto 760px; } }
+
+@supports not (overflow: clip) {
+  html, body { overflow-x: hidden; }
+}
+
+@media (max-width: 479px) {
+  .container-x { padding-inline: 1rem; }
+}
