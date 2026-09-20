@@ -6,6 +6,8 @@ import { Logo } from "@/components/ui/Logo";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { getMarketingCampaign, MARKETING_CAMPAIGNS } from "@/lib/marketing-campaigns";
 import { SITE } from "@/lib/content";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/security/JsonLd";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -16,21 +18,37 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const campaign = getMarketingCampaign((await params).slug);
   if (!campaign) return { title: "Nicht gefunden", robots: { index: false, follow: false } };
-  return {
-    title: { absolute: `${campaign.title} | TarifWerk` },
-    description: campaign.text,
-    robots: { index: false, follow: false },
-    alternates: { canonical: SITE.url },
-  };
+  return pageMetadata(
+    `/kampagne/${campaign.slug}`,
+    { title: campaign.seoTitle, description: campaign.seoDescription },
+    null,
+    `/kampagne/${campaign.slug}`,
+  );
 }
 
 export default async function CampaignPage({ params }: Props) {
   const campaign = getMarketingCampaign((await params).slug);
   if (!campaign) notFound();
   const business = campaign.audience === "b2b";
+  const serviceJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: campaign.eyebrow,
+    description: campaign.seoDescription,
+    url: `${SITE.url}/kampagne/${campaign.slug}`,
+    provider: {
+      "@type": "Organization",
+      "@id": `${SITE.url}/#organization`,
+      name: SITE.name,
+      url: SITE.url,
+    },
+    areaServed: { "@type": "Country", name: "Deutschland" },
+  };
 
   return (
-    <main className="min-h-screen bg-ink text-white">
+    <>
+      <JsonLd data={serviceJsonLd} />
+      <main className="min-h-screen bg-ink text-white">
       <header className="border-b border-white/8 bg-ink/95">
         <div className="container-x flex h-[72px] items-center justify-between">
           <Logo size={34} />
@@ -76,7 +94,7 @@ export default async function CampaignPage({ params }: Props) {
                   audience={campaign.audience}
                   defaultTopic={campaign.topic}
                   defaultSituation={campaign.situation}
-                  source={`kampagne:${campaign.slug}`}
+                  source={`campaign:${campaign.slug}`}
                 />
               </div>
             </div>
@@ -108,6 +126,7 @@ export default async function CampaignPage({ params }: Props) {
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
