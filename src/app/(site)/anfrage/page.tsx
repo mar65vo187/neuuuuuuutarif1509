@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/seo";
+import { requestAudienceMetadata } from "@/lib/seo";
 import { Check } from "lucide-react";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { PageHero } from "@/components/site/PageHero";
@@ -6,7 +6,9 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SERVICE_NAMES, SITUATIONS, normalizeTopic } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
 
-export const metadata = pageMetadata("/anfrage");
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  return requestAudienceMetadata(await resolveSiteAudience((await searchParams).audience));
+}
 
 export default async function RequestPage({ searchParams }: { searchParams: Promise<{ thema?: string | string[]; situation?: string | string[]; region?: string | string[]; ref?: string | string[]; audience?: string | string[] }> }) {
   const { thema, situation, region, ref, audience } = await searchParams;
