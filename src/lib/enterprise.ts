@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, gte, ilike, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, ilike, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
 import {
@@ -361,7 +361,18 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
       ilike(customers.phone, `%${q}%`),
     )!);
   }
-  return db.select().from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(Math.max(1, Math.min(limit, 200)));
+  return db.select({
+    ...getTableColumns(customers),
+    referralCount: sql<number>`(select count(*)::int from customer_referrals cr where cr.source_customer_id = ${customers.id})`,
+    referredByCustomerId: sql<number | null>`(select cr.source_customer_id from customer_referrals cr where cr.referred_customer_id = ${customers.id} limit 1)`,
+    referredByName: sql<string | null>`(
+      select coalesce(source.company_name, nullif(trim(concat_ws(' ', source.first_name, source.last_name)), ''), source.customer_number)
+      from customer_referrals cr
+      join customers source on source.id = cr.source_customer_id
+      where cr.referred_customer_id = ${customers.id}
+      limit 1
+    )`,
+  }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(Math.max(1, Math.min(limit, 200)));
 }
 
 export async function getCustomer(id: number, user: SessionUser) {
