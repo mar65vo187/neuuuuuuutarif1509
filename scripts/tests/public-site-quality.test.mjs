@@ -38,7 +38,9 @@ test("TarifWerk brand identity is consistent across schema, imprint and readines
 
   assert.match(layout, /name: SITE\.name/);
   assert.match(layout, /alternateName: \["TarifWerk\.eu", "Tarif Werk"\]/);
-  assert.match(layout, /publicBusinessAddress\(\)/);
+  assert.match(layout, /publicBusinessPostalAddress\(\)/);
+  assert.match(layout, /"@type": "PostalAddress"/);
+  assert.match(layout, /streetAddress: businessAddress\.streetAddress/);
   assert.match(layout, /knowsAbout: SERVICES\.map/);
   assert.match(imprint, /publicBusinessAddress\(\)/);
   assert.match(ready, /hasProductionBusinessAddress\(\)/);
