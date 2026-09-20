@@ -7,12 +7,14 @@ import { getCurrentUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { listCatalog, listCustomers } from "@/lib/enterprise";
 import { listLeads } from "@/lib/queries";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ lead?: string; customer?: string; product?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fauftraege%2Fneu");
+  if (!await hasPermission(user, PORTAL_PERMISSION.ORDER_CREATE)) redirect("/portal/auftraege");
   const params = await searchParams;
   const initialLeadId = params.lead && /^\d+$/.test(params.lead) ? Number(params.lead) : undefined;
   const initialCustomerId = params.customer && /^\d+$/.test(params.customer) ? Number(params.customer) : undefined;
