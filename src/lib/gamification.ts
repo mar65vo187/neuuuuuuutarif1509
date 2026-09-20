@@ -61,7 +61,7 @@ export async function getEmployeeRace(now = new Date()) {
     ),
     lead_scores AS (
       SELECT
-        coalesce(l.created_by_employee_id, l.assigned_employee_id) AS employee_id,
+        l.created_by_employee_id AS employee_id,
         count(*) FILTER (
           WHERE nullif(trim(coalesce(l.topic, '')), '') IS NOT NULL
             AND (
@@ -81,25 +81,28 @@ export async function getEmployeeRace(now = new Date()) {
       CROSS JOIN bounds b
       WHERE l.created_at >= b.starts_at
         AND l.created_at < b.ends_at
-        AND coalesce(l.created_by_employee_id, l.assigned_employee_id) IS NOT NULL
-      GROUP BY coalesce(l.created_by_employee_id, l.assigned_employee_id)
+        AND l.created_by_employee_id IS NOT NULL
+      GROUP BY l.created_by_employee_id
     ),
     close_scores AS (
       SELECT
-        l.assigned_employee_id AS employee_id,
-        count(*) FILTER (
-          WHERE coalesce(l.meta->>'audience', 'b2c') <> 'b2b'
+        o.advisor_employee_id AS employee_id,
+        count(DISTINCT o.id) FILTER (
+          WHERE coalesce(l.meta->>'audience', CASE WHEN c.type = 'business' THEN 'b2b' ELSE 'b2c' END) <> 'b2b'
         )::int AS b2c_closes,
-        count(*) FILTER (
-          WHERE coalesce(l.meta->>'audience', 'b2c') = 'b2b'
+        count(DISTINCT o.id) FILTER (
+          WHERE coalesce(l.meta->>'audience', CASE WHEN c.type = 'business' THEN 'b2b' ELSE 'b2c' END) = 'b2b'
         )::int AS b2b_closes
-      FROM leads l
+      FROM order_status_history osh
       CROSS JOIN bounds b
-      WHERE l.status = 'abgeschlossen'
-        AND l.closed_at >= b.starts_at
-        AND l.closed_at < b.ends_at
-        AND l.assigned_employee_id IS NOT NULL
-      GROUP BY l.assigned_employee_id
+      INNER JOIN orders o ON o.id = osh.order_id
+      INNER JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN leads l ON l.id = o.lead_id
+      WHERE osh.to_status = 'active'
+        AND osh.created_at >= b.starts_at
+        AND osh.created_at < b.ends_at
+        AND o.advisor_employee_id IS NOT NULL
+      GROUP BY o.advisor_employee_id
     )
     SELECT
       e.id AS employee_id,
