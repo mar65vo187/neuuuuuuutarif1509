@@ -421,6 +421,28 @@ export const loyaltyBonusLedger = pgTable("loyalty_bonus_ledger", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("loyalty_bonus_ledger_employee_idx").on(table.employeeId, table.createdAt)]);
 
+export const leadCallActivities = pgTable("lead_call_activities", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
+  employeeId: integer("employee_id").references(() => employees.id, { onDelete: "set null" }),
+  calledAt: timestamp("called_at", { withTimezone: true }).notNull(),
+  reachedPerson: text("reached_person").notNull(),
+  reaction: text("reaction").notNull(),
+  outcome: text("outcome").notNull(),
+  attemptNumber: integer("attempt_number").notNull().default(1),
+  note: text("note").notNull().default(""),
+  requestedCallbackAt: timestamp("requested_callback_at", { withTimezone: true }),
+  suggestedFollowUpAt: timestamp("suggested_follow_up_at", { withTimezone: true }),
+  suggestionReason: text("suggestion_reason").notNull().default(""),
+  recommendedAction: text("recommended_action").notNull().default("call_again"),
+  autoScheduled: boolean("auto_scheduled").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("lead_call_activities_lead_idx").on(table.leadId, table.calledAt),
+  index("lead_call_activities_employee_idx").on(table.employeeId, table.calledAt),
+  index("lead_call_activities_follow_up_idx").on(table.suggestedFollowUpAt),
+]);
+
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   entityType: text("entity_type").notNull(),
@@ -653,3 +675,4 @@ export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type CommissionEvent = typeof commissionEvents.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type LeadCallActivity = typeof leadCallActivities.$inferSelect;
