@@ -40,6 +40,7 @@ const requiredTables = [
   "employee_benefits",
   "internal_documents",
   "reconciliation_imports",
+  "lead_call_activities",
   "tasks",
   "audit_events",
   "automation_rules",
