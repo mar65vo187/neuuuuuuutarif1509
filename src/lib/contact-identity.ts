@@ -1,4 +1,4 @@
-import { and, eq, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { customers } from "@/db/enterprise-schema";
@@ -25,8 +25,8 @@ export function normalizeContactPhone(value: string | null | undefined) {
 }
 
 function duplicateConditions(
-  emailExpression: SQL,
-  phoneExpression: SQL,
+  emailExpression: SQLWrapper,
+  phoneExpression: SQLWrapper,
   email: string,
   phone: string,
 ) {
