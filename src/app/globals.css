@@ -86,12 +86,15 @@
   .portal-shell .field:focus { border-color: rgba(79, 141, 255, 0.72); background: rgba(7, 18, 35, 0.92); }
   .portal-shell .label { color: #cbd7e8; }
   .portal-shell .text-steel { color: var(--portal-muted); }
+  .portal-shell [class*="text-steel/"] { color: rgba(159, 176, 199, 0.72); }
   .portal-shell .text-ink { color: #f4f8ff; }
   .portal-shell .text-ink-700 { color: #d8e4f4; }
   .portal-shell .border-line { border-color: var(--portal-line); }
+  .portal-shell [class*="border-ink/"] { border-color: var(--portal-line); }
   .portal-shell .bg-white { background-color: rgba(13, 25, 46, 0.9); }
   .portal-shell [class*="bg-white/"] { background-color: rgba(16, 31, 55, 0.72); }
   .portal-shell .bg-paper { background-color: rgba(7, 17, 32, 0.66); }
+  .portal-shell .bg-paper-2 { background-color: rgba(12, 25, 45, 0.86); }
   .portal-shell [class*="bg-paper/"] { background-color: rgba(7, 17, 32, 0.58); }
   .portal-shell .premium-card { border-color: var(--portal-line); background: var(--portal-surface); }
   .portal-shell option { background: #0b172b; color: #f4f8ff; }
