@@ -82,6 +82,55 @@ export const customerConsents = pgTable("customer_consents", {
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("customer_consents_customer_idx").on(table.customerId, table.recordedAt)]);
 
+export const customerCrmProfiles = pgTable("customer_crm_profiles", {
+  customerId: integer("customer_id").primaryKey().references(() => customers.id, { onDelete: "cascade" }),
+  lifecycleStage: text("lifecycle_stage").notNull().default("active"),
+  relationshipStatus: text("relationship_status").notNull().default("new"),
+  riskLevel: text("risk_level").notNull().default("normal"),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+  lastContactChannel: text("last_contact_channel"),
+  note: text("note").notNull().default(""),
+  updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("customer_crm_review_idx").on(table.nextReviewAt),
+]);
+
+export const customerActivities = pgTable("customer_activities", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  employeeId: integer("employee_id").references(() => employees.id, { onDelete: "set null" }),
+  type: text("type").notNull(),
+  direction: text("direction").notNull().default("outbound"),
+  outcome: text("outcome").notNull().default(""),
+  note: text("note").notNull().default(""),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  nextActionAt: timestamp("next_action_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("customer_activities_customer_idx").on(table.customerId, table.occurredAt),
+  index("customer_activities_next_action_idx").on(table.nextActionAt),
+]);
+
+export const customerOpportunities = pgTable("customer_opportunities", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  productId: integer("product_id").references(() => products.id, { onDelete: "set null" }),
+  topic: text("topic").notNull(),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("normal"),
+  source: text("source").notNull().default("manual"),
+  note: text("note").notNull().default(""),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("customer_opportunities_customer_idx").on(table.customerId, table.status, table.updatedAt),
+  index("customer_opportunities_review_idx").on(table.nextReviewAt),
+]);
+
 export const providers = pgTable("providers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -687,6 +736,9 @@ export const loginEvents = pgTable("login_events", {
 
 export type Customer = typeof customers.$inferSelect;
 export type CustomerReferral = typeof customerReferrals.$inferSelect;
+export type CustomerCrmProfile = typeof customerCrmProfiles.$inferSelect;
+export type CustomerActivity = typeof customerActivities.$inferSelect;
+export type CustomerOpportunity = typeof customerOpportunities.$inferSelect;
 export type Provider = typeof providers.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;
