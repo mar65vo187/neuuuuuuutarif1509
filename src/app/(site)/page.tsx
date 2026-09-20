@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
-import { AudienceProvider } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
 import { TrustEngine } from "@/components/home/TrustEngine";
 import { PremiumGuidance } from "@/components/home/PremiumGuidance";
@@ -59,21 +58,19 @@ export default async function HomePage({ searchParams }: Props) {
     <>
       <JsonLd data={faqJsonLd} />
       <JsonLd data={serviceListJsonLd} />
-      <AudienceProvider initialAudience={initialAudience}>
-        <Hero />
-        <AudienceTrustStrip />
-        <AudienceFocusSection />
-        <PremiumGuidance />
-        <DecisionCheck />
-        <TrustEngine />
-        <FinderTeaser />
-        <AudienceProcess />
-        <AudienceEverydaySection />
-        <Founder />
-        <TopicTicker />
-        <AudienceFaqSection />
-        <AudienceFinalCta />
-      </AudienceProvider>
+      <Hero audience={initialAudience} />
+      <AudienceTrustStrip audience={initialAudience} />
+      <AudienceFocusSection audience={initialAudience} />
+      <PremiumGuidance audience={initialAudience} />
+      <DecisionCheck audience={initialAudience} />
+      <TrustEngine audience={initialAudience} />
+      <FinderTeaser audience={initialAudience} />
+      <AudienceProcess audience={initialAudience} />
+      <AudienceEverydaySection audience={initialAudience} />
+      <Founder audience={initialAudience} />
+      <TopicTicker />
+      <AudienceFaqSection audience={initialAudience} />
+      <AudienceFinalCta audience={initialAudience} />
     </>
   );
 }
