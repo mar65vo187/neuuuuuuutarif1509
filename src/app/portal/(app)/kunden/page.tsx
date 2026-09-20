@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Download, Network, Plus, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Download, Network, Plus, Search, Target } from "lucide-react";
 import { Card, formatDate } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers } from "@/lib/enterprise";
@@ -8,11 +8,12 @@ import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; focus?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fkunden");
-  const { q } = await searchParams;
-  const rows = await listCustomers(user, q, 150);
+  const { q, focus: rawFocus } = await searchParams;
+  const focus = rawFocus && ["review", "opportunity", "risk"].includes(rawFocus) ? rawFocus as "review" | "opportunity" | "risk" : undefined;
+  const rows = await listCustomers(user, q, 150, { focus });
   const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.CUSTOMER_EXPORT] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canExport = user.role === "admin" || capabilities[PORTAL_PERMISSION.CUSTOMER_EXPORT];
@@ -25,10 +26,26 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         {canEdit && <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Kunde anlegen</Link>}
       </div>
     </header>
-    <form className="relative">
-      <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
-      <input name="q" defaultValue={q ?? ""} className="field pl-11" placeholder="Kundennummer, Name, Firma, E-Mail oder Telefon suchen …" />
-    </form>
+    <div className="grid gap-3 xl:grid-cols-[1fr_auto] xl:items-center">
+      <form className="relative">
+        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
+        <input type="hidden" name="focus" value={focus ?? ""} />
+        <input name="q" defaultValue={q ?? ""} className="field pl-11" placeholder="Kundennummer, Name, Firma, E-Mail oder Telefon suchen …" />
+      </form>
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["Alle", undefined, CheckCircle2],
+          ["Review fällig", "review", Clock3],
+          ["Potenzial offen", "opportunity", Target],
+          ["Risiko", "risk", AlertTriangle],
+        ].map(([label, value, Icon]) => {
+          const active = focus === value || (!focus && value === undefined);
+          const href = value ? `/portal/kunden?focus=${value}` : "/portal/kunden";
+          const IconComponent = Icon as typeof Clock3;
+          return <Link key={String(label)} href={href} className={"inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[11.5px] font-bold transition " + (active ? "border-ink bg-ink text-white" : "border-line bg-white text-steel hover:border-electric/30 hover:text-electric-deep")}><IconComponent className="h-3.5 w-3.5" /> {String(label)}</Link>;
+        })}
+      </div>
+    </div>
     <Card className="p-0 sm:p-0">
       {rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Kunden gefunden.</p> :
       <ul className="divide-y divide-line">{rows.map((customer) => {
@@ -40,10 +57,14 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
               <span className="text-[12px] text-steel">{customer.customerNumber}</span>
               {customer.referredByName && <span className="inline-flex items-center gap-1 rounded-full border border-electric/15 bg-electric/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-electric-deep"><Network className="h-3 w-3" /> von {customer.referredByName}</span>}
               {customer.referralCount > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><Network className="h-3 w-3" /> {customer.referralCount} Empfehlung{customer.referralCount === 1 ? "" : "en"}</span>}
+              {customer.activeOrderCount > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><CheckCircle2 className="h-3 w-3" /> {customer.activeOrderCount} aktiv</span>}
+              {customer.openOpportunityCount > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-electric/20 bg-electric/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-electric-deep"><Target className="h-3 w-3" /> {customer.openOpportunityCount} Potenzial</span>}
+              {customer.nextReviewAt && customer.nextReviewAt.getTime() < Date.now() && <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-800"><Clock3 className="h-3 w-3" /> Review fällig</span>}
+              {(customer.relationshipStatus === "at_risk" || customer.crmRiskLevel === "high" || customer.crmRiskLevel === "critical") && <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10.5px] font-bold text-red-700"><AlertTriangle className="h-3 w-3" /> Risiko</span>}
             </div>
             <p className="mt-0.5 text-[13px] text-steel">{customer.email || "Keine E-Mail"} · {customer.phone || "Kein Telefon"} · {customer.city || "Ort offen"}</p>
           </div>
-          <p className="text-[12px] text-steel">Aktualisiert {formatDate(customer.updatedAt)}</p>
+          <div className="text-[12px] text-steel sm:text-right"><p>Aktualisiert {formatDate(customer.updatedAt)}</p>{customer.lastContactAt && <p className="mt-0.5">Kontakt {formatDate(customer.lastContactAt)}</p>}{customer.nextReviewAt && <p className="mt-0.5">Review {formatDate(customer.nextReviewAt)}</p>}</div>
         </Link></li>;
       })}</ul>}
     </Card>
