@@ -5,6 +5,7 @@ import { benefitPoolLedger, commissionEvents, orders } from "@/db/enterprise-sch
 import { adminFailure, authorizeAdmin, lockAdminMutation, readAdminJson } from "@/lib/admin-server";
 import { isCompensationOwner } from "@/lib/compensation";
 import { writeAudit } from "@/lib/enterprise";
+import { appendFinancialLedger } from "@/lib/finance-ledger";
 import { commissionPaidSchema } from "@/lib/operations-validation";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       const previousPaid = Number(event.paidAmount ?? 0);
       const reference = parsed.data.providerReference?.trim() || order.orderNumber || event.providerReference || null;
 
+      if (event.status === "paid") {
+        if (Math.abs(previousPaid - amount) <= 0.009) {
+          return {
+            commissionEventId: event.id,
+            paidAmount: previousPaid,
+            ownerPoolAmount: roundMoney(previousPaid * 0.15),
+            stornoReversalApplied: ["cancelled", "storno"].includes(order.status),
+            deduplicated: true,
+          };
+        }
+        throw new Error("COMMISSION_ALREADY_PAID");
+      }
+
       await tx.update(commissionEvents).set({
         status: "paid",
         confirmedAmount: event.confirmedAmount ?? String(amount),
@@ -69,16 +83,37 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         reference,
         sourceKey,
         createdByEmployeeId: admin.id,
-      }).onConflictDoUpdate({
-        target: benefitPoolLedger.sourceKey,
-        set: {
-          entryType: "credit",
-          category: "growth_pool",
-          amount: String(poolAmount),
-          note: parsed.data.note?.trim() || "Automatische 15-%-Gutschrift aus bezahlter Provider-Provision.",
-          reference,
-          createdByEmployeeId: admin.id,
-        },
+      }).onConflictDoNothing({ target: benefitPoolLedger.sourceKey });
+
+      await appendFinancialLedger(tx, {
+        sourceKey: "commission-paid:" + event.id,
+        eventType: "commission_paid",
+        scope: "provider",
+        entityType: "commission_event",
+        entityId: event.id,
+        orderId: event.orderId,
+        employeeId: event.employeeId,
+        actorEmployeeId: admin.id,
+        amount,
+        effect: "increase",
+        reference,
+        metadata: { previousStatus: event.status, ownerPoolPercent: 15 },
+        occurredAt: now,
+      });
+      await appendFinancialLedger(tx, {
+        sourceKey: "growth-pool-credit:" + event.id,
+        eventType: "growth_pool_credit",
+        scope: "growth_pool",
+        entityType: "commission_event",
+        entityId: event.id,
+        orderId: event.orderId,
+        employeeId: event.employeeId,
+        actorEmployeeId: admin.id,
+        amount: poolAmount,
+        effect: "increase",
+        reference,
+        metadata: { source: "commission_paid", percent: 15 },
+        occurredAt: now,
       });
 
       const reversedForStorno = ["cancelled", "storno"].includes(order.status);
@@ -92,16 +127,21 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           reference,
           sourceKey: reversalSourceKey,
           createdByEmployeeId: admin.id,
-        }).onConflictDoUpdate({
-          target: benefitPoolLedger.sourceKey,
-          set: {
-            entryType: "spend",
-            category: "growth_pool",
-            amount: String(poolAmount),
-            note: "Automatische Gegenbuchung des 15-%-Pools für einen bereits stornierten Auftrag.",
-            reference,
-            createdByEmployeeId: admin.id,
-          },
+        }).onConflictDoNothing({ target: benefitPoolLedger.sourceKey });
+        await appendFinancialLedger(tx, {
+          sourceKey: "growth-pool-chargeback:" + event.id,
+          eventType: "growth_pool_chargeback",
+          scope: "growth_pool",
+          entityType: "commission_event",
+          entityId: event.id,
+          orderId: event.orderId,
+          employeeId: event.employeeId,
+          actorEmployeeId: admin.id,
+          amount: poolAmount,
+          effect: "decrease",
+          reference,
+          metadata: { orderStatus: order.status, percent: 15 },
+          occurredAt: now,
         });
       }
 
@@ -123,6 +163,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         paidAmount: amount,
         ownerPoolAmount: poolAmount,
         stornoReversalApplied: reversedForStorno,
+        deduplicated: false,
       };
     });
 
@@ -130,6 +171,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   } catch (error) {
     if (error instanceof Error && error.message === "COMMISSION_NOT_FOUND") {
       return NextResponse.json({ ok: false, error: "Provisionsbuchung oder Auftrag nicht gefunden." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "COMMISSION_ALREADY_PAID") {
+      return NextResponse.json({ ok: false, error: "Diese Provision ist bereits final als bezahlt verbucht. Abweichungen müssen als separate Korrektur bzw. Reconciliation dokumentiert werden." }, { status: 409 });
     }
     return adminFailure(error);
   }
