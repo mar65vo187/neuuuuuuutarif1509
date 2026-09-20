@@ -131,7 +131,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         <p className={`mx-auto mt-3 max-w-md text-[15.5px] leading-relaxed ${muted}`}>
           {business
             ? <>Ihre Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Sie erhalten eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir ausdrücklich.</>
-            : <>Ihre Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Sie bekommen eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir Ihnen ausdrücklich.</>}
+            : <>Deine Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Du bekommst eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir dir ausdrücklich.</>}
         </p>
         {done > 0 && <p className={`mt-2 text-[12.5px] ${muted}`}>Vorgangsnummer #{done}</p>}
         <div className="mt-7 flex flex-wrap justify-center gap-3">
