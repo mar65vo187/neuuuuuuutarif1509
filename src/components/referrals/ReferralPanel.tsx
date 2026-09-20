@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Check, Copy, Gift, Loader2, Share2, Trophy, WalletCards } from "lucide-react";
-import { REFERRAL_AVATARS } from "@/lib/gamification";
+import { REFERRAL_AVATARS } from "@/lib/gamification-rules";
 
 type Links = { shareUrl: string; dashboardUrl: string };
 type Reward = {
