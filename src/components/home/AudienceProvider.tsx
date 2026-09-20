@@ -40,8 +40,8 @@ export function AudienceToggle({ className = "" }: { className?: string }) {
   const { audience, setAudience } = useAudience();
   return (
     <div className={`inline-flex rounded-full border border-white/10 bg-white/[0.045] p-1 ${className}`} role="group" aria-label="Zielgruppe wählen">
-      <button type="button" onClick={() => setAudience("b2c")} aria-pressed={audience === "b2c"} className={`rounded-full px-4 py-2 text-[12.5px] font-semibold transition-colors duration-200 ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:text-white"}`}>Privatkunden</button>
-      <button type="button" onClick={() => setAudience("b2b")} aria-pressed={audience === "b2b"} className={`rounded-full px-4 py-2 text-[12.5px] font-semibold transition-colors duration-200 ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:text-white"}`}>Geschäftskunden</button>
+      <button type="button" onClick={() => setAudience("b2c")} aria-pressed={audience === "b2c"} className={`rounded-full px-4 py-2 text-[12.5px] font-semibold transition-colors duration-200 ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:text-white"}`}>Privat</button>
+      <button type="button" onClick={() => setAudience("b2b")} aria-pressed={audience === "b2b"} className={`rounded-full px-4 py-2 text-[12.5px] font-semibold transition-colors duration-200 ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:text-white"}`}>Business</button>
     </div>
   );
 }
