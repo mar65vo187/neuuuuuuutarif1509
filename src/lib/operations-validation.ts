@@ -26,7 +26,7 @@ export const incentiveCreateSchema = z.object({
   budget: z.coerce.number().finite().min(0).max(100000000).nullable().optional(),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
-  audience: text(120).default("all"),
+  audience: z.string().regex(/^(all|employee:\\d+|team:\\d+)$/, "Ungültige Zielgruppe.").default("all"),
 }).refine((value) => new Date(value.endsAt) > new Date(value.startsAt), { path: ["endsAt"], message: "Enddatum muss nach dem Startdatum liegen." });
 
 export const trainingMutationSchema = z.discriminatedUnion("action", [
@@ -78,5 +78,11 @@ export const reconciliationImportSchema = z.object({
 export const commissionPaidSchema = z.object({
   amount: z.coerce.number().finite().positive().max(100000000),
   providerReference: text(240).optional(),
+  note: text(1000).optional(),
+});
+
+
+export const reconciliationResolveSchema = z.object({
+  action: z.enum(["accept_reported", "keep_expected", "dismiss"]),
   note: text(1000).optional(),
 });
