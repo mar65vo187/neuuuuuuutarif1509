@@ -21,17 +21,20 @@ export function SessionIntentCard({ audience }: { audience: AudienceMode }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem(HIDDEN_KEY) === "1") return;
-      const intent = readSessionIntent();
-      if (!intent.lastServiceSlug) return;
-      const match = SERVICES.find((item) => item.slug === intent.lastServiceSlug);
-      if (!match) return;
-      setService({ slug: match.slug, name: match.name, shortLabel: match.shortLabel, short: match.short });
-      setVisible(true);
-    } catch {
-      // Personalization is optional and must never block the page.
-    }
+    const frame = requestAnimationFrame(() => {
+      try {
+        if (sessionStorage.getItem(HIDDEN_KEY) === "1") return;
+        const intent = readSessionIntent();
+        if (!intent.lastServiceSlug) return;
+        const match = SERVICES.find((item) => item.slug === intent.lastServiceSlug);
+        if (!match) return;
+        setService({ slug: match.slug, name: match.name, shortLabel: match.shortLabel, short: match.short });
+        setVisible(true);
+      } catch {
+        // Personalization is optional and must never block the page.
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   if (!visible || !service) return null;
@@ -47,7 +50,7 @@ export function SessionIntentCard({ audience }: { audience: AudienceMode }) {
           <button
             type="button"
             onClick={() => {
-              try { sessionStorage.setItem(HIDDEN_KEY, "1"); } catch {}
+              try { sessionStorage.setItem(HIDDEN_KEY, "1"); } catch { /* optional session preference */ }
               setVisible(false);
             }}
             className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-line bg-white text-steel hover:text-ink"
