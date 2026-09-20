@@ -4,7 +4,7 @@ import { Download, Network, Plus, Search } from "lucide-react";
 import { Card, formatDate } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers } from "@/lib/enterprise";
-import { hasPermission, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
