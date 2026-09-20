@@ -372,7 +372,7 @@ export default async function PortalDashboard() {
       )}
 
       {data.integrity && (
-        <section aria-label="Operations Integrity">
+        <section aria-label="Betriebsqualität">
           <Card>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
