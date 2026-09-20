@@ -32,6 +32,7 @@ try {
     // Identifiers are a fixed internal allowlist, never user input.
     await pool.query(`SELECT * FROM ${table} LIMIT 0`);
   }
+  await pool.query("SELECT phone, display_name, avatar_key, leaderboard_opt_in FROM referrers LIMIT 0");
   const adminEmail = process.env.PORTAL_ADMIN_EMAIL.trim().toLowerCase();
   const ownerEmail = (process.env.PORTAL_OWNER_EMAIL || process.env.PORTAL_ADMIN_EMAIL).trim().toLowerCase();
   const result = await pool.query("SELECT id FROM employees WHERE lower(email) = $1 AND role = 'admin' AND active = true", [adminEmail]);
