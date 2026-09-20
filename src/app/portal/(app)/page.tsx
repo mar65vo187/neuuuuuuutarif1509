@@ -102,6 +102,43 @@ export default async function PortalDashboard() {
     { label: "Aufgaben im Zeitplan", open: data.metrics.overdueTasks, href: "/portal/aufgaben", detail: "Überfällige Aufgaben zuerst schließen oder neu terminieren.", Icon: Clock3 },
     { label: "Bestandschecks aktuell", open: data.metrics.dueCustomerReviews, href: "/portal/kunden?focus=review", detail: "Fällige Kundenreviews aktiv bearbeiten statt liegen lassen.", Icon: CheckCircle2 },
   ];
+  const assistantRecommendations = [
+    ...(data.metrics.overdueTasks > 0 ? [{
+      key: "overdue-tasks",
+      priority: "hoch",
+      title: "Überfällige Aufgaben zuerst bereinigen",
+      reason: data.metrics.overdueTasks + " Aufgabe" + (data.metrics.overdueTasks === 1 ? " ist" : "n sind") + " überfällig. Das ist konkreter als neue Arbeit zu beginnen.",
+      href: "/portal/aufgaben",
+    }] : []),
+    ...(data.metrics.untouchedLeads24h > 0 ? [{
+      key: "untouched-leads",
+      priority: "hoch",
+      title: "Unberührte Leads prüfen",
+      reason: data.metrics.untouchedLeads24h + " neue Anfrage" + (data.metrics.untouchedLeads24h === 1 ? " wartet" : "n warten") + " seit mehr als 24 Stunden auf dokumentierte Bearbeitung.",
+      href: "/portal/leads?priority=attention",
+    }] : []),
+    ...(data.metrics.atRiskCustomers > 0 ? [{
+      key: "risk-customers",
+      priority: "mittel",
+      title: "Risiko-Kunden aktiv prüfen",
+      reason: data.metrics.atRiskCustomers + " Kundenakte" + (data.metrics.atRiskCustomers === 1 ? " ist" : "n sind") + " als gefährdet oder erhöhtes Risiko markiert.",
+      href: "/portal/kunden?focus=risk",
+    }] : []),
+    ...(data.metrics.leadsMissingNextAction > 0 ? [{
+      key: "next-action",
+      priority: "mittel",
+      title: "Nächste Schritte vervollständigen",
+      reason: data.metrics.leadsMissingNextAction + " offene Lead" + (data.metrics.leadsMissingNextAction === 1 ? " hat" : "s haben") + " noch keine konkrete nächste Aktion.",
+      href: "/portal/leads?next=missing",
+    }] : []),
+    ...(data.metrics.dueCustomerReviews > 0 ? [{
+      key: "reviews",
+      priority: "normal",
+      title: "Fällige Bestandschecks einplanen",
+      reason: data.metrics.dueCustomerReviews + " Bestandscheck" + (data.metrics.dueCustomerReviews === 1 ? " ist" : "s sind") + " fällig.",
+      href: "/portal/kunden?focus=review",
+    }] : []),
+  ].slice(0, 3);
 
   return (
     <div className="space-y-7">
@@ -182,6 +219,36 @@ export default async function PortalDashboard() {
             <p className="mt-2 text-[11.5px] text-steel">{hint}</p>
           </Link>
         ))}
+      </section>
+
+      <section aria-label="Erklärbarer Arbeitsassistent">
+        <Card className="overflow-hidden border-electric/15 bg-[linear-gradient(135deg,rgba(79,141,255,0.08),rgba(8,18,34,0.92))]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="inline-flex items-center gap-2 text-[10.5px] font-extrabold uppercase tracking-[0.15em] text-electric-soft"><Sparkles className="h-4 w-4" /> Arbeitsassistent</p>
+              <h2 className="mt-2 text-[18px] font-extrabold">Was jetzt sinnvoll ist – und warum.</h2>
+              <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-steel">Die Reihenfolge basiert ausschließlich auf dokumentierten CRM-Signalen. Keine Blackbox-Bewertung von Mitarbeitern und keine automatische Kundenaktion.</p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-bold text-silver"><ShieldCheck className="h-3.5 w-3.5 text-electric-soft" /> erklärbar & kontrolliert</span>
+          </div>
+          {assistantRecommendations.length ? (
+            <div className="mt-5 grid gap-3 lg:grid-cols-3">
+              {assistantRecommendations.map((item, index) => (
+                <Link key={item.key} href={item.href} className="group rounded-2xl border border-white/9 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]">
+                  <div className="flex items-center justify-between gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl bg-electric/10 text-[11px] font-extrabold text-electric-soft">{String(index + 1).padStart(2, "0")}</span><span className="text-[9.5px] font-extrabold uppercase tracking-wider text-steel">{item.priority}</span></div>
+                  <p className="mt-3 text-[13.5px] font-extrabold">{item.title}</p>
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed text-steel">{item.reason}</p>
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-electric-soft">Öffnen <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+              <div><p className="text-[13px] font-extrabold text-emerald-200">Keine priorisierte Nacharbeit erkannt.</p><p className="mt-1 text-[11.5px] text-steel">Die aktuell dokumentierten CRM-Signale zeigen keine überfälligen oder risikobehafteten Punkte.</p></div>
+            </div>
+          )}
+        </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]" aria-label="Tagessteuerung">
