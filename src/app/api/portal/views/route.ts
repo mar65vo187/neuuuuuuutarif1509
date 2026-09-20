@@ -21,7 +21,7 @@ const deleteSchema = z.object({
 });
 
 function sanitizeFilters(area: "leads" | "orders", filters: Record<string, string>) {
-  const allowed = area === "leads" ? new Set(["status", "type", "priority", "next", "product", "q", "sort"]) : new Set(["status", "q"]);
+  const allowed = area === "leads" ? new Set(["status", "type", "priority", "next", "product", "relation", "q", "sort"]) : new Set(["status", "q"]);
   return Object.fromEntries(
     Object.entries(filters)
       .filter(([key, value]) => allowed.has(key) && value.trim())
