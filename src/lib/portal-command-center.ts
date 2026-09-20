@@ -29,6 +29,8 @@ export type TeamPulseRow = {
   name: string;
   role: string;
   openLeads: number;
+  leadsMissingNextAction: number;
+  leadsWithoutProduct: number;
   openTasks: number;
   overdueTasks: number;
   activeOrders: number;
@@ -383,6 +385,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       db.select({
         employeeId: leads.assignedEmployeeId,
         openLeads: sql<number>`count(*) filter (where ${leads.status} in ('neu','kontaktiert','termin_bestaetigt','in_beratung'))::int`,
+        missingNextAction: sql<number>`count(*) filter (where ${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren'))::int`,
+        withoutProduct: sql<number>`count(*) filter (where not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}) and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
       }).from(leads).where(sql`${leads.assignedEmployeeId} is not null`).groupBy(leads.assignedEmployeeId),
       db.select({
         employeeId: tasks.assignedToEmployeeId,
@@ -406,6 +410,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
         name: person.name,
         role: person.role,
         openLeads: lead?.openLeads ?? 0,
+        leadsMissingNextAction: lead?.missingNextAction ?? 0,
+        leadsWithoutProduct: lead?.withoutProduct ?? 0,
         openTasks: task?.openTasks ?? 0,
         overdueTasks: task?.overdueTasks ?? 0,
         activeOrders: order?.activeOrders ?? 0,
