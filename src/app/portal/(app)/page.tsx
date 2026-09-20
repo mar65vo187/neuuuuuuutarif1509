@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   AlertTriangle, ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, ContactRound,
-  Euro, Flame, Inbox, ListTodo, Plus, Sparkles, Target, TrendingUp, Trophy, UsersRound,
+  Euro, Flame, Inbox, ListTodo, Plus, Sparkles, TrendingUp, Trophy, UsersRound,
 } from "lucide-react";
 import { BarSeries } from "@/components/portal/Charts";
 import { QuickTaskComposer } from "@/components/portal/QuickTaskComposer";
@@ -86,77 +86,56 @@ export default async function PortalDashboard() {
         </div>
       </header>
 
-      <section className="overflow-hidden rounded-[24px] border border-electric/20 bg-[linear-gradient(135deg,rgba(8,15,29,0.98),rgba(20,36,64,0.96))] text-white shadow-[0_24px_70px_-38px_rgba(6,11,22,0.75)]" aria-label="Daily Momentum">
-        <div className="grid gap-6 p-5 sm:p-6 xl:grid-cols-[1.15fr_0.85fr] xl:items-center">
-          <div>
+      <section className="rounded-[22px] border border-line bg-white p-4 shadow-soft sm:p-5" aria-label="Daily Momentum">
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.2fr_auto] xl:items-center">
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[11px] font-bold text-electric-soft"><Flame className="h-3.5 w-3.5" /> Daily Momentum</span>
-              {data.momentum.status === "complete" && <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-200"><Trophy className="h-3.5 w-3.5" /> Power Day</span>}
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-electric-deep"><Flame className="h-3.5 w-3.5" /> Daily Momentum</span>
+              {data.momentum.status === "complete" && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><Trophy className="h-3 w-3" /> Power Day</span>}
             </div>
-
-            <div className="mt-4 flex flex-wrap items-end gap-x-4 gap-y-2">
-              <p className="text-[clamp(2rem,5vw,3.4rem)] font-extrabold leading-none tracking-[-0.04em]">{data.momentum.today}<span className="text-white/35">/{data.momentum.dailyTarget}</span></p>
-              <div className="pb-1">
-                <p className="text-[14px] font-bold">
-                  {data.momentum.status === "complete"
-                    ? "Tagesziel erreicht."
-                    : data.momentum.status === "streak"
-                      ? "Rhythmus steht. Ein Lead noch für den Power Day."
-                      : data.momentum.streakAtRisk
-                        ? data.momentum.currentStreak + "-Tage-Rhythmus kann heute weitergehen."
-                        : "Ein Lead reicht, um heute Momentum aufzubauen."}
-                </p>
-                <p className="mt-1 text-[12px] text-silver">
-                  1 Lead hält den Tagesrhythmus · 2 Leads machen den Tag komplett. Kein Zwang – sichtbar bleibt nur dein eigener Fortschritt.
-                </p>
-              </div>
+            <div className="mt-2 flex items-end gap-3">
+              <p className="text-[32px] font-extrabold leading-none tracking-tight">{data.momentum.today}<span className="text-steel/45">/{data.momentum.dailyTarget}</span></p>
+              <p className="pb-0.5 text-[12px] font-semibold text-steel">
+                {data.momentum.status === "complete"
+                  ? "Tagesziel erreicht"
+                  : data.momentum.status === "streak"
+                    ? "Rhythmus steht · noch 1 bis Power Day"
+                    : data.momentum.streakAtRisk
+                      ? data.momentum.currentStreak + "-Tage-Rhythmus fortsetzen"
+                      : "Heute mit 1 Lead starten"}
+              </p>
             </div>
-
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10" aria-label={data.momentum.today + " von " + data.momentum.dailyTarget + " Leads heute"}>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-paper" aria-label={data.momentum.today + " von " + data.momentum.dailyTarget + " Leads heute"}>
               <div
                 className="h-full rounded-full bg-electric transition-[width] duration-500"
                 style={{ width: Math.min(100, (data.momentum.today / data.momentum.dailyTarget) * 100) + "%" }}
               />
             </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-electric px-4 text-[12.5px] font-extrabold text-white shadow-[0_10px_28px_-12px_rgba(79,141,255,0.9)] hover:bg-electric-deep"><Plus className="h-4 w-4" /> Lead eintragen</Link>
-              <Link href="/portal/leads" className="inline-flex h-10 items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 text-[12.5px] font-bold text-white hover:bg-white/[0.1]">Meine Leads <ArrowRight className="h-3.5 w-3.5" /></Link>
-            </div>
           </div>
 
-          <div className="rounded-[20px] border border-white/10 bg-white/[0.055] p-4 sm:p-5">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-black/10 p-3 text-center">
-                <Flame className="mx-auto h-4 w-4 text-orange-300" />
-                <p className="mt-2 text-[20px] font-extrabold">{data.momentum.currentStreak}</p>
-                <p className="text-[10.5px] text-silver">Tage Rhythmus</p>
-              </div>
-              <div className="rounded-xl bg-black/10 p-3 text-center">
-                <Target className="mx-auto h-4 w-4 text-electric-soft" />
-                <p className="mt-2 text-[20px] font-extrabold">{data.momentum.activeDays7}/7</p>
-                <p className="text-[10.5px] text-silver">aktive Tage</p>
-              </div>
-              <div className="rounded-xl bg-black/10 p-3 text-center">
-                <TrendingUp className="mx-auto h-4 w-4 text-emerald-300" />
-                <p className="mt-2 text-[20px] font-extrabold">{data.momentum.leads7}</p>
-                <p className="text-[10.5px] text-silver">Leads · 7 Tage</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-7 gap-1.5" aria-label="Aktivität der letzten sieben Tage">
-              {data.momentum.week.map((day) => (
-                <div key={day.day} className={"rounded-xl border px-1 py-2 text-center " + (day.count > 0 ? "border-electric/35 bg-electric/15" : day.isToday ? "border-white/20 bg-white/[0.06]" : "border-white/8 bg-black/10")}>
-                  <p className="text-[9.5px] font-bold uppercase text-silver">{day.label}</p>
-                  <p className={"mt-1 text-[14px] font-extrabold " + (day.count > 0 ? "text-white" : "text-white/35")}>{day.count}</p>
+          <div className="grid grid-cols-7 gap-1.5 rounded-[16px] bg-paper/70 p-2" aria-label="Aktivität der letzten sieben Tage">
+            {data.momentum.week.map((day) => (
+              <div key={day.day} className={"rounded-xl px-1 py-2 text-center " + (day.isToday ? "bg-white shadow-sm" : "")}>
+                <p className="text-[9px] font-bold uppercase tracking-wide text-steel">{day.label}</p>
+                <div className={"mx-auto mt-1.5 grid h-6 w-6 place-items-center rounded-full text-[11px] font-extrabold " + (day.count >= 2 ? "bg-electric text-white" : day.count === 1 ? "bg-electric/10 text-electric-deep" : "bg-white text-steel/45")}>
+                  {day.count}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
 
-            <p className="mt-4 text-[11px] leading-relaxed text-silver">
-              Nächster Meilenstein: <span className="font-bold text-white">{data.momentum.nextMilestone} aktive Tage</span>
-              {data.momentum.nextMilestoneRemaining > 0 ? " · noch " + data.momentum.nextMilestoneRemaining : ""}
-            </p>
+          <div className="flex items-center justify-between gap-4 xl:justify-end">
+            <div className="flex gap-4 text-center">
+              <div>
+                <p className="text-[18px] font-extrabold">{data.momentum.currentStreak}</p>
+                <p className="text-[10px] font-semibold text-steel">Streak</p>
+              </div>
+              <div>
+                <p className="text-[18px] font-extrabold">{data.momentum.activeDays7}/7</p>
+                <p className="text-[10px] font-semibold text-steel">aktiv</p>
+              </div>
+            </div>
+            <Link href="/portal/leads/neu" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-bold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Lead eintragen</Link>
           </div>
         </div>
       </section>
