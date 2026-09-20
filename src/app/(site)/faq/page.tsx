@@ -28,7 +28,7 @@ export default async function FaqPage({ searchParams }: { searchParams: Promise<
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <h2 className="text-[22px] font-extrabold text-ink">Allgemein</h2>
-            <p className="mt-2 text-[15px] text-steel">Kosten, Ablauf, Unabhängigkeit, Daten.</p>
+            <p className="mt-2 text-[15px] text-steel">Kosten, Ablauf, Transparenz, Daten.</p>
           </Reveal>
           <Reveal className="lg:col-span-8"><Accordion items={FAQ} /></Reveal>
         </div>
