@@ -7,8 +7,12 @@ export type MarketingPerformanceRow = {
   completed: number;
   businessLeads: number;
   spendCents: number;
+  confirmedCommissionCents: number;
+  paidCommissionCents: number;
   cplCents: number | null;
   cpaCents: number | null;
+  confirmedEfficiency: number | null;
+  paidEfficiency: number | null;
 };
 
 export type MarketingPerformance = {
@@ -19,8 +23,12 @@ export type MarketingPerformance = {
     qualified: number;
     completed: number;
     spendCents: number;
+    confirmedCommissionCents: number;
+    paidCommissionCents: number;
     cplCents: number | null;
     cpaCents: number | null;
+    confirmedEfficiency: number | null;
+    paidEfficiency: number | null;
   };
 };
 
@@ -47,6 +55,8 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
     completed: number;
     business_leads: number;
     spend_cents: number;
+    confirmed_commission_cents: number;
+    paid_commission_cents: number;
   }>(`
     WITH bounds AS (
       SELECT
@@ -85,18 +95,56 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
       WHERE mcs.spent_at >= b.starts_at
         AND mcs.spent_at < b.ends_at
       GROUP BY mcs.campaign_key
+    ),
+    commission_counts AS (
+      SELECT
+        CASE
+          WHEN nullif(l.meta->>'utmCampaign','') LIKE 'tarifwerk_%'
+            THEN regexp_replace(l.meta->>'utmCampaign', '^tarifwerk_', '')
+          WHEN l.source LIKE 'kampagne:%'
+            THEN regexp_replace(l.source, '^kampagne:', '')
+          ELSE nullif(l.meta->>'utmCampaign','')
+        END AS campaign_key,
+        round(coalesce(sum(
+          CASE WHEN ce.type = 'sale' THEN coalesce(ce.confirmed_amount, ce.paid_amount, 0) ELSE 0 END
+        ), 0) * 100)::bigint AS confirmed_commission_cents,
+        round(coalesce(sum(
+          CASE WHEN ce.type = 'sale' THEN coalesce(ce.paid_amount, 0) ELSE 0 END
+        ), 0) * 100)::bigint AS paid_commission_cents
+      FROM leads l
+      JOIN orders o ON o.lead_id = l.id
+      LEFT JOIN commission_events ce ON ce.order_id = o.id
+      CROSS JOIN bounds b
+      WHERE l.created_at >= b.starts_at
+        AND l.created_at < b.ends_at
+        AND (
+          nullif(l.meta->>'utmCampaign','') IS NOT NULL
+          OR l.source LIKE 'kampagne:%'
+        )
+      GROUP BY 1
+    ),
+    keys AS (
+      SELECT campaign_key FROM lead_counts
+      UNION
+      SELECT campaign_key FROM spend_counts
+      UNION
+      SELECT campaign_key FROM commission_counts
     )
     SELECT
-      coalesce(lc.campaign_key, sc.campaign_key) AS campaign_key,
+      k.campaign_key,
       coalesce(lc.leads, 0)::int AS leads,
       coalesce(lc.qualified, 0)::int AS qualified,
       coalesce(lc.completed, 0)::int AS completed,
       coalesce(lc.business_leads, 0)::int AS business_leads,
-      coalesce(sc.spend_cents, 0)::int AS spend_cents
-    FROM lead_counts lc
-    FULL OUTER JOIN spend_counts sc ON sc.campaign_key = lc.campaign_key
-    WHERE coalesce(lc.campaign_key, sc.campaign_key) IS NOT NULL
-    ORDER BY coalesce(sc.spend_cents, 0) DESC, coalesce(lc.leads, 0) DESC, campaign_key
+      coalesce(sc.spend_cents, 0)::int AS spend_cents,
+      coalesce(cc.confirmed_commission_cents, 0)::bigint AS confirmed_commission_cents,
+      coalesce(cc.paid_commission_cents, 0)::bigint AS paid_commission_cents
+    FROM keys k
+    LEFT JOIN lead_counts lc ON lc.campaign_key = k.campaign_key
+    LEFT JOIN spend_counts sc ON sc.campaign_key = k.campaign_key
+    LEFT JOIN commission_counts cc ON cc.campaign_key = k.campaign_key
+    WHERE k.campaign_key IS NOT NULL
+    ORDER BY coalesce(sc.spend_cents, 0) DESC, coalesce(lc.leads, 0) DESC, k.campaign_key
   `, [now.toISOString()]);
 
   const rows: MarketingPerformanceRow[] = result.rows.map((row) => ({
@@ -106,8 +154,12 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
     completed: row.completed,
     businessLeads: row.business_leads,
     spendCents: row.spend_cents,
+    confirmedCommissionCents: Number(row.confirmed_commission_cents),
+    paidCommissionCents: Number(row.paid_commission_cents),
     cplCents: row.leads > 0 ? Math.round(row.spend_cents / row.leads) : null,
     cpaCents: row.completed > 0 ? Math.round(row.spend_cents / row.completed) : null,
+    confirmedEfficiency: row.spend_cents > 0 ? Math.round((Number(row.confirmed_commission_cents) / row.spend_cents) * 100) / 100 : null,
+    paidEfficiency: row.spend_cents > 0 ? Math.round((Number(row.paid_commission_cents) / row.spend_cents) * 100) / 100 : null,
   }));
 
   const totals = rows.reduce((acc, row) => ({
@@ -115,7 +167,9 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
     qualified: acc.qualified + row.qualified,
     completed: acc.completed + row.completed,
     spendCents: acc.spendCents + row.spendCents,
-  }), { leads: 0, qualified: 0, completed: 0, spendCents: 0 });
+    confirmedCommissionCents: acc.confirmedCommissionCents + row.confirmedCommissionCents,
+    paidCommissionCents: acc.paidCommissionCents + row.paidCommissionCents,
+  }), { leads: 0, qualified: 0, completed: 0, spendCents: 0, confirmedCommissionCents: 0, paidCommissionCents: 0 });
 
   return {
     period,
@@ -124,6 +178,8 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
       ...totals,
       cplCents: totals.leads > 0 ? Math.round(totals.spendCents / totals.leads) : null,
       cpaCents: totals.completed > 0 ? Math.round(totals.spendCents / totals.completed) : null,
+      confirmedEfficiency: totals.spendCents > 0 ? Math.round((totals.confirmedCommissionCents / totals.spendCents) * 100) / 100 : null,
+      paidEfficiency: totals.spendCents > 0 ? Math.round((totals.paidCommissionCents / totals.spendCents) * 100) / 100 : null,
     },
   };
 }
