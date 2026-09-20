@@ -7,6 +7,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { CHANNELS, LOCATION_OPTIONS, SERVICES, SITE, SITUATIONS, TIME_SLOTS, whatsappLink, normalizeTopic } from "@/lib/content";
 import { withAudience, type AudienceMode } from "@/lib/audience";
+import { readJourneyContext } from "@/components/site/JourneyContext";
 
 type Props = {
   type?: "beratung" | "termin" | "tarifcheck" | "kontakt";
@@ -29,6 +30,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
   const sending = useRef(false);
   const [referralConsent, setReferralConsent] = useState(false);
@@ -36,6 +38,8 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     topic: normalizeTopic(defaultTopic),
     situation: SITUATIONS.some((item) => item.value === defaultSituation) ? defaultSituation : "",
     region: defaultRegion.slice(0, 80),
+    companyName: "",
+    companySize: "",
     name: "",
     email: "",
     phone: "",
@@ -66,6 +70,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     e.preventDefault();
     if (sending.current) return;
     setError(null);
+    setErrorField(null);
     if (step === 0) {
       if (canNext) setStep(1);
       return;
@@ -73,23 +78,43 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     if (!form.topic || !form.situation) {
       setStep(0);
       setError(business ? "Bitte wählen Sie Ihr Thema und Ihre Situation." : "Bitte wähle dein Thema und deine Situation.");
+      setErrorField("topic");
       return;
     }
-    if (!form.name.trim() || !form.email.trim()) {
-      setError(business ? "Bitte Name und E-Mail angeben." : "Bitte gib deinen Namen und deine E-Mail an.");
+    if (business && !form.companyName.trim()) {
+      setError("Bitte geben Sie Ihr Unternehmen oder Ihre Selbstständigkeit an.");
+      setErrorField("companyName");
+      return;
+    }
+    if (!form.name.trim()) {
+      setError(business ? "Bitte geben Sie Ihren Namen an." : "Bitte gib deinen Namen an.");
+      setErrorField("name");
+      return;
+    }
+    if (!form.email.trim()) {
+      setError(business ? "Bitte geben Sie Ihre E-Mail-Adresse an." : "Bitte gib deine E-Mail-Adresse an.");
+      setErrorField("email");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError(business ? "Bitte geben Sie eine gültige E-Mail-Adresse an." : "Bitte gib eine gültige E-Mail-Adresse an.");
+      setErrorField("email");
       return;
     }
     if (!form.consent) {
       setError(business ? "Bitte stimmen Sie der Datenverarbeitung zu." : "Bitte stimme der Datenverarbeitung zu.");
+      setErrorField("consent");
       return;
     }
     if (["telefon", "whatsapp"].includes(form.preferredChannel) && !form.phone.trim()) {
       setError(business ? "Bitte geben Sie für Telefon oder WhatsApp eine Telefonnummer an oder wählen Sie E-Mail." : "Bitte gib für Telefon oder WhatsApp eine Telefonnummer an oder wähle E-Mail.");
+      setErrorField("phone");
       return;
     }
     sending.current = true;
     setLoading(true);
     try {
+      const journey = readJourneyContext();
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,13 +124,18 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
           advisorSlug,
           ...(referralCode && referralConsent ? { referralCode, referralConsent: true } : {}),
           source: source ?? (advisorSlug ? `berater:${advisorSlug}` : business ? "anfrage:b2b" : "anfrage"),
-          meta: { audience },
+          meta: {
+            audience,
+            ...(business ? { companyName: form.companyName.trim(), companySize: form.companySize } : {}),
+            ...journey,
+          },
         }),
         signal: AbortSignal.timeout(20000),
       });
-      const json = (await res.json()) as { ok: boolean; id?: number; error?: string };
+      const json = (await res.json()) as { ok: boolean; id?: number; error?: string; field?: string };
       if (!res.ok || !json.ok) {
         setError(json.error ?? (business ? "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut." : "Etwas ist schiefgelaufen. Bitte versuche es erneut."));
+        setErrorField(json.field ?? null);
         return;
       }
       const leadId = json.id ?? 0;
@@ -218,18 +248,48 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
             </div>
           ) : (
             <div key="s1" className="hero-enter">
+              <div className={`mb-5 rounded-2xl border p-4 ${dark ? "border-white/10 bg-white/[0.04]" : "border-line bg-paper"}`}>
+                <p className={`text-[10.5px] font-extrabold uppercase tracking-[0.14em] ${muted}`}>{business ? "Ihre Auswahl" : "Deine Auswahl"}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className={chip(true)}>{form.topic}</span>
+                  <span className={`chip h-9 px-3 text-[12px] ${dark ? "border-white/12 text-silver" : "border-line bg-white text-ink-700"}`}>{SITUATIONS.find((item) => item.value === form.situation)?.label ?? form.situation}</span>
+                  {form.region && <span className={`chip h-9 px-3 text-[12px] ${dark ? "border-white/12 text-silver" : "border-line bg-white text-ink-700"}`}>{form.region}</span>}
+                </div>
+                <button type="button" onClick={() => setStep(0)} className={`mt-3 text-[11.5px] font-bold underline underline-offset-2 ${dark ? "text-electric-soft" : "text-electric-deep"}`}>Auswahl ändern</button>
+              </div>
+
+              {business && (
+                <div className="mb-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="lf-company" className={label}>Unternehmen / Selbstständigkeit *</label>
+                    <input id="lf-company" name="companyName" className={field} value={form.companyName} onChange={(e) => set("companyName", e.target.value)} autoComplete="organization" required aria-invalid={errorField === "companyName"} placeholder="Unternehmensname oder Selbstständigkeit" maxLength={180} />
+                  </div>
+                  <div>
+                    <label htmlFor="lf-company-size" className={label}>Unternehmensgröße (optional)</label>
+                    <select id="lf-company-size" name="companySize" value={form.companySize} onChange={(e) => set("companySize", e.target.value)} className={`${field} appearance-none`}>
+                      <option value="">Bitte wählen</option>
+                      <option value="solo">Selbstständig / 1 Person</option>
+                      <option value="2-10">2–10 Mitarbeitende</option>
+                      <option value="11-50">11–50 Mitarbeitende</option>
+                      <option value="51-250">51–250 Mitarbeitende</option>
+                      <option value="250+">Mehr als 250 Mitarbeitende</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="lf-name" className={label}>Name *</label>
-                  <input id="lf-name" className={field} value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" required placeholder="Vor- und Nachname" maxLength={120} />
+                  <input id="lf-name" name="name" className={field} value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" required aria-invalid={errorField === "name"} placeholder="Vor- und Nachname" maxLength={120} />
                 </div>
                 <div>
                   <label htmlFor="lf-email" className={label}>E-Mail *</label>
-                  <input id="lf-email" type="email" className={field} value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" required placeholder={business ? "name@unternehmen.de" : "name@beispiel.de"} maxLength={200} />
+                  <input id="lf-email" name="email" type="email" className={field} value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" required aria-invalid={errorField === "email"} placeholder={business ? "name@unternehmen.de" : "name@beispiel.de"} maxLength={200} />
                 </div>
                 <div>
                   <label htmlFor="lf-phone" className={label}>Telefon (für Rückruf / WhatsApp)</label>
-                  <input id="lf-phone" type="tel" className={field} value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" placeholder="+49 …" maxLength={40} />
+                  <input id="lf-phone" name="phone" type="tel" className={field} value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" aria-invalid={errorField === "phone"} placeholder="+49 …" maxLength={40} />
                 </div>
                 <div>
                   <label htmlFor="lf-time" className={label}>{business ? "Wann passt es Ihnen?" : "Wann passt es dir?"}</label>
@@ -271,7 +331,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
               </div>
 
               <label className={`mt-5 flex items-start gap-3 text-[13.5px] leading-snug ${muted}`}>
-                <input type="checkbox" checked={form.consent} onChange={(e) => set("consent", e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-ink/20 accent-electric" />
+                <input type="checkbox" checked={form.consent} onChange={(e) => set("consent", e.target.checked)} aria-invalid={errorField === "consent"} className="mt-0.5 h-4 w-4 rounded border-ink/20 accent-electric" />
                 <span>
                   Ich bin einverstanden, dass TarifWerk meine Angaben zur Bearbeitung meiner Anfrage verarbeitet.{" "}
                   <Link href={withAudience("/datenschutz", audience)} className="underline underline-offset-2 hover:text-electric">Datenschutz</Link>
