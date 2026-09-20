@@ -472,6 +472,12 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
     nextReviewAt: sql<Date | null>`(
       select ccp.next_review_at from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
     )`,
+    reviewOverdue: sql<boolean>`exists (
+      select 1 from customer_crm_profiles ccp
+      where ccp.customer_id = ${customers.id}
+        and ccp.next_review_at is not null
+        and ccp.next_review_at < now()
+    )`,
     lastContactAt: sql<Date | null>`(
       select ccp.last_contact_at from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
     )`,
