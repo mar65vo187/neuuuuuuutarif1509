@@ -61,15 +61,17 @@ export function readJourneyContext() {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) as Partial<JourneyState> : {};
+    const params = new URLSearchParams(window.location.search);
+    const currentPath = safePath();
     return {
-      landingPath: typeof parsed.landingPath === "string" ? parsed.landingPath.slice(0, 500) : "",
-      requestPath: safePath(),
-      referrerHost: typeof parsed.referrerHost === "string" ? parsed.referrerHost.slice(0, 160) : "",
-      utmSource: typeof parsed.utmSource === "string" ? parsed.utmSource.slice(0, 120) : "",
-      utmMedium: typeof parsed.utmMedium === "string" ? parsed.utmMedium.slice(0, 120) : "",
-      utmCampaign: typeof parsed.utmCampaign === "string" ? parsed.utmCampaign.slice(0, 160) : "",
-      utmContent: typeof parsed.utmContent === "string" ? parsed.utmContent.slice(0, 160) : "",
-      utmTerm: typeof parsed.utmTerm === "string" ? parsed.utmTerm.slice(0, 160) : "",
+      landingPath: typeof parsed.landingPath === "string" && parsed.landingPath ? parsed.landingPath.slice(0, 500) : currentPath,
+      requestPath: currentPath,
+      referrerHost: typeof parsed.referrerHost === "string" && parsed.referrerHost ? parsed.referrerHost.slice(0, 160) : externalReferrerHost(),
+      utmSource: typeof parsed.utmSource === "string" && parsed.utmSource ? parsed.utmSource.slice(0, 120) : (params.get("utm_source") ?? "").slice(0, 120),
+      utmMedium: typeof parsed.utmMedium === "string" && parsed.utmMedium ? parsed.utmMedium.slice(0, 120) : (params.get("utm_medium") ?? "").slice(0, 120),
+      utmCampaign: typeof parsed.utmCampaign === "string" && parsed.utmCampaign ? parsed.utmCampaign.slice(0, 160) : (params.get("utm_campaign") ?? "").slice(0, 160),
+      utmContent: typeof parsed.utmContent === "string" && parsed.utmContent ? parsed.utmContent.slice(0, 160) : (params.get("utm_content") ?? "").slice(0, 160),
+      utmTerm: typeof parsed.utmTerm === "string" && parsed.utmTerm ? parsed.utmTerm.slice(0, 160) : (params.get("utm_term") ?? "").slice(0, 160),
     };
   } catch {
     return {
