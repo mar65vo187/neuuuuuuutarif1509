@@ -5,12 +5,13 @@ import { SITE } from "@/lib/content";
 export const metadata = pageMetadata("/datenschutz");
 
 export default function DatenschutzPage() {
+  const businessAddress = process.env.BUSINESS_ADDRESS?.trim() || "Wiesbaden, Deutschland";
   return (
     <LegalPage eyebrow="Rechtliches" title="Datenschutzerklärung">
       <section>
         <h2>1. Verantwortlicher</h2>
         <p>
-          {SITE.founder}, TarifWerk, Wiesbaden · E-Mail: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+          {SITE.founder}, TarifWerk, {businessAddress} · E-Mail: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
         </p>
       </section>
       <section>
@@ -26,7 +27,27 @@ export default function DatenschutzPage() {
           ausschließlich zur Bearbeitung Ihrer Anfrage bzw. Bewerbung und zur Kontaktaufnahme (Art. 6 Abs. 1 lit. a und b DSGVO). Die Daten werden in
           unserem geschützten internen System gespeichert und nur den zuständigen Beraterinnen und Beratern zugänglich gemacht.
         </p>
-        <h3>WhatsApp, Telefon, E-Mail</h3>
+        <h3>Empfehlungsprogramm</h3>
+        <p>
+          Wenn Sie am Empfehlungsprogramm teilnehmen, verarbeiten wir die von Ihnen angegebenen Kontakt- und Profildaten sowie den zugehörigen
+          Empfehlungscode, um Empfehlungen zuzuordnen, den Status anzuzeigen und gegebenenfalls freigegebene Vorteile abzuwickeln. Eine öffentliche
+          Anzeige im Empfehlungsturm erfolgt nur, wenn Sie diese Darstellung ausdrücklich aktivieren. Dabei wird ausschließlich der gewählte Anzeigename
+          bzw. Avatar dargestellt, nicht Ihre E-Mail-Adresse oder Telefonnummer.
+        </p>
+        <h3>Kampagnen- und Anfragekontext</h3>
+        <p>
+          Für eine konkrete Anfrage speichern wir ausschließlich first-party den Einstiegspfad, die aktuelle Anfrageseite sowie gegebenenfalls
+          über URL-Parameter übermittelte Kampagnenangaben (z. B. Quelle oder Kampagnenname). Diese Informationen dienen dazu, Anfragen im CRM
+          nachvollziehbar zuzuordnen und die Wirksamkeit eigener Kampagnen auszuwerten. Es werden dafür keine Analyse- oder Tracking-Dienste von
+          Drittanbietern eingebunden.
+        </p>
+        <h3>Missbrauchsschutz öffentlicher Formulare</h3>
+        <p>
+          Zum Schutz vor automatisierten oder massenhaften Formularanfragen wird ein technischer Netzwerkschlüssel serverseitig pseudonymisiert
+          und nur kurzfristig für die Zugriffsbeschränkung verwendet. Der rohe Netzwerkschlüssel wird hierfür nicht dauerhaft in der
+          Rate-Limit-Tabelle gespeichert; veraltete Einträge werden regelmäßig entfernt.
+        </p>
+                <h3>WhatsApp, Telefon, E-Mail</h3>
         <p>
           Kontaktieren Sie uns über WhatsApp, gelten zusätzlich die Datenschutzbestimmungen von WhatsApp (Meta Platforms Ireland Ltd.). Nutzen Sie diesen Weg
           bitte nur, wenn Sie damit einverstanden sind. Alternativ stehen Telefon, E-Mail und unser Formular zur Verfügung.
