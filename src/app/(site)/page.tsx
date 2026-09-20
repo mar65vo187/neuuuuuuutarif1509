@@ -5,6 +5,7 @@ import { FinderTeaser } from "@/components/home/FinderTeaser";
 import { TrustEngine } from "@/components/home/TrustEngine";
 import { PremiumGuidance } from "@/components/home/PremiumGuidance";
 import { DecisionCheck } from "@/components/home/DecisionCheck";
+import { SessionIntentCard } from "@/components/home/SessionIntentCard";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
   AudienceEverydaySection,
@@ -60,6 +61,7 @@ export default async function HomePage({ searchParams }: Props) {
       <JsonLd data={serviceListJsonLd} />
       <Hero audience={initialAudience} />
       <AudienceTrustStrip audience={initialAudience} />
+      <SessionIntentCard audience={initialAudience} />
       <AudienceFocusSection audience={initialAudience} />
       <PremiumGuidance audience={initialAudience} />
       <DecisionCheck audience={initialAudience} />
