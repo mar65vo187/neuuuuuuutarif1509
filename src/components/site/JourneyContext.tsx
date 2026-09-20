@@ -14,6 +14,7 @@ type JourneyState = {
   utmCampaign: string;
   utmContent: string;
   utmTerm: string;
+  lastServiceSlug: string;
 };
 
 function safePath() {
@@ -38,6 +39,7 @@ export function JourneyContext() {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       const previous = stored ? JSON.parse(stored) as Partial<JourneyState> : {};
       const currentPath = safePath();
+      const serviceMatch = window.location.pathname.match(/^\/leistungen\/([^/?#]+)\/?$/);
       const next: JourneyState = {
         landingPath: typeof previous.landingPath === "string" && previous.landingPath ? previous.landingPath.slice(0, 500) : currentPath,
         lastPath: currentPath,
@@ -47,6 +49,8 @@ export function JourneyContext() {
         utmCampaign: typeof previous.utmCampaign === "string" && previous.utmCampaign ? previous.utmCampaign.slice(0, 160) : (params.get(CAMPAIGN_KEYS[2]) ?? "").slice(0, 160),
         utmContent: typeof previous.utmContent === "string" && previous.utmContent ? previous.utmContent.slice(0, 160) : (params.get(CAMPAIGN_KEYS[3]) ?? "").slice(0, 160),
         utmTerm: typeof previous.utmTerm === "string" && previous.utmTerm ? previous.utmTerm.slice(0, 160) : (params.get(CAMPAIGN_KEYS[4]) ?? "").slice(0, 160),
+        lastServiceSlug: serviceMatch?.[1]?.slice(0, 120)
+          ?? (typeof previous.lastServiceSlug === "string" ? previous.lastServiceSlug.slice(0, 120) : ""),
       };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
@@ -72,6 +76,7 @@ export function readJourneyContext() {
       utmCampaign: typeof parsed.utmCampaign === "string" && parsed.utmCampaign ? parsed.utmCampaign.slice(0, 160) : (params.get("utm_campaign") ?? "").slice(0, 160),
       utmContent: typeof parsed.utmContent === "string" && parsed.utmContent ? parsed.utmContent.slice(0, 160) : (params.get("utm_content") ?? "").slice(0, 160),
       utmTerm: typeof parsed.utmTerm === "string" && parsed.utmTerm ? parsed.utmTerm.slice(0, 160) : (params.get("utm_term") ?? "").slice(0, 160),
+      lastServiceSlug: typeof parsed.lastServiceSlug === "string" ? parsed.lastServiceSlug.slice(0, 120) : "",
     };
   } catch {
     return {
@@ -83,6 +88,20 @@ export function readJourneyContext() {
       utmCampaign: "",
       utmContent: "",
       utmTerm: "",
+      lastServiceSlug: "",
     };
+  }
+}
+
+
+export function readSessionIntent() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as Partial<JourneyState> : {};
+    return {
+      lastServiceSlug: typeof parsed.lastServiceSlug === "string" ? parsed.lastServiceSlug.slice(0, 120) : "",
+    };
+  } catch {
+    return { lastServiceSlug: "" };
   }
 }
