@@ -396,7 +396,7 @@ export async function createOrder(input: {
     const manualExpected = canOverrideCommission && input.expectedCommission !== null && input.expectedCommission !== undefined && input.expectedCommission !== ""
       ? String(input.expectedCommission)
       : null;
-    const expected = product?.expectedCommission ?? manualExpected;
+    const expected = manualExpected ?? product?.expectedCommission ?? null;
     const [created] = await tx.insert(orders).values({
       orderNumber: orderNumber(),
       customerId: customer.id,
