@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { Item, Stagger } from "@/components/ui/Reveal";
-import { FinalCta } from "@/components/home/Sections";
+import { AudienceFinalCta } from "@/components/home/AudienceSections";
 import { SERVICES, SERVICE_IMAGES } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
 import { withAudience } from "@/lib/audience";
@@ -62,7 +62,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
           </Stagger>
         </div>
       </section>
-      <FinalCta audience={audience} />
+      <AudienceFinalCta audience={audience} />
     </>
   );
 }
