@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, RotateCcw } from "lucide-react";
+import Link from "next/link";
 
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
@@ -21,9 +22,9 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
               <button type="button" onClick={reset} className="inline-flex h-12 items-center gap-2 rounded-full bg-electric px-6 text-[14px] font-bold text-white hover:bg-electric-deep">
                 <RotateCcw className="h-4 w-4" /> Erneut laden
               </button>
-              <a href="/" className="inline-flex h-12 items-center gap-2 rounded-full border border-white/15 px-6 text-[14px] font-bold text-white hover:bg-white/10">
+              <Link href="/" className="inline-flex h-12 items-center gap-2 rounded-full border border-white/15 px-6 text-[14px] font-bold text-white hover:bg-white/10">
                 Zur Startseite <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
             </div>
           </section>
         </main>
