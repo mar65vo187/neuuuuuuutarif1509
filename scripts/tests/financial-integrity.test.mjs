@@ -41,3 +41,18 @@ test("report periods do not overlap and current KPIs exclude future timestamps",
   assert.match(source, /lte\(orders\.createdAt, now\)/);
   assert.match(source, /lte\(leads\.createdAt, now\)/);
 });
+
+
+test("non-owner compensation payload masks provider and company raw values", () => {
+  const source = read("src/lib/compensation.ts");
+  assert.match(source, /providerGross: owner \? providerGross : 0/);
+  assert.match(source, /confirmedGross: owner \? confirmedGross : 0/);
+  assert.match(source, /paidGross: owner \? paidGross : 0/);
+  assert.match(source, /companyOperatingAmount: owner \?/);
+});
+
+test("employee compensation UI shows personal amounts instead of provider basis", () => {
+  const source = read("src/components/portal/CompensationDashboard.tsx");
+  assert.match(source, /Ihre Provisionsübersicht/);
+  assert.match(source, /Interne Provider-, Rücklagen- und Firmenkalkulationen werden in Ihrem Mitarbeiterzugang nicht übertragen/);
+});
