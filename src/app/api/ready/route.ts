@@ -14,6 +14,17 @@ function revision() {
 
 export async function GET() {
   const started = Date.now();
+  const missingConfiguration = [
+    !process.env.BUSINESS_ADDRESS?.trim() ? "BUSINESS_ADDRESS" : null,
+  ].filter((value): value is string => Boolean(value));
+
+  if (process.env.NODE_ENV === "production" && missingConfiguration.length > 0) {
+    return Response.json(
+      { ok: false, status: "not_ready", revision: revision(), missingConfiguration },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   try {
     const result = await pool.query<{ migration_count: number; latest_migration: string | null }>(
       "select count(*)::int as migration_count, max(name)::text as latest_migration from tarifwerk_migrations",
