@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, leadNotes, leads } from "@/db/schema";
 import { leadProductLinks, products, tasks } from "@/db/enterprise-schema";
@@ -37,12 +37,34 @@ export async function POST(request: NextRequest) {
       advisorId = advisor.id;
     }
     const created = await db.transaction(async (tx) => {
-      let selectedProduct: { id: number; name: string } | null = null;
+      const requestedProductSelections = [...data.productSelections];
       if (data.productId) {
-        const [product] = await tx.select({ id: products.id, name: products.name }).from(products)
-          .where(and(eq(products.id, data.productId), eq(products.active, true))).limit(1);
-        if (!product) throw new Error("Das ausgewählte Produkt ist nicht verfügbar.");
-        selectedProduct = product;
+        requestedProductSelections.push({
+          productId: data.productId,
+          relation: data.productRelation ?? "interest",
+        });
+      }
+      const uniqueSelections = [...new Map(
+        requestedProductSelections.map((selection) => [selection.productId, selection] as const),
+      ).values()].slice(0, 30);
+
+      let selectedProducts: Array<{ id: number; name: string; relation: "interest" | "existing" | "sold" }> = [];
+      if (uniqueSelections.length > 0) {
+        const productRows = await tx
+          .select({ id: products.id, name: products.name })
+          .from(products)
+          .where(and(
+            inArray(products.id, uniqueSelections.map((selection) => selection.productId)),
+            eq(products.active, true),
+          ));
+        if (productRows.length !== uniqueSelections.length) {
+          throw new Error("Mindestens eines der ausgewählten Produkte ist nicht verfügbar.");
+        }
+        const productById = new Map(productRows.map((product) => [product.id, product] as const));
+        selectedProducts = uniqueSelections.map((selection) => ({
+          ...productById.get(selection.productId)!,
+          relation: selection.relation,
+        }));
       }
 
       const now = new Date();
@@ -52,8 +74,8 @@ export async function POST(request: NextRequest) {
       const [lead] = await tx.insert(leads).values({
         type: data.type,
         status: data.status,
-        name: data.name,
-        email: data.email,
+        name: data.name || "",
+        email: data.email || "",
         phone: data.phone || null,
         topic: data.topic || null,
         region: data.region || null,
@@ -75,15 +97,16 @@ export async function POST(request: NextRequest) {
         confirmedAt: data.status === "termin_bestaetigt" ? now : null,
       }).returning({ id: leads.id });
 
+      const leadLabel = data.name || data.email || data.phone || `Lead #${lead.id}`;
       const systemNotes = [`${user.name} hat den Lead im Mitarbeiterportal angelegt.`];
-      if (selectedProduct && data.productRelation) {
-        await tx.insert(leadProductLinks).values({
+      if (selectedProducts.length > 0) {
+        await tx.insert(leadProductLinks).values(selectedProducts.map((product) => ({
           leadId: lead.id,
-          productId: selectedProduct.id,
-          relation: data.productRelation,
+          productId: product.id,
+          relation: product.relation,
           createdByEmployeeId: user.id,
-        });
-        systemNotes.push(`Produktzuordnung beim Anlegen: ${selectedProduct.name} · ${data.productRelation}.`);
+        })));
+        systemNotes.push(`Produktzuordnungen beim Anlegen: ${selectedProducts.map((product) => `${product.name} · ${product.relation}`).join(", ")}.`);
       }
 
       if (!closed && nextActionAt) {
@@ -93,7 +116,7 @@ export async function POST(request: NextRequest) {
           assignedToEmployeeId: user.id,
           createdByEmployeeId: user.id,
           type: "crm_follow_up",
-          title: `Lead nachfassen: ${data.name}`,
+          title: `Lead nachfassen: ${leadLabel}`,
           priority: data.priority === "hot" ? "critical" : data.priority === "high" ? "high" : "normal",
           status: "open",
           dueAt: nextActionAt,
@@ -109,8 +132,10 @@ export async function POST(request: NextRequest) {
         priority: data.priority,
         contactOutcome: data.contactOutcome,
         nextActionAt: closed ? null : nextActionAt,
-        productId: selectedProduct?.id ?? null,
-        productRelation: data.productRelation ?? null,
+        productSelections: selectedProducts.map((product) => ({
+          productId: product.id,
+          relation: product.relation,
+        })),
       });
       await emitEvent(tx, "lead.created", "lead", lead.id, {
         assignedEmployeeId: user.id,
