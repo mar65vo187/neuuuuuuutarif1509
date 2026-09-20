@@ -116,7 +116,11 @@ export function ImageCropEditor({
         <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="mx-auto w-full max-w-[620px]">
             <div className="relative aspect-square overflow-hidden rounded-[24px] border border-white/10 bg-black/25">
-              {source && <img ref={imageRef} src={source} alt="" className="hidden" onLoad={() => setReady(true)} onError={() => setError("Das Bild konnte nicht gelesen werden.")} />}
+              {source && <>
+                {/* Blob URLs are local editor previews and cannot be optimized by next/image. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img ref={imageRef} src={source} alt="" className="hidden" onLoad={() => setReady(true)} onError={() => setError("Das Bild konnte nicht gelesen werden.")} />
+              </>}
               <canvas ref={previewRef} className="h-full w-full" aria-label="Vorschau des zugeschnittenen Bildes" />
               <div className="pointer-events-none absolute inset-0 rounded-[24px] ring-1 ring-inset ring-white/15" />
               <div className="pointer-events-none absolute left-1/3 top-0 h-full w-px bg-white/15" />
