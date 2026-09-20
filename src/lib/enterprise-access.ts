@@ -3,21 +3,66 @@ import { db } from "@/db";
 import { employeeRoleAssignments, permissions, roleDefinitions, rolePermissions } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 
-const ADVISOR_DEFAULTS = new Set([
-  "lead.edit",
-  "customer.read",
-  "customer.edit",
-  "order.read",
-  "order.create",
-  "order.edit",
-  "task.manage",
-  "commission.read.self",
+export const PORTAL_PERMISSION = {
+  LEAD_EDIT: "lead.edit",
+  LEAD_ASSIGN: "lead.assign",
+  CUSTOMER_READ: "customer.read",
+  CUSTOMER_EDIT: "customer.edit",
+  CUSTOMER_EXPORT: "customer.export",
+  ORDER_READ: "order.read",
+  ORDER_CREATE: "order.create",
+  ORDER_EDIT: "order.edit",
+  ORDER_CANCEL: "order.cancel",
+  TASK_MANAGE: "task.manage",
+  COMMISSION_READ_SELF: "commission.read.self",
+  COMMISSION_READ_TEAM: "commission.read.team",
+  COMMISSION_READ_ALL: "commission.read.all",
+  COMMISSION_ADJUST: "commission.adjust",
+  REPORT_SALES: "report.sales",
+  REPORT_FINANCE: "report.finance",
+  EMPLOYEE_MANAGE: "employee.manage",
+  AUDIT_READ: "audit.read",
+  AUTOMATION_MANAGE: "automation.manage",
+  INTEGRATION_MANAGE: "integration.manage",
+  PRIVACY_MANAGE: "privacy.manage",
+} as const;
+
+export type PortalPermission = (typeof PORTAL_PERMISSION)[keyof typeof PORTAL_PERMISSION];
+
+const LEGACY_ADVISOR_DEFAULTS = new Set<PortalPermission>([
+  PORTAL_PERMISSION.LEAD_EDIT,
+  PORTAL_PERMISSION.CUSTOMER_READ,
+  PORTAL_PERMISSION.CUSTOMER_EDIT,
+  PORTAL_PERMISSION.ORDER_READ,
+  PORTAL_PERMISSION.ORDER_CREATE,
+  PORTAL_PERMISSION.ORDER_EDIT,
+  PORTAL_PERMISSION.TASK_MANAGE,
+  PORTAL_PERMISSION.COMMISSION_READ_SELF,
 ]);
 
+/**
+ * Resolve the effective permission set.
+ *
+ * Important invariant:
+ * - Admin sessions keep full access.
+ * - Once an employee has at least one enterprise role assignment, ONLY the
+ *   permissions granted by those roles apply. This makes restrictive roles
+ *   such as read_only actually restrictive.
+ * - The legacy advisor baseline exists only for employees that have no role
+ *   assignment yet, so older installations remain usable during rollout.
+ */
 export async function permissionKeys(user: SessionUser): Promise<Set<string>> {
   if (user.role === "admin") return new Set(["*"]);
-  const result = new Set(ADVISOR_DEFAULTS);
+
   try {
+    const assignments = await db
+      .select({ id: employeeRoleAssignments.id })
+      .from(employeeRoleAssignments)
+      .where(eq(employeeRoleAssignments.employeeId, user.id))
+      .limit(1);
+
+    if (assignments.length === 0) return new Set(LEGACY_ADVISOR_DEFAULTS);
+
     const rows = await db
       .select({ key: permissions.key })
       .from(employeeRoleAssignments)
@@ -25,19 +70,29 @@ export async function permissionKeys(user: SessionUser): Promise<Set<string>> {
       .innerJoin(rolePermissions, eq(rolePermissions.roleId, roleDefinitions.id))
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
       .where(and(eq(employeeRoleAssignments.employeeId, user.id)));
-    for (const row of rows) result.add(row.key);
+
+    return new Set(rows.map((row) => row.key));
   } catch {
-    // Legacy installations retain the safe advisor baseline until migrations are applied.
+    // If the enterprise RBAC tables are temporarily unavailable, keep the
+    // historical advisor baseline rather than granting elevated permissions.
+    return new Set(LEGACY_ADVISOR_DEFAULTS);
   }
-  return result;
 }
 
-export async function hasPermission(user: SessionUser, key: string) {
+export async function hasPermission(user: SessionUser, key: PortalPermission | string) {
   const keys = await permissionKeys(user);
   return keys.has("*") || keys.has(key);
 }
 
-export async function requirePermission(user: SessionUser, key: string) {
+export async function permissionSnapshot<K extends string>(
+  user: SessionUser,
+  keys: readonly K[],
+): Promise<Record<K, boolean>> {
+  const effective = await permissionKeys(user);
+  return Object.fromEntries(keys.map((key) => [key, effective.has("*") || effective.has(key)])) as Record<K, boolean>;
+}
+
+export async function requirePermission(user: SessionUser, key: PortalPermission | string) {
   if (!await hasPermission(user, key)) {
     const error = new Error("Keine Berechtigung für diese Aktion.");
     Object.assign(error, { status: 403 });
