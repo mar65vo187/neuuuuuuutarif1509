@@ -135,19 +135,22 @@ export function CampaignCockpit({
           <div>
             <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-electric-soft">Kampagnen-Cockpit</p>
             <h2 className="mt-1 text-[20px] font-extrabold">Paid-Traffic sauber bis zum CRM-Abschluss messen.</h2>
-            <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-silver">Jeder Link enthält standardisierte UTM-Parameter. Die Landingpages bleiben bewusst noindex, während Quelle und Kampagne bei einer echten Anfrage first-party ins CRM übernommen werden.</p>
+            <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-silver">Jeder Link enthält standardisierte UTM-Parameter. Die Landingpages bleiben bewusst noindex, während Quelle und Kampagne bei einer echten Anfrage first-party ins CRM übernommen werden. Zusätzlich werden bestätigte und ausgezahlte Providerprovisionen kampagnenbezogen bis zum Auftrag zurückgeführt.</p>
           </div>
         </div>
       </div>
 
       {performance && (
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Marketing Monatskennzahlen">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8" aria-label="Marketing Monatskennzahlen">
           {[
             ["Werbekosten", euro(performance.totals.spendCents)],
             ["Leads", String(performance.totals.leads)],
             ["Abschlüsse", String(performance.totals.completed)],
             ["CPL", euro(performance.totals.cplCents)],
             ["CPA", euro(performance.totals.cpaCents)],
+            ["Prov. bestätigt", euro(performance.totals.confirmedCommissionCents)],
+            ["Prov. bezahlt", euro(performance.totals.paidCommissionCents)],
+            ["Prov./Spend", performance.totals.confirmedEfficiency === null ? "–" : performance.totals.confirmedEfficiency.toFixed(2) + "×"],
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-line bg-white p-4">
               <p className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-steel">{label}</p>
@@ -156,6 +159,12 @@ export function CampaignCockpit({
             </div>
           ))}
         </section>
+      )}
+
+      {performance && (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-[11px] leading-relaxed text-silver">
+          <strong className="text-white">Prov./Spend</strong> = bestätigte Providerprovision ÷ gebuchte Werbekosten. Das ist keine Umsatz- oder Gewinnkennzahl, sondern eine operative Marketing-Effizienzkennzahl. Mitarbeiterprovisionen, Rückstellungen und weitere Kosten sind darin bewusst nicht abgezogen.
+        </div>
       )}
 
       {canManageSpend && (
@@ -211,7 +220,7 @@ export function CampaignCockpit({
           </div>
 
           {stats && (
-            <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
               {[
                 ["Spend", euro(stats.spendCents)],
                 ["Leads", String(stats.leads)],
@@ -219,6 +228,8 @@ export function CampaignCockpit({
                 ["Abschluss", String(stats.completed)],
                 ["CPL", euro(stats.cplCents)],
                 ["CPA", euro(stats.cpaCents)],
+                ["Prov. bestätigt", euro(stats.confirmedCommissionCents)],
+                ["Prov./Spend", stats.confirmedEfficiency === null ? "–" : stats.confirmedEfficiency.toFixed(2) + "×"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-xl border border-line bg-paper/60 px-3 py-2.5">
                   <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-steel">{label}</p>
