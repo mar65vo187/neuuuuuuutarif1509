@@ -34,6 +34,27 @@ export type TeamPulseRow = {
   wins30: number;
 };
 
+export type MomentumDay = {
+  day: string;
+  label: string;
+  count: number;
+  isToday: boolean;
+};
+
+export type MomentumData = {
+  today: number;
+  minimumDaily: number;
+  dailyTarget: number;
+  currentStreak: number;
+  streakAtRisk: boolean;
+  activeDays7: number;
+  leads7: number;
+  week: MomentumDay[];
+  nextMilestone: number;
+  nextMilestoneRemaining: number;
+  status: "start" | "streak" | "complete";
+};
+
 export type CommandCenterData = {
   metrics: {
     openLeads: number;
@@ -52,6 +73,7 @@ export type CommandCenterData = {
   focus: FocusItem[];
   team: TeamPulseRow[];
   taskAssignees: Array<{ id: number; name: string }>;
+  momentum: MomentumData;
   finance: null | {
     confirmed: number;
     paid: number;
@@ -84,6 +106,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     attentionLeads,
     attentionTasks,
     attentionOrders,
+    momentumRows,
   ] = await Promise.all([
     db.select({
       open: sql<number>`count(*) filter (where ${leads.status} in ('neu','kontaktiert','termin_bestaetigt','in_beratung'))::int`,
@@ -140,7 +163,68 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       .where(and(orderCondition, sql`${orders.status} not in ('active','rejected','cancelled','storno')`))
       .orderBy(asc(orders.updatedAt))
       .limit(12),
+    db.select({
+      day: sql<string>`to_char(timezone('Europe/Berlin', ${leads.createdAt}), 'YYYY-MM-DD')`,
+      count: sql<number>`count(*)::int`,
+    }).from(leads)
+      .where(and(
+        eq(leads.createdByEmployeeId, user.id),
+        gte(leads.createdAt, new Date(now.getTime() - 45 * DAY)),
+      ))
+      .groupBy(sql`to_char(timezone('Europe/Berlin', ${leads.createdAt}), 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(timezone('Europe/Berlin', ${leads.createdAt}), 'YYYY-MM-DD')`),
   ]);
+
+  const berlinParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes) => berlinParts.find((item) => item.type === type)?.value ?? "";
+  const berlinAnchor = new Date(Date.UTC(Number(part("year")), Number(part("month")) - 1, Number(part("day")), 12));
+  const keyForOffset = (offset: number) => {
+    const date = new Date(berlinAnchor);
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+  };
+  const momentumByDay = new Map(momentumRows.map((row) => [row.day, row.count] as const));
+  const week: MomentumDay[] = Array.from({ length: 7 }, (_, index) => {
+    const offset = index - 6;
+    const key = keyForOffset(offset);
+    const date = new Date(`${key}T12:00:00Z`);
+    return {
+      day: key,
+      label: new Intl.DateTimeFormat("de-DE", { weekday: "short" }).format(date).replace(".", ""),
+      count: momentumByDay.get(key) ?? 0,
+      isToday: offset === 0,
+    };
+  });
+  const today = momentumByDay.get(keyForOffset(0)) ?? 0;
+  const yesterday = momentumByDay.get(keyForOffset(-1)) ?? 0;
+  let currentStreak = 0;
+  const streakStartOffset = today > 0 ? 0 : yesterday > 0 ? -1 : null;
+  if (streakStartOffset !== null) {
+    for (let offset = streakStartOffset; offset >= -44; offset--) {
+      if ((momentumByDay.get(keyForOffset(offset)) ?? 0) <= 0) break;
+      currentStreak += 1;
+    }
+  }
+  const milestones = [3, 7, 14, 30, 60, 100];
+  const nextMilestone = milestones.find((value) => value > currentStreak) ?? Math.ceil((currentStreak + 1) / 100) * 100;
+  const momentum: MomentumData = {
+    today,
+    minimumDaily: 1,
+    dailyTarget: 2,
+    currentStreak,
+    streakAtRisk: today === 0 && yesterday > 0,
+    activeDays7: week.filter((day) => day.count > 0).length,
+    leads7: week.reduce((sum, day) => sum + day.count, 0),
+    week,
+    nextMilestone,
+    nextMilestoneRemaining: Math.max(0, nextMilestone - currentStreak),
+    status: today >= 2 ? "complete" : today === 1 ? "streak" : "start",
+  };
 
   const focus: FocusItem[] = [];
 
@@ -279,6 +363,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     focus: focus.slice(0, 12),
     team,
     taskAssignees,
+    momentum,
     finance,
   };
 }
