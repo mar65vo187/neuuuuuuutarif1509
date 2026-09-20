@@ -96,12 +96,18 @@ export default async function PortalDashboard() {
     { label: "Offene Potenziale", value: data.metrics.openCustomerOpportunities, hint: "qualifizieren oder terminieren", href: "/portal/kunden?focus=opportunity", Icon: Target, tone: "border-electric/20 bg-electric/[0.06]" },
     { label: "Risiko-Kunden", value: data.metrics.atRiskCustomers, hint: "Beziehung aktiv prüfen", href: "/portal/kunden?focus=risk", Icon: AlertTriangle, tone: "border-red-200 bg-red-50/70" },
   ];
+  const qualityChecks = [
+    { label: "Nächster Schritt gesetzt", open: data.metrics.leadsMissingNextAction, href: "/portal/leads?next=missing", detail: "Jeder offene Lead braucht eine konkrete nächste Aktion.", Icon: Target },
+    { label: "Produktbild gepflegt", open: data.metrics.leadsWithoutProduct, href: "/portal/leads?relation=none", detail: "Bedarf, Bestand oder Abschluss sollten nachvollziehbar dokumentiert sein.", Icon: PackageSearch },
+    { label: "Aufgaben im Zeitplan", open: data.metrics.overdueTasks, href: "/portal/aufgaben", detail: "Überfällige Aufgaben zuerst schließen oder neu terminieren.", Icon: Clock3 },
+    { label: "Bestandschecks aktuell", open: data.metrics.dueCustomerReviews, href: "/portal/kunden?focus=review", detail: "Fällige Kundenreviews aktiv bearbeiten statt liegen lassen.", Icon: CheckCircle2 },
+  ];
 
   return (
     <div className="space-y-7">
       <header className="grid gap-5 xl:grid-cols-[1fr_auto] xl:items-end">
         <div>
-          <p className="eyebrow text-electric-deep"><Sparkles className="h-3.5 w-3.5" /> TarifWerk Command Center</p>
+          <p className="eyebrow text-electric-deep"><Sparkles className="h-3.5 w-3.5" /> TarifWerk Arbeitsübersicht</p>
           <h1 className="mt-2 text-[clamp(1.8rem,3.6vw,2.8rem)] font-extrabold tracking-tight">Willkommen zurück, {user.name.split(" ")[0]}.</h1>
           <p className="mt-1 max-w-3xl text-[14px] leading-relaxed text-steel">
             Ein Arbeitsbild statt zehn Einzelansichten: Prioritäten, Pipeline, Teamlast und nächste Aktionen auf einen Blick.
@@ -114,12 +120,12 @@ export default async function PortalDashboard() {
         </div>
       </header>
 
-      <section className="rounded-[22px] border border-line bg-white p-4 shadow-soft sm:p-5" aria-label="Daily Momentum">
+      <section className="rounded-[22px] border border-line bg-white p-4 shadow-soft sm:p-5" aria-label="Tagesleistung">
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.2fr_auto] xl:items-center">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-electric-deep"><Flame className="h-3.5 w-3.5" /> Daily Momentum</span>
-              {data.momentum.status === "complete" && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><Trophy className="h-3 w-3" /> Power Day</span>}
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-electric-deep"><Flame className="h-3.5 w-3.5" /> Tagesleistung</span>
+              {data.momentum.status === "complete" && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><Trophy className="h-3 w-3" /> Tagesziel erreicht</span>}
             </div>
             <div className="mt-2 flex items-end gap-3">
               <p className="text-[32px] font-extrabold leading-none tracking-tight">{data.momentum.today}<span className="text-steel/45">/{data.momentum.dailyTarget}</span></p>
@@ -127,7 +133,7 @@ export default async function PortalDashboard() {
                 {data.momentum.status === "complete"
                   ? "Tagesziel erreicht"
                   : data.momentum.status === "streak"
-                    ? "Rhythmus steht · noch 1 bis Power Day"
+                    ? "Rhythmus steht · noch 1 bis Tagesziel"
                     : data.momentum.streakAtRisk
                       ? data.momentum.currentStreak + "-Tage-Rhythmus fortsetzen"
                       : "Heute mit 1 Lead starten"}
@@ -156,7 +162,7 @@ export default async function PortalDashboard() {
             <div className="flex gap-4 text-center">
               <div>
                 <p className="text-[18px] font-extrabold">{data.momentum.currentStreak}</p>
-                <p className="text-[10px] font-semibold text-steel">Streak</p>
+                <p className="text-[10px] font-semibold text-steel">Aktivserie</p>
               </div>
               <div>
                 <p className="text-[18px] font-extrabold">{data.momentum.activeDays7}/7</p>
@@ -211,9 +217,9 @@ export default async function PortalDashboard() {
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="eyebrow text-electric-deep">Sales Control</p>
-              <h2 className="mt-1 text-[18px] font-extrabold">CRM-Hygiene in einer Minute</h2>
-              <p className="mt-1 text-[12px] text-steel">Vier Listen, die verhindern, dass Umsatzpotenzial zwischen Statusfeldern verloren geht.</p>
+              <p className="eyebrow text-electric-deep">Vertriebssteuerung</p>
+              <h2 className="mt-1 text-[18px] font-extrabold">CRM-Qualität auf einen Blick</h2>
+              <p className="mt-1 text-[12px] text-steel">Vier Arbeitslisten, die saubere Wiedervorlagen, vollständige Bedarfserfassung und konsequente Bearbeitung sichern.</p>
             </div>
             <Link href="/portal/leads" className="text-[12px] font-bold text-electric-deep hover:underline">Lead CRM öffnen</Link>
           </div>
@@ -231,11 +237,38 @@ export default async function PortalDashboard() {
         </Card>
       </section>
 
-      <section aria-label="Customer Control">
+      <section aria-label="Arbeitsqualität">
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="eyebrow text-electric-deep">Customer Control</p>
+              <p className="eyebrow text-electric-deep">Qualitätscheck</p>
+              <h2 className="mt-1 text-[18px] font-extrabold">Arbeitsqualität für heute</h2>
+              <p className="mt-1 max-w-3xl text-[12px] text-steel">Kein Ranking und kein Drucksystem: Diese vier Standards zeigen nur, wo Dokumentation oder Nacharbeit noch offen ist.</p>
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-bold text-silver">Ziel: 0 offene Qualitätslücken</span>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {qualityChecks.map(({ label, open, href, detail, Icon }) => {
+              const clean = open === 0;
+              return (
+                <Link key={label} href={href} className={"rounded-2xl border p-3.5 transition hover:-translate-y-0.5 " + (clean ? "border-emerald-400/20 bg-emerald-400/[0.07]" : "border-amber-300/20 bg-amber-300/[0.07]")}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div><p className="text-[11px] font-extrabold uppercase tracking-[0.11em] text-silver">{label}</p><p className="mt-1.5 text-[24px] font-extrabold">{clean ? "Sauber" : open + " offen"}</p></div>
+                    <Icon className={"h-4 w-4 " + (clean ? "text-emerald-300" : "text-amber-300")} />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-steel">{detail}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      </section>
+
+      <section aria-label="Bestandskundensteuerung">
+        <Card>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow text-electric-deep">Bestandskundensteuerung</p>
               <h2 className="mt-1 text-[18px] font-extrabold">Bestand, Potenzial & Retention</h2>
               <p className="mt-1 text-[12px] text-steel">Kundenpflege wird automatisch Teil der Tagessteuerung statt erst beim nächsten Zufallskontakt sichtbar.</p>
             </div>
@@ -259,7 +292,7 @@ export default async function PortalDashboard() {
         <Card className="p-0 sm:p-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
             <div>
-              <p className="eyebrow text-electric-deep">Smart Focus</p>
+              <p className="eyebrow text-electric-deep">Arbeitsfokus</p>
               <h2 className="mt-1 text-[18px] font-extrabold">Was jetzt Aufmerksamkeit braucht</h2>
             </div>
             <Link href="/portal/aufgaben" className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-electric-deep hover:underline">Alle Aufgaben <ArrowRight className="h-3.5 w-3.5" /></Link>
@@ -304,7 +337,7 @@ export default async function PortalDashboard() {
 
         <Card>
           <h2 className="text-[16px] font-extrabold">Pipeline kompakt</h2>
-          <p className="text-[12px] text-steel">Leads und Aufträge ohne Wechsel in Reporting.</p>
+          <p className="text-[12px] text-steel">Leads und Aufträge ohne Wechsel in Auswertungen.</p>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <div>
               <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-steel">Leads</p>
@@ -378,7 +411,7 @@ export default async function PortalDashboard() {
       {user.role === "admin" && (
         <Card className="p-0 sm:p-0">
           <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
-            <div className="flex items-center gap-2"><UsersRound className="h-4.5 w-4.5 text-electric-deep" /><div><h2 className="text-[16px] font-extrabold">Team Pulse</h2><p className="text-[11.5px] text-steel">Arbeitslast und Engpässe statt Bauchgefühl.</p></div></div>
+            <div className="flex items-center gap-2"><UsersRound className="h-4.5 w-4.5 text-electric-deep" /><div><h2 className="text-[16px] font-extrabold">Team-Auslastung</h2><p className="text-[11.5px] text-steel">Arbeitslast und Engpässe statt Bauchgefühl.</p></div></div>
             <Link href="/portal/betrieb" className="text-[12px] font-bold text-electric-deep hover:underline">Team steuern</Link>
           </div>
           <div className="overflow-x-auto">
