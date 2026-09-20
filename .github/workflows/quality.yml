@@ -99,3 +99,66 @@ jobs:
 
       - name: PostgreSQL backup and restore smoke
         run: bash scripts/ci-recovery-smoke.sh
+
+
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: tarifwerk_runtime
+          POSTGRES_USER: tarifwerk
+          POSTGRES_PASSWORD: tarifwerk-runtime-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tarifwerk -d tarifwerk_runtime"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://tarifwerk:tarifwerk-runtime-password@localhost:5432/tarifwerk_runtime
+      SESSION_SECRET: runtime-test-only-session-signing-key-not-production
+      RUNTIME_BASE_URL: http://127.0.0.1:3000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build production runtime
+        run: npm run build
+
+      - name: Start production server
+        shell: bash
+        run: |
+          npm start > /tmp/tarifwerk-runtime.log 2>&1 &
+          echo $! > /tmp/tarifwerk-runtime.pid
+
+      - name: Runtime HTTP smoke
+        run: node scripts/runtime-smoke.mjs
+
+      - name: Runtime concurrency smoke
+        run: node scripts/runtime-concurrency-smoke.mjs
+
+      - name: Print runtime log on failure
+        if: failure()
+        run: cat /tmp/tarifwerk-runtime.log || true
+
+      - name: Stop production server
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/tarifwerk-runtime.pid ]; then
+            kill "$(cat /tmp/tarifwerk-runtime.pid)" || true
+          fi
