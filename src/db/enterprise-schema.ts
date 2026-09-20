@@ -113,24 +113,6 @@ export const customerActivities = pgTable("customer_activities", {
   index("customer_activities_next_action_idx").on(table.nextActionAt),
 ]);
 
-export const customerOpportunities = pgTable("customer_opportunities", {
-  id: serial("id").primaryKey(),
-  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
-  productId: integer("product_id").references(() => products.id, { onDelete: "set null" }),
-  topic: text("topic").notNull(),
-  status: text("status").notNull().default("open"),
-  priority: text("priority").notNull().default("normal"),
-  source: text("source").notNull().default("manual"),
-  note: text("note").notNull().default(""),
-  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
-  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  index("customer_opportunities_customer_idx").on(table.customerId, table.status, table.updatedAt),
-  index("customer_opportunities_review_idx").on(table.nextReviewAt),
-]);
-
 export const providers = pgTable("providers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -158,6 +140,24 @@ export const products = pgTable("products", {
   uniqueIndex("products_provider_name_unique").on(table.providerId, table.name),
 ]);
 
+
+export const customerOpportunities = pgTable("customer_opportunities", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  productId: integer("product_id").references(() => products.id, { onDelete: "set null" }),
+  topic: text("topic").notNull(),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("normal"),
+  source: text("source").notNull().default("manual"),
+  note: text("note").notNull().default(""),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("customer_opportunities_customer_idx").on(table.customerId, table.status, table.updatedAt),
+  index("customer_opportunities_review_idx").on(table.nextReviewAt),
+]);
 
 export const leadProductLinks = pgTable("lead_product_links", {
   leadId: integer("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
