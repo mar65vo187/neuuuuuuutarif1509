@@ -23,7 +23,7 @@ type Row = {
 
 const STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
-export function LeadBulkList({ rows }: { rows: Row[] }) {
+export function LeadBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?: Array<{ id: number; name: string }> }) {
   const [selected, setSelected] = useState<number[]>([]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const allSelected = rows.length > 0 && selected.length === rows.length;
@@ -38,7 +38,7 @@ export function LeadBulkList({ rows }: { rows: Row[] }) {
         <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : rows.map((row) => row.id))} className="h-4 w-4 rounded border-line" aria-label="Alle Leads auswählen" />
         <p className="text-[11.5px] font-semibold text-steel">{allSelected ? "Alle ausgewählt" : "Mehrfachauswahl"}</p>
       </div>
-      {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="lead" selectedIds={selected} statusOptions={STATUS_OPTIONS} allowAssignToMe onCompleted={() => setSelected([])} /></div>}
+      {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="lead" selectedIds={selected} statusOptions={STATUS_OPTIONS} allowAssignToMe assignees={assignees} onCompleted={() => setSelected([])} /></div>}
       <ul className="divide-y divide-line">
         {rows.map((lead) => (
           <li key={lead.id} className={"grid grid-cols-[auto_1fr] items-stretch " + (selectedSet.has(lead.id) ? "bg-electric/[0.035]" : "")}>
