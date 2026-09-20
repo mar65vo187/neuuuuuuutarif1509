@@ -8,6 +8,9 @@ import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { LEAD_STATUS_LABELS, LEAD_TYPE_LABELS } from "@/lib/content";
 import { listLeads } from "@/lib/queries";
 import { listSavedViews } from "@/lib/portal-productivity";
+import { db } from "@/db";
+import { employees } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +23,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const { status, type } = await searchParams;
   const s = status && STATUSES.includes(status) ? status : undefined;
   const t = type && TYPES.includes(type) ? type : undefined;
-  const [rows, savedViews] = await Promise.all([
+  const [rows, savedViews, assignees] = await Promise.all([
     listLeads({ status: s, type: t }, user),
     listSavedViews(user, "leads"),
+    user.role === "admin"
+      ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
+      : Promise.resolve([]),
   ]);
 
   const link = (next: { status?: string; type?: string }) => {
@@ -65,7 +71,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         {rows.length === 0 ? (
           <p className="p-10 text-center text-[14.5px] text-steel">Keine Anfragen für diese Auswahl.</p>
         ) : (
-          <LeadBulkList rows={rows.map((lead) => ({
+          <LeadBulkList assignees={assignees} rows={rows.map((lead) => ({
             id: lead.id,
             name: lead.name,
             topic: lead.topic,
