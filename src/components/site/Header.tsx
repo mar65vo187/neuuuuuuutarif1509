@@ -19,9 +19,37 @@ const NAV = [
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [audience, setAudience] = useState<"b2c" | "b2b">("b2c");
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const explicit = params.get("audience");
+    const cookie = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith("tarifwerk-audience="))
+      ?.split("=")[1];
+    setAudience(explicit === "b2b" || explicit === "b2c" ? explicit : cookie === "b2b" ? "b2b" : "b2c");
+  }, [pathname]);
+
+  const switchAudience = (mode: "b2c" | "b2b") => {
+    setAudience(mode);
+    document.cookie = "tarifwerk-audience=" + mode + "; Path=/; Max-Age=2592000; SameSite=Lax";
+    const url = new URL(window.location.href);
+    url.searchParams.set("audience", mode);
+    window.location.assign(url.pathname + url.search + url.hash);
+  };
+
+  const withAudience = (href: string) => {
+    if (!href.startsWith("/") || href.startsWith("//")) return href;
+    const [pathAndQuery, hash = ""] = href.split("#", 2);
+    const [path, query = ""] = pathAndQuery.split("?", 2);
+    const params = new URLSearchParams(query);
+    params.set("audience", audience);
+    return path + "?" + params.toString() + (hash ? "#" + hash : "");
+  };
 
   useEffect(() => {
     let frame = 0;
@@ -92,15 +120,15 @@ export function Header() {
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
               {NAV.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
+                return <Link key={item.href} href={withAudience(item.href)} aria-current={active ? "page" : undefined} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
               })}
             </nav>
             <div className="hidden items-center gap-3 lg:flex">
-              <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1" aria-label="Zielgruppe wählen">
-                <Link href="/?audience=b2c" className="rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-silver transition hover:bg-white/8 hover:text-white">Privat</Link>
-                <Link href="/?audience=b2b" className="rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-silver transition hover:bg-white/8 hover:text-white">Business</Link>
+              <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Zielgruppe wählen">
+                <button type="button" onClick={() => switchAudience("b2c")} aria-pressed={audience === "b2c"} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</button>
+                <button type="button" onClick={() => switchAudience("b2b")} aria-pressed={audience === "b2b"} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</button>
               </div>
-              <Button href="/anfrage" size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
+              <Button href={withAudience("/anfrage")} size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
             </div>
             <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls="mobile-menu" aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           </div>
@@ -111,13 +139,16 @@ export function Header() {
           <nav className="flex shrink-0 flex-col" aria-label="Mobile Navigation">
             {NAV.map((item, index) => {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
-              return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" aria-hidden="true" /></Link>;
+              return <Link key={item.href} href={withAudience(item.href)} aria-current={active ? "page" : undefined} style={{ animationDelay: `${60 + index * 35}ms` }} className="hero-enter flex items-center justify-between border-b border-white/8 py-4 text-[26px] font-semibold tracking-tight text-white">{item.label}<ArrowRight className="h-5 w-5 text-electric-soft" aria-hidden="true" /></Link>;
             })}
           </nav>
-          <div className="mt-5 inline-flex w-fit rounded-full border border-white/10 bg-white/[0.04] p-1"><Link href="/?audience=b2c" className="rounded-full px-4 py-2 text-[12px] font-semibold text-white hover:bg-white/8">Privatkunden</Link><Link href="/?audience=b2b" className="rounded-full px-4 py-2 text-[12px] font-semibold text-white hover:bg-white/8">Geschäftskunden</Link></div>
-          <div className="mt-5 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={`/leistungen/${service.slug}`} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
+          <div className="mt-5 inline-flex w-fit rounded-full border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Zielgruppe wählen">
+            <button type="button" onClick={() => switchAudience("b2c")} aria-pressed={audience === "b2c"} className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</button>
+            <button type="button" onClick={() => switchAudience("b2b")} aria-pressed={audience === "b2b"} className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</button>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={withAudience(`/leistungen/${service.slug}`)} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
           <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
-            <Button href="/anfrage" size="lg" iconRight={<ArrowRight />} className="w-full">Beratung starten</Button>
+            <Button href={withAudience("/anfrage")} size="lg" iconRight={<ArrowRight />} className="w-full">Beratung starten</Button>
             <Button href={SITE.phoneHref} variant="secondary" icon={<Phone />} className="w-full">Anrufen</Button>
           </div>
         </div>
