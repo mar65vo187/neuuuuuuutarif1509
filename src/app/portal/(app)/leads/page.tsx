@@ -11,6 +11,7 @@ import { listSavedViews } from "@/lib/portal-productivity";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fleads");
 
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.LEAD_ASSIGN] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canAssign = capabilities[PORTAL_PERMISSION.LEAD_ASSIGN];
+
   const params = await searchParams;
   const s = params.status && STATUSES.includes(params.status) ? params.status : undefined;
   const t = params.type && TYPES.includes(params.type) ? params.type : undefined;
@@ -49,7 +54,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const [rows, savedViews, assignees, overview, productOptions] = await Promise.all([
     listLeads({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort }, user),
     listSavedViews(user, "leads"),
-    user.role === "admin"
+    canAssign
       ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
       : Promise.resolve([]),
     getLeadCrmOverview(user),
@@ -96,7 +101,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/portal/leads/pipeline" className="inline-flex h-10 items-center gap-2 rounded-full border border-electric/20 bg-electric/[0.07] px-4 text-[13px] font-extrabold text-electric-deep hover:bg-electric/10"><LayoutDashboard className="h-4 w-4" /> Pipeline Board</Link>
-          <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white shadow-[0_12px_28px_-18px_rgba(6,11,22,0.9)] hover:bg-electric"><Plus className="h-4 w-4" /> Lead anlegen</Link>
+          {canEdit && <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white shadow-[0_12px_28px_-18px_rgba(6,11,22,0.9)] hover:bg-electric"><Plus className="h-4 w-4" /> Lead anlegen</Link>}
         </div>
       </header>
 
@@ -203,7 +208,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             <p className="mt-1 text-[12.5px] text-steel">Filter anpassen oder einen neuen Lead anlegen.</p>
           </div>
         ) : (
-          <LeadBulkList assignees={assignees} rows={rows.map((lead) => ({
+          <LeadBulkList assignees={assignees} canEdit={canEdit} canAssign={canAssign} rows={rows.map((lead) => ({
             id: lead.id,
             name: lead.name,
             topic: lead.topic,
