@@ -63,6 +63,46 @@ export const customerReferralCreateSchema = z.object({
   });
 });
 
+export const customerActivityCreateSchema = z.object({
+  type: z.enum(["note", "call", "email", "whatsapp", "meeting", "review"]),
+  direction: z.enum(["outbound", "inbound", "internal"]).default("outbound"),
+  outcome: text(120).optional().default(""),
+  note: text(3000).optional().default(""),
+  occurredAt: z.string().datetime().optional(),
+  nextActionAt: z.string().datetime().nullable().optional(),
+}).superRefine((value, ctx) => {
+  if (value.type === "note" && !value.note) {
+    ctx.addIssue({ code: "custom", path: ["note"], message: "Bitte eine Notiz eintragen." });
+  }
+});
+
+export const customerOpportunityCreateSchema = z.object({
+  productId: positiveId.nullable().optional(),
+  topic: text(180).min(2),
+  status: z.enum(["open", "qualified", "won", "lost", "later"]).default("open"),
+  priority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
+  source: text(80).optional().default("manual"),
+  note: text(2000).optional().default(""),
+  nextReviewAt: z.string().datetime().nullable().optional(),
+});
+
+export const customerOpportunityUpdateSchema = z.object({
+  productId: positiveId.nullable().optional(),
+  topic: text(180).min(2).optional(),
+  status: z.enum(["open", "qualified", "won", "lost", "later"]).optional(),
+  priority: z.enum(["low", "normal", "high", "critical"]).optional(),
+  note: text(2000).optional(),
+  nextReviewAt: z.string().datetime().nullable().optional(),
+}).refine((value) => Object.keys(value).length > 0, { message: "Keine Änderung angegeben." });
+
+export const customerCrmUpdateSchema = z.object({
+  lifecycleStage: z.enum(["prospect", "active", "retention", "dormant", "closed"]).optional(),
+  relationshipStatus: z.enum(["new", "developing", "established", "at_risk", "inactive"]).optional(),
+  riskLevel: z.enum(["low", "normal", "high", "critical"]).optional(),
+  nextReviewAt: z.string().datetime().nullable().optional(),
+  note: text(3000).optional(),
+}).refine((value) => Object.keys(value).length > 0, { message: "Keine Änderung angegeben." });
+
 export const orderCreateSchema = z.object({
   customerId: positiveId.optional(),
   leadId: positiveId.optional(),
