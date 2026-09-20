@@ -20,10 +20,22 @@ export function generateStaticParams() {
   return SERVICES.map((s) => ({ slug: s.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const audience = await resolveSiteAudience((await searchParams).audience);
   const s = getService(slug);
   if (!s) return { title: "Nicht gefunden", robots: { index: false, follow: false } };
+  if (audience === "b2b") {
+    const businessDescription = SERVICE_AUDIENCE_COPY.b2b[s.key] ?? s.intro;
+    return pageMetadata(
+      `/leistungen/${s.slug}`,
+      {
+        title: `${s.name} für Unternehmen | TarifWerk`,
+        description: `Business-Beratung zu ${s.name}: ${businessDescription} Deutschlandweit mit einem direkten Ansprechpartner.`,
+      },
+      SERVICE_IMAGES[s.key]?.src,
+    );
+  }
   return pageMetadata(`/leistungen/${s.slug}`, { title: s.seoTitle, description: s.seoDescription }, SERVICE_IMAGES[s.key]?.src);
 }
 
