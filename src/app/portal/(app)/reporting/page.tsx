@@ -65,8 +65,8 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="eyebrow text-electric-deep">Management</p>
-        <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Enterprise Reporting</h1>
+        <p className="eyebrow text-electric-deep">Steuerung</p>
+        <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Auswertungen & Qualität</h1>
         <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-steel">Funnel, Leistung, Vorperiodenvergleich und operative Datenqualität – damit Entscheidungen nicht nur auf Umsatzsummen beruhen.</p>
       </div>
       <form className="flex items-end gap-2">
