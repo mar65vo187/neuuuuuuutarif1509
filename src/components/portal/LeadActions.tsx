@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlarmClock, CalendarCheck, Check, Flame, Loader2, PhoneCall, Save, Tags, UserPlus } from "lucide-react";
+import { AlarmClock, BrainCircuit, CalendarCheck, Check, Flame, Loader2, PhoneCall, Save, Tags, UserPlus } from "lucide-react";
 import { useRef, useState } from "react";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
+import { CALL_REACTION_LABELS, CALL_REACHED_PERSON_LABELS } from "@/lib/call-intelligence";
 import { STATUS_STYLES } from "./ui";
 
 type Props = {
@@ -43,6 +44,13 @@ export function LeadActions({
   const [outcome, setOutcome] = useState(contactOutcome);
   const [nextAction, setNextAction] = useState(nextActionInput);
   const [tagText, setTagText] = useState(tags.join(", "));
+  const [callTime, setCallTime] = useState("");
+  const [reachedPerson, setReachedPerson] = useState("customer");
+  const [reaction, setReaction] = useState("neutral");
+  const [callNote, setCallNote] = useState("");
+  const [requestedCallback, setRequestedCallback] = useState("");
+  const [autoSchedule, setAutoSchedule] = useState(true);
+  const [callResult, setCallResult] = useState<{ at: string | null; reason: string; action: string; autoScheduled: boolean } | null>(null);
   const saving = useRef(false);
 
   const patch = async (key: string, body: Record<string, unknown>) => {
@@ -99,6 +107,55 @@ export function LeadActions({
     });
   };
 
+  const logCall = async () => {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy("call");
+    setError(null);
+    setCallResult(null);
+    try {
+      const res = await fetch(`/api/portal/leads/${leadId}/calls`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          calledAt: callTime ? new Date(callTime).toISOString() : undefined,
+          reachedPerson,
+          reaction,
+          note: callNote.trim(),
+          requestedCallbackAt: requestedCallback ? new Date(requestedCallback).toISOString() : null,
+          autoSchedule,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (res.status === 401) {
+        window.location.replace(`/portal/login?next=${encodeURIComponent(`/portal/leads/${leadId}`)}`);
+        return;
+      }
+      const json = (await res.json()) as {
+        ok: boolean;
+        error?: string;
+        recommendation?: { at: string | null; reason: string; action: string; autoScheduled: boolean };
+      };
+      if (!res.ok || !json.ok || !json.recommendation) {
+        setError(json.error ?? "Anruf konnte nicht gespeichert werden.");
+        return;
+      }
+      setCallResult(json.recommendation);
+      if (json.recommendation.at && json.recommendation.autoScheduled) {
+        setNextAction(localDateTimeValue(new Date(json.recommendation.at)));
+      }
+      setCallTime("");
+      setCallNote("");
+      setRequestedCallback("");
+      router.refresh();
+    } catch {
+      setError("Verbindung fehlgeschlagen.");
+    } finally {
+      saving.current = false;
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {!assigned && (
@@ -122,6 +179,76 @@ export function LeadActions({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-ink/10 bg-ink p-4 text-white">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-electric-soft"><BrainCircuit className="h-4 w-4" /></span>
+          <div className="min-w-0">
+            <p className="text-[14px] font-extrabold">Anruf dokumentieren</p>
+            <p className="mt-0.5 text-[11.5px] leading-relaxed text-silver">Eintragen, was passiert ist. Das System schlägt automatisch den nächsten sinnvollen Kontakt vor und kann direkt eine Aufgabe anlegen.</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label>
+            <span className="mb-1.5 block text-[11px] font-bold text-silver">Wer war dran?</span>
+            <select className="field border-white/10 bg-white text-ink" value={reachedPerson} onChange={(event) => setReachedPerson(event.target.value)}>
+              {Object.entries(CALL_REACHED_PERSON_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1.5 block text-[11px] font-bold text-silver">Reaktion</span>
+            <select
+              className="field border-white/10 bg-white text-ink"
+              value={reaction}
+              onChange={(event) => {
+                const value = event.target.value;
+                setReaction(value);
+                if (value === "no_answer") setReachedPerson("nobody");
+              }}
+            >
+              {Object.entries(CALL_REACTION_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1.5 block text-[11px] font-bold text-silver">Wann angerufen?</span>
+            <input type="datetime-local" className="field border-white/10 bg-white text-ink" value={callTime} onChange={(event) => setCallTime(event.target.value)} />
+            <span className="mt-1 block text-[10px] text-silver">Leer lassen = jetzt.</span>
+          </label>
+          <label>
+            <span className="mb-1.5 block text-[11px] font-bold text-silver">Gewünschter Rückruf</span>
+            <input type="datetime-local" className="field border-white/10 bg-white text-ink" value={requestedCallback} onChange={(event) => setRequestedCallback(event.target.value)} />
+            <span className="mt-1 block text-[10px] text-silver">Falls die Person selbst einen Zeitpunkt genannt hat.</span>
+          </label>
+        </div>
+
+        <label className="mt-3 block">
+          <span className="mb-1.5 block text-[11px] font-bold text-silver">Kurze Gesprächsnotiz</span>
+          <textarea rows={2} className="field border-white/10 bg-white text-ink" value={callNote} onChange={(event) => setCallNote(event.target.value)} placeholder="z. B. möchte erst mit Partner sprechen, Angebot interessant …" maxLength={1500} />
+        </label>
+
+        <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.05] p-3">
+          <input type="checkbox" checked={autoSchedule} onChange={(event) => setAutoSchedule(event.target.checked)} className="mt-0.5 h-4 w-4 accent-blue-500" />
+          <span>
+            <span className="block text-[12px] font-bold">Empfehlung automatisch als Wiedervorlage übernehmen</span>
+            <span className="mt-0.5 block text-[10.5px] leading-relaxed text-silver">Standardmäßig aktiv. Bei klarer Ablehnung oder falscher Nummer wird bewusst kein weiterer automatischer Anruf geplant.</span>
+          </span>
+        </label>
+
+        <button type="button" disabled={busy !== null} onClick={logCall} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-electric px-4 text-[13px] font-extrabold text-white hover:bg-electric-deep disabled:opacity-50">
+          {busy === "call" ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />} Anruf speichern & Folgekontakt planen
+        </button>
+
+        {callResult && (
+          <div className={"mt-3 rounded-xl border p-3 text-[12px] " + (callResult.autoScheduled ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-100" : "border-white/10 bg-white/[0.05] text-silver")}>
+            <p className="font-extrabold text-white">
+              {callResult.at && callResult.autoScheduled ? "Wiedervorlage automatisch gesetzt" : callResult.action === "appointment" ? "Termin als nächster Schritt" : "Kein automatischer Rückruf"}
+            </p>
+            {callResult.at && <p className="mt-1 font-bold">{new Date(callResult.at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</p>}
+            <p className="mt-1 leading-relaxed">{callResult.reason}</p>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-electric/15 bg-[linear-gradient(145deg,rgba(79,141,255,0.10),rgba(255,255,255,0.94))] p-4">
