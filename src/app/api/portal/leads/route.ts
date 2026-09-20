@@ -7,6 +7,7 @@ import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { portalLeadCreateSchema } from "@/lib/validation";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
+import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,11 @@ export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
+  try { await requirePermission(user, PORTAL_PERMISSION.LEAD_EDIT); }
+  catch (error) {
+    const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: unknown }).status) : 403;
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Keine Berechtigung." }, { status: Number.isFinite(status) ? status : 403 });
+  }
 
   let body: unknown;
   try {
