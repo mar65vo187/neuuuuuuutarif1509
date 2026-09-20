@@ -36,6 +36,13 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Pflichtschulungen sperren Produkte technisch, bis eine gültige Freigabe vorliegt.", "Provider-Abweichungen sollten zeitnah geklärt und dokumentiert werden."],
   },
   {
+    href: "/portal/kampagnen",
+    title: "Kampagnen",
+    purpose: "Paid-Traffic-Landingpages, UTM-Links und CRM-Attribution zentral vorbereiten.",
+    actions: ["Kampagnen-Landingpage öffnen", "Kanalgenauen Tracking-Link kopieren", "Anzeigen-Grundlage kopieren", "Ergebnisse anschließend in Auswertungen prüfen"],
+    tips: ["Landingpages bleiben bewusst noindex und sind für bezahlte Kampagnen gedacht.", "UTM-Parameter werden first-party nur bei einer tatsächlichen Anfrage ins CRM übernommen.", "Keine pauschalen Spar-, Rendite- oder Erfolgsversprechen in Anzeigen verwenden."],
+  },
+  {
     href: "/portal/rennen",
     title: "Team-Challenges",
     purpose: "Monatliche Motivation aus echten CRM-Ereignissen: qualifizierte Leads, B2B-Arbeit, Abschlüsse und erfolgreiche Empfehlungen werden visuell dargestellt.",
