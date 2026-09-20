@@ -6,6 +6,7 @@ import { CustomerReferralManager } from "@/components/portal/CustomerReferralMan
 import { CustomerEditForm } from "@/components/portal/CustomerEditForm";
 import { getCurrentUser } from "@/lib/auth";
 import { getCustomer } from "@/lib/enterprise";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/kunden/${id}`)}`);
   const data = await getCustomer(id, user);
   if (!data) notFound();
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
   const { customer } = data;
   const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
   const hasContact = Boolean(customer.phone || customer.email);
@@ -32,7 +36,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       <div className="flex flex-wrap gap-2">
         {customer.phone && <a href={`tel:${customer.phone}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> Telefon</a>}
         {customer.email && <a href={`mailto:${customer.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
-        <Link href={`/portal/auftraege/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>
+        {canCreateOrder && <Link href={`/portal/auftraege/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>}
       </div>
     </header>
 
@@ -83,7 +87,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       <Card className="lg:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="text-[16px] font-extrabold">Stammdaten</h2><p className="mt-0.5 text-[11.5px] text-steel">Kontakt- und Grunddaten der Kundenakte.</p></div>
-          <CustomerEditForm
+          {canEdit && <CustomerEditForm
             customerId={customer.id}
             firstName={customer.firstName}
             lastName={customer.lastName}
@@ -93,7 +97,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             postalCode={customer.postalCode}
             city={customer.city}
             preferredChannel={customer.preferredChannel}
-          />
+          />}
         </div>
         <dl className="mt-4 space-y-3 text-[14px]">
         {[
@@ -119,6 +123,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         customerId={customer.id}
         customerName={name}
         rows={referralRows}
+        canEdit={canEdit}
       />
     </Card>
   </div>;
