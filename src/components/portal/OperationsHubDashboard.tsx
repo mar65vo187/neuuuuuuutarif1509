@@ -23,6 +23,7 @@ type Data = {
   completions: Completion[];
   benefits: Benefit[];
   documents: DocumentRow[];
+  documentHistory: DocumentRow[];
   employees: Array<{ id: number; name: string; email: string }>;
   products: Array<{ id: number; name: string; providerId: number }>;
   providers: Array<{ id: number; name: string }>;
@@ -179,6 +180,7 @@ export function OperationsHubDashboard({ data, currentUserId }: { data: Data; cu
     <section className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
       <div className="flex items-center gap-3"><BookOpenCheck className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Dokumentcenter</h2><p className="text-[12.5px] text-steel">Aktuelle Verträge, Preislisten, Produktunterlagen und Schulungsdokumente.</p></div></div>
       <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[720px] text-left text-[12.5px]"><thead><tr className="border-b border-line text-steel"><th className="pb-3 font-semibold">Dokument</th><th className="pb-3 font-semibold">Kategorie</th><th className="pb-3 font-semibold">Zuordnung</th><th className="pb-3 font-semibold">Version</th><th className="pb-3 font-semibold">Datum</th><th className="pb-3 text-right font-semibold">Datei</th></tr></thead><tbody>{data.documents.map((doc) => <tr key={doc.id} className="border-b border-line last:border-0"><td className="py-3 font-semibold">{doc.title}</td><td className="py-3 text-steel">{doc.category}</td><td className="py-3 text-steel">{doc.productName || doc.providerName || "Allgemein"}</td><td className="py-3">v{doc.version}</td><td className="py-3 text-steel">{date(doc.createdAt)}</td><td className="py-3 text-right"><a href={`/api/portal/documents/${doc.id}`} className="inline-flex items-center gap-1 font-semibold text-electric-deep hover:underline"><FileDown className="h-3.5 w-3.5" /> {doc.fileName}</a></td></tr>)}</tbody></table>{!data.documents.length && <p className="py-5 text-[13px] text-steel">Noch keine Dokumente vorhanden.</p>}</div>
+      {data.admin && data.documentHistory.length > 0 && <details className="mt-5 border-t border-line pt-4"><summary className="cursor-pointer text-[12.5px] font-bold text-steel">Versionshistorie ({data.documentHistory.length})</summary><div className="mt-3 grid gap-2">{data.documentHistory.map((doc) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-paper px-4 py-3 text-[12px]"><div><p className="font-semibold text-ink">{doc.title} · v{doc.version}</p><p className="text-steel">{doc.category} · {date(doc.createdAt)}</p></div><a href={`/api/portal/documents/${doc.id}`} className="inline-flex items-center gap-1 font-semibold text-electric-deep hover:underline"><FileDown className="h-3.5 w-3.5" /> Alte Version öffnen</a></div>)}</div></details>}
     </section>
 
     {data.owner && <section className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
