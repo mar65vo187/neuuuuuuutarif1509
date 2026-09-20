@@ -38,6 +38,7 @@ const KIND_LABEL: Record<FocusItem["kind"], string> = {
   lead: "Lead",
   task: "Aufgabe",
   order: "Auftrag",
+  customer: "Kunde",
 };
 
 function money(value: number) {
@@ -73,7 +74,7 @@ export default async function PortalDashboard() {
   const workOrders = data.orderPipeline
     .filter((row) => !["active", "rejected", "cancelled", "storno"].includes(row.status))
     .reduce((sum, row) => sum + row.count, 0);
-  const attention = data.metrics.untouchedLeads24h + data.metrics.overdueTasks + data.metrics.attentionOrders;
+  const attention = data.metrics.untouchedLeads24h + data.metrics.overdueTasks + data.metrics.attentionOrders + data.metrics.dueCustomerReviews + data.metrics.atRiskCustomers;
 
   const kpis = [
     { label: "Offene Leads", value: data.metrics.openLeads, hint: data.metrics.newLeads24h + " neu in 24h", href: "/portal/leads", Icon: Inbox },
@@ -89,6 +90,11 @@ export default async function PortalDashboard() {
     { label: "Heute nachfassen", value: data.metrics.dueLeadFollowUpsToday, hint: "geplante Kontakte", href: "/portal/leads?next=today&sort=next", Icon: CalendarClock, tone: "border-electric/20 bg-electric/[0.06]" },
     { label: "Ohne nächsten Schritt", value: data.metrics.leadsMissingNextAction, hint: "CRM-Lücke schließen", href: "/portal/leads?next=missing", Icon: Target, tone: "border-amber-200 bg-amber-50/80" },
     { label: "Ohne Produktprofil", value: data.metrics.leadsWithoutProduct, hint: "Potenzial ergänzen", href: "/portal/leads?relation=none", Icon: PackageSearch, tone: "border-violet-200 bg-violet-50/80" },
+  ];
+  const customerControl = [
+    { label: "Reviews fällig", value: data.metrics.dueCustomerReviews, hint: "Bestandscheck jetzt", href: "/portal/kunden?focus=review", Icon: Clock3, tone: "border-amber-200 bg-amber-50/80" },
+    { label: "Offene Potenziale", value: data.metrics.openCustomerOpportunities, hint: "qualifizieren oder terminieren", href: "/portal/kunden?focus=opportunity", Icon: Target, tone: "border-electric/20 bg-electric/[0.06]" },
+    { label: "Risiko-Kunden", value: data.metrics.atRiskCustomers, hint: "Beziehung aktiv prüfen", href: "/portal/kunden?focus=risk", Icon: AlertTriangle, tone: "border-red-200 bg-red-50/70" },
   ];
 
   return (
@@ -213,6 +219,30 @@ export default async function PortalDashboard() {
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {salesControl.map(({ label, value, hint, href, Icon, tone }) => (
+              <Link key={label} href={href} className={"group rounded-2xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-soft " + tone}>
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">{label}</p><p className="mt-1.5 text-[24px] font-extrabold leading-none">{value}</p></div>
+                  <Icon className="h-4 w-4 text-electric-deep transition-transform group-hover:scale-110" />
+                </div>
+                <p className="mt-2 text-[11.5px] text-steel">{hint}</p>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section aria-label="Customer Control">
+        <Card>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow text-electric-deep">Customer Control</p>
+              <h2 className="mt-1 text-[18px] font-extrabold">Bestand, Potenzial & Retention</h2>
+              <p className="mt-1 text-[12px] text-steel">Kundenpflege wird automatisch Teil der Tagessteuerung statt erst beim nächsten Zufallskontakt sichtbar.</p>
+            </div>
+            <Link href="/portal/kunden" className="text-[12px] font-bold text-electric-deep hover:underline">Customer 360 öffnen</Link>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {customerControl.map(({ label, value, hint, href, Icon, tone }) => (
               <Link key={label} href={href} className={"group rounded-2xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-soft " + tone}>
                 <div className="flex items-start justify-between gap-3">
                   <div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">{label}</p><p className="mt-1.5 text-[24px] font-extrabold leading-none">{value}</p></div>
