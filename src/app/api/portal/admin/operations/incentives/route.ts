@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import { incentiveCampaigns, teams } from "@/db/enterprise-schema";
@@ -24,13 +24,13 @@ export async function POST(request: NextRequest) {
       if (parsed.data.audience.startsWith("employee:")) {
         const employeeId = Number(parsed.data.audience.slice("employee:".length));
         const [employee] = await tx.select({ id: employees.id }).from(employees)
-          .where(eq(employees.id, employeeId)).limit(1);
+          .where(and(eq(employees.id, employeeId), eq(employees.active, true))).limit(1);
         if (!employee) throw new Error("AUDIENCE_NOT_FOUND");
       }
       if (parsed.data.audience.startsWith("team:")) {
         const teamId = Number(parsed.data.audience.slice("team:".length));
         const [team] = await tx.select({ id: teams.id }).from(teams)
-          .where(eq(teams.id, teamId)).limit(1);
+          .where(and(eq(teams.id, teamId), eq(teams.active, true))).limit(1);
         if (!team) throw new Error("AUDIENCE_NOT_FOUND");
       }
       if (parsed.data.goalType === "team_orders" && !parsed.data.audience.startsWith("team:")) {
