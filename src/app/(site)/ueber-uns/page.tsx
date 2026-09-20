@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/seo";
+import { audiencePageMetadata } from "@/lib/seo";
 import { ArrowRight } from "lucide-react";
 import { Founder, FinalCta, Process } from "@/components/home/Sections";
 import { PageHero } from "@/components/site/PageHero";
@@ -7,7 +7,9 @@ import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { REGIONS } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
 
-export const metadata = pageMetadata("/ueber-uns");
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  return audiencePageMetadata("/ueber-uns" as const, await resolveSiteAudience((await searchParams).audience));
+}
 
 const VALUES = {
   b2c: [
