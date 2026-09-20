@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Calculator, CheckCircle2, FileSearch, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useAudience } from "@/components/home/AudienceProvider";
+import { withAudience, type AudienceMode } from "@/lib/audience";
 
 const B2C_POINTS = [
   "Angebot oder bestehenden Vertrag verständlich einordnen",
@@ -17,8 +17,7 @@ const B2B_POINTS = [
   "Keine automatische Entscheidung – Sie behalten die Freigabe",
 ] as const;
 
-export function DecisionCheck() {
-  const { audience } = useAudience();
+export function DecisionCheck({ audience }: { audience: AudienceMode }) {
   const business = audience === "b2b";
   const [monthly, setMonthly] = useState("");
   const annual = useMemo(() => {
@@ -26,9 +25,7 @@ export function DecisionCheck() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed * 12 : 0;
   }, [monthly]);
 
-  const href = business
-    ? "/anfrage?audience=b2b"
-    : "/anfrage?situation=vergleich";
+  const href = withAudience(business ? "/anfrage" : "/anfrage?situation=vergleich", audience);
 
   return (
     <section className="relative overflow-hidden bg-paper-2 py-16 sm:py-20">
