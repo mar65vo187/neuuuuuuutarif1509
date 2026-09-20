@@ -28,7 +28,7 @@ export default async function LeadPipelinePage() {
     companyName: typeof (lead.meta as Record<string, unknown> | null)?.companyName === "string"
       ? String((lead.meta as Record<string, unknown>).companyName)
       : null,
-    audience: (lead.meta as Record<string, unknown> | null)?.audience === "b2b" ? "b2b" : "b2c",
+    audience: ((lead.meta as Record<string, unknown> | null)?.audience === "b2b" ? "b2b" : "b2c") as "b2b" | "b2c",
     createdByName: lead.createdByName,
     existingProductNames: lead.existingProductNames,
     interestProductNames: lead.interestProductNames,
