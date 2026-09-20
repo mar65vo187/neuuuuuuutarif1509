@@ -2,9 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees, leads } from "@/db/schema";
+import { customers, orders, tasks } from "@/db/enterprise-schema";
 import { hashPassword } from "@/lib/auth";
 import { updateAccountSchema } from "@/lib/admin-validation";
 import { accountSelection, adminFailure, lockAdminMutation, AdminRequestError, authorizeAdmin, positiveId, readAdminJson } from "@/lib/admin-server";
+import { writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,6 +40,20 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         throw new AdminRequestError("Ein bestehendes Beraterprofil bleibt zugeordnet. Über „Profil öffentlich sichtbar“ kann es ausgeblendet werden.", 422);
       }
       const [updated] = await tx.update(employees).set({ ...account, advisorId, ...(passwordHash ? { passwordHash } : {}) }).where(eq(employees.id, id)).returning(accountSelection);
+      await writeAudit(tx, admin.id, "employee.updated", "employee", id, {
+        name: existing.name,
+        email: existing.email,
+        role: existing.role,
+        active: existing.active,
+        advisorId: existing.advisorId,
+      }, {
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+        active: updated.active,
+        advisorId: updated.advisorId,
+        passwordChanged: Boolean(passwordHash),
+      });
       return updated;
     });
     return NextResponse.json({ ok: true, user, signInAgain: id === admin.id && Boolean(password) });
@@ -68,11 +84,36 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
           await tx.update(leads).set({ assignedEmployeeId: admin.id, updatedAt: new Date() }).where(and(eq(leads.advisorId, existing.advisorId), isNull(leads.assignedEmployeeId)));
         }
       }
-      // Keep customer records private and actionable instead of making them unassigned.
-      await tx.update(leads).set({ assignedEmployeeId: admin.id, updatedAt: new Date() }).where(eq(leads.assignedEmployeeId, id));
+      // Transfer every actionable ownership reference before deleting the employee.
+      const transferredAt = new Date();
+      const [leadRows, customerRows, orderRows, taskRows] = await Promise.all([
+        tx.update(leads).set({ assignedEmployeeId: admin.id, updatedAt: transferredAt }).where(eq(leads.assignedEmployeeId, id)).returning({ id: leads.id }),
+        tx.update(customers).set({ ownerEmployeeId: admin.id, updatedAt: transferredAt }).where(eq(customers.ownerEmployeeId, id)).returning({ id: customers.id }),
+        tx.update(orders).set({ advisorEmployeeId: admin.id, updatedAt: transferredAt }).where(eq(orders.advisorEmployeeId, id)).returning({ id: orders.id }),
+        tx.update(tasks).set({ assignedToEmployeeId: admin.id, updatedAt: transferredAt }).where(eq(tasks.assignedToEmployeeId, id)).returning({ id: tasks.id }),
+      ]);
+      await writeAudit(tx, admin.id, "employee.offboarding.transferred", "employee", id, {
+        name: existing.name,
+        email: existing.email,
+        role: existing.role,
+      }, {
+        newOwnerEmployeeId: admin.id,
+        transferredLeads: leadRows.length,
+        transferredCustomers: customerRows.length,
+        transferredOrders: orderRows.length,
+        transferredTasks: taskRows.length,
+      });
       await tx.delete(employees).where(eq(employees.id, id));
       if (profileDeleted && existing.advisorId) await tx.delete(advisors).where(eq(advisors.id, existing.advisorId));
-      return { profileDeleted };
+      return {
+        profileDeleted,
+        transferred: {
+          leads: leadRows.length,
+          customers: customerRows.length,
+          orders: orderRows.length,
+          tasks: taskRows.length,
+        },
+      };
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) { return adminFailure(error); }
