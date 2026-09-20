@@ -65,7 +65,7 @@ type AudienceCopy = {
 export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
   b2c: {
     hero: {
-      eyebrow: "Beratung auf Augenhöhe · persönlich · deutschlandweit",
+      eyebrow: "TarifWerk · Beratung auf Augenhöhe · deutschlandweit",
       lines: ["Ein Haushalt.", "", "Ein Gesamtblick."],
       emphasis: "Ein Berater.",
       body: "Du hast einen bestehenden Vertrag, ein konkretes Angebot oder mehrere Themen gleichzeitig? Wir bringen Struktur rein, erklären dir die entscheidenden Unterschiede verständlich und sagen offen, welcher nächste Schritt wirklich sinnvoll ist – und welcher nicht.",
@@ -174,7 +174,7 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
   },
   b2b: {
     hero: {
-      eyebrow: "Business-Beratung für Telekommunikation, Energie & mehr",
+      eyebrow: "TarifWerk Business · Telekommunikation, Energie & mehr",
       lines: ["Weniger Abstimmung.", "", "Mehr Überblick."],
       emphasis: "Ein Ansprechpartner.",
       body: "Wir bündeln Telekommunikation, Energie, Absicherung und weitere laufende Themen Ihres Unternehmens. Sie haben einen direkten Ansprechpartner, statt jedes Thema mit einem neuen Dienstleister von vorne zu beginnen.",
