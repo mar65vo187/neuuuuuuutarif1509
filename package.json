@@ -19,7 +19,8 @@
     "test": "node --test scripts/tests/*.test.mjs",
     "seo:export": "node scripts/export-seo.mjs",
     "vercel-build": "npm run build",
-    "perf:guard": "node scripts/performance-guard.mjs"
+    "perf:guard": "node scripts/performance-guard.mjs",
+    "release:manifest": "node scripts/release-manifest.mjs"
   },
   "dependencies": {
     "dotenv": "17.3.1",
