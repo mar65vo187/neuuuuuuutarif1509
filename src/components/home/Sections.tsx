@@ -375,7 +375,7 @@ export function FinalCta({ audience = "b2c" }: { audience?: AudienceMode }) {
         </Reveal>
         <Stagger className="mx-auto mt-9 grid max-w-3xl gap-3 sm:grid-cols-3">
           <Item>
-            <Link href="/berater" className="card-hover flex h-full flex-col rounded-2xl bg-electric p-6 text-white">
+            <Link href={`/berater?audience=${audience}`} className="card-hover flex h-full flex-col rounded-2xl bg-electric p-6 text-white">
               <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">Erster Schritt</span>
               <span className="mt-3 text-[19px] font-bold">Ansprechpartner finden</span>
               <span className="mt-1 text-[13.5px] text-white/85">{business ? "Bedarf klären und nächsten Schritt bündeln" : "Thema wählen und Klarheit bekommen"}</span>
