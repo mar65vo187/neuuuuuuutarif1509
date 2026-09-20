@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { and, desc, eq, getTableColumns, gte, ilike, inArray, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { employees, leads } from "@/db/schema";
+import { employees, leadNotes, leads } from "@/db/schema";
 import {
   auditEvents,
   automationRules,
@@ -11,9 +11,13 @@ import {
   trainingModules,
   productCatalogProfiles,
   employeeTrainingCompletions,
+  customerActivities,
+  customerCrmProfiles,
   customerLeadLinks,
+  customerOpportunities,
   customerReferrals,
   customers,
+  leadCallActivities,
   notificationQueue,
   orderStatusHistory,
   orders,
@@ -28,6 +32,7 @@ import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 import { leadAccessCondition } from "@/lib/queries";
+import { getCustomerIntelligence } from "@/lib/customer-intelligence";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -451,6 +456,7 @@ export async function getCustomer(id: number, user: SessionUser) {
       order: orders,
       providerName: providers.name,
       productName: products.name,
+      productCategory: products.category,
     }).from(orders)
       .leftJoin(providers, eq(orders.providerId, providers.id))
       .leftJoin(products, eq(orders.productId, products.id))
@@ -496,6 +502,491 @@ export async function getCustomer(id: number, user: SessionUser) {
     referralSource: referralSource[0] ?? null,
     referrals,
   };
+}
+
+export async function getCustomer360(id: number, user: SessionUser) {
+  const base = await getCustomer(id, user);
+  if (!base) return null;
+
+  const [
+    profileRows,
+    activities,
+    opportunities,
+    linkedLeads,
+    linkedLeadNotes,
+    linkedLeadCalls,
+    customerOrderHistory,
+    categoryRows,
+  ] = await Promise.all([
+    db.select().from(customerCrmProfiles).where(eq(customerCrmProfiles.customerId, id)).limit(1),
+    db.select({
+      activity: customerActivities,
+      employeeName: employees.name,
+    }).from(customerActivities)
+      .leftJoin(employees, eq(customerActivities.employeeId, employees.id))
+      .where(eq(customerActivities.customerId, id))
+      .orderBy(desc(customerActivities.occurredAt))
+      .limit(120),
+    db.select({
+      opportunity: customerOpportunities,
+      productName: products.name,
+      productCategory: products.category,
+      providerName: providers.name,
+    }).from(customerOpportunities)
+      .leftJoin(products, eq(customerOpportunities.productId, products.id))
+      .leftJoin(providers, eq(products.providerId, providers.id))
+      .where(eq(customerOpportunities.customerId, id))
+      .orderBy(desc(customerOpportunities.updatedAt))
+      .limit(100),
+    db.select({
+      id: leads.id,
+      name: leads.name,
+      topic: leads.topic,
+      status: leads.status,
+      priority: leads.priority,
+      source: leads.source,
+      createdAt: leads.createdAt,
+      updatedAt: leads.updatedAt,
+    }).from(customerLeadLinks)
+      .innerJoin(leads, eq(customerLeadLinks.leadId, leads.id))
+      .where(eq(customerLeadLinks.customerId, id))
+      .orderBy(desc(leads.createdAt))
+      .limit(80),
+    db.select({
+      id: leadNotes.id,
+      leadId: leadNotes.leadId,
+      body: leadNotes.body,
+      kind: leadNotes.kind,
+      createdAt: leadNotes.createdAt,
+      employeeName: employees.name,
+    }).from(customerLeadLinks)
+      .innerJoin(leadNotes, eq(customerLeadLinks.leadId, leadNotes.leadId))
+      .leftJoin(employees, eq(leadNotes.employeeId, employees.id))
+      .where(eq(customerLeadLinks.customerId, id))
+      .orderBy(desc(leadNotes.createdAt))
+      .limit(100),
+    db.select({
+      id: leadCallActivities.id,
+      leadId: leadCallActivities.leadId,
+      calledAt: leadCallActivities.calledAt,
+      reachedPerson: leadCallActivities.reachedPerson,
+      reaction: leadCallActivities.reaction,
+      outcome: leadCallActivities.outcome,
+      note: leadCallActivities.note,
+      employeeName: employees.name,
+    }).from(customerLeadLinks)
+      .innerJoin(leadCallActivities, eq(customerLeadLinks.leadId, leadCallActivities.leadId))
+      .leftJoin(employees, eq(leadCallActivities.employeeId, employees.id))
+      .where(eq(customerLeadLinks.customerId, id))
+      .orderBy(desc(leadCallActivities.calledAt))
+      .limit(100),
+    db.select({
+      id: orderStatusHistory.id,
+      orderId: orderStatusHistory.orderId,
+      orderNumber: orders.orderNumber,
+      fromStatus: orderStatusHistory.fromStatus,
+      toStatus: orderStatusHistory.toStatus,
+      note: orderStatusHistory.note,
+      createdAt: orderStatusHistory.createdAt,
+    }).from(orderStatusHistory)
+      .innerJoin(orders, eq(orderStatusHistory.orderId, orders.id))
+      .where(and(eq(orders.customerId, id), orderAccess(user)))
+      .orderBy(desc(orderStatusHistory.createdAt))
+      .limit(120),
+    db.selectDistinct({ category: products.category })
+      .from(products)
+      .where(eq(products.active, true))
+      .orderBy(products.category),
+  ]);
+
+  const profile = profileRows[0] ?? null;
+  const timeline: Array<{
+    key: string;
+    kind: "customer" | "activity" | "lead" | "lead_note" | "lead_call" | "order" | "order_status" | "task" | "referral" | "opportunity";
+    title: string;
+    detail: string;
+    at: Date;
+    href?: string;
+    tone?: "normal" | "good" | "attention";
+  }> = [{
+    key: "customer-created-" + base.customer.id,
+    kind: "customer",
+    title: "Kundenakte angelegt",
+    detail: base.customer.customerNumber,
+    at: base.customer.createdAt,
+    tone: "good",
+  }];
+
+  for (const row of activities) {
+    timeline.push({
+      key: "activity-" + row.activity.id,
+      kind: "activity",
+      title: ({ call: "Kundenanruf", email: "E-Mail", whatsapp: "WhatsApp", meeting: "Kundentermin", review: "Bestandscheck", note: "Interne Notiz" } as Record<string, string>)[row.activity.type] ?? "Kundenaktivität",
+      detail: [row.activity.outcome, row.activity.note, row.employeeName].filter(Boolean).join(" · ") || "Aktivität dokumentiert",
+      at: row.activity.occurredAt,
+      tone: row.activity.type === "review" ? "good" : "normal",
+    });
+  }
+  for (const lead of linkedLeads) {
+    timeline.push({
+      key: "lead-" + lead.id,
+      kind: "lead",
+      title: "Lead " + (lead.status === "abgeschlossen" ? "abgeschlossen" : "verknüpft"),
+      detail: [lead.topic, lead.source, lead.priority].filter(Boolean).join(" · "),
+      at: lead.updatedAt ?? lead.createdAt,
+      href: "/portal/leads/" + lead.id,
+      tone: lead.status === "abgeschlossen" ? "good" : "normal",
+    });
+  }
+  for (const note of linkedLeadNotes) {
+    timeline.push({
+      key: "lead-note-" + note.id,
+      kind: "lead_note",
+      title: note.kind === "system" ? "Lead-Systemverlauf" : "Lead-Notiz",
+      detail: [note.body, note.employeeName].filter(Boolean).join(" · "),
+      at: note.createdAt,
+      href: "/portal/leads/" + note.leadId,
+    });
+  }
+  for (const call of linkedLeadCalls) {
+    timeline.push({
+      key: "lead-call-" + call.id,
+      kind: "lead_call",
+      title: "Lead-Anruf",
+      detail: [call.reachedPerson, call.reaction, call.outcome, call.note, call.employeeName].filter(Boolean).join(" · "),
+      at: call.calledAt,
+      href: "/portal/leads/" + call.leadId,
+    });
+  }
+  for (const row of base.orders) {
+    timeline.push({
+      key: "order-" + row.order.id,
+      kind: "order",
+      title: "Auftrag " + row.order.orderNumber,
+      detail: [row.providerName, row.productName, row.order.status].filter(Boolean).join(" · "),
+      at: row.order.createdAt,
+      href: "/portal/auftraege/" + row.order.id,
+      tone: row.order.status === "active" ? "good" : ["documents_missing", "rejected", "storno"].includes(row.order.status) ? "attention" : "normal",
+    });
+  }
+  for (const history of customerOrderHistory) {
+    timeline.push({
+      key: "order-status-" + history.id,
+      kind: "order_status",
+      title: history.orderNumber + " · Status",
+      detail: (history.fromStatus ? history.fromStatus + " → " : "") + history.toStatus + (history.note ? " · " + history.note : ""),
+      at: history.createdAt,
+      href: "/portal/auftraege/" + history.orderId,
+      tone: ["rejected", "cancelled", "storno", "documents_missing"].includes(history.toStatus) ? "attention" : history.toStatus === "active" ? "good" : "normal",
+    });
+  }
+  for (const task of base.tasks) {
+    timeline.push({
+      key: "task-" + task.id,
+      kind: "task",
+      title: task.status === "completed" ? "Aufgabe erledigt" : "Kundenaufgabe",
+      detail: task.title + (task.dueAt ? " · fällig " + task.dueAt.toLocaleString("de-DE") : ""),
+      at: task.updatedAt,
+      href: "/portal/aufgaben",
+      tone: task.status === "completed" ? "good" : task.dueAt && task.dueAt.getTime() < Date.now() ? "attention" : "normal",
+    });
+  }
+  for (const referral of base.referrals) {
+    timeline.push({
+      key: "referral-" + referral.id,
+      kind: "referral",
+      title: "Empfehlung erfasst",
+      detail: referral.targetCustomerName || referral.leadName || referral.leadEmail || referral.leadPhone || "Empfohlener Kontakt",
+      at: referral.createdAt,
+      href: referral.referredCustomerId ? "/portal/kunden/" + referral.referredCustomerId : referral.referredLeadId ? "/portal/leads/" + referral.referredLeadId : undefined,
+      tone: referral.referredCustomerId ? "good" : "normal",
+    });
+  }
+  for (const row of opportunities) {
+    timeline.push({
+      key: "opportunity-" + row.opportunity.id,
+      kind: "opportunity",
+      title: "Opportunity · " + row.opportunity.topic,
+      detail: [row.providerName, row.productName, row.opportunity.status, row.opportunity.priority, row.opportunity.note].filter(Boolean).join(" · "),
+      at: row.opportunity.updatedAt,
+      tone: row.opportunity.status === "won" ? "good" : row.opportunity.status === "lost" ? "attention" : "normal",
+    });
+  }
+
+  timeline.sort((a, b) => b.at.getTime() - a.at.getTime());
+
+  const intelligence = getCustomerIntelligence({
+    customer: {
+      createdAt: base.customer.createdAt,
+      email: base.customer.email,
+      phone: base.customer.phone,
+      preferredChannel: base.customer.preferredChannel,
+    },
+    profile,
+    orders: base.orders.map((row) => ({
+      status: row.order.status,
+      category: row.productCategory,
+      productName: row.productName,
+      createdAt: row.order.createdAt,
+      updatedAt: row.order.updatedAt,
+    })),
+    tasks: base.tasks.map((task) => ({
+      status: task.status,
+      priority: task.priority,
+      dueAt: task.dueAt,
+    })),
+    activities: activities.map((row) => ({
+      type: row.activity.type,
+      occurredAt: row.activity.occurredAt,
+      nextActionAt: row.activity.nextActionAt,
+    })),
+    opportunities: opportunities.map((row) => ({
+      status: row.opportunity.status,
+      priority: row.opportunity.priority,
+      topic: row.opportunity.topic,
+      category: row.productCategory,
+      nextReviewAt: row.opportunity.nextReviewAt,
+    })),
+    referralCount: base.referrals.length,
+    availableCategories: categoryRows.map((row) => row.category),
+  });
+
+  return {
+    ...base,
+    profile,
+    activities,
+    opportunities,
+    linkedLeads,
+    timeline: timeline.slice(0, 150),
+    intelligence,
+    availableProducts: await db.select({
+      id: products.id,
+      name: products.name,
+      category: products.category,
+      providerName: providers.name,
+    }).from(products)
+      .innerJoin(providers, eq(products.providerId, providers.id))
+      .where(eq(products.active, true))
+      .orderBy(products.category, providers.name, products.name),
+  };
+}
+
+export async function updateCustomerCrmProfile(id: number, input: {
+  lifecycleStage?: string;
+  relationshipStatus?: string;
+  riskLevel?: string;
+  nextReviewAt?: string | null;
+  note?: string;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [customer] = await tx.select({ id: customers.id }).from(customers)
+      .where(and(eq(customers.id, id), customerAccess(user), isNull(customers.archivedAt)))
+      .limit(1)
+      .for("update");
+    if (!customer) throw new Error("Kunde nicht gefunden.");
+
+    const patch = {
+      ...(input.lifecycleStage !== undefined ? { lifecycleStage: input.lifecycleStage } : {}),
+      ...(input.relationshipStatus !== undefined ? { relationshipStatus: input.relationshipStatus } : {}),
+      ...(input.riskLevel !== undefined ? { riskLevel: input.riskLevel } : {}),
+      ...(input.nextReviewAt !== undefined ? { nextReviewAt: input.nextReviewAt ? new Date(input.nextReviewAt) : null } : {}),
+      ...(input.note !== undefined ? { note: input.note.trim() } : {}),
+      updatedByEmployeeId: user.id,
+      updatedAt: new Date(),
+    };
+    const [profile] = await tx.insert(customerCrmProfiles).values({
+      customerId: id,
+      ...patch,
+    }).onConflictDoUpdate({
+      target: customerCrmProfiles.customerId,
+      set: patch,
+    }).returning();
+
+    await writeAudit(tx, user.id, "customer.crm.updated", "customer", id, undefined, {
+      lifecycleStage: profile.lifecycleStage,
+      relationshipStatus: profile.relationshipStatus,
+      riskLevel: profile.riskLevel,
+      nextReviewAt: profile.nextReviewAt?.toISOString() ?? null,
+    });
+    await emitEvent(tx, "customer.crm.updated", "customer", id, { assignedEmployeeId: user.id });
+    return profile;
+  });
+}
+
+export async function createCustomerActivity(id: number, input: {
+  type: string;
+  direction: string;
+  outcome?: string;
+  note?: string;
+  occurredAt?: string;
+  nextActionAt?: string | null;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [customer] = await tx.select({ id: customers.id }).from(customers)
+      .where(and(eq(customers.id, id), customerAccess(user), isNull(customers.archivedAt)))
+      .limit(1)
+      .for("update");
+    if (!customer) throw new Error("Kunde nicht gefunden.");
+
+    const occurredAt = input.occurredAt ? new Date(input.occurredAt) : new Date();
+    const nextActionAt = input.nextActionAt ? new Date(input.nextActionAt) : null;
+    const [activity] = await tx.insert(customerActivities).values({
+      customerId: id,
+      employeeId: user.id,
+      type: input.type,
+      direction: input.direction,
+      outcome: input.outcome?.trim() || "",
+      note: input.note?.trim() || "",
+      occurredAt,
+      nextActionAt,
+    }).returning();
+
+    if (input.type !== "note") {
+      await tx.insert(customerCrmProfiles).values({
+        customerId: id,
+        lastContactAt: occurredAt,
+        lastContactChannel: input.type,
+        updatedByEmployeeId: user.id,
+        updatedAt: new Date(),
+      }).onConflictDoUpdate({
+        target: customerCrmProfiles.customerId,
+        set: {
+          lastContactAt: occurredAt,
+          lastContactChannel: input.type,
+          updatedByEmployeeId: user.id,
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    if (nextActionAt) {
+      await tx.insert(tasks).values({
+        entityType: "customer",
+        entityId: id,
+        assignedToEmployeeId: user.id,
+        createdByEmployeeId: user.id,
+        type: "customer_follow_up",
+        title: "Kunden-Wiedervorlage",
+        description: [input.outcome, input.note].filter(Boolean).join(" · ") || null,
+        priority: "normal",
+        dueAt: nextActionAt,
+      });
+    }
+
+    await writeAudit(tx, user.id, "customer.activity.created", "customer", id, undefined, {
+      activityId: activity.id,
+      type: activity.type,
+      direction: activity.direction,
+      outcome: activity.outcome,
+      nextActionAt: activity.nextActionAt?.toISOString() ?? null,
+    });
+    await emitEvent(tx, "customer.activity.created", "customer", id, { assignedEmployeeId: user.id, activityType: activity.type });
+    return activity;
+  });
+}
+
+export async function createCustomerOpportunity(id: number, input: {
+  productId?: number | null;
+  topic: string;
+  status: string;
+  priority: string;
+  source?: string;
+  note?: string;
+  nextReviewAt?: string | null;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [customer] = await tx.select({ id: customers.id }).from(customers)
+      .where(and(eq(customers.id, id), customerAccess(user), isNull(customers.archivedAt)))
+      .limit(1)
+      .for("update");
+    if (!customer) throw new Error("Kunde nicht gefunden.");
+
+    let productId = input.productId ?? null;
+    if (productId) {
+      const [product] = await tx.select({ id: products.id }).from(products)
+        .where(and(eq(products.id, productId), eq(products.active, true))).limit(1);
+      if (!product) throw new Error("Produkt nicht gefunden.");
+      productId = product.id;
+    }
+
+    const [opportunity] = await tx.insert(customerOpportunities).values({
+      customerId: id,
+      productId,
+      topic: input.topic.trim(),
+      status: input.status,
+      priority: input.priority,
+      source: input.source?.trim() || "manual",
+      note: input.note?.trim() || "",
+      nextReviewAt: input.nextReviewAt ? new Date(input.nextReviewAt) : null,
+      createdByEmployeeId: user.id,
+    }).returning();
+
+    await writeAudit(tx, user.id, "customer.opportunity.created", "customer", id, undefined, {
+      opportunityId: opportunity.id,
+      productId: opportunity.productId,
+      topic: opportunity.topic,
+      status: opportunity.status,
+      priority: opportunity.priority,
+    });
+    await emitEvent(tx, "customer.opportunity.created", "customer", id, { assignedEmployeeId: user.id, opportunityId: opportunity.id });
+    return opportunity;
+  });
+}
+
+export async function updateCustomerOpportunity(customerId: number, opportunityId: number, input: {
+  productId?: number | null;
+  topic?: string;
+  status?: string;
+  priority?: string;
+  note?: string;
+  nextReviewAt?: string | null;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [customer] = await tx.select({ id: customers.id }).from(customers)
+      .where(and(eq(customers.id, customerId), customerAccess(user), isNull(customers.archivedAt)))
+      .limit(1);
+    if (!customer) throw new Error("Kunde nicht gefunden.");
+
+    const [existing] = await tx.select().from(customerOpportunities)
+      .where(and(eq(customerOpportunities.id, opportunityId), eq(customerOpportunities.customerId, customerId)))
+      .limit(1)
+      .for("update");
+    if (!existing) throw new Error("Opportunity nicht gefunden.");
+
+    if (input.productId) {
+      const [product] = await tx.select({ id: products.id }).from(products)
+        .where(and(eq(products.id, input.productId), eq(products.active, true))).limit(1);
+      if (!product) throw new Error("Produkt nicht gefunden.");
+    }
+
+    const patch: Partial<typeof customerOpportunities.$inferInsert> = { updatedAt: new Date() };
+    if (input.productId !== undefined) patch.productId = input.productId;
+    if (input.topic !== undefined) patch.topic = input.topic.trim();
+    if (input.status !== undefined) patch.status = input.status;
+    if (input.priority !== undefined) patch.priority = input.priority;
+    if (input.note !== undefined) patch.note = input.note.trim();
+    if (input.nextReviewAt !== undefined) patch.nextReviewAt = input.nextReviewAt ? new Date(input.nextReviewAt) : null;
+
+    const [updated] = await tx.update(customerOpportunities).set(patch)
+      .where(eq(customerOpportunities.id, opportunityId))
+      .returning();
+
+    await writeAudit(tx, user.id, "customer.opportunity.updated", "customer", customerId, {
+      opportunityId: existing.id,
+      status: existing.status,
+      priority: existing.priority,
+      productId: existing.productId,
+      topic: existing.topic,
+    }, {
+      opportunityId: updated.id,
+      status: updated.status,
+      priority: updated.priority,
+      productId: updated.productId,
+      topic: updated.topic,
+    });
+    await emitEvent(tx, "customer.opportunity.updated", "customer", customerId, { assignedEmployeeId: user.id, opportunityId });
+    return updated;
+  });
 }
 
 export async function listCatalog() {
