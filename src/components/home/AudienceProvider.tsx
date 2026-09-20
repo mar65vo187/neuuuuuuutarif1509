@@ -18,9 +18,9 @@ export function AudienceProvider({ initialAudience = "b2c", children }: { initia
   const setAudience = (mode: AudienceMode) => {
     setAudienceState(mode);
     if (typeof window !== "undefined") {
+      document.cookie = "tarifwerk-audience=" + mode + "; Path=/; Max-Age=2592000; SameSite=Lax";
       const url = new URL(window.location.href);
-      if (mode === "b2b") url.searchParams.set("audience", "b2b");
-      else url.searchParams.delete("audience");
+      url.searchParams.set("audience", mode);
       window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
     }
   };
