@@ -14,6 +14,7 @@ type AudienceCopy = {
     primary: string;
     primaryHref: string;
     secondary: string;
+    secondaryHref: string;
     whatsapp: string;
     checks: string[];
     cardEyebrow: string;
@@ -71,6 +72,7 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
       primary: "Kostenlose Einschätzung anfragen",
       primaryHref: "/anfrage",
       secondary: "Zweite Meinung einholen",
+      secondaryHref: "/anfrage?situation=vergleich",
       whatsapp: "Hallo TarifWerk, ich möchte kurz meine Situation besprechen.",
       checks: ["kostenlos & unverbindlich", "persönliche Rückmeldung", "Sie entscheiden selbst"],
       cardEyebrow: "So läuft es ab",
@@ -179,6 +181,7 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
       primary: "Business-Anfrage starten",
       primaryHref: "/anfrage?audience=b2b",
       secondary: "Leistungen ansehen",
+      secondaryHref: "/leistungen",
       whatsapp: "Hallo TarifWerk, ich möchte kurz den Bedarf meines Unternehmens besprechen.",
       checks: ["unverbindliche Bedarfsklärung", "direkter Ansprechpartner", "deutschlandweit"],
       cardEyebrow: "So läuft es ab",
