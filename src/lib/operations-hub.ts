@@ -212,6 +212,7 @@ export async function getOperationsHubData(user: SessionUser) {
 
   let reconciliation: Array<{
     id: number;
+    orderId: number | null;
     providerId: number | null;
     type: string;
     status: string;
@@ -226,6 +227,7 @@ export async function getOperationsHubData(user: SessionUser) {
   if (owner) {
     reconciliation = await db.select({
       id: reconciliationIssues.id,
+      orderId: reconciliationIssues.orderId,
       providerId: reconciliationIssues.providerId,
       type: reconciliationIssues.type,
       status: reconciliationIssues.status,
