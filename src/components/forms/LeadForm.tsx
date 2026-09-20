@@ -349,7 +349,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
 
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className={`inline-flex items-center gap-2 text-[12.5px] ${muted}`}>
-          <ShieldCheck className="h-4 w-4 text-electric" /> Kostenlos · unverbindlich · keine Weitergabe
+          <ShieldCheck className="h-4 w-4 text-electric" /> Kostenlos · unverbindlich · kein Datenverkauf
         </p>
         <div className="flex gap-2">
           {step > 0 && (
