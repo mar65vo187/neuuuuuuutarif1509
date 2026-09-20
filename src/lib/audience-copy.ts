@@ -306,3 +306,29 @@ export const SERVICE_AUDIENCE_COPY: Record<AudienceMode, Record<string, string>>
     immobilien: "Nutzung, Investitionsziel, Budget und nächste Fachschritte strukturieren.",
   },
 };
+
+const BUSINESS_SERVICE_QUESTION_OVERRIDES: Record<string, string> = {
+  "Prüft ihr die Verfügbarkeit für mich?": "Prüfen Sie die Verfügbarkeit für uns?",
+  "Verkauft ihr mir Verträge, die ich nicht brauche?": "Vermitteln Sie auch Verträge, die wir nicht brauchen?",
+  "Kommt ihr vorbei?": "Kommen Sie auch vor Ort?",
+  "Garantiert ihr Wertsteigerungen?": "Garantieren Sie Wertsteigerungen?",
+  "Vermittelt ihr auch Objekte?": "Vermitteln Sie auch Objekte?",
+};
+
+export function serviceFaqForAudience(items: Array<{ q: string; a: string }>, audience: AudienceMode) {
+  if (audience === "b2c") return items;
+  return items.map((item) => ({
+    ...item,
+    q: BUSINESS_SERVICE_QUESTION_OVERRIDES[item.q] ?? item.q,
+  }));
+}
+
+export function serviceChecksForAudience(items: string[], audience: AudienceMode) {
+  return items.map((item) => {
+    if (audience === "b2b") return item;
+    return item
+      .replace("Ihren Strombedarf", "deinen Strombedarf")
+      .replace("Ihren Zeithorizont", "deinen Zeithorizont");
+  });
+}
+
