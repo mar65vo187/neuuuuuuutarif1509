@@ -27,10 +27,12 @@ export function PortalCommandPalette({
   open,
   onClose,
   role,
+  permissions,
 }: {
   open: boolean;
   onClose: () => void;
   role: "admin" | "berater";
+  permissions: string[];
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -39,17 +41,21 @@ export function PortalCommandPalette({
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const shortcuts = useMemo(() => [
-    { id: "today-followups", title: "Heute nachfassen", subtitle: "Fällige Wiedervorlagen direkt abarbeiten", href: "/portal/leads?next=today&sort=next", icon: CalendarClock },
-    { id: "pipeline", title: "Pipeline Board", subtitle: "Leads nach Vertriebsphase steuern", href: "/portal/leads/pipeline", icon: LayoutDashboard },
-    { id: "new-lead", title: "Neue Anfrage anlegen", subtitle: "Lead manuell erfassen", href: "/portal/leads/neu", icon: Inbox },
-    { id: "new-customer", title: "Neuen Kunden anlegen", subtitle: "Kundenakte erstellen", href: "/portal/kunden/neu", icon: ContactRound },
-    { id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness },
-    { id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und Follow-ups", href: "/portal/aufgaben", icon: ListTodo },
-    { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
-    { id: "reporting", title: "Reporting öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart },
-    ...(role === "admin" ? [{ id: "system", title: "System öffnen", subtitle: "Automationen, Audit und Integrationen", href: "/portal/system", icon: Settings2 }] : []),
-  ], [role]);
+  const shortcuts = useMemo(() => {
+    const permissionSet = new Set(permissions);
+    const can = (...keys: string[]) => permissionSet.has("*") || keys.some((key) => permissionSet.has(key));
+    return [
+      { id: "today-followups", title: "Heute nachfassen", subtitle: "Fällige Wiedervorlagen direkt abarbeiten", href: "/portal/leads?next=today&sort=next", icon: CalendarClock },
+      { id: "pipeline", title: "Pipeline Board", subtitle: "Leads nach Vertriebsphase steuern", href: "/portal/leads/pipeline", icon: LayoutDashboard },
+      ...(can("lead.edit") ? [{ id: "new-lead", title: "Neue Anfrage anlegen", subtitle: "Lead manuell erfassen", href: "/portal/leads/neu", icon: Inbox }] : []),
+      ...(can("customer.edit") ? [{ id: "new-customer", title: "Neuen Kunden anlegen", subtitle: "Kundenakte erstellen", href: "/portal/kunden/neu", icon: ContactRound }] : []),
+      ...(can("order.create") ? [{ id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness }] : []),
+      { id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und Follow-ups", href: "/portal/aufgaben", icon: ListTodo },
+      { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
+      ...(can("report.sales", "report.finance") ? [{ id: "reporting", title: "Reporting öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart }] : []),
+      ...(role === "admin" ? [{ id: "system", title: "System öffnen", subtitle: "Automationen, Audit und Integrationen", href: "/portal/system", icon: Settings2 }] : []),
+    ];
+  }, [permissions, role]);
 
   const visibleShortcuts = query.trim()
     ? shortcuts.filter((item) => `${item.title} ${item.subtitle}`.toLowerCase().includes(query.trim().toLowerCase()))
