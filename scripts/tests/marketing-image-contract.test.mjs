@@ -37,6 +37,13 @@ test("profile image pipeline is editable and normalized to one size", () => {
   }
 });
 
+test("versioned public advisor images use long immutable cache headers", () => {
+  const route = read("src/app/api/advisors/[id]/image/route.ts");
+  assert.match(route, /requestedVersion === contentVersion/);
+  assert.match(route, /max-age=31536000, s-maxage=31536000, immutable/);
+  assert.match(route, /max-age=0, must-revalidate/);
+});
+
 test("campaign landing pages are ad-focused and excluded from organic indexing", () => {
   const campaigns = read("src/lib/marketing-campaigns.ts");
   const page = read("src/app/kampagne/[slug]/page.tsx");
