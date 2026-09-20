@@ -29,6 +29,8 @@ type Row = {
   interestProductNames: string[];
   soldProductNames: string[];
   referralSourceName?: string | null;
+  companyName?: string | null;
+  audience?: "b2c" | "b2b" | null;
 };
 
 const STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS)
@@ -85,7 +87,9 @@ export function LeadBulkList({
                   <span className={`chip px-2 py-0.5 text-[10.5px] ${PRIORITY_STYLES[lead.priority] ?? PRIORITY_STYLES.normal}`}>{LEAD_PRIORITY_LABELS[lead.priority] ?? lead.priority}</span>
                   {lead.contactOutcome !== "open" && <span className="chip border-line bg-paper px-2 py-0.5 text-[10.5px] text-steel">{LEAD_CONTACT_OUTCOME_LABELS[lead.contactOutcome] ?? lead.contactOutcome}</span>}
                   {lead.referralSourceName && <span className="inline-flex items-center gap-1 rounded-full border border-electric/15 bg-electric/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-electric-deep"><Network className="h-3 w-3" /> Vitamin B · {lead.referralSourceName}</span>}
+                  {lead.audience === "b2b" && <span className="rounded-full border border-champagne/25 bg-champagne/10 px-2 py-0.5 text-[10.5px] font-bold text-champagne-soft">Business</span>}
                 </div>
+                {lead.companyName && <p className="mt-1 text-[12.5px] font-bold text-platinum">{lead.companyName}</p>}
                 <p className="mt-0.5 truncate text-[13.5px] text-steel">{lead.topic ?? "Ohne Thema"} · {lead.region ?? "Region offen"} · {lead.preferredChannel ?? "Kanal offen"}{lead.preferredTime ? " · Wunsch: " + lead.preferredTime : ""}</p>
 
                 {(lead.existingProductNames.length > 0 || lead.interestProductNames.length > 0 || lead.soldProductNames.length > 0) && (
