@@ -7,9 +7,9 @@ export const metadata = { ...pageMetadata("/freund-werben/status"), referrer: "n
 export default function ReferralStatusPage() {
   return <>
     <PageHero
-      eyebrow="Ihr privater Status"
+      eyebrow="Dein privater Status"
       title={<>Empfehlungen & Prämien. <span className="display-i font-normal text-champagne-soft">Transparent im Blick.</span></>}
-      text="Hier sehen Sie anonymisiert, wie sich Ihre Empfehlungen entwickeln und welche Prämien bereits abgeschlossen, freigegeben oder erledigt sind."
+      text="Hier siehst du anonymisiert, wie sich deine Empfehlungen entwickeln und welche Prämien bereits abgeschlossen, freigegeben oder erledigt sind."
       compact
     />
     <section className="bg-paper py-16 sm:py-20">
