@@ -11,22 +11,25 @@ export function BulkToolbar({
   selectedIds,
   statusOptions,
   allowAssignToMe = false,
+  assignees = [],
   onCompleted,
 }: {
   entity: "lead" | "order" | "task";
   selectedIds: number[];
   statusOptions: StatusOption[];
   allowAssignToMe?: boolean;
+  assignees?: Array<{ id: number; name: string }>;
   onCompleted: () => void;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState("");
-  const [busy, setBusy] = useState<"status" | "assign" | null>(null);
+  const [busy, setBusy] = useState<"status" | "assign" | "assignEmployee" | null>(null);
+  const [employeeId, setEmployeeId] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   if (selectedIds.length === 0) return null;
 
-  async function run(action: "status" | "assign_to_me", value?: string) {
+  async function run(action: "status" | "assign_to_me" | "assign_employee", value?: string) {
     if (busy) return;
     if (action === "status" && !value) {
       setMessage({ kind: "error", text: "Bitte zuerst einen Status auswählen." });
@@ -37,14 +40,14 @@ export function BulkToolbar({
       if (!window.confirm(selectedIds.length + " Aufträge auf „" + label + "“ setzen? Stornierte Aufträge können nicht reaktiviert werden.")) return;
     }
 
-    setBusy(action === "status" ? "status" : "assign");
+    setBusy(action === "status" ? "status" : action === "assign_employee" ? "assignEmployee" : "assign");
     setMessage(null);
     try {
       const response = await fetch("/api/portal/enterprise/bulk", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity, ids: selectedIds, action, value }),
+        body: JSON.stringify({ entity, ids: selectedIds, action, value, employeeId: action === "assign_employee" ? Number(employeeId) : undefined }),
         signal: AbortSignal.timeout(entity === "order" ? 45000 : 20000),
       });
       const json = await response.json().catch(() => null) as {
@@ -89,6 +92,7 @@ export function BulkToolbar({
           {busy === "status" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <WandSparkles className="h-3.5 w-3.5" />} Status anwenden
         </button>
         {allowAssignToMe && <button type="button" onClick={() => run("assign_to_me")} disabled={busy !== null} className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-[12px] font-semibold hover:border-electric/30 disabled:opacity-50">{busy === "assign" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />} Mir zuweisen</button>}
+        {entity === "lead" && assignees.length > 0 && <><select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} className="h-9 min-w-[180px] rounded-xl border border-line bg-white px-3 text-[12px] font-semibold outline-none focus:border-electric"><option value="">Mitarbeiter wählen…</option>{assignees.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}</select><button type="button" onClick={() => run("assign_employee")} disabled={busy !== null || !employeeId} className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-[12px] font-semibold hover:border-electric/30 disabled:opacity-50">{busy === "assignEmployee" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />} Zuweisen</button></>}
         <button type="button" onClick={onCompleted} disabled={busy !== null} className="ml-auto grid h-9 w-9 place-items-center rounded-full text-steel hover:bg-paper hover:text-ink" aria-label="Auswahl aufheben"><X className="h-4 w-4" /></button>
       </div>
       {message && <p className={"mt-2 text-[11.5px] font-semibold " + (message.kind === "ok" ? "text-emerald-700" : "text-amber-800")}>{message.text}</p>}
