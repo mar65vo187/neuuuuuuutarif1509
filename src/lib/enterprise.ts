@@ -421,7 +421,7 @@ export async function createCustomerReferral(input: {
   });
 }
 
-export async function listCustomers(user: SessionUser, search?: string, limit = 100) {
+export async function listCustomers(user: SessionUser, search?: string, limit = 100, filter?: { focus?: "review" | "opportunity" | "risk" }) {
   const conditions = [customerAccess(user), isNull(customers.archivedAt)];
   const q = search?.trim();
   if (q) {
@@ -434,6 +434,22 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
       ilike(customers.phone, `%${q}%`),
     )!);
   }
+  if (filter?.focus === "review") conditions.push(sql`exists (
+    select 1 from customer_crm_profiles ccp
+    where ccp.customer_id = ${customers.id}
+      and ccp.next_review_at is not null
+      and ccp.next_review_at < now()
+  )`);
+  if (filter?.focus === "opportunity") conditions.push(sql`exists (
+    select 1 from customer_opportunities co
+    where co.customer_id = ${customers.id}
+      and co.status in ('open','qualified','later')
+  )`);
+  if (filter?.focus === "risk") conditions.push(sql`exists (
+    select 1 from customer_crm_profiles ccp
+    where ccp.customer_id = ${customers.id}
+      and (ccp.relationship_status = 'at_risk' or ccp.risk_level in ('high','critical'))
+  )`);
   return db.select({
     ...getTableColumns(customers),
     referralCount: sql<number>`(select count(*)::int from customer_referrals cr where cr.source_customer_id = ${customers.id})`,
@@ -444,6 +460,26 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
       join customers source on source.id = cr.source_customer_id
       where cr.referred_customer_id = ${customers.id}
       limit 1
+    )`,
+    activeOrderCount: sql<number>`(
+      select count(*)::int from orders o
+      where o.customer_id = ${customers.id} and o.status in ('accepted','activation_pending','active')
+    )`,
+    openOpportunityCount: sql<number>`(
+      select count(*)::int from customer_opportunities co
+      where co.customer_id = ${customers.id} and co.status in ('open','qualified','later')
+    )`,
+    nextReviewAt: sql<Date | null>`(
+      select ccp.next_review_at from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+    )`,
+    lastContactAt: sql<Date | null>`(
+      select ccp.last_contact_at from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+    )`,
+    relationshipStatus: sql<string | null>`(
+      select ccp.relationship_status from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+    )`,
+    crmRiskLevel: sql<string | null>`(
+      select ccp.risk_level from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
     )`,
   }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(Math.max(1, Math.min(limit, 200)));
 }
