@@ -4,6 +4,9 @@ import { AlertTriangle, ArrowRight, BrainCircuit, CheckCircle2, Clock3, FileWarn
 import { getCurrentUser } from "@/lib/auth";
 import { getCommandCenterData } from "@/lib/portal-command-center";
 import { Card } from "@/components/portal/ui";
+import { WorkAssistantActions } from "@/components/portal/WorkAssistantActions";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { buildWorkAssistant } from "@/lib/work-assistant";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +24,12 @@ type AssistantItem = {
 export default async function WorkAssistantPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fassistent");
-  const data = await getCommandCenterData(user);
+  const [data, canTaskManage] = await Promise.all([
+    getCommandCenterData(user),
+    hasPermission(user, PORTAL_PERMISSION.TASK_MANAGE),
+  ]);
   const m = data.metrics;
+  const suggestions = buildWorkAssistant(data);
 
   const items: AssistantItem[] = [
     m.overdueTasks > 0 && {
@@ -181,26 +188,7 @@ export default async function WorkAssistantPage() {
         </section>
       )}
 
-      {data.focus.length > 0 && (
-        <Card>
-          <div className="flex items-start gap-3">
-            <Sparkles className="mt-0.5 h-4.5 w-4.5 text-electric-soft" />
-            <div>
-              <h2 className="text-[15px] font-extrabold">Konkrete Fälle aus deinem Fokus</h2>
-              <p className="mt-1 text-[11.5px] text-steel">Die ersten Fälle stammen aus dem bestehenden Command-Center und bleiben vollständig nachvollziehbar.</p>
-            </div>
-          </div>
-          <div className="mt-4 grid gap-2">
-            {data.focus.slice(0, 8).map((item) => (
-              <Link key={item.key} href={item.href} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.035] px-3.5 py-3 transition hover:bg-white/[0.06]">
-                <span className={"h-2.5 w-2.5 shrink-0 rounded-full " + (item.priority === "critical" ? "bg-red-400" : item.priority === "high" ? "bg-amber-300" : "bg-electric-soft")} />
-                <span className="min-w-0 flex-1"><span className="block truncate text-[12.5px] font-extrabold">{item.title}</span><span className="block truncate text-[11px] text-steel">{item.subtitle}</span></span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-steel" />
-              </Link>
-            ))}
-          </div>
-        </Card>
-      )}
+      <WorkAssistantActions suggestions={suggestions} canCreateTasks={canTaskManage} />
     </div>
   );
 }
