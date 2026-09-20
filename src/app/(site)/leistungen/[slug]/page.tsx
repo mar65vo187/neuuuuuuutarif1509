@@ -11,7 +11,7 @@ import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { REGIONS, SERVICES, SERVICE_IMAGES, SITE, getService } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
-import { SERVICE_AUDIENCE_COPY } from "@/lib/audience-copy";
+import { SERVICE_AUDIENCE_COPY, serviceChecksForAudience, serviceFaqForAudience } from "@/lib/audience-copy";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ audience?: string | string[] }> };
 
@@ -34,6 +34,8 @@ export default async function ServicePage({ params, searchParams }: Props) {
   if (!s) notFound();
   const img = SERVICE_IMAGES[s.key];
   const relatedKeys = RELATED_SERVICE_KEYS[s.key] ?? [];
+  const checks = serviceChecksForAudience([...s.checks], audience);
+  const faq = serviceFaqForAudience([...s.faq], audience);
   const others = relatedKeys
     .map((key) => SERVICES.find((service) => service.key === key))
     .filter((service): service is (typeof SERVICES)[number] => Boolean(service))
@@ -112,7 +114,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
             <p className="mt-4 text-[15.5px] leading-relaxed text-steel">{business ? "Danach wissen Sie, welche Punkte entscheidungsreif sind und wo noch Klärungsbedarf besteht." : "Danach weißt du, was wirklich relevant ist und welcher nächste Schritt für dich Sinn ergibt."}</p>
           </Reveal>
           <Stagger className="grid gap-3 lg:col-span-7" stagger={0.08}>
-            {s.checks.map((c, i) => (
+            {checks.map((c, i) => (
               <Item key={c}>
                 <div className="card-hover flex items-start gap-4 rounded-2xl border border-line bg-white p-5">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-electric/10 text-[13px] font-extrabold text-electric-deep">0{i + 1}</span>
@@ -139,7 +141,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
           <Reveal className="lg:col-span-7" delay={0.1}>
             <p className="eyebrow text-electric-deep">Häufige Fragen zu {s.name}</p>
             <div className="mt-3">
-              <Accordion items={s.faq} />
+              <Accordion items={faq} />
             </div>
           </Reveal>
         </div>
