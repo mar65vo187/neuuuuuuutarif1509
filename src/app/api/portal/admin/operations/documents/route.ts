@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { desc, eq, max } from "drizzle-orm";
+import { and, eq, isNull, max } from "drizzle-orm";
 import { db } from "@/db";
 import { internalDocuments } from "@/db/enterprise-schema";
 import { adminFailure, authorizeAdmin, lockAdminMutation } from "@/lib/admin-server";
@@ -61,9 +61,20 @@ export async function POST(request: NextRequest) {
 
     const result = await db.transaction(async (tx) => {
       await lockAdminMutation(tx, admin.id);
+      const scope = and(
+        eq(internalDocuments.title, title),
+        eq(internalDocuments.category, category),
+        eq(internalDocuments.visibility, visibility),
+        productId ? eq(internalDocuments.productId, productId) : isNull(internalDocuments.productId),
+        providerId ? eq(internalDocuments.providerId, providerId) : isNull(internalDocuments.providerId),
+      );
       const [versionRow] = await tx.select({ version: max(internalDocuments.version) }).from(internalDocuments)
-        .where(eq(internalDocuments.title, title));
+        .where(scope);
       const version = Number(versionRow?.version ?? 0) + 1;
+
+      await tx.update(internalDocuments).set({ active: false })
+        .where(and(scope, eq(internalDocuments.active, true)));
+
       const [created] = await tx.insert(internalDocuments).values({
         category,
         title,
@@ -78,7 +89,7 @@ export async function POST(request: NextRequest) {
         visibility,
         uploadedByEmployeeId: admin.id,
       }).returning({ id: internalDocuments.id });
-      await writeAudit(tx, admin.id, "document.uploaded", "internal_document", created.id, undefined, { title, category, version, visibility, sizeBytes: file.size });
+      await writeAudit(tx, admin.id, "document.uploaded", "internal_document", created.id, undefined, { title, category, version, visibility, sizeBytes: file.size, supersedesPreviousVersion: version > 1 });
       return { ...created, version };
     });
     return NextResponse.json({ ok: true, id: result.id, version: result.version }, { status: 201 });
