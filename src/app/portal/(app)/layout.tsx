@@ -7,6 +7,7 @@ import { leads } from "@/db/schema";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { getCurrentUser } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
+import { getUnreadNotificationCount } from "@/lib/portal-productivity";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   }
 
   let openCount = 0;
+  let notificationCount = 0;
   try {
     const [row] = await db
       .select({ count: sql<number>`count(*)::int` })
@@ -30,8 +32,14 @@ export default async function PortalLayout({ children }: { children: ReactNode }
     openCount = 0;
   }
 
+  try {
+    notificationCount = await getUnreadNotificationCount(user);
+  } catch {
+    notificationCount = 0;
+  }
+
   return (
-    <PortalShell user={user} openCount={openCount}>
+    <PortalShell user={user} openCount={openCount} notificationCount={notificationCount}>
       {children}
     </PortalShell>
   );
