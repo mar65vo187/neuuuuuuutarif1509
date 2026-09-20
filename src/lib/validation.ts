@@ -2,10 +2,8 @@ import { z } from "zod";
 
 const trimmed = (max: number) => z.string().trim().max(max);
 
-export const leadSchema = z.object({
+const leadCommonShape = {
   type: z.enum(["beratung", "termin", "tarifcheck", "bewerbung", "kontakt"]).default("beratung"),
-  name: trimmed(120).min(2, "Bitte gib deinen Namen an."),
-  email: z.string().trim().toLowerCase().email("Bitte gib eine gültige E-Mail-Adresse an.").max(200),
   phone: trimmed(40).optional().or(z.literal("")),
   topic: trimmed(1000).optional().or(z.literal("")),
   region: trimmed(80).optional().or(z.literal("")),
@@ -20,6 +18,12 @@ export const leadSchema = z.object({
   consent: z.literal(true, { message: "Bitte stimme der Datenverarbeitung zu." }),
   website: z.string().max(2000).optional(),
   meta: z.record(z.string(), z.unknown()).optional(),
+};
+
+export const leadSchema = z.object({
+  ...leadCommonShape,
+  name: trimmed(120).min(2, "Bitte gib deinen Namen an."),
+  email: z.string().trim().toLowerCase().email("Bitte gib eine gültige E-Mail-Adresse an.").max(200),
 }).superRefine((data, ctx) => {
   if (["telefon", "whatsapp"].includes(data.preferredChannel ?? "") && !data.phone?.trim()) {
     ctx.addIssue({ code: "custom", path: ["phone"], message: "Bitte gib für Telefon oder WhatsApp eine Telefonnummer an oder wähle E-Mail." });
@@ -29,19 +33,45 @@ export const leadSchema = z.object({
   }
 });
 
-export const portalLeadCreateSchema = z.intersection(
-  leadSchema,
-  z.object({
-    status: z.enum(["neu", "kontaktiert", "termin_bestaetigt", "in_beratung", "abgeschlossen", "verloren"]).default("neu"),
-    priority: z.enum(["low", "normal", "high", "hot"]).default("normal"),
-    contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).default("open"),
-    nextActionAt: z.string().datetime().nullable().optional(),
-    tags: z.array(trimmed(40)).max(12).default([]),
-    confirmedSlot: trimmed(160).optional().or(z.literal("")),
-    productId: z.number().int().positive().optional(),
-    productRelation: z.enum(["interest", "existing", "sold"]).optional(),
-  }),
-);
+export const portalLeadCreateSchema = z.object({
+  ...leadCommonShape,
+  name: trimmed(120).optional().default(""),
+  email: z.union([
+    z.literal(""),
+    z.string().trim().toLowerCase().email("Bitte gib eine gültige E-Mail-Adresse an.").max(200),
+  ]).optional().default(""),
+  status: z.enum(["neu", "kontaktiert", "termin_bestaetigt", "in_beratung", "abgeschlossen", "verloren"]).default("neu"),
+  priority: z.enum(["low", "normal", "high", "hot"]).default("normal"),
+  contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).default("open"),
+  nextActionAt: z.string().datetime().nullable().optional(),
+  tags: z.array(trimmed(40)).max(12).default([]),
+  confirmedSlot: trimmed(160).optional().or(z.literal("")),
+  productId: z.number().int().positive().optional(),
+  productRelation: z.enum(["interest", "existing", "sold"]).optional(),
+  productSelections: z.array(z.object({
+    productId: z.number().int().positive(),
+    relation: z.enum(["interest", "existing", "sold"]).default("interest"),
+  })).max(30).default([]),
+}).superRefine((data, ctx) => {
+  if (["telefon", "whatsapp"].includes(data.preferredChannel ?? "") && !data.phone?.trim()) {
+    ctx.addIssue({ code: "custom", path: ["phone"], message: "Wenn Telefon oder WhatsApp als Kontaktweg gewählt ist, bitte eine Nummer eintragen oder den Kontaktweg offen lassen." });
+  }
+  if (data.preferredChannel === "email" && !data.email.trim()) {
+    ctx.addIssue({ code: "custom", path: ["email"], message: "Wenn E-Mail als Kontaktweg gewählt ist, bitte eine E-Mail-Adresse eintragen oder den Kontaktweg offen lassen." });
+  }
+  if (data.type === "bewerbung" && !data.message?.trim()) {
+    ctx.addIssue({ code: "custom", path: ["message"], message: "Bitte beschreibe kurz die Motivation." });
+  }
+  const hasUsefulLeadData = [data.name, data.email, data.phone, data.topic, data.message]
+    .some((value) => typeof value === "string" && value.trim().length > 0);
+  if (!hasUsefulLeadData) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["name"],
+      message: "Bitte mindestens Name/Vorname, E-Mail, Telefon, Thema oder eine Notiz eintragen.",
+    });
+  }
+});
 
 export type LeadInput = z.infer<typeof leadSchema>;
 
