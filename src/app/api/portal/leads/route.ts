@@ -8,6 +8,7 @@ import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { portalLeadCreateSchema } from "@/lib/validation";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
       advisorId = advisor.id;
     }
     const created = await db.transaction(async (tx) => {
+      const duplicate = await lockAndFindStrongContactDuplicate(tx, { email: data.email, phone: data.phone }, user);
+      if (duplicate) throw contactDuplicateError(duplicate);
+
       const requestedProductSelections = [...data.productSelections];
       if (data.productId) {
         requestedProductSelections.push({
@@ -159,7 +163,18 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ ok: true, id: created.id });
   } catch (error) {
-    console.error("[portal/leads] insert failed");
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Der Lead konnte gerade nicht gespeichert werden." }, { status: 503 });
+    const status = typeof (error as { status?: unknown })?.status === "number" ? Number((error as { status: number }).status) : 503;
+    const duplicate = typeof error === "object" && error && "duplicate" in error
+      ? (error as { duplicate?: unknown }).duplicate
+      : undefined;
+    if (status >= 500) console.error("[portal/leads] insert failed");
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Der Lead konnte gerade nicht gespeichert werden.",
+        ...(duplicate ? { duplicate } : {}),
+      },
+      { status },
+    );
   }
 }
