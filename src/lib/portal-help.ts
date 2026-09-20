@@ -78,6 +78,13 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Nutzen Sie Aufgaben für alles, was sonst im Kopf oder Chat verloren gehen würde.", "Überfällige Aufgaben sind ein Frühwarnsignal für Prozessprobleme."],
   },
   {
+    href: "/portal/inbox",
+    title: "Inbox",
+    purpose: "Automationshinweise und persönliche Systemmeldungen an einem Ort bündeln.",
+    actions: ["Neue Hinweise lesen", "Benachrichtigungen als gelesen markieren", "Automationsausgaben außerhalb von Team-Chats nachvollziehen"],
+    tips: ["Die Inbox ist für operative Hinweise gedacht – dauerhafte Regeln gehören in System oder Dokumentcenter.", "Automationen sollten nur Meldungen erzeugen, die eine konkrete Handlung oder Information auslösen."],
+  },
+  {
     href: "/portal/chat",
     title: "Interne Chats",
     purpose: "Teamkommunikation von Kunden- und Auftragsdaten getrennt halten.",
@@ -114,8 +121,8 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal",
-    title: "Übersicht",
-    purpose: "Ihre wichtigsten Aufgaben, Leads, Aufträge und Kennzahlen als tägliches Cockpit bündeln.",
+    title: "Command Center",
+    purpose: "Prioritäten, Pipeline, Teamlast und nächste Aktionen als tägliches Arbeitscockpit bündeln.",
     actions: ["Offene Arbeit priorisieren", "Neue Anfragen erkennen", "Pipeline und Aufgaben im Blick behalten", "Von hier in die Fachbereiche springen"],
     tips: ["Beginnen Sie den Arbeitstag mit offenen Anfragen und überfälligen Aufgaben.", "Kennzahlen sind Hinweise – Details und Ursachen finden Sie in den jeweiligen Fachbereichen."],
   },
