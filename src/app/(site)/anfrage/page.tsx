@@ -69,7 +69,7 @@ export default async function RequestPage({ searchParams }: { searchParams: Prom
           <Reveal className="lg:col-span-8" delay={0.1}>
             <div className="rounded-[26px] border border-line bg-white p-6 shadow-soft sm:p-9">
               <LeadForm
-                key={`${topic}:${defaultRegion}:${referralCode ?? ""}:${business ? "b2b" : "b2c"}`}
+                key={`${topic}:${defaultSituation}:${defaultRegion}:${referralCode ?? ""}:${business ? "b2b" : "b2c"}`}
                 referralCode={referralCode}
                 type="beratung"
                 defaultTopic={topic}
