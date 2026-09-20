@@ -6,6 +6,7 @@ import { TrustEngine } from "@/components/home/TrustEngine";
 import { PremiumGuidance } from "@/components/home/PremiumGuidance";
 import { DecisionCheck } from "@/components/home/DecisionCheck";
 import { SessionIntentCard } from "@/components/home/SessionIntentCard";
+import { BrandIdentitySection } from "@/components/home/BrandIdentitySection";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
   AudienceEverydaySection,
@@ -61,6 +62,7 @@ export default async function HomePage({ searchParams }: Props) {
       <JsonLd data={serviceListJsonLd} />
       <Hero audience={initialAudience} />
       <AudienceTrustStrip audience={initialAudience} />
+      <BrandIdentitySection audience={initialAudience} />
       <SessionIntentCard audience={initialAudience} />
       <AudienceFocusSection audience={initialAudience} />
       <PremiumGuidance audience={initialAudience} />
