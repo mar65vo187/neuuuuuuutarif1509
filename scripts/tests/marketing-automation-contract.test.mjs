@@ -39,6 +39,23 @@ test("campaign system has dedicated landing pages and CRM attribution", () => {
   assert.doesNotMatch(sitemap, /\/kampagne\//);
 });
 
+test("campaign cockpit exposes deterministic channel links and attribution workflow", () => {
+  const cockpit = read("src/components/portal/CampaignCockpit.tsx");
+  const page = read("src/app/portal/(app)/kampagnen/page.tsx");
+  const shell = read("src/components/portal/PortalShell.tsx");
+  const help = read("src/lib/portal-help.ts");
+
+  assert.match(cockpit, /utm_source/);
+  assert.match(cockpit, /utm_medium/);
+  assert.match(cockpit, /utm_campaign/);
+  assert.match(cockpit, /utm_content/);
+  assert.doesNotMatch(cockpit, /window\.location\.origin/);
+  assert.match(page, /REPORT_SALES/);
+  assert.match(page, /origin=\{SITE\.url\}/);
+  assert.match(shell, /\/portal\/kampagnen/);
+  assert.match(help, /Paid-Traffic-Landingpages/);
+});
+
 test("uploaded people images are editable and normalized to one square size", () => {
   const editor = read("src/components/portal/ImageCropEditor.tsx");
   const users = read("src/components/portal/UserManagement.tsx");
