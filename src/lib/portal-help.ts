@@ -36,6 +36,13 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Pflichtschulungen sperren Produkte technisch, bis eine gültige Freigabe vorliegt.", "Provider-Abweichungen sollten zeitnah geklärt und dokumentiert werden."],
   },
   {
+    href: "/portal/rennen",
+    title: "Team-Challenges",
+    purpose: "Monatliche Motivation aus echten CRM-Ereignissen: qualifizierte Leads, B2B-Arbeit, Abschlüsse und erfolgreiche Empfehlungen werden visuell dargestellt.",
+    actions: ["Monatsstand der Rennstrecke ansehen", "Punktregeln transparent nachvollziehen", "Optionalen lokalen Sound aktivieren", "TV-Modus für das Büro starten", "Freiwilligen Empfehlungsturm beobachten"],
+    tips: ["Es gibt keine negativen Punkte und keine manuellen Punktbuchungen.", "Qualität bleibt wichtiger als Menge: Ein Lead zählt nur mit Thema und verwertbarem Kontaktweg.", "Der Monatsstand beginnt am 1. automatisch neu; CRM-Historie wird nicht gelöscht."],
+  },
+  {
     href: "/portal/verguetung",
     title: "Vergütung & Karriere",
     purpose: "Provisionsstufen, Karriereentwicklung, Rücklagen und Treuebausteine nachvollziehbar steuern.",
