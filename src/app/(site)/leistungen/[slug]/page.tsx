@@ -90,7 +90,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
         <div className="container-x relative">
           <Reveal className="max-w-2xl">
             <nav aria-label="Breadcrumb" className="text-[13px] text-silver">
-              <Link href="/leistungen" className="hover:text-white">Leistungen</Link> <span className="mx-2">/</span> <span className="text-white">{s.name}</span>
+              <Link href={`/leistungen?audience=${audience}`} className="hover:text-white">Leistungen</Link> <span className="mx-2">/</span> <span className="text-white">{s.name}</span>
             </nav>
             <p className="eyebrow mt-6 text-electric-soft">{s.eyebrow}</p>
             <h1 className="mt-4 text-[clamp(2.2rem,5vw,4.2rem)] font-extrabold leading-[1.0] tracking-[-0.03em]">{s.headline}</h1>
@@ -156,7 +156,7 @@ export default async function ServicePage({ params, searchParams }: Props) {
               <ul className="mt-3 space-y-2">
                 {others.map((o) => (
                   <li key={o.key}>
-                    <Link href={`/leistungen/${o.slug}`} className="inline-flex items-center gap-2 text-[15px] font-semibold text-platinum hover:text-white">
+                    <Link href={`/leistungen/${o.slug}?audience=${audience}`} className="inline-flex items-center gap-2 text-[15px] font-semibold text-platinum hover:text-white">
                       {o.name} <ArrowRight className="h-4 w-4" />
                     </Link>
                   </li>
