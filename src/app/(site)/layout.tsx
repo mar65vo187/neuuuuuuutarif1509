@@ -6,6 +6,7 @@ import { QuickContact } from "@/components/site/QuickContact";
 import { JourneyContext } from "@/components/site/JourneyContext";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
+import { publicBusinessAddress } from "@/lib/business-identity";
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
@@ -32,7 +33,7 @@ const organizationJsonLd = {
     name: SITE.founder,
     jobTitle: SITE.founderTitle,
   },
-  address: process.env.BUSINESS_ADDRESS?.trim() || `${SITE.hq}, Hessen, Deutschland`,
+  address: publicBusinessAddress(),
   areaServed: [
     { "@type": "Country", name: "Deutschland" },
     ...REGIONS.filter((region) => !region.startsWith("Deutschlandweit")).map((region) => ({
@@ -48,6 +49,7 @@ const organizationJsonLd = {
     areaServed: "DE",
     availableLanguage: ["de"],
   }],
+  knowsAbout: SERVICES.map((service) => service.name),
   hasOfferCatalog: {
     "@type": "OfferCatalog",
     name: "TarifWerk Beratungsleistungen",
