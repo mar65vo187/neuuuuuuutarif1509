@@ -28,6 +28,14 @@ export function Hero() {
     ? "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen"
     : "Kostenlose Erstorientierung · transparent erklärt · die Entscheidung bleibt bei dir";
 
+  const withAudience = (href: string) => {
+    const [pathAndQuery, hash = ""] = href.split("#", 2);
+    const [path, query = ""] = pathAndQuery.split("?", 2);
+    const params = new URLSearchParams(query);
+    params.set("audience", audience);
+    return path + "?" + params.toString() + (hash ? "#" + hash : "");
+  };
+
   return (
     <section aria-labelledby="home-hero-title" className="relative isolate overflow-hidden bg-ink text-white grain">
       <div className="absolute inset-0 grid-lines" aria-hidden />
@@ -45,8 +53,8 @@ export function Hero() {
           </h1>
           <p key={`${audience}-body`} className="hero-enter mt-6 max-w-2xl text-[16.5px] leading-relaxed text-silver sm:text-[18px] [--hero-delay:280ms]">{copy.body}</p>
           <div className="hero-enter mt-7 flex flex-col gap-4 sm:flex-row sm:items-center [--hero-delay:330ms]">
-            <Button href={copy.primaryHref} size="lg" iconRight={<ArrowRight />} className="w-full sm:w-auto">{copy.primary}</Button>
-            <Link href={copy.secondaryHref} className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-3 text-[14.5px] font-semibold text-platinum transition-colors hover:text-white sm:justify-start">
+            <Button href={withAudience(copy.primaryHref)} size="lg" iconRight={<ArrowRight />} className="w-full sm:w-auto">{copy.primary}</Button>
+            <Link href={withAudience(copy.secondaryHref)} className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-3 text-[14.5px] font-semibold text-platinum transition-colors hover:text-white sm:justify-start">
               {copy.secondary}
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
             </Link>
