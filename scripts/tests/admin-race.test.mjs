@@ -31,7 +31,7 @@ const deps = {
 };
 const server = load("../../src/lib/admin-server.ts", deps);
 const validation = load("../../src/lib/admin-validation.ts", { zod });
-const users = load("../../src/app/api/portal/admin/users/route.ts", { ...deps, "@/lib/admin-server": server, "@/lib/admin-validation": validation });
+const users = load("../../src/app/api/portal/admin/users/route.ts", { ...deps, "@/lib/admin-server": server, "@/lib/admin-validation": validation, "@/lib/enterprise": { writeAudit: async () => {} } });
 const images = load("../../src/app/api/portal/admin/advisors/[id]/image/route.ts", { ...deps, "@/lib/admin-server": server, "@/lib/advisor-image": {}, sharp: {}, "node:crypto": {} });
 
 test("revoked administrators cannot create accounts or delete images after initial authorization", async () => {
