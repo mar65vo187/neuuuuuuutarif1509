@@ -6,6 +6,8 @@ import { employees } from "@/db/schema";
 import { employeeCompensationProfiles, loyaltyBonusLedger } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { DEFAULT_LOYALTY_YEARS, isCompensationOwner } from "@/lib/compensation";
+import { appendFinancialLedger } from "@/lib/finance-ledger";
+import { writeAudit } from "@/lib/enterprise";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +93,27 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         note: parsed.data.note,
         createdByEmployeeId: owner.id,
       }).returning();
+
+      await appendFinancialLedger(tx, {
+        sourceKey: "loyalty:" + entry.id,
+        eventType: "loyalty_" + parsed.data.type,
+        scope: "employee",
+        entityType: "loyalty_bonus",
+        entityId: entry.id,
+        employeeId,
+        actorEmployeeId: owner.id,
+        amount: parsed.data.amount,
+        effect: parsed.data.type === "credit" ? "increase" : "decrease",
+        reference: "employee:" + employeeId,
+        metadata: { note: parsed.data.note },
+        occurredAt: entry.createdAt,
+      });
+      await writeAudit(tx, owner.id, "loyalty.entry_created", "loyalty_bonus", entry.id, undefined, {
+        employeeId,
+        type: parsed.data.type,
+        amount: parsed.data.amount,
+        resultingBalance: parsed.data.type === "credit" ? balance + parsed.data.amount : balance - parsed.data.amount,
+      });
 
       const newBalance = parsed.data.type === "credit"
         ? balance + parsed.data.amount
