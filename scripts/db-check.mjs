@@ -27,6 +27,8 @@ try {
     "reconciliation_issues", "mfa_credentials", "login_events", "referral_rewards",
     "referral_reward_events",
     "public_intake_rate_limits",
+  "portal_sessions",
+  "portal_login_rate_limits",
   ];
   for (const table of requiredTables) {
     // Identifiers are a fixed internal allowlist, never user input.
