@@ -22,7 +22,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     const raw = (await context.params).id;
-    if (!/^\d+$/.test(raw)) return NextResponse.json({ ok: false, error: "Ungültige Provisions-ID." }, { status: 400 });
+    if (!/^\d+$/.test(raw)) {
+      return NextResponse.json({ ok: false, error: "Ungültige Provisions-ID." }, { status: 400 });
+    }
     const id = Number(raw);
 
     const parsed = commissionPaidSchema.safeParse(await readAdminJson(request));
@@ -37,13 +39,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         .where(eq(commissionEvents.id, id)).limit(1).for("update");
       if (!event || event.type !== "sale") throw new Error("COMMISSION_NOT_FOUND");
 
-      const [order] = await tx.select({ orderNumber: orders.orderNumber }).from(orders)
-        .where(eq(orders.id, event.orderId)).limit(1);
+      const [order] = await tx.select({
+        orderNumber: orders.orderNumber,
+        status: orders.status,
+      }).from(orders).where(eq(orders.id, event.orderId)).limit(1);
+      if (!order) throw new Error("COMMISSION_NOT_FOUND");
 
       const amount = roundMoney(parsed.data.amount);
       const poolAmount = roundMoney(amount * 0.15);
       const now = new Date();
       const previousPaid = Number(event.paidAmount ?? 0);
+      const reference = parsed.data.providerReference?.trim() || order.orderNumber || event.providerReference || null;
 
       await tx.update(commissionEvents).set({
         status: "paid",
@@ -55,7 +61,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       }).where(eq(commissionEvents.id, event.id));
 
       const sourceKey = `commission-paid:${event.id}`;
-      const reference = parsed.data.providerReference?.trim() || order?.orderNumber || event.providerReference || null;
       await tx.insert(benefitPoolLedger).values({
         entryType: "credit",
         category: "growth_pool",
@@ -76,6 +81,30 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         },
       });
 
+      const reversedForStorno = ["cancelled", "storno"].includes(order.status);
+      if (reversedForStorno) {
+        const reversalSourceKey = `commission-chargeback:${event.id}`;
+        await tx.insert(benefitPoolLedger).values({
+          entryType: "spend",
+          category: "growth_pool",
+          amount: String(poolAmount),
+          note: "Automatische Gegenbuchung des 15-%-Pools für einen bereits stornierten Auftrag.",
+          reference,
+          sourceKey: reversalSourceKey,
+          createdByEmployeeId: admin.id,
+        }).onConflictDoUpdate({
+          target: benefitPoolLedger.sourceKey,
+          set: {
+            entryType: "spend",
+            category: "growth_pool",
+            amount: String(poolAmount),
+            note: "Automatische Gegenbuchung des 15-%-Pools für einen bereits stornierten Auftrag.",
+            reference,
+            createdByEmployeeId: admin.id,
+          },
+        });
+      }
+
       await writeAudit(tx, admin.id, "commission.marked_paid", "commission_event", event.id, {
         status: event.status,
         paidAmount: previousPaid,
@@ -86,15 +115,21 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         providerReference: parsed.data.providerReference?.trim() || event.providerReference,
         ownerPoolPercent: 15,
         ownerPoolAmount: poolAmount,
+        stornoReversalApplied: reversedForStorno,
       });
 
-      return { commissionEventId: event.id, paidAmount: amount, ownerPoolAmount: poolAmount };
+      return {
+        commissionEventId: event.id,
+        paidAmount: amount,
+        ownerPoolAmount: poolAmount,
+        stornoReversalApplied: reversedForStorno,
+      };
     });
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     if (error instanceof Error && error.message === "COMMISSION_NOT_FOUND") {
-      return NextResponse.json({ ok: false, error: "Provisionsbuchung nicht gefunden." }, { status: 404 });
+      return NextResponse.json({ ok: false, error: "Provisionsbuchung oder Auftrag nicht gefunden." }, { status: 404 });
     }
     return adminFailure(error);
   }
