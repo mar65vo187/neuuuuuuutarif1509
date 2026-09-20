@@ -46,6 +46,22 @@ export const customers = pgTable("customers", {
   index("customers_created_idx").on(table.createdAt),
 ]);
 
+export const customerReferrals = pgTable("customer_referrals", {
+  id: serial("id").primaryKey(),
+  sourceCustomerId: integer("source_customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  referredLeadId: integer("referred_lead_id").references(() => leads.id, { onDelete: "set null" }),
+  referredCustomerId: integer("referred_customer_id").references(() => customers.id, { onDelete: "set null" }),
+  relationship: text("relationship").notNull().default(""),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("customer_referrals_lead_unique").on(table.referredLeadId),
+  uniqueIndex("customer_referrals_customer_unique").on(table.referredCustomerId),
+  index("customer_referrals_source_idx").on(table.sourceCustomerId, table.createdAt),
+  index("customer_referrals_created_by_idx").on(table.createdByEmployeeId, table.createdAt),
+]);
+
 export const customerLeadLinks = pgTable("customer_lead_links", {
   customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
   leadId: integer("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
@@ -670,6 +686,7 @@ export const loginEvents = pgTable("login_events", {
 }, (table) => [index("login_events_employee_idx").on(table.employeeId, table.createdAt)]);
 
 export type Customer = typeof customers.$inferSelect;
+export type CustomerReferral = typeof customerReferrals.$inferSelect;
 export type Provider = typeof providers.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;
