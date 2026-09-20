@@ -26,8 +26,24 @@ test("campaign system has dedicated landing pages and CRM attribution", () => {
   const reporting = read("src/app/portal/(app)/reporting/page.tsx");
   const sitemap = read("src/app/sitemap.ts");
 
-  for (const slug of ["tarifcheck", "energie-check", "solar-check", "business-check"]) {
+  for (const slug of [
+    "tarifcheck",
+    "energie-check",
+    "solar-check",
+    "versicherungs-check",
+    "immobilien-check",
+    "klima-check",
+    "business-connect",
+    "business-energie",
+    "business-check",
+  ]) {
     assert.match(campaigns, new RegExp('slug: "' + slug + '"'));
+  }
+  for (const topic of ["Internet, Mobilfunk, TV", "Strom & Gas", "Versicherungen", "Solar (Photovoltaik) & Wärmepumpe", "Immobilien", "Klimaanlagen"]) {
+    assert.ok(campaigns.includes('topic: "' + topic + '"'), "missing campaign topic: " + topic);
+  }
+  for (const situation of ["bestand", "vergleich", "konkret"]) {
+    assert.ok(campaigns.includes('situation: "' + situation + '"'), "missing campaign situation: " + situation);
   }
   assert.match(page, /campaign\.slug/);
   assert.match(page, /source=/);
