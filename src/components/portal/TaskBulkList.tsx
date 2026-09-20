@@ -17,6 +17,8 @@ type Row = {
   entityId: number;
   assigneeName: string | null;
   overdue: boolean;
+  entityTitle: string | null;
+  entitySubtitle: string | null;
 };
 
 const STATUS_OPTIONS = [
@@ -51,8 +53,9 @@ export function TaskBulkList({ rows }: { rows: Row[] }) {
               <div className="grid gap-3 px-4 py-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
                 <Link href={href} className="min-w-0 hover:text-electric-deep">
                   <div className="flex items-center gap-2"><p className="truncate text-[14px] font-bold">{task.title}</p>{task.overdue && <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" aria-label="überfällig" />}</div>
-                  <p className="mt-0.5 text-[12.5px] text-steel">{task.entityType === "general" ? "Allgemeine Aufgabe" : task.entityType + " #" + task.entityId} · fällig {formatDate(task.dueAt)} · {task.assigneeName || "nicht zugewiesen"}</p>
-                  <p className="mt-0.5 text-[11.5px] text-steel">Priorität: {task.priority} · Status: {task.status}</p>
+                  <p className="mt-0.5 text-[12.5px] font-semibold text-platinum">{task.entityType === "general" ? "Allgemeine Aufgabe" : task.entityTitle || (task.entityType + " #" + task.entityId)}</p>
+                  {task.entitySubtitle && <p className="mt-0.5 text-[11.5px] text-steel">{task.entitySubtitle}</p>}
+                  <p className="mt-1 text-[11.5px] text-steel">Fällig {formatDate(task.dueAt)} · {task.assigneeName || "nicht zugewiesen"} · Priorität: {task.priority} · Status: {task.status}</p>
                 </Link>
                 <TaskActions id={task.id} status={task.status} />
               </div>
