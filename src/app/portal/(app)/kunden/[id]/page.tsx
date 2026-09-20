@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, CheckCircle2, FilePlus2, Mail, Network, Phone, UserRoundCheck } from "lucide-react";
 import { Card, formatDate } from "@/components/portal/ui";
 import { CustomerReferralManager } from "@/components/portal/CustomerReferralManager";
+import { CustomerEditForm } from "@/components/portal/CustomerEditForm";
 import { getCurrentUser } from "@/lib/auth";
 import { getCustomer } from "@/lib/enterprise";
 
@@ -79,7 +80,22 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     )}
 
     <div className="grid gap-4 lg:grid-cols-5">
-      <Card className="lg:col-span-2"><h2 className="text-[16px] font-extrabold">Stammdaten</h2><dl className="mt-4 space-y-3 text-[14px]">
+      <Card className="lg:col-span-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><h2 className="text-[16px] font-extrabold">Stammdaten</h2><p className="mt-0.5 text-[11.5px] text-steel">Kontakt- und Grunddaten der Kundenakte.</p></div>
+          <CustomerEditForm
+            customerId={customer.id}
+            firstName={customer.firstName}
+            lastName={customer.lastName}
+            companyName={customer.companyName}
+            email={customer.email}
+            phone={customer.phone}
+            postalCode={customer.postalCode}
+            city={customer.city}
+            preferredChannel={customer.preferredChannel}
+          />
+        </div>
+        <dl className="mt-4 space-y-3 text-[14px]">
         {[
           ["Typ", customer.type === "business" ? "Geschäftskunde" : "Privatkunde"],
           ["E-Mail", customer.email],
