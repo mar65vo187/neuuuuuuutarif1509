@@ -15,7 +15,7 @@ export default async function LeadPipelinePage() {
   const rows = await listLeads({ sort: "next" }, user);
   const serialized = rows.map((lead) => ({
     id: lead.id,
-    name: lead.name,
+    name: lead.name || `Lead #${lead.id}`,
     topic: lead.topic,
     status: lead.status,
     priority: lead.priority,
