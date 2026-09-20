@@ -1,7 +1,9 @@
 "use client";
 
-import { Check, Copy, ExternalLink, Megaphone, Search, Smartphone, Video } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Check, Copy, Euro, ExternalLink, Loader2, Megaphone, Search, Smartphone, Video } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
+import type { MarketingPerformance } from "@/lib/marketing-performance";
 
 type Campaign = {
   slug: string;
@@ -33,8 +35,28 @@ function campaignUrl(origin: string, campaign: Campaign, source: string, medium:
   return url.href;
 }
 
-export function CampaignCockpit({ campaigns, origin }: { campaigns: Campaign[]; origin: string }) {
+export function CampaignCockpit({
+  campaigns,
+  origin,
+  performance,
+  canManageSpend,
+}: {
+  campaigns: Campaign[];
+  origin: string;
+  performance: MarketingPerformance | null;
+  canManageSpend: boolean;
+}) {
+  const router = useRouter();
+  const saving = useRef(false);
   const [copied, setCopied] = useState("");
+  const [spendCampaign, setSpendCampaign] = useState(campaigns[0]?.slug ?? "");
+  const [spendSource, setSpendSource] = useState("google");
+  const [spendAmount, setSpendAmount] = useState("");
+  const [spentAt, setSpentAt] = useState("");
+  const [spendNote, setSpendNote] = useState("");
+  const [spendBusy, setSpendBusy] = useState(false);
+  const [spendError, setSpendError] = useState("");
+  const [spendSuccess, setSpendSuccess] = useState("");
 
   const rows = useMemo(() => campaigns.map((campaign) => ({
     campaign,
@@ -52,6 +74,59 @@ export function CampaignCockpit({ campaigns, origin }: { campaigns: Campaign[]; 
     }
   }
 
+  function euro(cents: number | null) {
+    if (cents === null) return "–";
+    return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+  }
+
+  async function saveSpend() {
+    if (!canManageSpend || saving.current) return;
+    const amount = Number(spendAmount.replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setSpendError("Bitte einen gültigen Betrag größer 0 eingeben.");
+      return;
+    }
+    if (!spentAt) {
+      setSpendError("Bitte ein Buchungsdatum wählen.");
+      return;
+    }
+    const channel = CHANNELS.find((item) => item.key === spendSource);
+    saving.current = true;
+    setSpendBusy(true);
+    setSpendError("");
+    setSpendSuccess("");
+    try {
+      const response = await fetch("/api/portal/campaign-spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          campaignKey: spendCampaign,
+          source: spendSource,
+          medium: channel?.medium ?? "",
+          amountCents: Math.round(amount * 100),
+          spentAt,
+          note: spendNote.trim(),
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const json = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (response.status === 401) {
+        window.location.replace("/portal/login?next=%2Fportal%2Fkampagnen");
+        return;
+      }
+      if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Werbekosten konnten nicht gespeichert werden.");
+      setSpendAmount("");
+      setSpendNote("");
+      setSpendSuccess("Werbekosten wurden gespeichert und in die Monatsauswertung übernommen.");
+      router.refresh();
+    } catch (problem) {
+      setSpendError(problem instanceof Error ? problem.message : "Werbekosten konnten nicht gespeichert werden.");
+    } finally {
+      saving.current = false;
+      setSpendBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="rounded-[24px] border border-electric/20 bg-[radial-gradient(circle_at_top_right,rgba(79,141,255,.18),transparent_38%),linear-gradient(145deg,rgba(13,28,52,.96),rgba(7,17,32,.96))] p-5 text-white sm:p-6">
@@ -65,7 +140,63 @@ export function CampaignCockpit({ campaigns, origin }: { campaigns: Campaign[]; 
         </div>
       </div>
 
-      {rows.map(({ campaign, headline, description }) => (
+      {performance && (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Marketing Monatskennzahlen">
+          {[
+            ["Werbekosten", euro(performance.totals.spendCents)],
+            ["Leads", String(performance.totals.leads)],
+            ["Abschlüsse", String(performance.totals.completed)],
+            ["CPL", euro(performance.totals.cplCents)],
+            ["CPA", euro(performance.totals.cpaCents)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-line bg-white p-4">
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-steel">{label}</p>
+              <p className="mt-2 text-[24px] font-extrabold">{value}</p>
+              <p className="mt-1 text-[10.5px] text-steel">{performance.period.label}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {canManageSpend && (
+        <section className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-champagne/12 text-champagne"><Euro className="h-5 w-5" /></span>
+            <div><h2 className="text-[16px] font-extrabold">Werbekosten erfassen</h2><p className="mt-1 text-[11.5px] text-steel">Nur tatsächlich gebuchte Kosten eintragen. CPL und CPA werden daraus mit den CRM-Daten des Monats berechnet.</p></div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <label className="label">Kampagne
+              <select className="field mt-1" value={spendCampaign} onChange={(event) => setSpendCampaign(event.target.value)} disabled={spendBusy}>
+                {campaigns.map((campaign) => <option key={campaign.slug} value={campaign.slug}>{campaign.slug}</option>)}
+              </select>
+            </label>
+            <label className="label">Kanal
+              <select className="field mt-1" value={spendSource} onChange={(event) => setSpendSource(event.target.value)} disabled={spendBusy}>
+                {CHANNELS.map((channel) => <option key={channel.key} value={channel.key}>{channel.label}</option>)}
+                <option value="other">Sonstiger Kanal</option>
+              </select>
+            </label>
+            <label className="label">Betrag in €
+              <input className="field mt-1" inputMode="decimal" value={spendAmount} onChange={(event) => setSpendAmount(event.target.value)} placeholder="250,00" disabled={spendBusy} />
+            </label>
+            <label className="label">Buchungsdatum
+              <input className="field mt-1" type="date" value={spentAt} onChange={(event) => setSpentAt(event.target.value)} disabled={spendBusy} />
+            </label>
+            <label className="label">Notiz (optional)
+              <input className="field mt-1" maxLength={500} value={spendNote} onChange={(event) => setSpendNote(event.target.value)} placeholder="z. B. Google Ads Woche 38" disabled={spendBusy} />
+            </label>
+          </div>
+          {spendError && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{spendError}</p>}
+          {spendSuccess && <p role="status" className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11.5px] text-emerald-800">{spendSuccess}</p>}
+          <button type="button" onClick={() => void saveSpend()} disabled={spendBusy || !spendCampaign} className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[11.5px] font-bold text-white hover:bg-electric disabled:opacity-50">
+            {spendBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Euro className="h-4 w-4" />} Werbekosten speichern
+          </button>
+        </section>
+      )}
+
+      {rows.map(({ campaign, headline, description }) => { 
+        const stats = performance?.rows.find((row) => row.campaignKey === campaign.slug) ?? null;
+        return (
         <section key={campaign.slug} className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -78,6 +209,24 @@ export function CampaignCockpit({ campaigns, origin }: { campaigns: Campaign[]; 
             </div>
             <a href={"/kampagne/" + campaign.slug} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-[11.5px] font-bold hover:border-electric/30 hover:text-electric-deep">Landingpage öffnen <ExternalLink className="h-3.5 w-3.5" /></a>
           </div>
+
+          {stats && (
+            <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              {[
+                ["Spend", euro(stats.spendCents)],
+                ["Leads", String(stats.leads)],
+                ["Qualifiziert", String(stats.qualified)],
+                ["Abschluss", String(stats.completed)],
+                ["CPL", euro(stats.cplCents)],
+                ["CPA", euro(stats.cpaCents)],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-line bg-paper/60 px-3 py-2.5">
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-steel">{label}</p>
+                  <p className="mt-1 text-[14px] font-extrabold">{value}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
             <div className="rounded-2xl border border-line bg-paper/60 p-4">
@@ -110,7 +259,8 @@ export function CampaignCockpit({ campaigns, origin }: { campaigns: Campaign[]; 
             </div>
           </div>
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }
