@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { QuickContact } from "@/components/site/QuickContact";
+import { JourneyContext } from "@/components/site/JourneyContext";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
 
@@ -83,6 +84,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const audience = await resolveSiteAudience();
   return (
     <>
+      <JourneyContext />
       <JsonLd data={organizationJsonLd} />
       <JsonLd data={websiteJsonLd} />
       <Header initialAudience={audience} />
