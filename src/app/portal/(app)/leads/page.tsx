@@ -232,6 +232,14 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             referralSourceName: typeof (lead.meta as Record<string, unknown> | null)?.referralSourceName === "string"
               ? String((lead.meta as Record<string, unknown>).referralSourceName)
               : null,
+            companyName: typeof (lead.meta as Record<string, unknown> | null)?.companyName === "string"
+              ? String((lead.meta as Record<string, unknown>).companyName)
+              : null,
+            audience: (lead.meta as Record<string, unknown> | null)?.audience === "b2b"
+              ? "b2b"
+              : (lead.meta as Record<string, unknown> | null)?.audience === "b2c"
+                ? "b2c"
+                : null,
           }))} />
         )}
       </Card>
