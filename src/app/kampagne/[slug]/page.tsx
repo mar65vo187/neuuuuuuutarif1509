@@ -7,6 +7,7 @@ import { LeadForm } from "@/components/forms/LeadForm";
 import { getMarketingCampaign, MARKETING_CAMPAIGNS } from "@/lib/marketing-campaigns";
 import { SITE } from "@/lib/content";
 import { JsonLd } from "@/components/security/JsonLd";
+import { JourneyContext } from "@/components/site/JourneyContext";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -46,6 +47,7 @@ export default async function CampaignPage({ params }: Props) {
 
   return (
     <>
+      <JourneyContext />
       <JsonLd data={serviceJsonLd} />
       <main className="min-h-screen bg-ink text-white">
       <header className="border-b border-white/8 bg-ink/95">
