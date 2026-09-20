@@ -15,6 +15,21 @@ test("work assistant remains explainable and human-approved", () => {
   assert.doesNotMatch(rules, /openai|anthropic|gemini|fetch\(/i);
 });
 
+test("provider and order warnings are deterministic and explainable", () => {
+  const commandCenter = read("src/lib/portal-command-center.ts");
+  const assistant = read("src/lib/work-assistant.ts");
+  const page = read("src/app/portal/(app)/assistent/page.tsx");
+  assert.match(commandCenter, /providerWarnings/);
+  assert.match(commandCenter, /externalOrderId/);
+  assert.match(commandCenter, /providerStatus/);
+  assert.match(commandCenter, /activation_pending/);
+  assert.match(commandCenter, /documents_missing/);
+  assert.match(commandCenter, /Provider-Referenz|Provider-Status/);
+  assert.match(assistant, /provider-referenz/);
+  assert.match(assistant, /provider-status/);
+  assert.match(page, /Providerwarnungen/);
+});
+
 test("portal task creation deduplicates matching open entity tasks", () => {
   const route = read("src/app/api/portal/tasks/route.ts");
   assert.match(route, /inArray\(tasks\.status, \["open", "in_progress"\]\)/);
