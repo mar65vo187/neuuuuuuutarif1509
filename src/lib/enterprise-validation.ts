@@ -27,9 +27,29 @@ export const customerCreateSchema = z.object({
   city: text(120).optional(),
   postalCode: text(20).optional(),
   preferredChannel: text(40).optional(),
+  referredByCustomerId: positiveId.optional(),
+  referralRelationship: text(80).optional(),
+  referralNote: text(1000).optional(),
 }).superRefine((value, ctx) => {
   if (value.type === "business" && !value.companyName) ctx.addIssue({ code: "custom", path: ["companyName"], message: "Firmenname fehlt." });
   if (value.type === "private" && !value.firstName && !value.lastName) ctx.addIssue({ code: "custom", path: ["firstName"], message: "Name fehlt." });
+});
+
+export const customerReferralCreateSchema = z.object({
+  name: text(160).optional().default(""),
+  email: z.union([z.literal(""), z.string().trim().toLowerCase().email().max(200)]).optional().default(""),
+  phone: text(40).optional().default(""),
+  relationship: text(80).optional().default(""),
+  topics: z.array(text(120)).max(12).default([]),
+  note: text(1500).optional().default(""),
+}).superRefine((value, ctx) => {
+  const hasContact = [value.name, value.email, value.phone, value.note, ...value.topics]
+    .some((item) => item.trim().length > 0);
+  if (!hasContact) ctx.addIssue({
+    code: "custom",
+    path: ["name"],
+    message: "Bitte mindestens Name, Kontaktmöglichkeit, Thema oder eine Notiz eintragen.",
+  });
 });
 
 export const orderCreateSchema = z.object({
