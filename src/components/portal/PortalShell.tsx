@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
-  KeyRound, Lightbulb, ListTodo, LogOut, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, UserRoundCog, UsersRound, WalletCards,
+  KeyRound, Lightbulb, ListTodo, LogOut, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -37,6 +37,7 @@ const NAV_SECTIONS = [
     label: "Team & Entwicklung",
     items: [
       { href: "/portal/betrieb", label: "Team & Betriebsqualität", icon: UsersRound },
+      { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Team-Chat", icon: MessageSquare },
       { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
