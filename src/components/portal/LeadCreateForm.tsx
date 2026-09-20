@@ -19,6 +19,7 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<number | null>(null);
+  const [duplicateLink, setDuplicateLink] = useState<{ href: string; label: string } | null>(null);
   const [form, setForm] = useState({
     type: "beratung",
     status: "neu",
@@ -58,6 +59,7 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
     event.preventDefault();
     setBusy(true);
     setError(null);
+    setDuplicateLink(null);
     try {
       if (form.status === "termin_bestaetigt" && !form.confirmedSlot.trim()) {
         throw new Error("Für einen terminierten Lead bitte eine Terminzeit eintragen.");
@@ -83,8 +85,11 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(20000),
       });
-      const body = await response.json() as { ok: boolean; id?: number; error?: string };
-      if (!response.ok || !body.ok) throw new Error(body.error ?? "Der Lead konnte nicht gespeichert werden.");
+      const body = await response.json() as { ok: boolean; id?: number; error?: string; duplicate?: { href?: string; label?: string } };
+      if (!response.ok || !body.ok) {
+        if (body.duplicate?.href) setDuplicateLink({ href: body.duplicate.href, label: body.duplicate.label ?? "Bestehenden Datensatz öffnen" });
+        throw new Error(body.error ?? "Der Lead konnte nicht gespeichert werden.");
+      }
       setSavedId(body.id ?? null);
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Verbindung fehlgeschlagen.");
@@ -104,7 +109,7 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">{error}</p>}
+      {error && <div role="alert" className="rounded-xl border border-red-300/40 bg-red-500/[0.07] px-4 py-3 text-[14px] text-red-200"><p>{error}</p>{duplicateLink && <Link href={duplicateLink.href} className="mt-2 inline-flex rounded-full border border-red-300/30 px-3 py-1.5 text-[11.5px] font-extrabold text-white hover:bg-red-400/10">{duplicateLink.label} öffnen</Link>}</div>}
 
       <section>
         <div className="mb-4">
