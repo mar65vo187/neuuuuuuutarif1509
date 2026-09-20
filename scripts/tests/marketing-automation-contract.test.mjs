@@ -31,11 +31,12 @@ test("campaign system has dedicated landing pages and CRM attribution", () => {
   }
   assert.match(page, /campaign\.slug/);
   assert.match(page, /source=/);
+  assert.match(page, /robots:\s*\{ index: false, follow: false \}/);
   assert.match(enterprise, /attributionSourceRows/);
   assert.match(enterprise, /attributionCampaignRows/);
   assert.match(reporting, /Kampagnen-Funnel/);
   assert.match(reporting, /Akquise nach Quelle/);
-  assert.match(sitemap, /CAMPAIGN_LANDINGS/);
+  assert.doesNotMatch(sitemap, /\/kampagne\//);
 });
 
 test("uploaded people images are editable and normalized to one square size", () => {
