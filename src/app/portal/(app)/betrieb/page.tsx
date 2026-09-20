@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getOperationsHubData } from "@/lib/operations-hub";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team & Betrieb", robots: { index: false, follow: false } };
+export const metadata = { title: "Team & Betriebsqualität", robots: { index: false, follow: false } };
 
 export default async function OperationsHubPage() {
   const user = await getCurrentUser();
