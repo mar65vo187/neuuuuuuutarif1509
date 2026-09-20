@@ -5,7 +5,7 @@ import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
-import type { AudienceMode } from "@/lib/audience";
+import { withAudience, type AudienceMode } from "@/lib/audience";
 import { FAQ, FEATURED_SERVICES, OTHER_SERVICES, PROCESS, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
 import { getAdvisorBySlug } from "@/lib/queries";
 
@@ -236,7 +236,7 @@ export function Process() {
 /*  Gründer                                                            */
 /* ------------------------------------------------------------------ */
 
-export async function Founder() {
+export async function Founder({ audience = "b2c" }: { audience?: AudienceMode }) {
   let founderImageUrl: string | null = null;
   let founderInitials = "ME";
   try {
@@ -306,10 +306,10 @@ export async function Founder() {
             </div>
           </Reveal>
           <Reveal delay={0.12} className="mt-6 flex flex-wrap gap-3">
-            <Button href="/berater/marvin-egenolf" iconRight={<ArrowRight />}>
+            <Button href={withAudience("/berater/marvin-egenolf", audience)} iconRight={<ArrowRight />}>
               Marvin kennenlernen
             </Button>
-            <Button href="/ueber-uns" variant="dark" magnetic={false}>
+            <Button href={withAudience("/ueber-uns", audience)} variant="dark" magnetic={false}>
               Mehr über TarifWerk
             </Button>
           </Reveal>
