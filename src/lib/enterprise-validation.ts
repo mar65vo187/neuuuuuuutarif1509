@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SAFE_AUTOMATION_EVENTS } from "@/lib/automation-templates";
 
 const text = (max: number) => z.string().trim().max(max);
 const positiveId = z.coerce.number().int().positive().max(2147483647);
@@ -144,9 +145,32 @@ export const catalogCreateSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+const automationTaskActionSchema = z.object({
+  type: z.literal("task"),
+  title: text(240).min(2),
+  dueMinutes: z.coerce.number().int().min(0).max(525600).default(60),
+  priority: z.enum(["normal", "high", "critical"]).default("normal"),
+  taskType: text(80).optional(),
+  description: text(1000).optional(),
+}).strict();
+
+const automationNotificationActionSchema = z.object({
+  type: z.literal("notification"),
+  subject: text(180).min(1),
+  body: text(1000).min(1),
+}).strict();
+
 export const automationCreateSchema = z.object({
   name: text(180).min(3),
-  eventType: text(120).min(3),
-  conditions: z.record(z.string(), z.unknown()).default({}),
-  actions: z.array(z.record(z.string(), z.unknown())).min(1).max(20),
-});
+  eventType: z.enum(SAFE_AUTOMATION_EVENTS),
+  active: z.boolean().default(false),
+  conditions: z.record(z.string().max(80), z.union([z.string().max(240), z.number().finite(), z.boolean(), z.null()])).default({}),
+  actions: z.array(z.discriminatedUnion("type", [
+    automationTaskActionSchema,
+    automationNotificationActionSchema,
+  ])).min(1).max(5),
+}).strict();
+
+export const automationUpdateSchema = z.object({
+  active: z.boolean(),
+}).strict();
