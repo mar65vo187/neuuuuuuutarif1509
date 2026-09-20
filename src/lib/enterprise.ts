@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
 import {
@@ -629,10 +629,10 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
   const previousFrom = new Date(from.getTime() - periodMs);
   const orderScope = orderAccess(user);
   const leadScope = leadAccessCondition(user);
-  const orderCondition = and(orderScope, gte(orders.createdAt, from));
-  const previousOrderCondition = and(orderScope, gte(orders.createdAt, previousFrom), lte(orders.createdAt, from));
-  const leadCondition = and(leadScope, gte(leads.createdAt, from));
-  const previousLeadCondition = and(leadScope, gte(leads.createdAt, previousFrom), lte(leads.createdAt, from));
+  const orderCondition = and(orderScope, gte(orders.createdAt, from), lte(orders.createdAt, now));
+  const previousOrderCondition = and(orderScope, gte(orders.createdAt, previousFrom), lt(orders.createdAt, from));
+  const leadCondition = and(leadScope, gte(leads.createdAt, from), lte(leads.createdAt, now));
+  const previousLeadCondition = and(leadScope, gte(leads.createdAt, previousFrom), lt(leads.createdAt, from));
 
   const [
     orderRows,

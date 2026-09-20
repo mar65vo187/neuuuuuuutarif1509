@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { commissionEvents, reconciliationIssues } from "@/db/enterprise-schema";
+import { commissionEvents, orders, reconciliationIssues } from "@/db/enterprise-schema";
 import { adminFailure, authorizeAdmin, lockAdminMutation, readAdminJson } from "@/lib/admin-server";
 import { isCompensationOwner } from "@/lib/compensation";
 import { writeAudit } from "@/lib/enterprise";
@@ -18,10 +18,14 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     }
 
     const rawId = (await context.params).id;
-    if (!/^\d+$/.test(rawId)) return NextResponse.json({ ok: false, error: "Ungültige Abweichungs-ID." }, { status: 400 });
+    if (!/^\d+$/.test(rawId)) {
+      return NextResponse.json({ ok: false, error: "Ungültige Abweichungs-ID." }, { status: 400 });
+    }
     const issueId = Number(rawId);
     const parsed = reconciliationResolveSchema.safeParse(await readAdminJson(request));
-    if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Aktion ungültig." }, { status: 422 });
+    if (!parsed.success) {
+      return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Aktion ungültig." }, { status: 422 });
+    }
 
     const result = await db.transaction(async (tx) => {
       await lockAdminMutation(tx, admin.id);
@@ -32,15 +36,36 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
       if (parsed.data.action === "accept_reported") {
         if (!issue.orderId || issue.reportedAmount === null) throw new Error("ISSUE_NOT_APPLICABLE");
-        await tx.update(commissionEvents).set({
+
+        const [order] = await tx.select({
+          advisorEmployeeId: orders.advisorEmployeeId,
+          expectedCommission: orders.expectedCommission,
+        }).from(orders).where(eq(orders.id, issue.orderId)).limit(1);
+        if (!order) throw new Error("ISSUE_NOT_APPLICABLE");
+
+        const [saleEvent] = await tx.select().from(commissionEvents)
+          .where(and(eq(commissionEvents.orderId, issue.orderId), eq(commissionEvents.type, "sale")))
+          .limit(1)
+          .for("update");
+
+        const eventValues = {
           confirmedAmount: issue.reportedAmount,
           status: "provider_confirmed",
           providerReference: issue.reference,
           updatedAt: new Date(),
-        }).where(and(
-          eq(commissionEvents.orderId, issue.orderId),
-          eq(commissionEvents.type, "sale"),
-        ));
+        };
+
+        if (saleEvent) {
+          await tx.update(commissionEvents).set(eventValues).where(eq(commissionEvents.id, saleEvent.id));
+        } else {
+          await tx.insert(commissionEvents).values({
+            orderId: issue.orderId,
+            employeeId: order.advisorEmployeeId,
+            type: "sale",
+            expectedAmount: issue.expectedAmount ?? order.expectedCommission ?? issue.reportedAmount,
+            ...eventValues,
+          });
+        }
       }
 
       const resolutionLabel = parsed.data.action === "accept_reported"

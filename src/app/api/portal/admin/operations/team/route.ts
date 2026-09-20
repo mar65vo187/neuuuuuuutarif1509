@@ -5,7 +5,7 @@ import { teamMembers, teams } from "@/db/enterprise-schema";
 import { adminFailure, authorizeAdmin, lockAdminMutation, readAdminJson } from "@/lib/admin-server";
 import { writeAudit } from "@/lib/enterprise";
 import { teamMutationSchema } from "@/lib/operations-validation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       await lockAdminMutation(tx, admin.id);
       if (parsed.data.action === "create") {
         if (parsed.data.leadEmployeeId) {
-          const [lead] = await tx.select({ id: employees.id }).from(employees).where(eq(employees.id, parsed.data.leadEmployeeId)).limit(1);
+          const [lead] = await tx.select({ id: employees.id }).from(employees).where(and(eq(employees.id, parsed.data.leadEmployeeId), eq(employees.active, true))).limit(1);
           if (!lead) throw new Error("EMPLOYEE_NOT_FOUND");
         }
         const [created] = await tx.insert(teams).values({
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
         return created;
       }
 
-      const [employee] = await tx.select({ id: employees.id }).from(employees).where(eq(employees.id, parsed.data.employeeId)).limit(1);
-      const [team] = await tx.select({ id: teams.id }).from(teams).where(eq(teams.id, parsed.data.teamId)).limit(1);
+      const [employee] = await tx.select({ id: employees.id }).from(employees).where(and(eq(employees.id, parsed.data.employeeId), eq(employees.active, true))).limit(1);
+      const [team] = await tx.select({ id: teams.id }).from(teams).where(and(eq(teams.id, parsed.data.teamId), eq(teams.active, true))).limit(1);
       if (!employee || !team) throw new Error("EMPLOYEE_NOT_FOUND");
       await tx.delete(teamMembers).where(eq(teamMembers.employeeId, parsed.data.employeeId));
       const [created] = await tx.insert(teamMembers).values({

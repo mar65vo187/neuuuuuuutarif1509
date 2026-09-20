@@ -37,6 +37,8 @@ export type CompensationRow = {
   confirmedGross: number;
   paidGross: number;
   employeeExpected: number;
+  employeeConfirmed: number;
+  employeePaid: number;
   reserveAmount: number;
   companyOperatingAmount: number;
   savingsProjection: number;
@@ -109,6 +111,9 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
     const providerGross = Number(amounts?.providerGross ?? 0);
     const confirmedGross = Number(amounts?.confirmedGross ?? 0);
     const paidGross = Number(amounts?.paidGross ?? 0);
+    const employeeExpected = providerGross * payoutPercent / 100;
+    const employeeConfirmed = confirmedGross * payoutPercent / 100;
+    const employeePaid = paidGross * payoutPercent / 100;
     const loyaltyAmounts = loyalty.get(person.employeeId);
     const loyaltyCredits = Number(loyaltyAmounts?.credits ?? 0);
     const loyaltyPayouts = Number(loyaltyAmounts?.payouts ?? 0);
@@ -125,12 +130,14 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
       loyaltyVestingYears,
       teamLevel: person.teamLevel ?? "berater",
       note: owner ? (person.note ?? "") : "",
-      providerGross,
-      confirmedGross,
-      paidGross,
-      employeeExpected: providerGross * payoutPercent / 100,
-      reserveAmount: providerGross * reservePercent / 100,
-      companyOperatingAmount: Math.max(0, providerGross * (100 - payoutPercent - reservePercent) / 100),
+      providerGross: owner ? providerGross : 0,
+      confirmedGross: owner ? confirmedGross : 0,
+      paidGross: owner ? paidGross : 0,
+      employeeExpected,
+      employeeConfirmed,
+      employeePaid,
+      reserveAmount: owner ? providerGross * reservePercent / 100 : 0,
+      companyOperatingAmount: owner ? Math.max(0, providerGross * (100 - payoutPercent - reservePercent) / 100) : 0,
       savingsProjection: providerGross * savingsPercent / 100,
       loyaltyEligibleAt: addYears(loyaltyStartedAt, loyaltyVestingYears),
       loyaltyCredits,
