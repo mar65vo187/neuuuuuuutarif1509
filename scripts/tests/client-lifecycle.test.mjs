@@ -77,7 +77,7 @@ test("saving a note preserves text typed while its request is pending", async ()
   const nodes = elements(tree);
   const save = nodes.find(node => node.type === "button" && Array.isArray(node.props.children) && node.props.children.includes(" Notiz speichern"));
   const pending = save.props.onClick();
-  nodes.find(node => node.type === "textarea").props.onChange({ target: { value: "New unsaved note" } });
+  nodes.find(node => node.type === "textarea" && node.props.id === "note").props.onChange({ target: { value: "New unsaved note" } });
   assert.equal(JSON.parse(h.requests[0].options.body).note, "Original note");
   h.requests[0].resolve({ status: 200, ok: true, json: async () => ({ ok: true }) });
   await pending;
