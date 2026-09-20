@@ -12,6 +12,7 @@ import {
   productCatalogProfiles,
   employeeTrainingCompletions,
   customerLeadLinks,
+  customerReferrals,
   customers,
   notificationQueue,
   orderStatusHistory,
@@ -216,6 +217,9 @@ export async function ensureCustomerForLead(leadId: number, user: SessionUser): 
       metadata: { source: lead.source ?? "website", topic: lead.topic },
     }).returning();
     await tx.insert(customerLeadLinks).values({ customerId: created.id, leadId: lead.id });
+    await tx.update(customerReferrals)
+      .set({ referredCustomerId: created.id })
+      .where(eq(customerReferrals.referredLeadId, lead.id));
     await writeAudit(tx, user.id, "customer.created_from_lead", "customer", created.id, undefined, {
       customerNumber: created.customerNumber,
       leadId: lead.id,
@@ -235,6 +239,9 @@ export async function createCustomer(input: {
   city?: string;
   postalCode?: string;
   preferredChannel?: string;
+  referredByCustomerId?: number;
+  referralRelationship?: string;
+  referralNote?: string;
 }, user: SessionUser) {
   return db.transaction(async (tx) => {
     const [created] = await tx.insert(customers).values({
@@ -250,9 +257,94 @@ export async function createCustomer(input: {
       preferredChannel: input.preferredChannel?.trim() || null,
       ownerEmployeeId: user.id,
     }).returning();
-    await writeAudit(tx, user.id, "customer.created", "customer", created.id, undefined, { customerNumber: created.customerNumber });
-    await emitEvent(tx, "customer.created", "customer", created.id, { assignedEmployeeId: user.id });
+    if (input.referredByCustomerId) {
+      const [source] = await tx.select({ id: customers.id }).from(customers).where(and(
+        eq(customers.id, input.referredByCustomerId),
+        customerAccess(user),
+        isNull(customers.archivedAt),
+      )).limit(1);
+      if (!source) throw new Error("Empfehlender Kunde wurde nicht gefunden oder ist nicht sichtbar.");
+      if (source.id === created.id) throw new Error("Ein Kunde kann sich nicht selbst empfehlen.");
+      await tx.insert(customerReferrals).values({
+        sourceCustomerId: source.id,
+        referredCustomerId: created.id,
+        relationship: input.referralRelationship?.trim() || "",
+        note: input.referralNote?.trim() || "",
+        createdByEmployeeId: user.id,
+      }).onConflictDoNothing();
+    }
+    await writeAudit(tx, user.id, "customer.created", "customer", created.id, undefined, {
+      customerNumber: created.customerNumber,
+      referredByCustomerId: input.referredByCustomerId ?? null,
+    });
+    await emitEvent(tx, "customer.created", "customer", created.id, { assignedEmployeeId: user.id, referredByCustomerId: input.referredByCustomerId ?? null });
     return created;
+  });
+}
+
+export async function createCustomerReferral(input: {
+  sourceCustomerId: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  relationship?: string;
+  topics?: string[];
+  note?: string;
+}, user: SessionUser) {
+  return db.transaction(async (tx) => {
+    const [source] = await tx.select().from(customers).where(and(
+      eq(customers.id, input.sourceCustomerId),
+      customerAccess(user),
+      isNull(customers.archivedAt),
+    )).limit(1).for("update");
+    if (!source) throw new Error("Kunde nicht gefunden.");
+
+    const name = input.name?.trim() || "";
+    const email = input.email?.trim().toLowerCase() || "";
+    const phone = input.phone?.trim() || null;
+    const topics = [...new Set((input.topics ?? []).map((topic) => topic.trim()).filter(Boolean))].slice(0, 12);
+    const note = input.note?.trim() || "";
+    const sourceName = source.companyName || [source.firstName, source.lastName].filter(Boolean).join(" ") || source.customerNumber;
+
+    const [lead] = await tx.insert(leads).values({
+      type: "beratung",
+      status: "neu",
+      name,
+      email,
+      phone,
+      topic: topics.join(" · ") || null,
+      message: note || null,
+      assignedEmployeeId: user.id,
+      createdByEmployeeId: user.id,
+      source: `kundenempfehlung:${source.id}`,
+      meta: {
+        referralSourceCustomerId: source.id,
+        referralSourceCustomerNumber: source.customerNumber,
+        referralSourceName: sourceName,
+        referralRelationship: input.relationship?.trim() || "",
+      },
+      priority: "normal",
+      contactOutcome: "open",
+    }).returning();
+
+    await tx.insert(customerReferrals).values({
+      sourceCustomerId: source.id,
+      referredLeadId: lead.id,
+      relationship: input.relationship?.trim() || "",
+      note,
+      createdByEmployeeId: user.id,
+    });
+
+    await writeAudit(tx, user.id, "customer.referral.created", "lead", lead.id, undefined, {
+      sourceCustomerId: source.id,
+      sourceCustomerNumber: source.customerNumber,
+      relationship: input.relationship?.trim() || "",
+      topics,
+    });
+    await emitEvent(tx, "lead.created", "lead", lead.id, { assignedEmployeeId: user.id, referralSourceCustomerId: source.id });
+    await runAutomationEvent(tx, "lead.created", "lead", lead.id, { assignedEmployeeId: user.id, referralSourceCustomerId: source.id }, user.id);
+
+    return lead;
   });
 }
 
@@ -275,7 +367,7 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
 export async function getCustomer(id: number, user: SessionUser) {
   const [customer] = await db.select().from(customers).where(and(eq(customers.id, id), customerAccess(user))).limit(1);
   if (!customer) return null;
-  const [customerOrders, customerTasks] = await Promise.all([
+  const [customerOrders, customerTasks, referralSource, referrals] = await Promise.all([
     db.select({
       order: orders,
       providerName: providers.name,
@@ -288,8 +380,43 @@ export async function getCustomer(id: number, user: SessionUser) {
     db.select().from(tasks)
       .where(and(eq(tasks.entityType, "customer"), eq(tasks.entityId, id), taskAccess(user)))
       .orderBy(desc(tasks.createdAt)),
+    db.select({
+      sourceCustomerId: customerReferrals.sourceCustomerId,
+      sourceCustomerNumber: sql<string>`source.customer_number`,
+      sourceName: sql<string>`coalesce(source.company_name, nullif(trim(concat_ws(' ', source.first_name, source.last_name)), ''), source.customer_number)`,
+      relationship: customerReferrals.relationship,
+      note: customerReferrals.note,
+      createdAt: customerReferrals.createdAt,
+    }).from(customerReferrals)
+      .innerJoin(sql`customers source`, sql`source.id = ${customerReferrals.sourceCustomerId}`)
+      .where(eq(customerReferrals.referredCustomerId, id))
+      .limit(1),
+    db.select({
+      id: customerReferrals.id,
+      referredLeadId: customerReferrals.referredLeadId,
+      referredCustomerId: customerReferrals.referredCustomerId,
+      relationship: customerReferrals.relationship,
+      note: customerReferrals.note,
+      createdAt: customerReferrals.createdAt,
+      leadName: leads.name,
+      leadEmail: leads.email,
+      leadPhone: leads.phone,
+      leadStatus: leads.status,
+      leadTopic: leads.topic,
+      targetCustomerNumber: sql<string | null>`(select c.customer_number from customers c where c.id = ${customerReferrals.referredCustomerId})`,
+      targetCustomerName: sql<string | null>`(select coalesce(c.company_name, nullif(trim(concat_ws(' ', c.first_name, c.last_name)), ''), c.customer_number) from customers c where c.id = ${customerReferrals.referredCustomerId})`,
+    }).from(customerReferrals)
+      .leftJoin(leads, eq(customerReferrals.referredLeadId, leads.id))
+      .where(eq(customerReferrals.sourceCustomerId, id))
+      .orderBy(desc(customerReferrals.createdAt)),
   ]);
-  return { customer, orders: customerOrders, tasks: customerTasks };
+  return {
+    customer,
+    orders: customerOrders,
+    tasks: customerTasks,
+    referralSource: referralSource[0] ?? null,
+    referrals,
+  };
 }
 
 export async function listCatalog() {
