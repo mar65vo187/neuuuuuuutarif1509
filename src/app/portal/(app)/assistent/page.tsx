@@ -5,8 +5,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { getCommandCenterData } from "@/lib/portal-command-center";
 import { Card } from "@/components/portal/ui";
 import { WorkAssistantActions } from "@/components/portal/WorkAssistantActions";
+import { AiSalesAssistant } from "@/components/portal/AiSalesAssistant";
 import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 import { buildWorkAssistant } from "@/lib/work-assistant";
+import { aiProviderStatus } from "@/lib/ai-sales-assistant";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,7 @@ export default async function WorkAssistantPage() {
   ]);
   const m = data.metrics;
   const suggestions = buildWorkAssistant(data);
+  const aiStatus = aiProviderStatus();
 
   const items: AssistantItem[] = [
     m.overdueTasks > 0 && {
@@ -126,10 +129,16 @@ export default async function WorkAssistantPage() {
         <div>
           <p className="eyebrow text-electric-deep">Schritt 4 · Assistenz & Automation</p>
           <h1 className="mt-2 text-[clamp(1.7rem,3vw,2.5rem)] font-extrabold tracking-tight">Arbeitsassistent</h1>
-          <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-steel">Erklärbare Priorisierung aus echten CRM-Daten. Der Assistent empfiehlt den nächsten sinnvollen Arbeitsblock, führt zur passenden Akte und ändert keine wichtigen Daten ohne menschliche Aktion.</p>
+          <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-steel">Echte KI für Vertriebswissen plus erklärbare Priorisierung aus CRM-Daten. Die KI formuliert, erklärt und coacht; wichtige CRM-Änderungen bleiben weiterhin menschlich bestätigt.</p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-2 text-[11px] font-bold text-emerald-200"><ShieldCheck className="h-4 w-4" /> Human approval aktiv</span>
       </header>
+
+      <AiSalesAssistant
+        configured={aiStatus.gemini || aiStatus.openrouter}
+        dailyLimit={aiStatus.dailyLimit}
+        trainingIncluded={aiStatus.trainingIncluded}
+      />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Assistentenstatus">
         <Card className="sm:p-5">
