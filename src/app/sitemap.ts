@@ -44,6 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE.url}/berater/${a.slug}`,
       changeFrequency: "monthly",
       priority: 0.8,
+      ...(a.imageUrl ? { images: [new URL(a.imageUrl, SITE.url).href] } : {}),
     }));
     return [...statics, ...services, ...localPages, ...campaignPages, ...advisorUrls];
   } catch {
