@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { Check, Crop, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -54,7 +55,7 @@ export function ImageCropEditor({
 }) {
   const imageRef = useRef<HTMLImageElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
-  const [source, setSource] = useState("");
+  const [source] = useState(() => URL.createObjectURL(file));
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [x, setX] = useState(0);
@@ -62,11 +63,7 @@ export function ImageCropEditor({
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setSource(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+  useEffect(() => () => URL.revokeObjectURL(source), [source]);
 
   useEffect(() => {
     const image = imageRef.current;
@@ -116,11 +113,7 @@ export function ImageCropEditor({
         <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="mx-auto w-full max-w-[620px]">
             <div className="relative aspect-square overflow-hidden rounded-[24px] border border-white/10 bg-black/25">
-              {source && <>
-                {/* Blob URLs are local editor previews and cannot be optimized by next/image. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img ref={imageRef} src={source} alt="" className="hidden" onLoad={() => setReady(true)} onError={() => setError("Das Bild konnte nicht gelesen werden.")} />
-              </>}
+              <img ref={imageRef} src={source} alt="" className="hidden" onLoad={() => setReady(true)} onError={() => setError("Das Bild konnte nicht gelesen werden.")} />
               <canvas ref={previewRef} className="h-full w-full" aria-label="Vorschau des zugeschnittenen Bildes" />
               <div className="pointer-events-none absolute inset-0 rounded-[24px] ring-1 ring-inset ring-white/15" />
               <div className="pointer-events-none absolute left-1/3 top-0 h-full w-px bg-white/15" />
