@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { ArrowRight, Plus } from "lucide-react";
-import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
+import { Plus } from "lucide-react";
+import { Card } from "@/components/portal/ui";
+import { LeadBulkList } from "@/components/portal/LeadBulkList";
 import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { LEAD_STATUS_LABELS, LEAD_TYPE_LABELS } from "@/lib/content";
 import { listLeads } from "@/lib/queries";
 import { listSavedViews } from "@/lib/portal-productivity";
+import { db } from "@/db";
+import { employees } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +23,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const { status, type } = await searchParams;
   const s = status && STATUSES.includes(status) ? status : undefined;
   const t = type && TYPES.includes(type) ? type : undefined;
-  const [rows, savedViews] = await Promise.all([
+  const [rows, savedViews, assignees] = await Promise.all([
     listLeads({ status: s, type: t }, user),
     listSavedViews(user, "leads"),
+    user.role === "admin"
+      ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
+      : Promise.resolve([]),
   ]);
 
   const link = (next: { status?: string; type?: string }) => {
@@ -64,33 +71,19 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         {rows.length === 0 ? (
           <p className="p-10 text-center text-[14.5px] text-steel">Keine Anfragen für diese Auswahl.</p>
         ) : (
-          <ul className="divide-y divide-line">
-            {rows.map((l) => (
-              <li key={l.id}>
-                <Link href={`/portal/leads/${l.id}`} className="grid gap-3 px-5 py-4 transition-colors hover:bg-paper sm:grid-cols-[1fr_auto] sm:items-center">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-[15.5px] font-bold">{l.name}</p>
-                      <span className="text-[12px] text-steel">#{l.id}</span>
-                      {l.status === "neu" && <span className="h-2 w-2 rounded-full bg-electric" aria-label="neu" />}
-                    </div>
-                    <p className="mt-0.5 truncate text-[13.5px] text-steel">
-                      {l.topic ?? "Ohne Thema"} · {l.region ?? "Region offen"} · {l.preferredChannel ?? "Kanal offen"}
-                      {l.preferredTime ? ` · Wunsch: ${l.preferredTime}` : ""}
-                    </p>
-                    <p className="mt-0.5 text-[12.5px] text-steel">
-                      {formatDate(l.createdAt)}{l.advisorName ? ` · für ${l.advisorName}` : ""}{l.assignedName ? ` · bearbeitet von ${l.assignedName}` : " · noch nicht übernommen"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 sm:justify-end">
-                    <TypeBadge type={l.type} />
-                    <StatusBadge status={l.status} />
-                    <ArrowRight className="hidden h-4 w-4 text-steel sm:block" />
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <LeadBulkList assignees={assignees} rows={rows.map((lead) => ({
+            id: lead.id,
+            name: lead.name,
+            topic: lead.topic,
+            region: lead.region,
+            preferredChannel: lead.preferredChannel,
+            preferredTime: lead.preferredTime,
+            createdAt: lead.createdAt.toISOString(),
+            advisorName: lead.advisorName,
+            assignedName: lead.assignedName,
+            type: lead.type,
+            status: lead.status,
+          }))} />
         )}
       </Card>
     </div>
