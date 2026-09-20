@@ -152,7 +152,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       </div>
     </section>
 
-    {data.referralSource && (    {data.referralSource && (
+    {data.referralSource && (
       <section className="rounded-[20px] border border-electric/15 bg-electric/[0.05] px-4 py-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
