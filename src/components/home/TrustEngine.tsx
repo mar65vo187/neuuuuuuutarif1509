@@ -1,5 +1,6 @@
 import { ArrowRight, CheckCircle2, Compass, Handshake, Layers3, ShieldCheck, Sparkles, UserRoundCheck } from "lucide-react";
 import Link from "next/link";
+import { withAudience, type AudienceMode } from "@/lib/audience";
 
 const USPS = [
   {
@@ -41,7 +42,7 @@ const PRINCIPLES = [
   "Keine Empfehlung nur wegen einer hohen Provision",
 ] as const;
 
-export function TrustEngine() {
+export function TrustEngine({ audience }: { audience: AudienceMode }) {
   return (
     <section className="relative overflow-hidden border-y border-line bg-white py-20 sm:py-28">
       <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-electric/[0.07] blur-[120px]" />
@@ -97,7 +98,7 @@ export function TrustEngine() {
             <p className="mt-3 text-[14px] leading-relaxed text-platinum">
               Kurz das Thema schildern. Wir klären, ob und wie TarifWerk sinnvoll helfen kann – kostenfrei und unverbindlich.
             </p>
-            <Link href="/anfrage" className="mt-5 inline-flex items-center gap-2 rounded-full bg-electric px-5 py-3 text-[13.5px] font-bold text-white transition hover:bg-electric-deep">
+            <Link href={withAudience("/anfrage", audience)} className="mt-5 inline-flex items-center gap-2 rounded-full bg-electric px-5 py-3 text-[13.5px] font-bold text-white transition hover:bg-electric-deep">
               Thema prüfen lassen <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
