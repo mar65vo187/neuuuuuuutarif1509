@@ -14,11 +14,22 @@ export const HOME_AUDIENCE_SEO = {
   },
 } as const;
 
+export const REQUEST_AUDIENCE_SEO = {
+  b2c: {
+    title: "Kostenlose Beratung anfragen | TarifWerk",
+    description: "Thema wählen, Situation kurz schildern und persönliche Einschätzung erhalten. Kostenlos und unverbindlich bei TarifWerk anfragen.",
+  },
+  b2b: {
+    title: "Business-Beratung anfragen | TarifWerk",
+    description: "Unternehmensbedarf zu Telekommunikation, Energie, Absicherung und weiteren Themen strukturiert klären. Unverbindliche Business-Anfrage starten.",
+  },
+} as const;
+
 export const PAGE_SEO: Record<string, PageSeo> = {
   "/": HOME_AUDIENCE_SEO.b2c,
   "/leistungen": { title: "Leistungen: Tarife, Energie, Solar & mehr | TarifWerk", description: "Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen, Immobilien und mehr: persönliche TarifWerk Beratung deutschlandweit." },
   "/berater": { title: "TarifWerk Berater finden | Persönlich & deutschlandweit", description: "TarifWerk Ansprechpartner nach Thema und Region finden. Persönliche Beratung vor Ort oder digital deutschlandweit – kostenlos und unverbindlich starten." },
-  "/anfrage": { title: "Kostenlose Beratung anfragen | TarifWerk", description: "Thema wählen, Kontaktdaten senden und persönlich beraten lassen. Kostenlose und unverbindliche Erstorientierung bei TarifWerk anfragen." },
+  "/anfrage": REQUEST_AUDIENCE_SEO.b2c,
   "/ueber-uns": { title: "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden", description: "TarifWerk aus Wiesbaden: persönliche Beratung mit einem festen Ansprechpartner für Tarife, Energie und wichtige Entscheidungen – deutschlandweit." },
   "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Sie erklären verständlich und hören Menschen zu? Lernen Sie die Arbeit als Berater bei TarifWerk kennen und bewerben Sie sich bei uns." },
   "/faq": { title: "TarifWerk FAQ | Kosten, Ablauf & Beratung", description: "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung – transparent und verständlich erklärt." },
@@ -84,6 +95,10 @@ export function pageMetadata(path: string, details: PageSeo = PAGE_SEO[path], im
 
 export function homeAudienceMetadata(audience: "b2c" | "b2b"): Metadata {
   return pageMetadata("/", HOME_AUDIENCE_SEO[audience], null, "/");
+}
+
+export function requestAudienceMetadata(audience: "b2c" | "b2b"): Metadata {
+  return pageMetadata("/anfrage", REQUEST_AUDIENCE_SEO[audience], null, "/anfrage");
 }
 
 export const RELATED_SERVICE_KEYS: Record<string, string[]> = {
