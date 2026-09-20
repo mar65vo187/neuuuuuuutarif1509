@@ -82,7 +82,7 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
       </form>
     </header>
 
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Management Kennzahlen">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Steuerungskennzahlen">
       {cards.map(({ label, value, hint, Icon }) => <Card key={label}>
         <div className="flex items-center justify-between"><p className="text-[13px] font-semibold text-steel">{label}</p><Icon className="h-4.5 w-4.5 text-electric-deep" /></div>
         <p className="mt-3 text-[28px] font-extrabold tracking-tight">{value}</p>
@@ -115,7 +115,7 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
     </Card>
 
     <Card>
-      <div className="flex items-center gap-2"><ListTodo className="h-4 w-4 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Operations</h2></div>
+      <div className="flex items-center gap-2"><ListTodo className="h-4 w-4 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Betriebsstatus</h2></div>
       <p className="mt-3 text-[14px] text-steel">{report.openTasks} offene Aufgaben · {report.overdueTasks} davon überfällig · Aktivierungen {trend(report.trends.activations)} zur Vorperiode · Lead-Abschlüsse {trend(report.trends.leadWins)}.</p>
     </Card>
   </div>;
