@@ -35,6 +35,17 @@ export const customerCreateSchema = z.object({
   if (value.type === "private" && !value.firstName && !value.lastName) ctx.addIssue({ code: "custom", path: ["firstName"], message: "Name fehlt." });
 });
 
+export const customerUpdateSchema = z.object({
+  firstName: text(120).nullable().optional(),
+  lastName: text(120).nullable().optional(),
+  companyName: text(180).nullable().optional(),
+  email: z.union([z.literal(""), z.string().trim().toLowerCase().email().max(200)]).nullable().optional(),
+  phone: text(40).nullable().optional(),
+  city: text(120).nullable().optional(),
+  postalCode: text(20).nullable().optional(),
+  preferredChannel: text(40).nullable().optional(),
+}).refine((value) => Object.keys(value).length > 0, { message: "Keine Änderung angegeben." });
+
 export const customerReferralCreateSchema = z.object({
   name: text(160).optional().default(""),
   email: z.union([z.literal(""), z.string().trim().toLowerCase().email().max(200)]).optional().default(""),
