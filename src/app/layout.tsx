@@ -42,7 +42,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  // Nonce-based CSP requires request-time HTML rendering.
+  // Request-time HTML rendering is required for nonce-based CSP.
   await headers();
   return (
     <html lang="de" className={`${manrope.variable} ${instrument.variable}`}>
