@@ -8,7 +8,7 @@ import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const metadata: Metadata = {
   title: { absolute: "Anfrage erhalten | TarifWerk" },
-  description: "Ihre Anfrage ist bei TarifWerk eingegangen.",
+  description: "Die Anfrage ist bei TarifWerk eingegangen.",
   robots: { index: false, follow: false },
 };
 
