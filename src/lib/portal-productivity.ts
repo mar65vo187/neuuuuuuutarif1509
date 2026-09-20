@@ -46,6 +46,7 @@ export async function getAdminAutomationHealth() {
     ruleRows,
     runRows,
     webhookRows,
+    endpointRows,
     deliveryRows,
     outboxRows,
   ] = await Promise.all([
@@ -72,6 +73,14 @@ export async function getAdminAutomationHealth() {
       total: sql<number>`count(*)::int`,
       active: sql<number>`count(*) filter (where ${webhookEndpoints.active} = true)::int`,
     }).from(webhookEndpoints),
+    db.select({
+      id: webhookEndpoints.id,
+      name: webhookEndpoints.name,
+      url: webhookEndpoints.url,
+      eventTypes: webhookEndpoints.eventTypes,
+      active: webhookEndpoints.active,
+      createdAt: webhookEndpoints.createdAt,
+    }).from(webhookEndpoints).orderBy(webhookEndpoints.name),
     db.select({
       id: webhookDeliveries.id,
       endpointName: webhookEndpoints.name,
@@ -100,7 +109,7 @@ export async function getAdminAutomationHealth() {
     rules: { total: ruleRows[0]?.total ?? 0, active: ruleRows[0]?.active ?? 0 },
     runs: runRows,
     runHealth: { recent: runRows.length, failed: failedRuns },
-    webhooks: { total: webhookRows[0]?.total ?? 0, active: webhookRows[0]?.active ?? 0 },
+    webhooks: { total: webhookRows[0]?.total ?? 0, active: webhookRows[0]?.active ?? 0, endpoints: endpointRows },
     deliveries: deliveryRows,
     deliveryHealth: { recent: deliveryRows.length, failed: failedDeliveries },
     outbox: {
