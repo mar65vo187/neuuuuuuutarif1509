@@ -38,8 +38,8 @@ export default async function AdvisorsPage({ searchParams }: { searchParams: Pro
             <h2 className="mt-3 text-[clamp(1.5rem,3vw,2.2rem)] font-extrabold text-ink">Wir nehmen lieber wenige richtige Berater als viele schnelle.</h2>
             <p className="mt-3 max-w-2xl text-[15.5px] leading-relaxed text-steel">
               {business
-                ? <>Jeder Berater bei TarifWerk arbeitet nach denselben Grundsätzen: verständlich erklären, unabhängig einordnen, erreichbar bleiben. Sie möchten Teil davon werden? <a href="/karriere?audience=b2b" className="font-semibold text-electric-deep underline underline-offset-2">Hier erfahren Sie mehr.</a></>
-                : <>Jeder Berater bei TarifWerk arbeitet nach denselben Grundsätzen: verständlich erklären, unabhängig einordnen, erreichbar bleiben. Du möchtest Teil davon werden? <a href="/karriere?audience=b2c" className="font-semibold text-electric-deep underline underline-offset-2">Hier erfährst du mehr.</a></>}
+                ? <>Jeder Berater bei TarifWerk arbeitet nach denselben Grundsätzen: verständlich erklären, anbieterübergreifend einordnen, erreichbar bleiben. Sie möchten Teil davon werden? <a href="/karriere?audience=b2b" className="font-semibold text-electric-deep underline underline-offset-2">Hier erfahren Sie mehr.</a></>
+                : <>Jeder Berater bei TarifWerk arbeitet nach denselben Grundsätzen: verständlich erklären, anbieterübergreifend einordnen, erreichbar bleiben. Du möchtest Teil davon werden? <a href="/karriere?audience=b2c" className="font-semibold text-electric-deep underline underline-offset-2">Hier erfährst du mehr.</a></>}
             </p>
           </Reveal>
         </div>
