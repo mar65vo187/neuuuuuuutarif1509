@@ -6,9 +6,12 @@ import { QuickContact } from "@/components/site/QuickContact";
 import { JourneyContext } from "@/components/site/JourneyContext";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
+import { publicBusinessPostalAddress } from "@/lib/business-identity";
 import { publicBusinessAddress } from "@/lib/business-identity";
 
-const organizationJsonLd = {
+function organizationJsonLd() {
+  const businessAddress = publicBusinessPostalAddress();
+  return {
   "@context": "https://schema.org",
   "@type": ["Organization", "ProfessionalService"],
   "@id": `${SITE.url}/#organization`,
@@ -67,6 +70,7 @@ const organizationJsonLd = {
     })),
   },
 };
+}
 
 const websiteJsonLd = {
   "@context": "https://schema.org",
@@ -84,7 +88,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <JourneyContext />
-      <JsonLd data={organizationJsonLd} />
+      <JsonLd data={organizationJsonLd()} />
       <JsonLd data={websiteJsonLd} />
       <Header initialAudience={audience} />
       <main id="main" className="pb-[68px] md:pb-0">
