@@ -84,10 +84,17 @@ export async function POST(req: NextRequest) {
       })
       .returning({ id: leads.id });
 
+    const audienceLabel = data.meta?.audience === "b2b" ? "Business" : data.meta?.audience === "b2c" ? "Privat" : null;
+    const companyLabel = typeof data.meta?.companyName === "string" && data.meta.companyName ? data.meta.companyName : null;
     await tx.insert(leadNotes).values({
       leadId: lead.id,
       kind: "system",
-      body: `Anfrage über die Website eingegangen (${data.type}).`,
+      body: [
+        `Anfrage über die Website eingegangen (${data.type})`,
+        audienceLabel,
+        data.topic || null,
+        companyLabel,
+      ].filter(Boolean).join(" · ") + ".",
     });
       if (data.referralCode && data.referralConsent && data.type !== "bewerbung") {
         const [owner] = await tx.select({ id: referrers.id, email: referrers.email }).from(referrers)
