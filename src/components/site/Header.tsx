@@ -25,13 +25,16 @@ export function Header() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const explicit = params.get("audience");
-    const cookie = document.cookie
-      .split("; ")
-      .find((entry) => entry.startsWith("tarifwerk-audience="))
-      ?.split("=")[1];
-    setAudience(explicit === "b2b" || explicit === "b2c" ? explicit : cookie === "b2b" ? "b2b" : "b2c");
+    const frame = requestAnimationFrame(() => {
+      const params = new URLSearchParams(window.location.search);
+      const explicit = params.get("audience");
+      const cookie = document.cookie
+        .split("; ")
+        .find((entry) => entry.startsWith("tarifwerk-audience="))
+        ?.split("=")[1];
+      setAudience(explicit === "b2b" || explicit === "b2c" ? explicit : cookie === "b2b" ? "b2b" : "b2c");
+    });
+    return () => cancelAnimationFrame(frame);
   }, [pathname]);
 
   const switchAudience = (mode: "b2c" | "b2b") => {
