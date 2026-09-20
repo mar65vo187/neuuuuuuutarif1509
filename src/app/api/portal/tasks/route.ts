@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     let assignee = user.id;
     if (user.role === "admin" && input.assignedToEmployeeId) {
       const [target] = await db.select({ id: employees.id }).from(employees)
-        .where(eq(employees.id, input.assignedToEmployeeId)).limit(1);
+        .where(and(eq(employees.id, input.assignedToEmployeeId), eq(employees.active, true))).limit(1);
       if (!target) return NextResponse.json({ ok: false, error: "Mitarbeiter nicht gefunden." }, { status: 404 });
       assignee = target.id;
     }
