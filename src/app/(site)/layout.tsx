@@ -32,12 +32,7 @@ const organizationJsonLd = {
     name: SITE.founder,
     jobTitle: SITE.founderTitle,
   },
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: SITE.hq,
-    addressRegion: "Hessen",
-    addressCountry: "DE",
-  },
+  address: process.env.BUSINESS_ADDRESS?.trim() || `${SITE.hq}, Hessen, Deutschland`,
   areaServed: [
     { "@type": "Country", name: "Deutschland" },
     ...REGIONS.filter((region) => !region.startsWith("Deutschlandweit")).map((region) => ({
