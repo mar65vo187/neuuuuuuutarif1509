@@ -30,9 +30,10 @@ test("public lead rate limit is shared across application instances", () => {
   const route = read("src/app/api/leads/route.ts");
   const migration = read("migrations/0007_public_intake_rate_limit.sql");
   assert.match(route, /public_intake_rate_limits/);
-  assert.match(route, /createHash\("sha256"\)/);
+  assert.match(route, /createHmac\("sha256", secret\)/);
   assert.match(route, /Retry-After/);
   assert.match(route, /sharedRateLimit/);
+  assert.match(route, /updated_at < now\(\) - interval '24 hours'/);
   assert.match(migration, /key_hash text PRIMARY KEY/);
   assert.doesNotMatch(migration, /ip_address|raw_ip/i);
 });
