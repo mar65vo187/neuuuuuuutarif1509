@@ -3,18 +3,20 @@ import { Check } from "lucide-react";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { PageHero } from "@/components/site/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
-import { SERVICE_NAMES, normalizeTopic } from "@/lib/content";
+import { SERVICE_NAMES, SITUATIONS, normalizeTopic } from "@/lib/content";
 
 export const metadata = pageMetadata("/anfrage");
 
-export default async function RequestPage({ searchParams }: { searchParams: Promise<{ thema?: string | string[]; region?: string | string[]; ref?: string | string[]; audience?: string | string[] }> }) {
-  const { thema, region, ref, audience } = await searchParams;
+export default async function RequestPage({ searchParams }: { searchParams: Promise<{ thema?: string | string[]; situation?: string | string[]; region?: string | string[]; ref?: string | string[]; audience?: string | string[] }> }) {
+  const { thema, situation, region, ref, audience } = await searchParams;
   const business = (Array.isArray(audience) ? audience[0] : audience) === "b2b";
   const normalized = normalizeTopic((Array.isArray(thema) ? thema[0] : thema) ?? "");
   const defaultRegion = ((Array.isArray(region) ? region[0] : region) ?? "").slice(0, 80);
   const rawReferral = Array.isArray(ref) ? ref[0] : ref;
   const referralCode = rawReferral && /^[a-f0-9]{24}$/.test(rawReferral) ? rawReferral : undefined;
   const topic = SERVICE_NAMES.includes(normalized) ? normalized : "";
+  const rawSituation = (Array.isArray(situation) ? situation[0] : situation) ?? "";
+  const defaultSituation = SITUATIONS.some((item) => item.value === rawSituation) ? rawSituation : "";
 
   const points = business
     ? [
@@ -71,6 +73,7 @@ export default async function RequestPage({ searchParams }: { searchParams: Prom
                 referralCode={referralCode}
                 type="beratung"
                 defaultTopic={topic}
+                defaultSituation={defaultSituation}
                 defaultRegion={defaultRegion}
                 source={business ? "anfrage:b2b" : "anfrage"}
                 audience={business ? "b2b" : "b2c"}
