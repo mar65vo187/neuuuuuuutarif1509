@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlarmClock, ArrowLeft, Flame, Loader2, PackagePlus, Save, Tags } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS, SERVICES } from "@/lib/content";
+import { DuplicateIdentityCheck } from "@/components/portal/DuplicateIdentityCheck";
 
 type ProductOption = {
   id: number;
@@ -118,6 +119,9 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
           <label className="label">Region<input maxLength={80} className="field" value={form.region} onChange={(event) => set("region", event.target.value)} /></label>
           <label className="label">Bevorzugter Kanal<select className="field" value={form.preferredChannel} onChange={(event) => set("preferredChannel", event.target.value)}><option value="">Nicht angegeben</option><option value="telefon">Telefon</option><option value="whatsapp">WhatsApp</option><option value="email">E-Mail</option></select></label>
           <label className="label">Bevorzugte Zeit<input maxLength={120} className="field" value={form.preferredTime} onChange={(event) => set("preferredTime", event.target.value)} /></label>
+        </div>
+        <div className="mt-4">
+          <DuplicateIdentityCheck name={form.name} email={form.email} phone={form.phone} />
         </div>
       </section>
 
