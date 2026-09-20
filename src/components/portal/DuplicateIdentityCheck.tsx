@@ -46,11 +46,7 @@ export function DuplicateIdentityCheck({
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!query) {
-      setMatches([]);
-      setFailed(false);
-      return;
-    }
+    if (!query) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setLoading(true);
