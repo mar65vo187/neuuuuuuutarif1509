@@ -935,7 +935,9 @@ export async function createCustomerActivity(id: number, input: {
       outcome: activity.outcome,
       nextActionAt: activity.nextActionAt?.toISOString() ?? null,
     });
-    await emitEvent(tx, "customer.activity.created", "customer", id, { assignedEmployeeId: user.id, activityType: activity.type });
+    const activityPayload = { assignedEmployeeId: user.id, activityType: activity.type };
+    await emitEvent(tx, "customer.activity.created", "customer", id, activityPayload);
+    await runAutomationEvent(tx, "customer.activity.created", "customer", id, activityPayload, user.id);
     return activity;
   });
 }
