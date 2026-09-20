@@ -23,6 +23,9 @@ if (process.env.PORTAL_OWNER_EMAIL && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process
 if (process.env.PORTAL_ADMIN_PASSWORD && (process.env.PORTAL_ADMIN_PASSWORD.length < 12 || process.env.PORTAL_ADMIN_PASSWORD.length > 200)) {
   errors.push("PORTAL_ADMIN_PASSWORD muss 12 bis 200 Zeichen enthalten.");
 }
+if (process.env.NODE_ENV === "production" && !(process.env.BUSINESS_ADDRESS || "").trim()) {
+  errors.push("BUSINESS_ADDRESS muss in Produktion als vollständige Geschäftsanschrift gesetzt sein.");
+}
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exitCode = 1;
