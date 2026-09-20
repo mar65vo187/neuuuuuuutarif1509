@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlarmClock, ArrowRight, PackageCheck, Sparkles } from "lucide-react";
+import { AlarmClock, ArrowRight, Network, PackageCheck, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BulkToolbar } from "@/components/portal/BulkToolbar";
 import { StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
@@ -28,6 +28,7 @@ type Row = {
   existingProductNames: string[];
   interestProductNames: string[];
   soldProductNames: string[];
+  referralSourceName?: string | null;
 };
 
 const STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS)
@@ -69,6 +70,7 @@ export function LeadBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?
                   {lead.status === "neu" && <span className="h-2 w-2 rounded-full bg-electric" aria-label="neu" />}
                   <span className={`chip px-2 py-0.5 text-[10.5px] ${PRIORITY_STYLES[lead.priority] ?? PRIORITY_STYLES.normal}`}>{LEAD_PRIORITY_LABELS[lead.priority] ?? lead.priority}</span>
                   {lead.contactOutcome !== "open" && <span className="chip border-line bg-paper px-2 py-0.5 text-[10.5px] text-steel">{LEAD_CONTACT_OUTCOME_LABELS[lead.contactOutcome] ?? lead.contactOutcome}</span>}
+                  {lead.referralSourceName && <span className="inline-flex items-center gap-1 rounded-full border border-electric/15 bg-electric/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-electric-deep"><Network className="h-3 w-3" /> Vitamin B · {lead.referralSourceName}</span>}
                 </div>
                 <p className="mt-0.5 truncate text-[13.5px] text-steel">{lead.topic ?? "Ohne Thema"} · {lead.region ?? "Region offen"} · {lead.preferredChannel ?? "Kanal offen"}{lead.preferredTime ? " · Wunsch: " + lead.preferredTime : ""}</p>
 
