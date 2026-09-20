@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/seo";
+import { audiencePageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
@@ -9,7 +9,9 @@ import { SERVICES, SERVICE_IMAGES } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
 import { withAudience } from "@/lib/audience";
 
-export const metadata = pageMetadata("/leistungen");
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  return audiencePageMetadata("/leistungen" as const, await resolveSiteAudience((await searchParams).audience));
+}
 
 export default async function ServicesPage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
   const audience = await resolveSiteAudience((await searchParams).audience);
