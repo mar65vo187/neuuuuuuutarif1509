@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, getTableColumns, gte, ilike, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, ilike, inArray, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
 import {
@@ -360,7 +360,7 @@ export async function createCustomerReferral(input: {
     const sourceName = source.companyName || [source.firstName, source.lastName].filter(Boolean).join(" ") || source.customerNumber;
 
     if (email || phone) {
-      const duplicateConditions = [];
+      const duplicateConditions: SQL[] = [];
       if (email) duplicateConditions.push(sql`lower(${leads.email}) = ${email}`);
       if (phone) duplicateConditions.push(eq(leads.phone, phone));
       const [duplicate] = await tx.select({ id: customerReferrals.id })
