@@ -9,6 +9,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { updateOrder, writeAudit } from "@/lib/enterprise";
+import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 const schema = z.object({
   entity: z.enum(["lead", "order", "task"]),
@@ -26,6 +27,10 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(await readJsonBody(request, 32 * 1024));
     if (!parsed.success) return NextResponse.json({ ok: false, error: "Ungültige Bulk-Aktion." }, { status: 422 });
     const { entity, ids, action, value, employeeId } = parsed.data;
+
+    if (entity === "lead") await requirePermission(user, action === "assign_employee" ? PORTAL_PERMISSION.LEAD_ASSIGN : PORTAL_PERMISSION.LEAD_EDIT);
+    if (entity === "order") await requirePermission(user, PORTAL_PERMISSION.ORDER_EDIT);
+    if (entity === "task") await requirePermission(user, PORTAL_PERMISSION.TASK_MANAGE);
 
     if (entity === "order") {
       if (action !== "status" || !value || !orderUpdateSchema.shape.status.safeParse(value).success) {
