@@ -69,7 +69,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ slug:
 
           <div className="lg:col-span-5">
             <div className="glass rounded-[28px] p-6 sm:p-7">
-              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-electric-soft">Was du erwarten kannst</p>
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-electric-soft">{business ? "Was Sie erwarten können" : "Was du erwarten kannst"}</p>
               <div className="mt-4 space-y-3">
                 {campaign.proof.map((item, index) => (
                   <div key={item.title} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
