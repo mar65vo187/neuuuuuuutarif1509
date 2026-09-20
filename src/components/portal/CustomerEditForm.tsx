@@ -70,7 +70,7 @@ export function CustomerEditForm(props: Props) {
   }
 
   return (
-    <div className="mt-4 rounded-2xl border border-line bg-paper/60 p-4">
+    <div className="mt-3 w-full basis-full rounded-2xl border border-line bg-paper/60 p-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="label">Vorname<input className="field" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} maxLength={120} /></label>
         <label className="label">Nachname<input className="field" value={form.lastName} onChange={(e) => set("lastName", e.target.value)} maxLength={120} /></label>
