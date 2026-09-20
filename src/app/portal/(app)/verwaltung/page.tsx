@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { listAdminAccounts, listEnterpriseRoleState } from "@/lib/admin-server";
+import { listAdminAccounts } from "@/lib/admin-server";
+import { listEnterpriseRoleState } from "@/lib/enterprise-access";
 import { UserManagement } from "@/components/portal/UserManagement";
 import { EnterpriseRoleManager } from "@/components/portal/EnterpriseRoleManager";
 import type { AdminAccount } from "@/lib/admin-validation";
