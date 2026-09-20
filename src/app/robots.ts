@@ -9,5 +9,6 @@ export default function robots(): MetadataRoute.Robots {
       disallow: ["/api/", "/portal/"],
     }],
     sitemap: `${SITE.url}/sitemap.xml`,
+    host: SITE.url,
   };
 }
