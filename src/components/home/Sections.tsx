@@ -5,7 +5,7 @@ import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
-import type { AudienceMode } from "@/components/home/AudienceProvider";
+import type { AudienceMode } from "@/lib/audience";
 import { FAQ, FEATURED_SERVICES, OTHER_SERVICES, PROCESS, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
 import { getAdvisorBySlug } from "@/lib/queries";
 
