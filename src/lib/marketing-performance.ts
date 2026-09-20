@@ -47,7 +47,7 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
     completed: number;
     business_leads: number;
     spend_cents: number;
-  }>(\`
+  }>(`
     WITH bounds AS (
       SELECT
         date_trunc('month', timezone('Europe/Berlin', $1::timestamptz)) AT TIME ZONE 'Europe/Berlin' AS starts_at,
@@ -97,7 +97,7 @@ export async function getMarketingCampaignPerformance(now = new Date()): Promise
     FULL OUTER JOIN spend_counts sc ON sc.campaign_key = lc.campaign_key
     WHERE coalesce(lc.campaign_key, sc.campaign_key) IS NOT NULL
     ORDER BY coalesce(sc.spend_cents, 0) DESC, coalesce(lc.leads, 0) DESC, campaign_key
-  \`, [now.toISOString()]);
+  `, [now.toISOString()]);
 
   const rows: MarketingPerformanceRow[] = result.rows.map((row) => ({
     campaignKey: row.campaign_key,
