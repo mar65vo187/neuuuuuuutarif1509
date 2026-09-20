@@ -1493,7 +1493,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     db.select({
       campaign: sql<string>`coalesce(
         nullif(${leads.meta}->>'utmCampaign',''),
-        case when ${leads.source} like 'campaign:%' then ${leads.source} else null end,
+        case when ${leads.source} like 'campaign:%' or ${leads.source} like 'kampagne:%' then ${leads.source} else null end,
         'Ohne Kampagne'
       )`,
       total: sql<number>`count(*)::int`,
@@ -1502,7 +1502,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       lost: sql<number>`count(*) filter (where ${leads.status}='verloren')::int`,
     }).from(leads)
       .where(leadCondition)
-      .groupBy(sql`coalesce(nullif(${leads.meta}->>'utmCampaign',''), case when ${leads.source} like 'campaign:%' then ${leads.source} else null end, 'Ohne Kampagne')`)
+      .groupBy(sql`coalesce(nullif(${leads.meta}->>'utmCampaign',''), case when ${leads.source} like 'campaign:%' or ${leads.source} like 'kampagne:%' then ${leads.source} else null end, 'Ohne Kampagne')`)
       .orderBy(desc(sql`count(*)`))
       .limit(20),
   ]);
