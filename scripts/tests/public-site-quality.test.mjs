@@ -45,6 +45,7 @@ test("TarifWerk brand identity is consistent across schema, imprint and readines
   assert.match(imprint, /publicBusinessAddress\(\)/);
   assert.match(ready, /hasProductionBusinessAddress\(\)/);
   assert.match(identity, /BUSINESS_ADDRESS/);
+  assert.match(identity, /publicBusinessPostalAddress/);
 });
 
 test("brand search essentials remain wired into metadata and homepage", () => {
