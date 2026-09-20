@@ -8,7 +8,6 @@ import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { SITE, SERVICES } from "@/lib/content";
 import { withAudience, type AudienceMode } from "@/lib/audience";
-import { getCampaignLanding } from "@/lib/campaigns";
 
 const NAV = [
   { href: "/leistungen", label: "Leistungen" },
@@ -36,16 +35,14 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
   };
 
   useEffect(() => {
-    const campaignSlug = pathname.startsWith("/kampagne/") ? pathname.split("/")[2] ?? "" : "";
-    const campaignAudience = campaignSlug ? getCampaignLanding(campaignSlug)?.audience : undefined;
-    const requested = audienceParam === "b2b" || audienceParam === "b2c" ? audienceParam : campaignAudience;
+    const requested = audienceParam === "b2b" || audienceParam === "b2c" ? audienceParam : null;
     if (!requested) return;
     const frame = requestAnimationFrame(() => {
       setAudience((current) => current === requested ? current : requested);
       document.cookie = "tarifwerk-audience=" + requested + "; Path=/; Max-Age=2592000; SameSite=Lax";
     });
     return () => cancelAnimationFrame(frame);
-  }, [audienceParam, pathname]);
+  }, [audienceParam]);
 
   useEffect(() => {
     let frame = 0;
