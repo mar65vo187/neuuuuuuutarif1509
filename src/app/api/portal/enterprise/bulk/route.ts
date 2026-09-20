@@ -69,11 +69,38 @@ export async function POST(request: NextRequest) {
           await writeAudit(tx, user.id, "lead.bulk_assign_employee", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: employeeId });
           return rows.length;
         }
-        const allowed = ["neu","kontaktiert","termin_bestaetigt","in_beratung","abgeschlossen","verloren"];
-        if (!value || !allowed.includes(value)) throw new Error("Ungültiger Lead-Status.");
-        const rows = await tx.update(leads).set({ status: value as typeof leads.status.enumValues[number], updatedAt: new Date() })
+        const allowed = ["neu","kontaktiert","in_beratung","abgeschlossen","verloren"];
+        if (!value || !allowed.includes(value)) {
+          if (value === "termin_bestaetigt") throw new Error("Termine bitte einzeln öffnen und mit konkreter Terminzeit speichern.");
+          throw new Error("Ungültiger Lead-Status.");
+        }
+        const now = new Date();
+        const patch: Partial<typeof leads.$inferInsert> = {
+          status: value as typeof leads.status.enumValues[number],
+          updatedAt: now,
+        };
+        if (value === "kontaktiert") patch.lastContactAt = now;
+        if (["abgeschlossen", "verloren"].includes(value)) {
+          patch.closedAt = now;
+          patch.nextActionAt = null;
+        } else {
+          patch.closedAt = null;
+        }
+
+        const rows = await tx.update(leads).set(patch)
           .where(and(inArray(leads.id, ids), leadAccessCondition(user))).returning({ id: leads.id });
-        await writeAudit(tx, user.id, "lead.bulk_status", "lead", null, undefined, { ids: rows.map((r) => r.id), status: value });
+        const changedIds = rows.map((row) => row.id);
+
+        if (changedIds.length && ["abgeschlossen", "verloren"].includes(value)) {
+          await tx.update(tasks).set({ status: "cancelled", completedAt: null, updatedAt: now }).where(and(
+            eq(tasks.entityType, "lead"),
+            eq(tasks.type, "crm_follow_up"),
+            inArray(tasks.entityId, changedIds),
+            inArray(tasks.status, ["open", "in_progress"]),
+          ));
+        }
+
+        await writeAudit(tx, user.id, "lead.bulk_status", "lead", null, undefined, { ids: changedIds, status: value });
         return rows.length;
       }
       if (action !== "status" || !value || !["open","in_progress","completed","cancelled"].includes(value)) throw new Error("Ungültiger Aufgabenstatus.");
