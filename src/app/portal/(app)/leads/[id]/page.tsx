@@ -9,6 +9,7 @@ import { getLead, getLeadCallActivities, getLeadNotes, getLeadProductLinks, list
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, SITUATIONS } from "@/lib/content";
 import { getLeadIntelligence } from "@/lib/lead-intelligence";
 import { CALL_REACTION_LABELS, CALL_REACHED_PERSON_LABELS } from "@/lib/call-intelligence";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/leads/${id}`)}`);
   const lead = await getLead(id, user);
   if (!lead) notFound();
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
   const [notes, calls, leadProducts, productOptions] = await Promise.all([
     getLeadNotes(id),
     getLeadCallActivities(id, user),
@@ -85,7 +89,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <div className="flex flex-wrap gap-2">
           {waDigits && <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[13.5px] font-semibold text-ink-900"><MessageCircle className="h-4 w-4" /> WhatsApp</a>}
           {lead.phone && <a href={`tel:${lead.phone}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> {lead.phone}</a>}
-          <Link href={`/portal/auftraege/neu?lead=${lead.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>
+          {canCreateOrder && <Link href={`/portal/auftraege/neu?lead=${lead.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>}
           {lead.email && <a href={`mailto:${lead.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
         </div>
       </header>
@@ -240,36 +244,54 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <h2 className="text-[15px] font-extrabold">Produkte & Potenzial</h2>
             <p className="mt-1 text-[12px] text-steel">Direkt sichtbar: vorhandene Produkte, Interessen und Abschlüsse.</p>
             <div className="mt-4">
-              <LeadProductManager
-                leadId={lead.id}
-                products={productOptions}
-                links={leadProducts.map((item) => ({
-                  productId: item.productId,
-                  relation: item.relation,
-                  note: item.note,
-                  productName: item.productName,
-                  category: item.category,
-                  providerName: item.providerName,
-                }))}
-              />
+              {canEdit ? (
+                <LeadProductManager
+                  leadId={lead.id}
+                  products={productOptions}
+                  links={leadProducts.map((item) => ({
+                    productId: item.productId,
+                    relation: item.relation,
+                    note: item.note,
+                    productName: item.productName,
+                    category: item.category,
+                    providerName: item.providerName,
+                  }))}
+                />
+              ) : (
+                <div className="space-y-2">
+                  {leadProducts.length ? leadProducts.map((item) => (
+                    <div key={`${item.productId}:${item.relation}`} className="rounded-xl border border-line bg-paper/70 p-3">
+                      <p className="text-[12.5px] font-extrabold">{item.productName}</p>
+                      <p className="mt-0.5 text-[11px] text-steel">{item.providerName} · {item.category} · {item.relation}</p>
+                    </div>
+                  )) : <p className="text-[12px] text-steel">Keine Produkte hinterlegt.</p>}
+                </div>
+              )}
             </div>
           </Card>
 
           <div id="bearbeiten">
           <Card>
-            <h2 className="text-[15px] font-extrabold">Bearbeiten</h2>
+            <h2 className="text-[15px] font-extrabold">{canEdit ? "Bearbeiten" : "Zugriff"}</h2>
             <div className="mt-4">
-              <LeadActions
-                leadId={lead.id}
-                status={lead.status}
-                confirmedSlot={lead.confirmedSlot}
-                assigned={Boolean(lead.assignedEmployeeId)}
-                isAppointment={lead.type === "termin"}
-                priority={lead.priority}
-                contactOutcome={lead.contactOutcome}
-                nextActionInput={toBerlinDateTimeInput(lead.nextActionAt)}
-                tags={lead.tags}
-              />
+              {canEdit ? (
+                <LeadActions
+                  leadId={lead.id}
+                  status={lead.status}
+                  confirmedSlot={lead.confirmedSlot}
+                  assigned={Boolean(lead.assignedEmployeeId)}
+                  isAppointment={lead.type === "termin"}
+                  priority={lead.priority}
+                  contactOutcome={lead.contactOutcome}
+                  nextActionInput={toBerlinDateTimeInput(lead.nextActionAt)}
+                  tags={lead.tags}
+                />
+              ) : (
+                <div className="rounded-xl border border-line bg-paper p-4">
+                  <p className="text-[12.5px] font-bold text-ink">Nur Leserechte</p>
+                  <p className="mt-1 text-[11.5px] leading-relaxed text-steel">Diese Rolle darf die Lead-Akte ansehen, aber keine CRM-Daten, Anrufe oder Produktzuordnungen verändern.</p>
+                </div>
+              )}
             </div>
           </Card>
           </div>
