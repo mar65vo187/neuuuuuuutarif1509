@@ -18,7 +18,10 @@ try {
   }
   const requiredTables = [
     "employees", "employee_images", "advisors", "advisor_images", "leads", "lead_notes", "team_messages",
-    "referrers", "referrals", "customers", "customer_lead_links", "customer_referrals", "providers", "products",
+    "referrers", "referrals", "customers", "customer_lead_links", "customer_referrals",
+  "customer_crm_profiles",
+  "customer_activities",
+  "customer_opportunities", "providers", "products",
     "orders", "order_status_history", "commission_events", "employee_compensation_profiles", "compensation_history", "loyalty_bonus_ledger", "provider_profiles", "product_catalog_profiles", "commission_list_versions", "commission_rate_versions", "benefit_pool_ledger", "product_updates", "product_update_reads", "incentive_campaigns", "training_modules", "employee_training_completions", "employee_benefits", "internal_documents", "reconciliation_imports", "lead_call_activities", "tasks", "audit_events",
     "automation_rules", "automation_runs", "outbox_events", "notification_queue",
     "reconciliation_issues", "mfa_credentials", "login_events", "referral_rewards",
