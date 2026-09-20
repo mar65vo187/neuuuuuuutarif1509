@@ -7,7 +7,7 @@ import {
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-type Team = { id: number; name: string; leadEmployeeId: number | null; leadName: string | null; active: boolean; members: Array<{ teamId: number; employeeId: number; name: string; email: string; active: boolean }> };
+type Team = { id: number; name: string; leadEmployeeId: number | null; leadName: string | null; active: boolean; members: Array<{ teamId: number; employeeId: number; name: string; active: boolean }> };
 type Incentive = { id: number; title: string; description: string; goalType: string; goalValue: string; rewardType: string; rewardDescription: string; budget: string | null; startsAt: string; endsAt: string; audience: string; audienceLabel: string; progress: number };
 type Training = { id: number; title: string; category: string; description: string; content: string; productId: number | null; productName: string | null; required: boolean; validMonths: number | null; active: boolean };
 type Completion = { moduleId: number; employeeId: number; employeeName: string; status: string; completedAt: string; expiresAt: string | null; note: string; certificateCode: string | null };
