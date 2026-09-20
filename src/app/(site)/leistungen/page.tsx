@@ -7,6 +7,7 @@ import { Item, Stagger } from "@/components/ui/Reveal";
 import { FinalCta } from "@/components/home/Sections";
 import { SERVICES, SERVICE_IMAGES } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
+import { withAudience } from "@/lib/audience";
 
 export const metadata = pageMetadata("/leistungen");
 
@@ -32,10 +33,10 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
               const img = SERVICE_IMAGES[s.key];
               return (
                 <Item key={s.key} className={s.featured && i === 0 ? "sm:col-span-2 lg:col-span-2" : ""}>
-                  <Link href={`/leistungen/${s.slug}?audience=${audience}`} className={`group card-hover relative flex h-full min-h-[260px] flex-col justify-between overflow-hidden rounded-[26px] border border-line p-7 ${img ? "bg-ink text-white" : "bg-white text-ink"}`}>
+                  <Link href={withAudience(`/leistungen/${s.slug}`, audience)} className={`group card-hover relative flex h-full min-h-[260px] flex-col justify-between overflow-hidden rounded-[26px] border border-line p-7 ${img ? "bg-ink text-white" : "bg-white text-ink"}`}>
                     {img && (
                       <>
-                        <Image src={img.src} alt={img.alt} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover opacity-70 transition-transform duration-[1400ms] ease-premium group-hover:scale-105" />
+                        <Image src={img.src} alt={img.alt} fill sizes={s.featured && i === 0 ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"} className="object-cover opacity-70 transition-transform duration-[1400ms] ease-premium group-hover:scale-105" />
                         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/20" />
                       </>
                     )}
