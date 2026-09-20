@@ -6,7 +6,6 @@ import { Logo } from "@/components/ui/Logo";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { getMarketingCampaign, MARKETING_CAMPAIGNS } from "@/lib/marketing-campaigns";
 import { SITE } from "@/lib/content";
-import { pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/security/JsonLd";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -18,12 +17,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const campaign = getMarketingCampaign((await params).slug);
   if (!campaign) return { title: "Nicht gefunden", robots: { index: false, follow: false } };
-  return pageMetadata(
-    `/kampagne/${campaign.slug}`,
-    { title: campaign.seoTitle, description: campaign.seoDescription },
-    null,
-    `/kampagne/${campaign.slug}`,
-  );
+  return {
+    title: { absolute: campaign.seoTitle },
+    description: campaign.seoDescription,
+    robots: { index: false, follow: false },
+    alternates: { canonical: SITE.url },
+  };
 }
 
 export default async function CampaignPage({ params }: Props) {
@@ -94,7 +93,7 @@ export default async function CampaignPage({ params }: Props) {
                   audience={campaign.audience}
                   defaultTopic={campaign.topic}
                   defaultSituation={campaign.situation}
-                  source={`campaign:${campaign.slug}`}
+                  source={`kampagne:${campaign.slug}`}
                 />
               </div>
             </div>
