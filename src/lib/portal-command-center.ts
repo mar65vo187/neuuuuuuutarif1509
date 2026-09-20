@@ -21,6 +21,8 @@ export type FocusItem = {
   title: string;
   subtitle: string;
   href: string;
+  entityType: "general" | "lead" | "customer" | "order";
+  entityId: number;
   timestamp: string | null;
 };
 
@@ -309,6 +311,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       title: task.title,
       subtitle: overdue ? "Aufgabe ist überfällig" : task.dueAt ? "Aufgabe ist innerhalb der nächsten 24 Stunden fällig" : `Priorität: ${task.priority}`,
       href,
+      entityType: task.entityType === "lead" || task.entityType === "customer" || task.entityType === "order" ? task.entityType : "general",
+      entityId: task.entityType === "general" ? 0 : task.entityId,
       timestamp: task.dueAt?.toISOString() ?? null,
     });
   }
@@ -323,6 +327,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       title: lead.name || `Lead #${lead.id}`,
       subtitle: `${lead.topic ?? "Anfrage"} · seit mehr als ${age >= 3 * DAY ? "72" : "24"} Stunden neu`,
       href: `/portal/leads/${lead.id}`,
+      entityType: "lead",
+      entityId: lead.id,
       timestamp: lead.createdAt.toISOString(),
     });
   }
@@ -337,6 +343,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       title: order.orderNumber,
       subtitle: order.status === "documents_missing" ? "Unterlagen fehlen" : "Seit mehr als 7 Tagen ohne Aktualisierung",
       href: `/portal/auftraege/${order.id}`,
+      entityType: "order",
+      entityId: order.id,
       timestamp: order.updatedAt.toISOString(),
     });
   }
@@ -357,6 +365,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
           ? "Kundenbeziehung benötigt Aufmerksamkeit"
           : "Bestandscheck ist fällig",
       href: "/portal/kunden/" + customer.id,
+      entityType: "customer",
+      entityId: customer.id,
       timestamp: customer.nextReviewAt?.toISOString() ?? customer.lastContactAt?.toISOString() ?? null,
     });
   }
