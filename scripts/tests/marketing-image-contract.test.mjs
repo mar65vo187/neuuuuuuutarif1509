@@ -10,6 +10,9 @@ test("TarifWerk brand schema uses a stable square search asset", () => {
   assert.match(siteLayout, /url:\s*`\$\{SITE\.url\}\/favicon\.svg`/);
   assert.match(siteLayout, /width:\s*260/);
   assert.match(siteLayout, /height:\s*260/);
+  assert.match(siteLayout, /"@type": "PostalAddress"/);
+  assert.match(siteLayout, /streetAddress: businessAddress\.streetAddress/);
+  assert.match(siteLayout, /postalCode/);
 });
 
 test("profile image pipeline is editable and normalized to one size", () => {
