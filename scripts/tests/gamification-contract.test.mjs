@@ -20,7 +20,7 @@ test("race scoring uses creator-owned qualified leads and real activations", () 
   assert.match(engine, /nullif\(trim\(coalesce\(l\.topic/);
   assert.match(engine, /order_status_history osh/);
   assert.match(engine, /osh\.to_status = 'active'/);
-  assert.match(engine, /timezone\('Europe\/Berlin', now\(\)\)/);
+  assert.match(engine, /timezone\('Europe\/Berlin', \$1::timestamptz\)/);
 });
 
 test("challenge history is reproducible for a selected month", () => {
