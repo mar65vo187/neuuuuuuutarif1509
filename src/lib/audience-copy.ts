@@ -1,4 +1,4 @@
-import type { AudienceMode } from "@/components/home/AudienceProvider";
+import type { AudienceMode } from "@/lib/audience";
 
 type ProofItem = { k: string; v: string };
 type Principle = { t: string; d: string };
