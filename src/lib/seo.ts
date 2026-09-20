@@ -25,14 +25,57 @@ export const REQUEST_AUDIENCE_SEO = {
   },
 } as const;
 
+export const AUDIENCE_PAGE_SEO = {
+  "/leistungen": {
+    b2c: {
+      title: "Leistungen: Tarife, Energie, Solar & mehr | TarifWerk",
+      description: "Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen, Immobilien und mehr: persönliche TarifWerk Beratung deutschlandweit.",
+    },
+    b2b: {
+      title: "Business-Leistungen für Unternehmen | TarifWerk",
+      description: "Telekommunikation, Energie, Absicherung, Solar, Klima und weitere Themen für Unternehmen strukturiert über einen Ansprechpartner bündeln.",
+    },
+  },
+  "/berater": {
+    b2c: {
+      title: "TarifWerk Berater finden | Persönlich & deutschlandweit",
+      description: "TarifWerk Ansprechpartner nach Thema und Region finden. Persönliche Beratung vor Ort oder digital deutschlandweit – kostenlos und unverbindlich starten.",
+    },
+    b2b: {
+      title: "Business-Ansprechpartner finden | TarifWerk",
+      description: "Passenden TarifWerk Ansprechpartner für Telekommunikation, Energie, Absicherung und weitere Unternehmensthemen finden – deutschlandweit.",
+    },
+  },
+  "/faq": {
+    b2c: {
+      title: "TarifWerk FAQ | Kosten, Ablauf & Beratung",
+      description: "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung – transparent und verständlich erklärt.",
+    },
+    b2b: {
+      title: "TarifWerk Business FAQ | Ablauf & Beratung",
+      description: "Antworten für Unternehmen zu Ablauf, Partnern, Vergütung, mehreren Standorten und persönlicher Business-Beratung bei TarifWerk.",
+    },
+  },
+  "/ueber-uns": {
+    b2c: {
+      title: "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden",
+      description: "TarifWerk aus Wiesbaden: persönliche Beratung mit einem festen Ansprechpartner für Tarife, Energie und wichtige Entscheidungen – deutschlandweit.",
+    },
+    b2b: {
+      title: "Über TarifWerk | Business-Beratung deutschlandweit",
+      description: "TarifWerk bündelt Vertrags-, Versorgungs- und weitere betriebliche Themen mit einem direkten Ansprechpartner für Unternehmen deutschlandweit.",
+    },
+  },
+} as const;
+
 export const PAGE_SEO: Record<string, PageSeo> = {
   "/": HOME_AUDIENCE_SEO.b2c,
-  "/leistungen": { title: "Leistungen: Tarife, Energie, Solar & mehr | TarifWerk", description: "Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen, Immobilien und mehr: persönliche TarifWerk Beratung deutschlandweit." },
-  "/berater": { title: "TarifWerk Berater finden | Persönlich & deutschlandweit", description: "TarifWerk Ansprechpartner nach Thema und Region finden. Persönliche Beratung vor Ort oder digital deutschlandweit – kostenlos und unverbindlich starten." },
+  "/leistungen": AUDIENCE_PAGE_SEO["/leistungen"].b2c,
+  "/berater": AUDIENCE_PAGE_SEO["/berater"].b2c,
   "/anfrage": REQUEST_AUDIENCE_SEO.b2c,
-  "/ueber-uns": { title: "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden", description: "TarifWerk aus Wiesbaden: persönliche Beratung mit einem festen Ansprechpartner für Tarife, Energie und wichtige Entscheidungen – deutschlandweit." },
+  "/ueber-uns": AUDIENCE_PAGE_SEO["/ueber-uns"].b2c,
   "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Sie erklären verständlich und hören Menschen zu? Lernen Sie die Arbeit als Berater bei TarifWerk kennen und bewerben Sie sich bei uns." },
-  "/faq": { title: "TarifWerk FAQ | Kosten, Ablauf & Beratung", description: "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung – transparent und verständlich erklärt." },
+  "/faq": AUDIENCE_PAGE_SEO["/faq"].b2c,
   "/freund-werben": { title: "Freunde werben: bis 1.000 € Wunschgutschein | TarifWerk", description: "TarifWerk empfehlen und bei erfolgreicher Vermittlung je nach Bereich bis zu 1.000 € Wunschgutschein erhalten. Persönlicher Link und transparenter Status." },
   "/freund-werben/status": { title: "Dein Empfehlungsstatus | TarifWerk", description: "Deinen persönlichen Empfehlungsstatus mit privatem Zugangslink öffnen und zugeordnete Empfehlungen und Prämien im Blick behalten.", noindex: true },
   "/impressum": { title: "Impressum & Kontakt | TarifWerk", description: "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informationen zu Verantwortlichkeiten und unseren Kontaktmöglichkeiten.", noindex: true },
@@ -99,6 +142,10 @@ export function homeAudienceMetadata(audience: "b2c" | "b2b"): Metadata {
 
 export function requestAudienceMetadata(audience: "b2c" | "b2b"): Metadata {
   return pageMetadata("/anfrage", REQUEST_AUDIENCE_SEO[audience], null, "/anfrage");
+}
+
+export function audiencePageMetadata(path: keyof typeof AUDIENCE_PAGE_SEO, audience: "b2c" | "b2b"): Metadata {
+  return pageMetadata(path, AUDIENCE_PAGE_SEO[path][audience], null, path);
 }
 
 export const RELATED_SERVICE_KEYS: Record<string, string[]> = {
