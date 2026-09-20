@@ -26,6 +26,7 @@ import {
 import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
+import { leadAccessCondition } from "@/lib/queries";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -621,14 +622,49 @@ export async function getFinanceStats(user: SessionUser) {
 }
 
 export async function getEnterpriseReport(user: SessionUser, days = 30) {
-  const from = new Date(Date.now() - Math.max(1, Math.min(days, 365)) * 24 * 60 * 60_000);
-  const orderCondition = and(orderAccess(user), gte(orders.createdAt, from));
-  const [orderRows, providerRows, cycleRows, taskRows] = await Promise.all([
-    db.select({ status: orders.status, count: sql<number>`count(*)::int`, expected: sql<string>`coalesce(sum(${orders.expectedCommission}),0)::text` })
-      .from(orders).where(orderCondition).groupBy(orders.status),
-    db.select({ provider: providers.name, count: sql<number>`count(*)::int`, expected: sql<string>`coalesce(sum(${orders.expectedCommission}),0)::text` })
-      .from(orders).innerJoin(providers, eq(orders.providerId, providers.id)).where(orderCondition)
-      .groupBy(providers.name).orderBy(desc(sql`count(*)`)).limit(12),
+  const boundedDays = Math.max(1, Math.min(days, 365));
+  const now = new Date();
+  const periodMs = boundedDays * 24 * 60 * 60_000;
+  const from = new Date(now.getTime() - periodMs);
+  const previousFrom = new Date(from.getTime() - periodMs);
+  const orderScope = orderAccess(user);
+  const leadScope = leadAccessCondition(user);
+  const orderCondition = and(orderScope, gte(orders.createdAt, from));
+  const previousOrderCondition = and(orderScope, gte(orders.createdAt, previousFrom), lte(orders.createdAt, from));
+  const leadCondition = and(leadScope, gte(leads.createdAt, from));
+  const previousLeadCondition = and(leadScope, gte(leads.createdAt, previousFrom), lte(leads.createdAt, from));
+
+  const [
+    orderRows,
+    providerRows,
+    cycleRows,
+    taskRows,
+    leadRows,
+    previousOrderRows,
+    previousLeadRows,
+    missingExternalRows,
+    staleLeadRows,
+    reconciliationRows,
+    incompleteProductRows,
+    expiringTrainingRows,
+  ] = await Promise.all([
+    db.select({
+      status: orders.status,
+      count: sql<number>`count(*)::int`,
+      expected: sql<string>`coalesce(sum(${orders.expectedCommission}),0)::text`,
+    }).from(orders).where(orderCondition).groupBy(orders.status),
+    db.select({
+      provider: providers.name,
+      count: sql<number>`count(*)::int`,
+      expected: sql<string>`coalesce(sum(${orders.expectedCommission}),0)::text`,
+      active: sql<number>`count(*) filter (where ${orders.status}='active')::int`,
+      cancelled: sql<number>`count(*) filter (where ${orders.status} in ('cancelled','storno'))::int`,
+    }).from(orders)
+      .innerJoin(providers, eq(orders.providerId, providers.id))
+      .where(orderCondition)
+      .groupBy(providers.name)
+      .orderBy(desc(sql`count(*)`))
+      .limit(12),
     db.select({
       averageHours: sql<number>`coalesce(avg(extract(epoch from (${orders.activatedAt} - ${orders.createdAt})) / 3600),0)::float`,
     }).from(orders).where(and(orderCondition, eq(orders.status, "active"))),
@@ -636,19 +672,93 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       open: sql<number>`count(*) filter (where ${tasks.status}='open')::int`,
       overdue: sql<number>`count(*) filter (where ${tasks.status}='open' and ${tasks.dueAt} < now())::int`,
     }).from(tasks).where(taskAccess(user)),
+    db.select({
+      total: sql<number>`count(*)::int`,
+      completed: sql<number>`count(*) filter (where ${leads.status}='abgeschlossen')::int`,
+      lost: sql<number>`count(*) filter (where ${leads.status}='verloren')::int`,
+    }).from(leads).where(leadCondition),
+    db.select({
+      total: sql<number>`count(*)::int`,
+      active: sql<number>`count(*) filter (where ${orders.status}='active')::int`,
+    }).from(orders).where(previousOrderCondition),
+    db.select({
+      total: sql<number>`count(*)::int`,
+      completed: sql<number>`count(*) filter (where ${leads.status}='abgeschlossen')::int`,
+    }).from(leads).where(previousLeadCondition),
+    db.select({ count: sql<number>`count(*)::int` }).from(orders).where(and(
+      orderScope,
+      isNull(orders.externalOrderId),
+      inArray(orders.status, ["submitted", "provider_review", "accepted", "activation_pending", "active"]),
+    )),
+    db.select({ count: sql<number>`count(*)::int` }).from(leads).where(and(
+      leadScope,
+      inArray(leads.status, ["neu", "kontaktiert"]),
+      lte(leads.createdAt, new Date(now.getTime() - 72 * 60 * 60_000)),
+    )),
+    user.role === "admin"
+      ? db.select({ count: sql<number>`count(*)::int` }).from(reconciliationIssues).where(eq(reconciliationIssues.status, "open"))
+      : Promise.resolve([{ count: 0 }]),
+    user.role === "admin"
+      ? db.select({ count: sql<number>`count(*)::int` }).from(products)
+          .leftJoin(productCatalogProfiles, eq(productCatalogProfiles.productId, products.id))
+          .where(and(
+            eq(products.active, true),
+            or(
+              isNull(productCatalogProfiles.productId),
+              eq(productCatalogProfiles.description, ""),
+              eq(productCatalogProfiles.completionProcess, ""),
+              sql`coalesce(jsonb_array_length(${productCatalogProfiles.salesArguments}), 0) = 0`,
+            ),
+          ))
+      : Promise.resolve([{ count: 0 }]),
+    db.select({ count: sql<number>`count(*)::int` }).from(employeeTrainingCompletions).where(and(
+      eq(employeeTrainingCompletions.status, "completed"),
+      user.role === "admin" ? sql`true` : eq(employeeTrainingCompletions.employeeId, user.id),
+      gte(employeeTrainingCompletions.expiresAt, now),
+      lte(employeeTrainingCompletions.expiresAt, new Date(now.getTime() + 30 * 24 * 60 * 60_000)),
+    )),
   ]);
+
   const total = orderRows.reduce((sum, row) => sum + row.count, 0);
   const active = orderRows.find((row) => row.status === "active")?.count ?? 0;
   const cancelled = orderRows.filter((row) => ["cancelled", "storno"].includes(row.status)).reduce((sum, row) => sum + row.count, 0);
+  const leadTotal = leadRows[0]?.total ?? 0;
+  const leadCompleted = leadRows[0]?.completed ?? 0;
+  const previousOrders = previousOrderRows[0]?.total ?? 0;
+  const previousLeads = previousLeadRows[0]?.total ?? 0;
+
+  const change = (current: number, previous: number) => {
+    if (previous === 0) return current === 0 ? 0 : 100;
+    return Math.round(((current - previous) / previous) * 1000) / 10;
+  };
+
   return {
-    days,
+    days: boundedDays,
     totalOrders: total,
     activeOrders: active,
     cancellationRate: total ? Math.round((cancelled / total) * 1000) / 10 : 0,
+    activationRate: total ? Math.round((active / total) * 1000) / 10 : 0,
     expectedCommission: orderRows.reduce((sum, row) => sum + Number(row.expected), 0),
     averageCycleHours: Math.round((cycleRows[0]?.averageHours ?? 0) * 10) / 10,
     openTasks: taskRows[0]?.open ?? 0,
     overdueTasks: taskRows[0]?.overdue ?? 0,
+    leadTotal,
+    leadCompleted,
+    leadLost: leadRows[0]?.lost ?? 0,
+    leadConversionRate: leadTotal ? Math.round((leadCompleted / leadTotal) * 1000) / 10 : 0,
+    trends: {
+      orders: change(total, previousOrders),
+      leads: change(leadTotal, previousLeads),
+      activations: change(active, previousOrderRows[0]?.active ?? 0),
+      leadWins: change(leadCompleted, previousLeadRows[0]?.completed ?? 0),
+    },
+    dataQuality: {
+      staleLeads72h: staleLeadRows[0]?.count ?? 0,
+      ordersMissingExternalId: missingExternalRows[0]?.count ?? 0,
+      openReconciliation: reconciliationRows[0]?.count ?? 0,
+      incompleteProducts: incompleteProductRows[0]?.count ?? 0,
+      expiringTrainings30d: expiringTrainingRows[0]?.count ?? 0,
+    },
     byStatus: orderRows,
     byProvider: providerRows,
   };
