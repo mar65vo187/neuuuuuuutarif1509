@@ -7,6 +7,7 @@ import { ProviderCommissionAction } from "@/components/portal/ProviderCommission
 import { getCurrentUser } from "@/lib/auth";
 import { getOrder } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/auftraege/${id}`)}`);
   const data = await getOrder(id, user);
   if (!data) notFound();
+  const canEdit = await hasPermission(user, PORTAL_PERMISSION.ORDER_EDIT);
   const customerName = data.customer.companyName || [data.customer.firstName, data.customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
   const owner = isCompensationOwner(user);
   const orderFacts: Array<[string, string | null]> = [
@@ -129,7 +131,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {openTasks.length ? <ul className="mt-4 space-y-2">{openTasks.slice(0, 6).map((task) => <li key={task.id} className="rounded-xl border border-line bg-paper/70 p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-[12.5px] font-bold">{task.title}</p><p className="mt-1 text-[11px] text-steel">{task.dueAt ? "Fällig " + formatDate(task.dueAt) : "Ohne Fälligkeit"} · {task.priority}</p></div><Clock3 className="h-3.5 w-3.5 shrink-0 text-electric-deep" /></div></li>)}</ul> : <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-[12px] text-emerald-800">Keine offene Aufgabe zu diesem Auftrag.</div>}
           <Link href="/portal/aufgaben" className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-electric-deep hover:underline">Aufgaben öffnen <ArrowRight className="h-3.5 w-3.5" /></Link>
         </Card>
-        <Card><h2 className="text-[16px] font-extrabold">Auftrag bearbeiten</h2><p className="mt-1 text-[12px] text-steel">Status und Providerdaten direkt am Vorgang pflegen.</p><div className="mt-4"><OrderActions orderId={id} status={data.order.status} providerStatus={data.order.providerStatus} externalOrderId={data.order.externalOrderId} /></div></Card>
+        <Card><h2 className="text-[16px] font-extrabold">{canEdit ? "Auftrag bearbeiten" : "Zugriff"}</h2><p className="mt-1 text-[12px] text-steel">{canEdit ? "Status und Providerdaten direkt am Vorgang pflegen." : "Diese Rolle darf den Auftrag ansehen, aber nicht verändern."}</p>{canEdit && <div className="mt-4"><OrderActions orderId={id} status={data.order.status} providerStatus={data.order.providerStatus} externalOrderId={data.order.externalOrderId} /></div>}</Card>
       </div>
     </div>
   </div>;
