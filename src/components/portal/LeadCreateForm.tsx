@@ -12,8 +12,6 @@ type ProductOption = {
   providerName: string;
 };
 
-type ProductRelation = "interest" | "existing" | "sold";
-
 const TOPIC_OPTIONS = [...new Set(SERVICES.map((service) => service.name))];
 
 export function LeadCreateForm({ products }: { products: ProductOption[] }) {
@@ -36,7 +34,7 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
     nextActionAt: "",
     tags: "",
     confirmedSlot: "",
-    productRelation: "interest" as ProductRelation,
+    productRelation: "interest",
   });
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
