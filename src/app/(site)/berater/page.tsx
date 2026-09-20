@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/seo";
+import { audiencePageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { AdvisorFinder } from "@/components/advisors/AdvisorFinder";
 import { PageHero } from "@/components/site/PageHero";
@@ -9,7 +9,9 @@ import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = pageMetadata("/berater");
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  return audiencePageMetadata("/berater" as const, await resolveSiteAudience((await searchParams).audience));
+}
 
 export default async function AdvisorsPage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
   const audience = await resolveSiteAudience((await searchParams).audience);
