@@ -49,3 +49,18 @@ test("green builds emit reproducible release evidence", () => {
   assert.match(manifest, /revision/);
   assert.doesNotMatch(manifest, /DATABASE_URL|SESSION_SECRET|VERCEL_TOKEN/);
 });
+
+
+test("production readiness requires explicit legal address and runtime smoke gates", () => {
+  const ready = read("src/app/api/ready/route.ts");
+  const workflow = read(".github/workflows/quality.yml");
+  const runtimeSmoke = read("scripts/runtime-smoke.mjs");
+  const concurrencySmoke = read("scripts/runtime-concurrency-smoke.mjs");
+  assert.match(ready, /BUSINESS_ADDRESS/);
+  assert.match(workflow, /Runtime HTTP smoke/);
+  assert.match(workflow, /Runtime concurrency smoke/);
+  assert.match(runtimeSmoke, /\/api\/ready/);
+  assert.match(runtimeSmoke, /\/portal\/login/);
+  assert.match(concurrencySmoke, /RUNTIME_SMOKE_CONCURRENCY/);
+  assert.match(concurrencySmoke, /p95/);
+});
