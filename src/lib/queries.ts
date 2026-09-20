@@ -67,13 +67,16 @@ export async function listLeads(filter?: {
   if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
   if (filter?.next === "overdue") conditions.push(sql`${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren')`);
   if (filter?.next === "today") conditions.push(sql`${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren')`);
-  const productRelation = filter?.productRelation && ["interest", "existing", "sold"].includes(filter.productRelation)
+  if (filter?.next === "missing") conditions.push(sql`${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren')`);
+  const productRelation = filter?.productRelation && ["interest", "existing", "sold", "none"].includes(filter.productRelation)
     ? filter.productRelation
     : undefined;
   if (filter?.productId && Number.isSafeInteger(filter.productId) && filter.productId > 0) {
     conditions.push(productRelation
       ? sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId} and lpl.relation = ${productRelation})`
       : sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId})`);
+  } else if (productRelation === "none") {
+    conditions.push(sql`not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id})`);
   } else if (productRelation) {
     conditions.push(sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.relation = ${productRelation})`);
   }
@@ -168,6 +171,9 @@ export async function getLeadCrmOverview(user: SessionUser) {
     overdueCount: sql<number>`count(*) filter (where ${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
     hotCount: sql<number>`count(*) filter (where ${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
     productCount: sql<number>`count(*) filter (where exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}))::int`,
+    noProductCount: sql<number>`count(*) filter (where not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}) and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+    missingNextCount: sql<number>`count(*) filter (where ${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren'))::int`,
+    dueTodayCount: sql<number>`count(*) filter (where ${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
   }).from(leads).where(access);
   return {
     total: row?.total ?? 0,
@@ -179,6 +185,9 @@ export async function getLeadCrmOverview(user: SessionUser) {
     overdueCount: row?.overdueCount ?? 0,
     hotCount: row?.hotCount ?? 0,
     productCount: row?.productCount ?? 0,
+    noProductCount: row?.noProductCount ?? 0,
+    missingNextCount: row?.missingNextCount ?? 0,
+    dueTodayCount: row?.dueTodayCount ?? 0,
   };
 }
 
