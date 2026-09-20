@@ -8,6 +8,7 @@ import { Card } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { getEnterpriseReport } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
+import { BI_METRICS, BI_METRIC_BY_KEY } from "@/lib/bi-metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,19 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
     { label: "Unvollständige Produkte", value: report.dataQuality.incompleteProducts, href: "/portal/produkte", Icon: AlertTriangle, critical: report.dataQuality.incompleteProducts > 0 },
     { label: "Schulungen laufen ≤30T ab", value: report.dataQuality.expiringTrainings30d, href: "/portal/betrieb", Icon: GraduationCap, critical: report.dataQuality.expiringTrainings30d > 0 },
   ];
+  const coverage = [
+    { key: "next_action_coverage", value: report.qualityCoverage.nextAction, href: "/portal/leads?next=missing", Icon: TrendingUp },
+    { key: "product_context_coverage", value: report.qualityCoverage.productContext, href: "/portal/leads?relation=none", Icon: FileCheck2 },
+    { key: "provider_reference_coverage", value: report.qualityCoverage.providerReference, href: "/portal/auftraege", Icon: ReceiptText },
+    { key: "customer_owner_coverage", value: report.qualityCoverage.customerOwner, href: "/portal/kunden", Icon: UserRoundSearch },
+    { key: "task_on_time_coverage", value: report.qualityCoverage.taskOnTime, href: "/portal/aufgaben", Icon: ListTodo },
+  ].map((row) => ({ ...row, definition: BI_METRIC_BY_KEY[row.key] }));
+
+  const runRate = [
+    { label: "Leads / Tag", current: report.velocity.leadsPerDay, previous: report.velocity.previousLeadsPerDay, Icon: UserRoundSearch },
+    { label: "Aufträge / Tag", current: report.velocity.ordersPerDay, previous: report.velocity.previousOrdersPerDay, Icon: FileCheck2 },
+    { label: "Aktivierungen / Tag", current: report.velocity.activationsPerDay, previous: report.velocity.previousActivationsPerDay, Icon: TrendingUp },
+  ];
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
@@ -88,6 +102,44 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
         <p className="mt-3 text-[28px] font-extrabold tracking-tight">{value}</p>
         <p className="mt-1 text-[11.5px] text-steel">{hint}</p>
       </Card>)}
+    </section>
+
+    <section className="grid gap-4 xl:grid-cols-[1.45fr_0.75fr]" aria-label="BI Datenqualität und Run Rate">
+      <Card>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow text-electric-deep">BI-Datenqualität</p>
+            <h2 className="mt-1 text-[17px] font-extrabold">Coverage der operativen Kerndaten</h2>
+            <p className="mt-1 text-[11.5px] text-steel">Jede Quote hat eine feste Formel. 100 % bedeutet vollständige Abdeckung im jeweiligen sichtbaren Datenbestand.</p>
+          </div>
+          <span className="rounded-full border border-line bg-paper px-3 py-1.5 text-[10.5px] font-bold text-steel">kanonisch definiert</span>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {coverage.map(({ key, value, href, Icon, definition }) => {
+            const attention = value.percent < 90;
+            return <Link key={key} href={href} className={"rounded-2xl border p-3 transition hover:-translate-y-0.5 " + (attention ? "border-amber-200 bg-amber-50/70" : "border-emerald-200 bg-emerald-50/70")}>
+              <div className="flex items-start justify-between gap-2"><p className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-steel">{definition.label}</p><Icon className={"h-4 w-4 " + (attention ? "text-amber-600" : "text-emerald-600")} /></div>
+              <p className="mt-2 text-[24px] font-extrabold">{value.percent}%</p>
+              <p className="mt-1 text-[10.5px] text-steel">{value.covered} von {value.total} abgedeckt</p>
+            </Link>;
+          })}
+        </div>
+      </Card>
+
+      <Card>
+        <p className="eyebrow text-electric-deep">Run Rate · keine Prognose</p>
+        <h2 className="mt-1 text-[17px] font-extrabold">Arbeitsgeschwindigkeit</h2>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-steel">Tagesdurchschnitt des gewählten Zeitraums im Vergleich zur direkt davorliegenden Periode. Keine Zukunftsvorhersage.</p>
+        <div className="mt-4 space-y-2.5">
+          {runRate.map(({ label, current, previous, Icon }) => {
+            const delta = previous === 0 ? (current === 0 ? 0 : 100) : Math.round(((current - previous) / previous) * 1000) / 10;
+            return <div key={label} className="rounded-xl border border-line bg-paper/60 p-3">
+              <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2 text-[11.5px] font-bold"><Icon className="h-3.5 w-3.5 text-electric-deep" /> {label}</span><strong className="text-[18px]">{current.toLocaleString("de-DE", { maximumFractionDigits: 2 })}</strong></div>
+              <p className="mt-1 text-[10.5px] text-steel">Vorperiode {previous.toLocaleString("de-DE", { maximumFractionDigits: 2 })} · {trend(delta)}</p>
+            </div>;
+          })}
+        </div>
+      </Card>
     </section>
 
     <section className="grid gap-4 lg:grid-cols-2">
@@ -144,6 +196,36 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
           <p className="mt-3 text-[25px] font-extrabold">{value}</p>
           <p className="mt-1 text-[11px] text-steel">{value > 0 ? "Prüfen" : "Sauber"}</p>
         </Link>)}
+      </div>
+    </Card>
+
+    <Card>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow text-electric-deep">Kennzahlenkatalog</p>
+          <h2 className="mt-1 text-[17px] font-extrabold">Eine Definition pro KPI</h2>
+          <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-steel">Formeln, Datenquellen und Scope sind zentral festgelegt. Damit bleibt dieselbe Kennzahl in Dashboard, Reporting und späteren Exporten identisch interpretierbar.</p>
+        </div>
+        <span className="rounded-full border border-line bg-paper px-3 py-1.5 text-[10.5px] font-bold text-steel">{BI_METRICS.length} Definitionen</span>
+      </div>
+      <div className="mt-4 grid gap-2 lg:grid-cols-2">
+        {BI_METRICS.map((metric) => (
+          <details key={metric.key} className="group rounded-2xl border border-line bg-paper/55 p-3.5">
+            <summary className="cursor-pointer list-none">
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="text-[12.5px] font-extrabold">{metric.label}</p><p className="mt-0.5 text-[10.5px] text-steel">{metric.category} · {metric.scope}</p></div>
+                <span className="text-[16px] font-bold text-electric-deep group-open:rotate-45">+</span>
+              </div>
+            </summary>
+            <div className="mt-3 border-t border-line pt-3">
+              <p className="text-[11.5px] leading-relaxed text-steel">{metric.description}</p>
+              <div className="mt-3 grid gap-2">
+                <div className="rounded-xl border border-line bg-white/70 p-2.5"><p className="text-[9.5px] font-bold uppercase tracking-wider text-steel">Formel</p><p className="mt-1 text-[11px] font-semibold">{metric.formula}</p></div>
+                <div className="rounded-xl border border-line bg-white/70 p-2.5"><p className="text-[9.5px] font-bold uppercase tracking-wider text-steel">Quelle</p><p className="mt-1 break-words text-[10.5px] font-mono text-steel">{metric.source.join(" · ")}</p></div>
+              </div>
+            </div>
+          </details>
+        ))}
       </div>
     </Card>
 
