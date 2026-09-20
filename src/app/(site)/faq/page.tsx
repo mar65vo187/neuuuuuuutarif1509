@@ -3,7 +3,7 @@ import { audiencePageMetadata } from "@/lib/seo";
 import { Accordion } from "@/components/ui/Accordion";
 import { PageHero } from "@/components/site/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
-import { FinalCta } from "@/components/home/Sections";
+import { AudienceFinalCta } from "@/components/home/AudienceSections";
 import { SERVICES } from "@/lib/content";
 import { AUDIENCE_COPY, serviceFaqForAudience } from "@/lib/audience-copy";
 import { resolveSiteAudience } from "@/lib/audience-server";
@@ -44,7 +44,7 @@ export default async function FaqPage({ searchParams }: { searchParams: Promise<
           </Reveal>
         </div>
       </section>
-      <FinalCta audience={audience} />
+      <AudienceFinalCta audience={audience} />
     </>
   );
 }
