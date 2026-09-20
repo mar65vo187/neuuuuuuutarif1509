@@ -1,20 +1,8 @@
 import { pool } from "@/db";
 
-export const EMPLOYEE_RACE_RULES = {
-  qualifiedLead: 1,
-  b2bLeadBonus: 2,
-  b2cClose: 2,
-  b2bClose: 4,
-} as const;
+import { EMPLOYEE_RACE_RULES, REFERRAL_AVATARS } from "@/lib/gamification-rules";
 
-export const REFERRAL_AVATARS = [
-  { key: "rocket", label: "Rakete", symbol: "🚀" },
-  { key: "bolt", label: "Blitz", symbol: "⚡" },
-  { key: "star", label: "Stern", symbol: "⭐" },
-  { key: "compass", label: "Kompass", symbol: "🧭" },
-  { key: "crown", label: "Krone", symbol: "👑" },
-  { key: "spark", label: "Funke", symbol: "✨" },
-] as const;
+export { EMPLOYEE_RACE_RULES, REFERRAL_AVATARS } from "@/lib/gamification-rules";
 
 export type EmployeeRaceRow = {
   employeeId: number;
