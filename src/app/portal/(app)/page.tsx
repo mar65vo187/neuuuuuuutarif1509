@@ -304,6 +304,18 @@ export default async function PortalDashboard() {
         </Card>
       </section>
 
+      <section aria-label="Team-Challenges">
+        <Link href="/portal/rennen" className="group block overflow-hidden rounded-[24px] border border-electric/20 bg-[radial-gradient(circle_at_top_right,rgba(79,141,255,.18),transparent_38%),linear-gradient(145deg,rgba(13,28,52,.96),rgba(7,17,32,.96))] p-5 transition hover:-translate-y-0.5 hover:border-electric/35 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-electric/10 text-electric-soft"><Trophy className="h-5 w-5" /></span>
+              <div><p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-electric-soft">Team-Challenges</p><h2 className="mt-1 text-[18px] font-extrabold text-white">Monats-Rennstrecke live öffnen</h2><p className="mt-1 text-[12px] text-silver">Qualifizierte Leads, Business-Arbeit, Aktivierungen und erfolgreiche Empfehlungen direkt aus dem CRM visualisiert.</p></div>
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-[11px] font-bold text-silver transition group-hover:bg-electric group-hover:text-white">Board öffnen →</span>
+          </div>
+        </Link>
+      </section>
+
       <section aria-label="Arbeitsqualität">
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
