@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 const STATUSES = Object.keys(LEAD_STATUS_LABELS);
 const TYPES = Object.keys(LEAD_TYPE_LABELS);
-const PRIORITIES = Object.keys(LEAD_PRIORITY_LABELS);
+const PRIORITIES = [...Object.keys(LEAD_PRIORITY_LABELS), "attention"];
 const SORTS = new Set(["newest", "next", "oldest"]);
 const NEXT_FILTERS = new Set(["overdue", "today", "missing"]);
 
@@ -113,7 +113,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Link href="/portal/leads?priority=hot" className="rounded-2xl border border-champagne/25 bg-champagne/10 px-4 py-3 transition hover:-translate-y-0.5">
+        <Link href="/portal/leads?priority=attention" className="rounded-2xl border border-champagne/25 bg-champagne/10 px-4 py-3 transition hover:-translate-y-0.5">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-steel">Hot Leads</p>
           <p className="mt-1 text-[20px] font-extrabold text-ink">{overview.hotCount}</p>
         </Link>
@@ -146,6 +146,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           </label>
           <select name="priority" defaultValue={priority ?? ""} className="field h-11">
             <option value="">Alle Prioritäten</option>
+            <option value="attention">Hot + hohe Priorität</option>
             {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </select>
           <select name="next" defaultValue={next ?? ""} className="field h-11">
