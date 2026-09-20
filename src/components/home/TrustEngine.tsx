@@ -5,12 +5,12 @@ const USPS = [
   {
     icon: UserRoundCheck,
     title: "Ein Ansprechpartner",
-    text: "Nicht für jedes Thema eine neue Hotline: Sie haben einen festen Kontakt, der Ihre Situation kennt und Zusammenhänge mitdenkt.",
+    text: "Nicht für jedes Thema eine neue Hotline: Ein fester Kontakt kennt die Ausgangslage und denkt Zusammenhänge mit.",
   },
   {
     icon: Layers3,
     title: "Mehrere Themen. Ein System.",
-    text: "Tarife, Energie, Absicherung und weitere Bereiche werden nicht isoliert betrachtet, sondern dort verbunden, wo es für Ihre Entscheidung sinnvoll ist.",
+    text: "Tarife, Energie, Absicherung und weitere Bereiche werden dort verbunden, wo ein Gesamtblick wirklich sinnvoll ist.",
   },
   {
     icon: Compass,
@@ -25,12 +25,12 @@ const USPS = [
   {
     icon: ShieldCheck,
     title: "Kein Abschlusszwang",
-    text: "Sie erhalten eine Einschätzung und konkrete Möglichkeiten. Ob Sie etwas umsetzen möchten, entscheiden Sie selbst.",
+    text: "Es gibt eine klare Einschätzung und konkrete Möglichkeiten – ohne automatische Entscheidung und ohne Abschlusszwang.",
   },
   {
     icon: Sparkles,
     title: "Begleitung danach",
-    text: "Gute Beratung endet nicht mit der Unterschrift. Bei Rückfragen und nächsten Schritten bleibt Ihr Ansprechpartner erreichbar.",
+    text: "Gute Beratung endet nicht mit der Unterschrift. Bei Rückfragen und nächsten Schritten bleibt derselbe Ansprechpartner erreichbar.",
   },
 ] as const;
 
@@ -48,7 +48,7 @@ export function TrustEngine() {
       <div className="container-x relative">
         <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
           <div className="lg:col-span-7">
-            <p className="eyebrow text-electric-deep">Warum TarifWerk anders funktionieren soll</p>
+            <p className="eyebrow text-electric-deep">Was TarifWerk anders macht</p>
             <h2 className="mt-4 max-w-4xl text-[clamp(2rem,4.5vw,3.8rem)] font-extrabold leading-[1.02] text-ink">
               Nicht mehr Produkte zeigen.
               <br />
@@ -95,7 +95,7 @@ export function TrustEngine() {
           <div className="rounded-[22px] border border-white/10 bg-white/[0.055] p-5">
             <p className="text-[12px] font-bold uppercase tracking-[0.13em] text-silver">Der nächste sinnvolle Schritt</p>
             <p className="mt-3 text-[14px] leading-relaxed text-platinum">
-              Sie schildern Ihr Thema. Wir klären, ob und wie TarifWerk Ihnen sinnvoll helfen kann – kostenfrei und unverbindlich.
+              Kurz das Thema schildern. Wir klären, ob und wie TarifWerk sinnvoll helfen kann – kostenfrei und unverbindlich.
             </p>
             <Link href="/anfrage" className="mt-5 inline-flex items-center gap-2 rounded-full bg-electric px-5 py-3 text-[13.5px] font-bold text-white transition hover:bg-electric-deep">
               Thema prüfen lassen <ArrowRight className="h-4 w-4" />

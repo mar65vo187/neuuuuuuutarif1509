@@ -5,12 +5,15 @@ import { PageHero } from "@/components/site/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
 import { getActiveAdvisors } from "@/lib/queries";
 import { FinalCta } from "@/components/home/Sections";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = pageMetadata("/berater");
 
-export default async function AdvisorsPage() {
+export default async function AdvisorsPage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  const audience = await resolveSiteAudience((await searchParams).audience);
+  const business = audience === "b2b";
   const advisors = await getActiveAdvisors();
 
   return (
@@ -22,7 +25,7 @@ export default async function AdvisorsPage() {
             Ein Mensch, der <span className="display-i font-normal text-champagne-soft">zu Ihnen</span> passt – nicht irgendein Kontaktformular.
           </>
         }
-        text="Wählen Sie Ihr Thema und Ihre Region. Sie sehen sofort, wer Sie begleiten kann – mit Schwerpunkten, Kontaktwegen und direkter Terminanfrage."
+        text={business ? "Wählen Sie Themenfeld und Region. Sie sehen direkt, wer Ihre Anfrage fachlich begleiten kann – mit Schwerpunkten, Kontaktwegen und direkter Terminanfrage." : "Wähl dein Thema und deine Region. Du siehst direkt, wer dich begleiten kann – mit Schwerpunkten, Kontaktwegen und direkter Terminanfrage."}
         compact
       />
       <section className="bg-paper pb-24">
@@ -40,7 +43,7 @@ export default async function AdvisorsPage() {
           </Reveal>
         </div>
       </section>
-      <FinalCta />
+      <FinalCta audience={audience} />
     </>
   );
 }

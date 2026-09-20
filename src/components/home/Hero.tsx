@@ -22,11 +22,11 @@ export function Hero() {
 
   const trustAnchor = audience === "b2b"
     ? "Ein Ansprechpartner statt Vertragskomplexität. Sie entscheiden selbst, ob und wie Sie weitergehen."
-    : "Ein Ansprechpartner statt Tarif-Dschungel. Sie entscheiden selbst, ob und wie Sie weitergehen.";
+    : "Ein Ansprechpartner statt Tarif-Dschungel. Du entscheidest selbst, ob und wie es weitergeht.";
 
   const reassurance = audience === "b2b"
     ? "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen"
-    : "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen";
+    : "Kostenlose Erstorientierung · transparent erklärt · die Entscheidung bleibt bei dir";
 
   return (
     <section aria-labelledby="home-hero-title" className="relative isolate overflow-hidden bg-ink text-white grain">
@@ -39,7 +39,7 @@ export function Hero() {
         <div className="lg:col-span-7">
           <div className="hero-enter [--hero-delay:60ms]"><AudienceToggle className="mb-5" /></div>
           <p className="eyebrow hero-enter max-w-xl text-electric-soft [--hero-delay:110ms]"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{copy.eyebrow}</p>
-          <h1 id="home-hero-title" key={audience} className="mt-5 max-w-[900px] text-[clamp(2.55rem,6vw,5.3rem)] font-extrabold leading-[0.98] tracking-[-0.035em]">
+          <h1 id="home-hero-title" key={audience} className="mt-5 max-w-[940px] text-[clamp(2.7rem,6.3vw,5.65rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
             <span className="hero-enter block text-gradient-silver [--hero-delay:150ms]">{copy.lines[0]}</span>
             <span className="hero-enter mt-1 block display-i font-normal text-champagne-soft [--hero-delay:190ms]">{copy.emphasis}</span>
             <span className="hero-enter mt-1 block [--hero-delay:230ms]">{copy.lines[2]}</span>

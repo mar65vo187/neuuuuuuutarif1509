@@ -71,11 +71,11 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     }
     if (!form.topic || !form.situation) {
       setStep(0);
-      setError("Bitte wählen Sie Ihr Thema und Ihre Situation.");
+      setError(business ? "Bitte wählen Sie Ihr Thema und Ihre Situation." : "Bitte wähle dein Thema und deine Situation.");
       return;
     }
     if (!form.name.trim() || !form.email.trim()) {
-      setError("Bitte Name und E-Mail angeben.");
+      setError(business ? "Bitte Name und E-Mail angeben." : "Bitte gib deinen Namen und deine E-Mail an.");
       return;
     }
     if (!form.consent) {
@@ -83,7 +83,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       return;
     }
     if (["telefon", "whatsapp"].includes(form.preferredChannel) && !form.phone.trim()) {
-      setError("Bitte geben Sie für Telefon oder WhatsApp eine Telefonnummer an oder wählen Sie E-Mail.");
+      setError(business ? "Bitte geben Sie für Telefon oder WhatsApp eine Telefonnummer an oder wählen Sie E-Mail." : "Bitte gib für Telefon oder WhatsApp eine Telefonnummer an oder wähle E-Mail.");
       return;
     }
     sending.current = true;
@@ -114,7 +114,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       router.push(`/anfrage/danke?${params.toString()}`);
       return;
     } catch {
-      setError("Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie uns telefonisch.");
+      setError(business ? "Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie uns telefonisch." : "Verbindung fehlgeschlagen. Bitte versuche es erneut oder ruf uns direkt an.");
     } finally {
       sending.current = false;
       setLoading(false);
@@ -131,7 +131,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         <p className={`mx-auto mt-3 max-w-md text-[15.5px] leading-relaxed ${muted}`}>
           {business
             ? <>Ihre Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Sie erhalten eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir ausdrücklich.</>
-            : <>Ihre Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Sie bekommen eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir Ihnen ausdrücklich.</>}
+            : <>Deine Anfrage ist angekommen{advisorName ? ` und liegt bei ${advisorName.split(" ")[0]}` : ""}. Du bekommst eine persönliche Rückmeldung – in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir dir ausdrücklich.</>}
         </p>
         {done > 0 && <p className={`mt-2 text-[12.5px] ${muted}`}>Vorgangsnummer #{done}</p>}
         <div className="mt-7 flex flex-wrap justify-center gap-3">
@@ -146,7 +146,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
     );
   }
 
-  const steps = ["Ihr Thema", "Ihr Kontakt"];
+  const steps = business ? ["Ihr Thema", "Ihr Kontakt"] : ["Dein Thema", "Dein Kontakt"];
 
   return (
     <form onSubmit={submit} noValidate>
@@ -181,7 +181,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 ))}
               </div>
 
-              <p className={`${label} mt-7`}>Wo stehen Sie gerade?</p>
+              <p className={`${label} mt-7`}>{business ? "Wo stehen Sie gerade?" : "Wo stehst du gerade?"}</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {SITUATIONS.map((s) => {
                   const on = form.situation === s.value;
@@ -227,7 +227,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                   <input id="lf-phone" type="tel" className={field} value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" placeholder="+49 …" maxLength={40} />
                 </div>
                 <div>
-                  <label htmlFor="lf-time" className={label}>Wann passt es Ihnen?</label>
+                  <label htmlFor="lf-time" className={label}>{business ? "Wann passt es Ihnen?" : "Wann passt es dir?"}</label>
                   <select id="lf-time" value={form.preferredTime} onChange={(e) => set("preferredTime", e.target.value)} className={`${field} appearance-none`}>
                     <option value="" className="text-ink">{business ? "Bitte wählen" : "Bitte wählen"}</option>
                     {TIME_SLOTS.map((t) => (
@@ -237,7 +237,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
                 </div>
               </div>
 
-              <p className={`${label} mt-5`}>Wie möchten Sie sprechen?</p>
+              <p className={`${label} mt-5`}>{business ? "Wie möchten Sie sprechen?" : "Wie möchtest du sprechen?"}</p>
               <div className="flex flex-wrap gap-2">
                 {CHANNELS.map((c) => (
                   <button key={c.value} type="button" onClick={() => set("preferredChannel", c.value)} aria-pressed={form.preferredChannel === c.value} className={chip(form.preferredChannel === c.value)}>
@@ -254,8 +254,8 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
               )}
 
               <div className="mt-5">
-                <label htmlFor="lf-msg" className={label}>Was sollten wir vorab wissen? (optional)</label>
-                <textarea id="lf-msg" rows={3} className={field} value={form.message} onChange={(e) => set("message", e.target.value)} placeholder={business ? "Kurze Eckdaten zu Ihrem Bedarf." : "Kurze Angaben zu Ihrer Situation – das reicht völlig."} maxLength={2000} />
+                <label htmlFor="lf-msg" className={label}>{business ? "Was sollten wir vorab wissen? (optional)" : "Was sollten wir vorab über deine Situation wissen? (optional)"}</label>
+                <textarea id="lf-msg" rows={3} className={field} value={form.message} onChange={(e) => set("message", e.target.value)} placeholder={business ? "Kurze Eckdaten zu Ihrem Bedarf." : "Kurze Angaben zu deiner Situation – das reicht völlig."} maxLength={2000} />
               </div>
 
               {/* Honeypot */}

@@ -5,17 +5,29 @@ import { PageHero } from "@/components/site/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { REGIONS } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const metadata = pageMetadata("/ueber-uns");
 
-const VALUES = [
-  { t: "Verständlich", d: "Wir erklären so, dass Sie Unterschiede, Kosten und nächste Schritte selbst nachvollziehen können." },
-  { t: "Nachvollziehbar", d: "Wir sagen, welche Kriterien wir vergleichen, welche Partner verfügbar sind und warum wir etwas empfehlen." },
-  { t: "Erreichbar", d: "Ihr Ansprechpartner kennt Ihre Situation und bleibt auch nach einer Entscheidung für Rückfragen erreichbar." },
-  { t: "Verantwortlich", d: "Wenn eine Änderung aus unserer Sicht keinen Sinn ergibt, ist auch das ein klares und wertvolles Ergebnis." },
-];
+const VALUES = {
+  b2c: [
+    { t: "Verständlich", d: "Du verstehst Unterschiede, Kosten und nächste Schritte, bevor du dich entscheidest." },
+    { t: "Nachvollziehbar", d: "Wir sagen offen, welche Kriterien zählen, welche Partner verfügbar sind und warum wir etwas empfehlen." },
+    { t: "Erreichbar", d: "Dein Ansprechpartner kennt deine Situation und bleibt auch nach einer Entscheidung erreichbar." },
+    { t: "Verantwortlich", d: "Wenn eine Änderung keinen Sinn ergibt, sagen wir genau das – auch ohne Abschluss." },
+  ],
+  b2b: [
+    { t: "Verständlich", d: "Sie können Unterschiede, Kosten und nächste Schritte vor einer Entscheidung selbst nachvollziehen." },
+    { t: "Nachvollziehbar", d: "Wir legen Kriterien, verfügbare Partner und die Begründung einer Empfehlung offen." },
+    { t: "Erreichbar", d: "Ihr Ansprechpartner kennt die Ausgangslage und bleibt auch nach einer Entscheidung erreichbar." },
+    { t: "Verantwortlich", d: "Wenn eine Änderung keinen wirtschaftlichen oder fachlichen Sinn ergibt, ist auch das ein klares Ergebnis." },
+  ],
+} as const;
 
-export default function AboutPage() {
+export default async function AboutPage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  const audience = await resolveSiteAudience((await searchParams).audience);
+  const business = audience === "b2b";
+  const values = VALUES[audience];
   return (
     <>
       <PageHero
@@ -25,7 +37,7 @@ export default function AboutPage() {
             Viele Themen. <span className="display-i font-normal text-champagne-soft">Ein Ansprechpartner.</span>
           </>
         }
-        text="TarifWerk ist in Wiesbaden entstanden, um Vertrags-, Versorgungs- und größere Entscheidungsthemen nicht länger isoliert zu betrachten. Wir bündeln mehrere Bereiche in einem persönlichen Beratungsprozess – für Privat- und Geschäftskunden deutschlandweit."
+        text={business ? "TarifWerk bündelt Vertrags-, Versorgungs- und weitere betriebliche Themen in einem strukturierten Beratungsprozess – mit einem direkten Ansprechpartner für Unternehmen deutschlandweit." : "TarifWerk ist in Wiesbaden entstanden, damit du Vertrags-, Versorgungs- und größere Alltagsthemen nicht jedes Mal bei einer neuen Stelle erklären musst. Ein Ansprechpartner behält den Gesamtblick."}
       />
 
       <section className="bg-paper py-20 sm:py-28">
@@ -35,7 +47,7 @@ export default function AboutPage() {
             <h2 className="mt-3 text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold leading-tight text-ink">Vier Prinzipien, die im Gespräch überprüfbar sind.</h2>
           </Reveal>
           <Stagger className="mt-12 grid gap-4 sm:grid-cols-2" stagger={0.1}>
-            {VALUES.map((value, index) => (
+            {values.map((value, index) => (
               <Item key={value.t}>
                 <div className="card-hover h-full rounded-[24px] border border-line bg-white p-7">
                   <span className="text-[13px] font-bold text-electric-deep">0{index + 1}</span>
@@ -74,7 +86,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <FinalCta />
+      <FinalCta audience={audience} />
     </>
   );
 }

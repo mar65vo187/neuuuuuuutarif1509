@@ -5,6 +5,7 @@ import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
+import type { AudienceMode } from "@/components/home/AudienceProvider";
 import { FAQ, FEATURED_SERVICES, OTHER_SERVICES, PROCESS, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
 import { getAdvisorBySlug } from "@/lib/queries";
 
@@ -52,7 +53,7 @@ export function FocusSection() {
           </Reveal>
           <Reveal className="lg:col-span-5" delay={0.1}>
             <p className="text-[16.5px] leading-relaxed text-steel">
-              TarifWerk bringt Klarheit in Ihre Möglichkeiten. Mit einem Menschen, der an Ihrer Seite bleibt.
+              TarifWerk bringt Klarheit in komplexe Möglichkeiten – mit einem Menschen, der den Überblick behält.
             </p>
           </Reveal>
         </div>
@@ -111,7 +112,7 @@ export function EverydaySection() {
           <div>
             <p className="eyebrow text-electric-deep">Und alles, was den Alltag betrifft</p>
             <h2 className="mt-3 text-[clamp(1.7rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">
-              Ihr Alltag. Verständlich sortiert.
+              Alltagsthemen. Verständlich sortiert.
             </h2>
           </div>
           <p className="max-w-md text-[15.5px] text-steel">
@@ -149,15 +150,15 @@ export function Manifesto() {
   const principles = [
     {
       t: "Persönlich statt Hotline",
-      d: "Sie sprechen mit einem Menschen, der Ihre Situation kennt – vor, während und nach der Entscheidung.",
+      d: "Ein fester Ansprechpartner kennt die Ausgangslage – vor, während und nach der Entscheidung.",
     },
     {
       t: "Unabhängig statt gebunden",
-      d: "Wir arbeiten mit vielen großen und kleineren Marktteilnehmern. Empfohlen wird, was zu Ihnen passt.",
+      d: "Wir arbeiten mit vielen großen und kleineren Marktteilnehmern. Empfohlen wird, was zum tatsächlichen Bedarf passt.",
     },
     {
       t: "Ehrlich statt überredet",
-      d: "Wir sagen Ihnen, wenn etwas nicht lohnt. Auch wenn wir daran nichts verdienen.",
+      d: "Wenn etwas keinen Sinn ergibt, sagen wir das offen – auch ohne Abschluss.",
     },
   ];
   return (
@@ -171,7 +172,7 @@ export function Manifesto() {
             <span className="display-i font-normal text-champagne-soft">freundlichem Gesicht.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-[16.5px] leading-relaxed text-silver">
-            Ein neuer Vertrag ist ein Anfang. Gute Beratung geht weiter. Wir kennen Ihre Situation, denken Zusammenhänge mit und sind erreichbar, wenn das Leben neue Fragen stellt.
+            Ein neuer Vertrag ist ein Anfang. Gute Beratung geht weiter: Zusammenhänge bleiben im Blick und bei neuen Fragen bleibt ein Ansprechpartner erreichbar.
           </p>
         </Reveal>
 
@@ -191,7 +192,7 @@ export function Manifesto() {
           <div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
             <p className="eyebrow text-platinum">Transparenz</p>
             <p className="text-[15.5px] leading-relaxed text-silver">
-              <span className="font-semibold text-white">So verdienen wir:</span> Erstorientierung und Tarifcheck sind kostenfrei. Bei erfolgreicher Vermittlung erhalten wir eine Provision vom jeweiligen Anbieter. Die konkreten Vergütungsbedingungen erklären wir Ihnen im Gespräch.
+              <span className="font-semibold text-white">So verdienen wir:</span> Erstorientierung und Tarifcheck sind kostenfrei. Bei erfolgreicher Vermittlung erhalten wir eine Provision vom jeweiligen Anbieter. Die konkreten Vergütungsbedingungen erklären wir vor einer Entscheidung transparent.
             </p>
           </div>
         </Reveal>
@@ -296,7 +297,7 @@ export async function Founder() {
             <div className="mt-5 max-w-2xl space-y-4 text-[15.5px] leading-relaxed text-steel">
               <p>
                 Marvin Noel Egenolf hat TarifWerk aufgebaut, um mehrere Vertrags-, Versorgungs- und Entscheidungsthemen
-                an einem Ort zusammenzubringen. So müssen Sie bei jedem neuen Thema nicht wieder von vorne anfangen.
+                an einem Ort zusammenzubringen. So beginnt nicht jedes neue Thema wieder bei null.
               </p>
               <p>
                 Der Anspruch ist einfach: zuhören, sauber erklären, eine klare Empfehlung geben und auch nach der
@@ -329,10 +330,10 @@ export function FaqSection() {
         <Reveal className="lg:col-span-4">
           <p className="eyebrow text-electric-deep">Häufige Fragen</p>
           <h2 className="mt-4 text-[clamp(1.9rem,3.6vw,2.8rem)] font-extrabold leading-[1.05] text-ink">
-            Was Sie vorher wissen möchten.
+            Was vor dem ersten Gespräch wichtig ist.
           </h2>
           <p className="mt-4 text-[15.5px] leading-relaxed text-steel">
-            Nicht dabei? Schreiben Sie uns – die Antwort kommt persönlich.
+            Nicht dabei? Einfach schreiben – die Antwort kommt persönlich.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button href={whatsappLink("Hallo TarifWerk, ich habe eine Frage:")} target="_blank" variant="dark" size="sm" icon={<MessageCircle />}>
@@ -355,7 +356,8 @@ export function FaqSection() {
 /*  Final CTA                                                          */
 /* ------------------------------------------------------------------ */
 
-export function FinalCta() {
+export function FinalCta({ audience = "b2c" }: { audience?: AudienceMode }) {
+  const business = audience === "b2b";
   return (
     <section className="relative overflow-hidden bg-ink py-24 text-white sm:py-32 grain">
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-electric/20 blur-[140px]" />
@@ -363,12 +365,12 @@ export function FinalCta() {
         <Reveal className="mx-auto max-w-3xl text-center">
           <Quote className="mx-auto h-8 w-8 text-champagne" />
           <h2 className="mt-4 text-[clamp(2.1rem,5vw,4rem)] font-extrabold leading-[1.0]">
-            Sagen Sie uns, worum es geht.
+            {business ? "Schildern Sie uns kurz die Ausgangslage." : "Sag uns, worum es geht."}
             <br />
-            <span className="display-i font-normal text-platinum">Wir bringen Klarheit rein.</span>
+            <span className="display-i font-normal text-platinum">{business ? "Wir bringen Struktur rein." : "Wir bringen Klarheit rein."}</span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[15.5px] leading-relaxed text-silver">
-            Ein kurzes Gespräch reicht, um herauszufinden, was sich lohnt und welcher nächste Schritt sinnvoll ist.
+            {business ? "Ein kurzes Gespräch reicht, um Bedarf, Prioritäten und sinnvolle nächste Schritte zu strukturieren." : "Ein kurzes Gespräch reicht, um herauszufinden, was sich für dich lohnt und welcher nächste Schritt sinnvoll ist."}
           </p>
         </Reveal>
         <Stagger className="mx-auto mt-9 grid max-w-3xl gap-3 sm:grid-cols-3">
@@ -376,7 +378,7 @@ export function FinalCta() {
             <Link href="/berater" className="card-hover flex h-full flex-col rounded-2xl bg-electric p-6 text-white">
               <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">Erster Schritt</span>
               <span className="mt-3 text-[19px] font-bold">Ansprechpartner finden</span>
-              <span className="mt-1 text-[13.5px] text-white/85">Thema wählen und loslegen</span>
+              <span className="mt-1 text-[13.5px] text-white/85">{business ? "Bedarf klären und nächsten Schritt bündeln" : "Thema wählen und Klarheit bekommen"}</span>
               <ArrowRight className="mt-6 h-5 w-5" />
             </Link>
           </Item>

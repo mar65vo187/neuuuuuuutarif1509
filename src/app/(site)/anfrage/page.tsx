@@ -4,12 +4,14 @@ import { LeadForm } from "@/components/forms/LeadForm";
 import { PageHero } from "@/components/site/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
 import { SERVICE_NAMES, SITUATIONS, normalizeTopic } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const metadata = pageMetadata("/anfrage");
 
 export default async function RequestPage({ searchParams }: { searchParams: Promise<{ thema?: string | string[]; situation?: string | string[]; region?: string | string[]; ref?: string | string[]; audience?: string | string[] }> }) {
   const { thema, situation, region, ref, audience } = await searchParams;
-  const business = (Array.isArray(audience) ? audience[0] : audience) === "b2b";
+  const resolvedAudience = await resolveSiteAudience(audience);
+  const business = resolvedAudience === "b2b";
   const normalized = normalizeTopic((Array.isArray(thema) ? thema[0] : thema) ?? "");
   const defaultRegion = ((Array.isArray(region) ? region[0] : region) ?? "").slice(0, 80);
   const rawReferral = Array.isArray(ref) ? ref[0] : ref;
@@ -26,10 +28,10 @@ export default async function RequestPage({ searchParams }: { searchParams: Prom
         "Sie entscheiden in Ruhe, ob und wie es weitergeht.",
       ]
     : [
-        "Ein Berater sieht sich Ihre Angaben persönlich an.",
-        "Sie bekommen eine Rückmeldung – in der Regel innerhalb eines Tages.",
-        "Terminwünsche bestätigen wir Ihnen ausdrücklich.",
-        "Sie entscheiden, ob und wie es weitergeht.",
+        "Ein Berater sieht sich deine Angaben persönlich an.",
+        "Du bekommst eine Rückmeldung – in der Regel innerhalb eines Tages.",
+        "Terminwünsche bestätigen wir dir ausdrücklich.",
+        "Du entscheidest, ob und wie es weitergeht.",
       ];
 
   return (
@@ -39,11 +41,11 @@ export default async function RequestPage({ searchParams }: { searchParams: Prom
         title={business ? (
           <>Ihre Ausgangslage. <span className="display-i font-normal text-champagne-soft">Klar strukturiert.</span></>
         ) : (
-          <>Zwei Minuten. <span className="display-i font-normal text-champagne-soft">Dann wissen Sie mehr.</span></>
+          <>Zwei Minuten. <span className="display-i font-normal text-champagne-soft">Dann weißt du mehr.</span></>
         )}
         text={business
           ? "Schildern Sie uns kurz Ihren Bedarf. Wir ordnen die Ausgangslage ein und stimmen den sinnvollsten nächsten Schritt persönlich mit Ihnen ab."
-          : "Sagen Sie uns kurz, worum es geht. Wir prüfen Ihre Situation und melden uns persönlich – mit einer ehrlichen Einschätzung, nicht mit einem Angebotskatalog."}
+          : "Sag uns kurz, worum es geht. Wir schauen uns deine Situation an und melden uns persönlich – mit einer ehrlichen Einschätzung statt eines Angebotskatalogs."}
         compact
       />
       <section className="bg-paper py-16 sm:py-20">
@@ -58,11 +60,11 @@ export default async function RequestPage({ searchParams }: { searchParams: Prom
               ))}
             </ul>
             <div className="mt-8 rounded-2xl border border-line bg-white p-5 text-[14px] text-steel">
-              <p className="font-semibold text-ink">{business ? "Vertrauliche Bearbeitung Ihrer Anfrage." : "Keine Weitergabe Ihrer Daten."}</p>
+              <p className="font-semibold text-ink">{business ? "Vertrauliche Bearbeitung Ihrer Anfrage." : "Deine Daten bleiben bei deiner Anfrage."}</p>
               <p className="mt-1">
                 {business
                   ? "Ihre Angaben werden zur Bearbeitung der Anfrage genutzt. Weitere Verarbeitung richtet sich nach den transparent erläuterten nächsten Schritten."
-                  : "Ihre Angaben nutzen wir ausschließlich für Ihre Anfrage – nichts wird verkauft, nichts landet in Newslettern."}
+                  : "Deine Angaben nutzen wir ausschließlich für deine Anfrage – nichts wird verkauft, nichts landet ungefragt in Newslettern."}
               </p>
             </div>
           </Reveal>

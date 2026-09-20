@@ -4,10 +4,11 @@ import { Check, MessageCircle, ShieldCheck } from "lucide-react";
 import { ConversionEvent } from "@/components/analytics/ConversionEvent";
 import { Button } from "@/components/ui/Button";
 import { SITE, whatsappLink } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const metadata: Metadata = {
   title: { absolute: "Anfrage erhalten | TarifWerk" },
-  description: "Ihre Anfrage ist bei TarifWerk eingegangen.",
+  description: "Die Anfrage ist bei TarifWerk eingegangen.",
   robots: { index: false, follow: false },
 };
 
@@ -15,7 +16,8 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const rawRef = Array.isArray(params.ref) ? params.ref[0] : params.ref;
   const leadId = rawRef && /^\d{1,10}$/.test(rawRef) ? Number(rawRef) : null;
-  const audience = (Array.isArray(params.audience) ? params.audience[0] : params.audience) === "b2b" ? "b2b" : "b2c";
+  const audience = await resolveSiteAudience(params.audience);
+  const business = audience === "b2b";
   const type = ((Array.isArray(params.type) ? params.type[0] : params.type) || "beratung").slice(0, 30);
 
   return (
@@ -33,16 +35,20 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
               Danke. <span className="display-i font-normal text-champagne-soft">Jetzt übernehmen wir.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-[15.5px] leading-relaxed text-silver">
-              Ihre Angaben sind bei TarifWerk eingegangen. Ein Ansprechpartner prüft die Anfrage persönlich und meldet sich in der Regel innerhalb eines Tages. Terminwünsche werden ausdrücklich bestätigt.
+              {business ? "Ihre Angaben sind bei TarifWerk eingegangen. Ein Ansprechpartner prüft die Anfrage persönlich und meldet sich in der Regel innerhalb eines Tages. Terminwünsche werden ausdrücklich bestätigt." : "Deine Angaben sind bei TarifWerk eingegangen. Ein Ansprechpartner prüft deine Anfrage persönlich und meldet sich in der Regel innerhalb eines Tages. Terminwünsche bestätigen wir dir ausdrücklich."}
             </p>
             {leadId && <p className="mt-3 text-[12.5px] text-steel">Vorgangsnummer #{leadId}</p>}
 
             <div className="mx-auto mt-8 grid max-w-2xl gap-3 text-left sm:grid-cols-3">
-              {[
+              {(business ? [
                 "Wir lesen Ihre Angaben persönlich.",
                 "Offene Punkte klären wir direkt mit Ihnen.",
                 "Sie entscheiden danach in Ruhe über den nächsten Schritt.",
-              ].map((item) => (
+              ] : [
+                "Wir lesen deine Angaben persönlich.",
+                "Offene Punkte klären wir direkt mit dir.",
+                "Du entscheidest danach in Ruhe über den nächsten Schritt.",
+              ]).map((item) => (
                 <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-[13px] leading-relaxed text-platinum">
                   <ShieldCheck className="mb-3 h-4 w-4 text-electric-soft" aria-hidden="true" />
                   {item}

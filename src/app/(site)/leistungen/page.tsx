@@ -6,10 +6,13 @@ import { PageHero } from "@/components/site/PageHero";
 import { Item, Stagger } from "@/components/ui/Reveal";
 import { FinalCta } from "@/components/home/Sections";
 import { SERVICES, SERVICE_IMAGES } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const metadata = pageMetadata("/leistungen");
 
-export default function ServicesPage() {
+export default async function ServicesPage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  const audience = await resolveSiteAudience((await searchParams).audience);
+  const business = audience === "b2b";
   return (
     <>
       <PageHero
@@ -19,7 +22,7 @@ export default function ServicesPage() {
             Ein Ansprechpartner. <span className="display-i font-normal text-champagne-soft">Acht Bereiche.</span>
           </>
         }
-        text="Von der Immobilie bis zum Mobilfunkvertrag: Wir schauen auf das Ganze – weil sich die Themen gegenseitig beeinflussen und Sie nicht acht Hotlines brauchen."
+        text={business ? "Von Telekommunikation und Energie bis Absicherung und Investition: Wir bündeln mehrere Themen, damit Sie nicht jede Anforderung mit einem neuen Ansprechpartner von vorne beginnen." : "Von Mobilfunk und Energie bis Solar, Versicherungen und Immobilien: Du bekommst einen Gesamtblick statt acht Hotlines und acht neuer Erklärungen."}
         compact
       />
       <section className="bg-paper py-20">
@@ -56,7 +59,7 @@ export default function ServicesPage() {
           </Stagger>
         </div>
       </section>
-      <FinalCta />
+      <FinalCta audience={audience} />
     </>
   );
 }

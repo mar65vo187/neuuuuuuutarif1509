@@ -8,7 +8,7 @@ import { useAudience } from "@/components/home/AudienceProvider";
 const B2C_POINTS = [
   "Angebot oder bestehenden Vertrag verständlich einordnen",
   "Kosten, Laufzeit und wichtige Bedingungen gemeinsam ansehen",
-  "Keine Abschlussverpflichtung – Sie entscheiden selbst",
+  "Keine Abschlussverpflichtung – du entscheidest selbst",
 ] as const;
 
 const B2B_POINTS = [
@@ -43,7 +43,7 @@ export function DecisionCheck() {
           </div>
 
           <h2 className="mt-5 max-w-3xl text-[clamp(2rem,4vw,3.35rem)] font-extrabold leading-[1.02] text-ink">
-            {business ? "Schon ein Angebot auf dem Tisch?" : "Vertragsabschluss vor Ihnen?"}
+            {business ? "Schon ein Angebot auf dem Tisch?" : "Schon ein Vertrag oder Angebot vor dir?"}
             <br />
             <span className="display-i font-normal text-ink-700">
               {business ? "Erst einordnen. Dann freigeben." : "Erst prüfen. Dann entscheiden."}
@@ -52,7 +52,7 @@ export function DecisionCheck() {
           <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-steel">
             {business
               ? "Sie müssen ein vorhandenes Angebot nicht ungeprüft übernehmen. Wir schauen mit Ihnen auf die relevanten Kriterien und strukturieren offene Punkte vor der Entscheidung."
-              : "Wenn bereits ein Angebot vorliegt, müssen Sie nicht bei null anfangen. Wir schauen auf die wichtigsten Punkte und erklären verständlich, worauf Sie vor einer Entscheidung achten sollten."}
+              : "Wenn schon ein Angebot vorliegt, musst du nicht bei null anfangen. Wir schauen auf die entscheidenden Punkte und erklären dir verständlich, worauf du vor deiner Entscheidung achten solltest."}
           </p>
 
           <ul className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -83,11 +83,11 @@ export function DecisionCheck() {
             </span>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-silver">Schneller Kosten-Check</p>
-              <h3 className="mt-1 text-[19px] font-extrabold">Was kostet Ihr Vertrag im Jahr?</h3>
+              <h3 className="mt-1 text-[19px] font-extrabold">{business ? "Was kostet Ihr Vertrag im Jahr?" : "Was kostet dein Vertrag im Jahr?"}</h3>
             </div>
           </div>
           <p className="mt-5 text-[13.5px] leading-relaxed text-silver">
-            Geben Sie Ihre ungefähren monatlichen Vertragskosten ein. Wir zeigen nur die aktuelle Jahresbelastung – keine erfundene Ersparnis.
+            {business ? "Geben Sie Ihre ungefähren monatlichen Vertragskosten ein." : "Gib deine ungefähren monatlichen Vertragskosten ein."} Wir zeigen nur die aktuelle Jahresbelastung – keine erfundene Ersparnis.
           </p>
           <label className="mt-6 block">
             <span className="text-[12.5px] font-semibold text-platinum">Monatliche Kosten in €</span>

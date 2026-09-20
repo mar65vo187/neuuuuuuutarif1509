@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
-import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
+import { AudienceProvider } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
 import { TrustEngine } from "@/components/home/TrustEngine";
+import { PremiumGuidance } from "@/components/home/PremiumGuidance";
 import { DecisionCheck } from "@/components/home/DecisionCheck";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
@@ -18,19 +19,16 @@ import { Founder } from "@/components/home/Sections";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
 import { SERVICES, SITE } from "@/lib/content";
 import { homeAudienceMetadata } from "@/lib/seo";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 type Props = { searchParams: Promise<{ audience?: string | string[] }> };
 
-function resolveAudience(raw: string | string[] | undefined): AudienceMode {
-  return (Array.isArray(raw) ? raw[0] : raw) === "b2b" ? "b2b" : "b2c";
-}
-
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  return homeAudienceMetadata(resolveAudience((await searchParams).audience));
+  return homeAudienceMetadata(await resolveSiteAudience((await searchParams).audience));
 }
 
 export default async function HomePage({ searchParams }: Props) {
-  const initialAudience = resolveAudience((await searchParams).audience);
+  const initialAudience = await resolveSiteAudience((await searchParams).audience);
   const faq = AUDIENCE_COPY[initialAudience].faq.items;
 
   const faqJsonLd = {
@@ -65,12 +63,13 @@ export default async function HomePage({ searchParams }: Props) {
         <Hero />
         <AudienceTrustStrip />
         <AudienceFocusSection />
-        <AudienceProcess />
+        <PremiumGuidance />
         <DecisionCheck />
-        <Founder />
         <TrustEngine />
         <FinderTeaser />
+        <AudienceProcess />
         <AudienceEverydaySection />
+        <Founder />
         <TopicTicker />
         <AudienceFaqSection />
         <AudienceFinalCta />
