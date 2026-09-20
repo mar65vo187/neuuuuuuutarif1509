@@ -1,5 +1,5 @@
 import { JsonLd } from "@/components/security/JsonLd";
-import { pageMetadata } from "@/lib/seo";
+import { audiencePageMetadata } from "@/lib/seo";
 import { Accordion } from "@/components/ui/Accordion";
 import { PageHero } from "@/components/site/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
@@ -8,7 +8,9 @@ import { SERVICES } from "@/lib/content";
 import { AUDIENCE_COPY, serviceFaqForAudience } from "@/lib/audience-copy";
 import { resolveSiteAudience } from "@/lib/audience-server";
 
-export const metadata = pageMetadata("/faq");
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
+  return audiencePageMetadata("/faq" as const, await resolveSiteAudience((await searchParams).audience));
+}
 
 export default async function FaqPage({ searchParams }: { searchParams: Promise<{ audience?: string | string[] }> }) {
   const audience = await resolveSiteAudience((await searchParams).audience);
