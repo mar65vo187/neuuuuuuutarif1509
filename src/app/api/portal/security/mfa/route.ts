@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { mfaCredentials } from "@/db/enterprise-schema";
-import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
+import { getCurrentUser, isSameOriginRequest, markCurrentSessionMfaVerified } from "@/lib/auth";
 import { decryptMfaSecret, encryptMfaSecret, generateMfaSecret, otpAuthUri, verifyTotp } from "@/lib/mfa";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { writeAudit } from "@/lib/enterprise";
@@ -50,12 +50,14 @@ export async function POST(request: NextRequest) {
         await tx.update(mfaCredentials).set({ enabled: true, enabledAt: new Date(), lastUsedAt: new Date() }).where(eq(mfaCredentials.employeeId, user.id));
         await writeAudit(tx, user.id, "mfa.enabled", "employee", user.id);
       });
+      await markCurrentSessionMfaVerified(true);
       return NextResponse.json({ ok: true, enabled: true });
     }
     await db.transaction(async (tx) => {
       await tx.delete(mfaCredentials).where(eq(mfaCredentials.employeeId, user.id));
       await writeAudit(tx, user.id, "mfa.disabled", "employee", user.id);
     });
+    await markCurrentSessionMfaVerified(false);
     return NextResponse.json({ ok: true, enabled: false });
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
