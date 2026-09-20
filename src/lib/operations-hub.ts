@@ -37,7 +37,6 @@ export async function getOperationsHubData(user: SessionUser) {
       teamId: teamMembers.teamId,
       employeeId: teamMembers.employeeId,
       name: employees.name,
-      email: employees.email,
       active: employees.active,
     }).from(teamMembers).innerJoin(employees, eq(teamMembers.employeeId, employees.id)).where(eq(employees.active, true)).orderBy(employees.name),
     db.select().from(incentiveCampaigns).where(eq(incentiveCampaigns.active, true)).orderBy(desc(incentiveCampaigns.startsAt)).limit(100),
@@ -140,17 +139,16 @@ export async function getOperationsHubData(user: SessionUser) {
         .limit(150)
     : [];
 
-  const visibleIncentives = admin
-    ? incentiveRows
-    : incentiveRows.filter((campaign) => {
-        if (campaign.audience === "all") return true;
-        if (campaign.audience.startsWith("employee:")) return Number(campaign.audience.slice("employee:".length)) === user.id;
-        if (campaign.audience.startsWith("team:")) {
-          const teamId = Number(campaign.audience.slice("team:".length));
-          return memberRows.some((member) => member.teamId === teamId && member.employeeId === user.id);
-        }
-        return false;
-      });
+  const visibleIncentives = incentiveRows.filter((campaign) => {
+    if (!admin && (campaign.startsAt > now || campaign.endsAt < now)) return false;
+    if (admin || campaign.audience === "all") return true;
+    if (campaign.audience.startsWith("employee:")) return Number(campaign.audience.slice("employee:".length)) === user.id;
+    if (campaign.audience.startsWith("team:")) {
+      const teamId = Number(campaign.audience.slice("team:".length));
+      return memberRows.some((member) => member.teamId === teamId && member.employeeId === user.id);
+    }
+    return false;
+  });
 
   function targetEmployeeIds(audience: string): number[] | null {
     if (audience === "all") return admin ? null : [user.id];
