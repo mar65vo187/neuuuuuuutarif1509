@@ -1,6 +1,7 @@
-import { and, asc, desc, eq, gte, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees, leadNotes, leads, teamMessages, type Advisor } from "@/db/schema";
+import { leadProductLinks, products, providers } from "@/db/enterprise-schema";
 import { SITE } from "@/lib/content";
 import { requireUser, type SessionUser } from "@/lib/auth";
 
@@ -44,28 +45,72 @@ export type LeadRow = typeof leads.$inferSelect & {
   advisorName: string | null;
   assignedName: string | null;
   createdByName: string | null;
+  existingProductNames: string[];
+  interestProductNames: string[];
+  soldProductNames: string[];
 };
 
-export async function listLeads(filter?: { status?: string; type?: string }, user?: SessionUser) {
+export async function listLeads(filter?: {
+  status?: string;
+  type?: string;
+  priority?: string;
+  next?: string;
+  productId?: number;
+  q?: string;
+  sort?: string;
+}, user?: SessionUser) {
   const conditions = [leadAccessCondition(user ?? await requireUser())];
   if (filter?.status && (leads.status.enumValues as readonly string[]).includes(filter.status)) conditions.push(eq(leads.status, filter.status as typeof leads.status.enumValues[number]));
   if (filter?.type && (leads.type.enumValues as readonly string[]).includes(filter.type)) conditions.push(eq(leads.type, filter.type as typeof leads.type.enumValues[number]));
+  if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
+  if (filter?.next === "overdue") conditions.push(sql`${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren')`);
+  if (filter?.next === "today") conditions.push(sql`${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren')`);
+  if (filter?.productId && Number.isSafeInteger(filter.productId) && filter.productId > 0) {
+    conditions.push(sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId})`);
+  }
+  const q = filter?.q?.trim().slice(0, 120);
+  if (q) {
+    conditions.push(or(
+      ilike(leads.name, `%${q}%`),
+      ilike(leads.email, `%${q}%`),
+      ilike(leads.phone, `%${q}%`),
+      ilike(leads.topic, `%${q}%`),
+      ilike(leads.region, `%${q}%`),
+    )!);
+  }
 
-  const rows = await db
-    .select({
-      lead: leads,
-      advisorName: advisors.name,
-      assignedName: employees.name,
-      createdByName: sql<string | null>`(select creator.name from employees creator where creator.id = ${leads.createdByEmployeeId})`,
-    })
+  const selection = {
+    lead: leads,
+    advisorName: advisors.name,
+    assignedName: employees.name,
+    createdByName: sql<string | null>`(select creator.name from employees creator where creator.id = ${leads.createdByEmployeeId})`,
+    existingProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'existing'), '{}'::text[])`,
+    interestProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'interest'), '{}'::text[])`,
+    soldProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'sold'), '{}'::text[])`,
+  };
+
+  const base = db
+    .select(selection)
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
     .leftJoin(employees, eq(leads.assignedEmployeeId, employees.id))
-    .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(leads.createdAt))
-    .limit(300);
+    .where(conditions.length ? and(...conditions) : undefined);
 
-  return rows.map((r) => ({ ...r.lead, advisorName: r.advisorName, assignedName: r.assignedName, createdByName: r.createdByName })) as LeadRow[];
+  const rows = filter?.sort === "next"
+    ? await base.orderBy(sql`case when ${leads.nextActionAt} is null then 1 else 0 end`, asc(leads.nextActionAt), desc(leads.updatedAt)).limit(300)
+    : filter?.sort === "oldest"
+      ? await base.orderBy(asc(leads.createdAt)).limit(300)
+      : await base.orderBy(desc(leads.createdAt)).limit(300);
+
+  return rows.map((r) => ({
+    ...r.lead,
+    advisorName: r.advisorName,
+    assignedName: r.assignedName,
+    createdByName: r.createdByName,
+    existingProductNames: r.existingProductNames ?? [],
+    interestProductNames: r.interestProductNames ?? [],
+    soldProductNames: r.soldProductNames ?? [],
+  })) as LeadRow[];
 }
 
 export async function getLead(id: number, user?: SessionUser) {
@@ -77,6 +122,9 @@ export async function getLead(id: number, user?: SessionUser) {
       advisorName: advisors.name,
       assignedName: employees.name,
       createdByName: sql<string | null>`(select creator.name from employees creator where creator.id = ${leads.createdByEmployeeId})`,
+      existingProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'existing'), '{}'::text[])`,
+      interestProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'interest'), '{}'::text[])`,
+      soldProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'sold'), '{}'::text[])`,
     })
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
@@ -84,7 +132,71 @@ export async function getLead(id: number, user?: SessionUser) {
     .where(and(eq(leads.id, id), access))
     .limit(1);
   if (!row) return null;
-  return { ...row.lead, advisorName: row.advisorName, assignedName: row.assignedName, createdByName: row.createdByName } as LeadRow;
+  return {
+    ...row.lead,
+    advisorName: row.advisorName,
+    assignedName: row.assignedName,
+    createdByName: row.createdByName,
+    existingProductNames: row.existingProductNames ?? [],
+    interestProductNames: row.interestProductNames ?? [],
+    soldProductNames: row.soldProductNames ?? [],
+  } as LeadRow;
+}
+
+export async function getLeadCrmOverview(user: SessionUser) {
+  const access = leadAccessCondition(user);
+  const [row] = await db.select({
+    total: sql<number>`count(*)::int`,
+    newCount: sql<number>`count(*) filter (where ${leads.status} = 'neu')::int`,
+    calledCount: sql<number>`count(*) filter (where ${leads.status} = 'kontaktiert')::int`,
+    appointmentCount: sql<number>`count(*) filter (where ${leads.status} = 'termin_bestaetigt')::int`,
+    consultCount: sql<number>`count(*) filter (where ${leads.status} = 'in_beratung')::int`,
+    wonCount: sql<number>`count(*) filter (where ${leads.status} = 'abgeschlossen')::int`,
+    overdueCount: sql<number>`count(*) filter (where ${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+    hotCount: sql<number>`count(*) filter (where ${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+    productCount: sql<number>`count(*) filter (where exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}))::int`,
+  }).from(leads).where(access);
+  return {
+    total: row?.total ?? 0,
+    newCount: row?.newCount ?? 0,
+    calledCount: row?.calledCount ?? 0,
+    appointmentCount: row?.appointmentCount ?? 0,
+    consultCount: row?.consultCount ?? 0,
+    wonCount: row?.wonCount ?? 0,
+    overdueCount: row?.overdueCount ?? 0,
+    hotCount: row?.hotCount ?? 0,
+    productCount: row?.productCount ?? 0,
+  };
+}
+
+export async function listLeadProductOptions() {
+  return db.select({
+    id: products.id,
+    name: products.name,
+    category: products.category,
+    providerName: providers.name,
+  }).from(products)
+    .innerJoin(providers, eq(products.providerId, providers.id))
+    .where(and(eq(products.active, true), eq(providers.active, true)))
+    .orderBy(products.category, providers.name, products.name)
+    .limit(500);
+}
+
+export async function getLeadProductLinks(leadId: number, user?: SessionUser) {
+  if (!await getLead(leadId, user)) return [];
+  return db.select({
+    productId: leadProductLinks.productId,
+    relation: leadProductLinks.relation,
+    note: leadProductLinks.note,
+    createdAt: leadProductLinks.createdAt,
+    productName: products.name,
+    category: products.category,
+    providerName: providers.name,
+  }).from(leadProductLinks)
+    .innerJoin(products, eq(leadProductLinks.productId, products.id))
+    .innerJoin(providers, eq(products.providerId, providers.id))
+    .where(eq(leadProductLinks.leadId, leadId))
+    .orderBy(leadProductLinks.relation, products.category, providers.name, products.name);
 }
 
 export async function getLeadNotes(leadId: number) {
@@ -172,7 +284,15 @@ export async function getDashboardStats(user?: SessionUser) {
     byStatus,
     byType,
     topics: topicRows.map((r) => ({ topic: r.topic ?? "Ohne Angabe", count: r.count })),
-    recent: recent.map((r) => ({ ...r.lead, advisorName: r.advisorName, assignedName: r.assignedName, createdByName: r.createdByName })) as LeadRow[],
+    recent: recent.map((r) => ({
+      ...r.lead,
+      advisorName: r.advisorName,
+      assignedName: r.assignedName,
+      createdByName: r.createdByName,
+      existingProductNames: [],
+      interestProductNames: [],
+      soldProductNames: [],
+    })) as LeadRow[],
     series,
   };
 }
