@@ -1,11 +1,12 @@
 import { pageMetadata } from "@/lib/seo";
 import { LegalPage } from "@/components/site/LegalPage";
 import { SITE } from "@/lib/content";
+import { publicBusinessAddress } from "@/lib/business-identity";
 
 export const metadata = pageMetadata("/impressum");
 
 export default function ImpressumPage() {
-  const businessAddress = process.env.BUSINESS_ADDRESS?.trim() || "Wiesbaden, Deutschland";
+  const businessAddress = publicBusinessAddress();
   return (
     <LegalPage eyebrow="Rechtliches" title="Impressum">
       <section>
