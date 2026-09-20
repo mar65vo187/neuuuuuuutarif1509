@@ -8,8 +8,9 @@ import { LOCATION_OPTIONS, SERVICES, normalizeTopic, normalizeTopics } from "@/l
 import { AdvisorCard } from "./AdvisorCard";
 import { Button } from "@/components/ui/Button";
 
-export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
+export function AdvisorFinder({ advisors, audience = "b2c" }: { advisors: Advisor[]; audience?: "b2c" | "b2b" }) {
   const params = useSearchParams();
+  const business = audience === "b2b";
   const topic = normalizeTopic(params.get("thema") ?? "");
   const region = (params.get("region") ?? "").slice(0, 80);
 
@@ -101,7 +102,7 @@ export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
             <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filtered.map(({ a }) => (
                 <div key={a.id} className="reveal-item-css">
-                  <AdvisorCard advisor={a} highlightTopic={topic || null} highlightRegion={region || null} />
+                  <AdvisorCard advisor={a} highlightTopic={topic || null} highlightRegion={region || null} audience={audience} />
                 </div>
               ))}
             </div>
@@ -112,11 +113,13 @@ export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
             >
               <p className="text-[19px] font-bold text-ink">Für diese Kombination haben wir gerade niemanden vor Ort.</p>
               <p className="mx-auto mt-2 max-w-md text-[15px] text-steel">
-                Digital beraten wir deutschlandweit persönlich. Alternativ reicht eine kurze Anfrage – wir finden den passenden nächsten Weg.
+                {business
+                  ? "Digital beraten wir deutschlandweit persönlich. Alternativ genügt eine kurze Anfrage – wir stimmen den passenden nächsten Schritt mit Ihnen ab."
+                  : "Digital beraten wir deutschlandweit persönlich. Alternativ reicht eine kurze Anfrage – wir finden den passenden nächsten Weg für dich."}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Button onClick={() => update({ region: "" })} variant="dark">Alle Regionen anzeigen</Button>
-                <Button href="/anfrage">Anfrage stellen</Button>
+                <Button href={`/anfrage?audience=${audience}`}>{business ? "Business-Anfrage stellen" : "Anfrage stellen"}</Button>
               </div>
             </div>
           )}
