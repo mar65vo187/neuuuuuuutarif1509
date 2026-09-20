@@ -1,0 +1,35 @@
+name: Sync audit snapshots
+
+on:
+  push:
+    branches:
+      - fix/final-system-audit-20260920
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/final-system-audit-20260920
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/audit-content.mjs
+      - name: Commit generated audit snapshots
+        run: |
+          if git diff --quiet -- data/; then
+            echo "Audit snapshots already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/content.json data/claims.json data/seo.json data/config.json
+          git commit -m "chore: refresh generated audit snapshots"
+          git push origin HEAD:fix/final-system-audit-20260920
