@@ -31,7 +31,14 @@ export const metadata: Metadata = {
   referrer: "origin-when-cross-origin",
   authors: [{ name: SITE.founder }],
   creator: SITE.name,
-  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }] },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }],
+    shortcut: ["/favicon.svg"],
+    apple: [{ url: "/favicon.svg", sizes: "260x260", type: "image/svg+xml" }],
+  },
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export const viewport: Viewport = {
