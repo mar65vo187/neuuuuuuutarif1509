@@ -208,18 +208,31 @@ export async function ensureCustomerForLead(leadId: number, user: SessionUser): 
     const parts = normalizedName ? normalizedName.split(/\s+/) : [];
     const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || null;
     const lastName = parts.length > 1 ? parts.at(-1) ?? null : null;
+    const leadMeta = (lead.meta ?? {}) as Record<string, unknown>;
+    const businessLead = leadMeta.audience === "b2b";
+    const companyName = businessLead && typeof leadMeta.companyName === "string" && leadMeta.companyName.trim()
+      ? leadMeta.companyName.trim()
+      : null;
     const [created] = await tx.insert(customers).values({
       customerNumber: customerNumber(),
-      type: "private",
+      type: businessLead ? "business" : "private",
       firstName,
       lastName,
+      companyName,
       email: lead.email || null,
       phone: lead.phone || null,
       city: lead.region,
       preferredChannel: lead.preferredChannel,
       ownerEmployeeId: lead.assignedEmployeeId ?? user.id,
       createdFromLeadId: lead.id,
-      metadata: { source: lead.source ?? "website", topic: lead.topic },
+      metadata: {
+        source: lead.source ?? "website",
+        topic: lead.topic,
+        audience: businessLead ? "b2b" : "b2c",
+        ...(typeof leadMeta.landingPath === "string" && leadMeta.landingPath ? { landingPath: leadMeta.landingPath } : {}),
+        ...(typeof leadMeta.utmSource === "string" && leadMeta.utmSource ? { utmSource: leadMeta.utmSource } : {}),
+        ...(typeof leadMeta.utmCampaign === "string" && leadMeta.utmCampaign ? { utmCampaign: leadMeta.utmCampaign } : {}),
+      },
     }).returning();
     await tx.insert(customerLeadLinks).values({ customerId: created.id, leadId: lead.id });
     await tx.update(customerReferrals)
