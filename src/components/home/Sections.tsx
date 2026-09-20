@@ -5,6 +5,7 @@ import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
+import type { AudienceMode } from "@/components/home/AudienceProvider";
 import { FAQ, FEATURED_SERVICES, OTHER_SERVICES, PROCESS, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
 import { getAdvisorBySlug } from "@/lib/queries";
 
@@ -355,7 +356,8 @@ export function FaqSection() {
 /*  Final CTA                                                          */
 /* ------------------------------------------------------------------ */
 
-export function FinalCta() {
+export function FinalCta({ audience = "b2c" }: { audience?: AudienceMode }) {
+  const business = audience === "b2b";
   return (
     <section className="relative overflow-hidden bg-ink py-24 text-white sm:py-32 grain">
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-electric/20 blur-[140px]" />
@@ -363,12 +365,12 @@ export function FinalCta() {
         <Reveal className="mx-auto max-w-3xl text-center">
           <Quote className="mx-auto h-8 w-8 text-champagne" />
           <h2 className="mt-4 text-[clamp(2.1rem,5vw,4rem)] font-extrabold leading-[1.0]">
-            Sagen Sie uns, worum es geht.
+            {business ? "Schildern Sie uns kurz die Ausgangslage." : "Sag uns, worum es geht."}
             <br />
-            <span className="display-i font-normal text-platinum">Wir bringen Klarheit rein.</span>
+            <span className="display-i font-normal text-platinum">{business ? "Wir bringen Struktur rein." : "Wir bringen Klarheit rein."}</span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[15.5px] leading-relaxed text-silver">
-            Ein kurzes Gespräch reicht, um herauszufinden, was sich lohnt und welcher nächste Schritt sinnvoll ist.
+            {business ? "Ein kurzes Gespräch reicht, um Bedarf, Prioritäten und sinnvolle nächste Schritte zu strukturieren." : "Ein kurzes Gespräch reicht, um herauszufinden, was sich für dich lohnt und welcher nächste Schritt sinnvoll ist."}
           </p>
         </Reveal>
         <Stagger className="mx-auto mt-9 grid max-w-3xl gap-3 sm:grid-cols-3">
@@ -376,7 +378,7 @@ export function FinalCta() {
             <Link href="/berater" className="card-hover flex h-full flex-col rounded-2xl bg-electric p-6 text-white">
               <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">Erster Schritt</span>
               <span className="mt-3 text-[19px] font-bold">Ansprechpartner finden</span>
-              <span className="mt-1 text-[13.5px] text-white/85">Thema wählen und loslegen</span>
+              <span className="mt-1 text-[13.5px] text-white/85">{business ? "Bedarf klären und nächsten Schritt bündeln" : "Thema wählen und Klarheit bekommen"}</span>
               <ArrowRight className="mt-6 h-5 w-5" />
             </Link>
           </Item>
