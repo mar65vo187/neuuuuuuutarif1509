@@ -26,6 +26,7 @@ type Props = {
   customerId: number;
   customerName: string;
   rows: ReferralRow[];
+  canEdit?: boolean;
 };
 
 const RELATIONSHIPS = [
@@ -47,7 +48,7 @@ const STATUS_LABELS: Record<string, string> = {
   verloren: "Nicht zustande gekommen",
 };
 
-export function CustomerReferralManager({ customerId, customerName, rows }: Props) {
+export function CustomerReferralManager({ customerId, customerName, rows, canEdit = true }: Props) {
   const router = useRouter();
   const saving = useRef(false);
   const topics = useMemo(() => [...new Set(SERVICES.map((service) => service.name))], []);
@@ -124,13 +125,15 @@ export function CustomerReferralManager({ customerId, customerName, rows }: Prop
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-extrabold text-white hover:bg-electric"
-          >
-            {open ? "Schließen" : <><Plus className="h-4 w-4" /> Empfehlung eintragen</>}
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-extrabold text-white hover:bg-electric"
+            >
+              {open ? "Schließen" : <><Plus className="h-4 w-4" /> Empfehlung eintragen</>}
+            </button>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
@@ -148,7 +151,7 @@ export function CustomerReferralManager({ customerId, customerName, rows }: Prop
           </div>
         </div>
 
-        {open && (
+        {canEdit && open && (
           <div className="mt-4 rounded-2xl border border-line bg-white p-4">
             <div className="flex items-center gap-2">
               <UserRoundPlus className="h-4 w-4 text-electric-deep" />
