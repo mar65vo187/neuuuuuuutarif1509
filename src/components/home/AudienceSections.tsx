@@ -1,17 +1,14 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MessageCircle, Phone, Quote } from "lucide-react";
 import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
-import { useAudience } from "@/components/home/AudienceProvider";
 import { AUDIENCE_COPY, SERVICE_AUDIENCE_COPY } from "@/lib/audience-copy";
+import { withAudience, type AudienceMode } from "@/lib/audience";
 import { SERVICES, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
 
-export function AudienceTrustStrip() {
-  const { audience } = useAudience();
+export function AudienceTrustStrip({ audience }: { audience: AudienceMode }) {
   const items = AUDIENCE_COPY[audience].trust;
   return (
     <section className="border-b border-line bg-paper">
@@ -27,8 +24,7 @@ export function AudienceTrustStrip() {
   );
 }
 
-export function AudienceFocusSection() {
-  const { audience } = useAudience();
+export function AudienceFocusSection({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].focus;
   const serviceCopy = SERVICE_AUDIENCE_COPY[audience];
   const focusKeys = audience === "b2c"
@@ -58,7 +54,7 @@ export function AudienceFocusSection() {
             const image = SERVICE_IMAGES[service.key];
             return (
               <Item key={service.key}>
-                <Link href={`/leistungen/${service.slug}`} className="group relative block min-h-[330px] overflow-hidden rounded-[24px] bg-ink text-white shadow-soft">
+                <Link href={withAudience(`/leistungen/${service.slug}`, audience)} className="group relative block min-h-[330px] overflow-hidden rounded-[24px] bg-ink text-white shadow-soft">
                   {image && (
                     <Image
                       src={image.src}
@@ -88,7 +84,7 @@ export function AudienceFocusSection() {
           })}
         </Stagger>
         <Reveal className="mt-7">
-          <Link href="/leistungen" className="inline-flex items-center gap-2 text-[14px] font-bold text-electric-deep hover:underline">
+          <Link href={withAudience("/leistungen", audience)} className="inline-flex items-center gap-2 text-[14px] font-bold text-electric-deep hover:underline">
             Alle Leistungen ansehen <ArrowRight className="h-4 w-4" />
           </Link>
         </Reveal>
@@ -97,8 +93,7 @@ export function AudienceFocusSection() {
   );
 }
 
-export function AudienceEverydaySection() {
-  const { audience } = useAudience();
+export function AudienceEverydaySection({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].everyday;
   const serviceCopy = SERVICE_AUDIENCE_COPY[audience];
   const focusKeys = new Set(["energie", "internet", "versicherungen"]);
@@ -117,7 +112,7 @@ export function AudienceEverydaySection() {
         <Stagger className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {remainingServices.map((service) => (
             <Item key={service.key}>
-              <Link href={`/leistungen/${service.slug}`} className="card-hover group flex h-full min-h-[178px] flex-col justify-between rounded-2xl border border-line bg-white p-5">
+              <Link href={withAudience(`/leistungen/${service.slug}`, audience)} className="card-hover group flex h-full min-h-[178px] flex-col justify-between rounded-2xl border border-line bg-white p-5">
                 <div>
                   <h3 className="text-[17px] font-bold text-ink">{service.name}</h3>
                   <p className="mt-2 text-[13.5px] leading-relaxed text-steel">{serviceCopy[service.key] ?? service.short}</p>
@@ -134,8 +129,7 @@ export function AudienceEverydaySection() {
   );
 }
 
-export function AudienceManifesto() {
-  const { audience } = useAudience();
+export function AudienceManifesto({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].manifesto;
 
   return (
@@ -173,8 +167,7 @@ export function AudienceManifesto() {
   );
 }
 
-export function AudienceProcess() {
-  const { audience } = useAudience();
+export function AudienceProcess({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].process;
 
   return (
@@ -199,8 +192,7 @@ export function AudienceProcess() {
   );
 }
 
-export function AudienceFaqSection() {
-  const { audience } = useAudience();
+export function AudienceFaqSection({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].faq;
   return (
     <section className="bg-paper py-16 sm:py-20">
@@ -210,7 +202,7 @@ export function AudienceFaqSection() {
           <h2 className="mt-3 text-[clamp(1.9rem,3.4vw,2.7rem)] font-extrabold leading-[1.05] text-ink">{copy.title}</h2>
           <p className="mt-3 text-[14.5px] leading-relaxed text-steel">{copy.text}</p>
           <div className="mt-6">
-            <Link href="/faq" className="inline-flex h-10 items-center text-[14px] font-semibold text-electric-deep hover:underline">
+            <Link href={withAudience("/faq", audience)} className="inline-flex h-10 items-center text-[14px] font-semibold text-electric-deep hover:underline">
               Alle Fragen →
             </Link>
           </div>
@@ -223,8 +215,7 @@ export function AudienceFaqSection() {
   );
 }
 
-export function AudienceFinalCta() {
-  const { audience } = useAudience();
+export function AudienceFinalCta({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].final;
   const business = audience === "b2b";
 
@@ -244,7 +235,7 @@ export function AudienceFinalCta() {
 
         <Stagger className="mx-auto mt-9 grid max-w-3xl gap-3 sm:grid-cols-3">
           <Item>
-            <Link href={business ? "/anfrage?audience=b2b" : "/berater"} className="card-hover flex h-full min-h-[155px] flex-col rounded-2xl bg-electric p-5 text-white">
+            <Link href={withAudience(business ? "/anfrage" : "/berater", audience)} className="card-hover flex h-full min-h-[155px] flex-col rounded-2xl bg-electric p-5 text-white">
               <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/80">{copy.primaryEyebrow}</span>
               <span className="mt-3 text-[19px] font-bold">{copy.primary}</span>
               <span className="mt-1 text-[13.5px] text-white/85">{copy.primarySub}</span>
