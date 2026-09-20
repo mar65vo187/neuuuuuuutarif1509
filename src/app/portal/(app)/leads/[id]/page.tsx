@@ -57,14 +57,14 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2"><TypeBadge type={lead.type} /><StatusBadge status={lead.status} /><span className="text-[12.5px] text-steel">#{lead.id}</span></div>
-          <h1 className="mt-3 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">{lead.name}</h1>
+          <h1 className="mt-3 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">{lead.name || `Lead #${lead.id}`}</h1>
           <p className="text-[14px] text-steel">Eingegangen {formatDate(lead.createdAt)} · Quelle: {lead.source ?? "website"} · Angelegt von: {lead.createdByName ?? "Website / System"}{lead.advisorName ? ` · Wunschberater: ${lead.advisorName}` : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {waDigits && <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[13.5px] font-semibold text-ink-900"><MessageCircle className="h-4 w-4" /> WhatsApp</a>}
           {lead.phone && <a href={`tel:${lead.phone}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> {lead.phone}</a>}
           <Link href={`/portal/auftraege/neu?lead=${lead.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>
-          <a href={`mailto:${lead.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>
+          {lead.email && <a href={`mailto:${lead.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
         </div>
       </header>
 
