@@ -19,8 +19,8 @@ const NAV_SECTIONS = [
     items: [
       { href: "/portal", label: "Command Center", icon: BarChart3, exact: true },
       { href: "/portal/leads", label: "Anfragen & Termine", icon: Inbox },
-      { href: "/portal/kunden", label: "Kunden", icon: ContactRound },
-      { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness },
+      { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
+      { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.create", "order.edit"] },
       { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
       { href: "/portal/inbox", label: "Inbox", icon: Bell },
     ],
@@ -38,14 +38,14 @@ const NAV_SECTIONS = [
       { href: "/portal/betrieb", label: "Team & Betrieb", icon: UsersRound },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Interne Chats", icon: MessageSquare },
-      { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
+      { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, anyPermission: ["employee.manage"] },
     ],
   },
   {
     label: "Steuerung",
     items: [
-      { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards },
-      { href: "/portal/reporting", label: "Reporting", icon: LineChart },
+      { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards, anyPermission: ["commission.read.self", "commission.read.team", "commission.read.all", "report.finance"] },
+      { href: "/portal/reporting", label: "Reporting", icon: LineChart, anyPermission: ["report.sales", "report.finance"] },
     ],
   },
   {
@@ -59,7 +59,19 @@ const NAV_SECTIONS = [
 ] as const;
 
 
-export function PortalShell({ user, children, openCount, notificationCount }: { user: SessionUser; children: ReactNode; openCount: number; notificationCount: number }) {
+export function PortalShell({
+  user,
+  permissions,
+  children,
+  openCount,
+  notificationCount,
+}: {
+  user: SessionUser;
+  permissions: string[];
+  children: ReactNode;
+  openCount: number;
+  notificationCount: number;
+}) {
   const pathname = usePathname();
   const loggingOut = useRef(false);
   const [logoutError, setLogoutError] = useState<string | undefined>();
@@ -95,10 +107,13 @@ export function PortalShell({ user, children, openCount, notificationCount }: { 
   };
 
   const normalizedNavQuery = navQuery.trim().toLowerCase();
+  const permissionSet = new Set(permissions);
+  const can = (keys: readonly string[]) => permissionSet.has("*") || keys.some((key) => permissionSet.has(key));
   const navigationSections = NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter((item) =>
       (!("adminOnly" in item) || !item.adminOnly || user.role === "admin")
+      && (!("anyPermission" in item) || can(item.anyPermission))
       && (!normalizedNavQuery || item.label.toLowerCase().includes(normalizedNavQuery)),
     ),
   })).filter((section) => section.items.length > 0);
@@ -153,7 +168,7 @@ export function PortalShell({ user, children, openCount, notificationCount }: { 
       </aside>
       <div className="min-w-0"><div className="sticky top-0 z-20 hidden border-b border-white/10 bg-ink-900/95 text-white shadow-[0_14px_40px_-28px_rgba(6,11,22,0.9)] backdrop-blur-xl lg:block"><div className="mx-auto flex max-w-[1240px] items-center gap-4 px-8 py-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl border border-electric/25 bg-electric/10 text-electric-soft"><Sparkles className="h-3.5 w-3.5" /></span><div className="min-w-0"><p className="truncate text-[12.5px] font-bold text-white">{currentHelp.title}</p><p className="truncate text-[10.5px] text-silver">{currentHelp.purpose}</p></div></div><button type="button" onClick={() => setCommandOpen(true)} className="ml-auto flex h-9 min-w-[240px] items-center gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 text-left text-[12px] text-silver shadow-sm transition hover:border-electric/35 hover:bg-white/[0.08] hover:text-white"><Search className="h-4 w-4 text-electric-soft" /><span className="flex-1">Alles durchsuchen…</span><kbd className="rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-silver">⌘K</kbd></button><button type="button" onClick={() => openHelp()} className="inline-flex h-9 items-center gap-2 rounded-full border border-champagne/30 bg-champagne/10 px-4 text-[12px] font-bold text-champagne-soft transition hover:border-champagne/50 hover:bg-champagne/15"><Lightbulb className="h-4 w-4 text-champagne" />Hilfe</button></div></div><div className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:py-9">{children}</div></div>
       <button type="button" onClick={() => openHelp()} className="fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-2xl border border-champagne/30 bg-ink text-champagne-soft shadow-[0_18px_50px_-15px_rgba(6,11,22,0.65)] lg:hidden" aria-label={`Info zu ${currentHelp.title}`}><Lightbulb className="h-5 w-5" /></button>
-      <PortalCommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} role={user.role} />
+      <PortalCommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} role={user.role} permissions={permissions} />
       <PortalHelpPanel topic={selectedHelp} open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
