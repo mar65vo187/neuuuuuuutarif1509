@@ -15,9 +15,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       .from(advisorImages).innerJoin(advisors, eq(advisorImages.advisorId, advisors.id))
       .where(and(eq(advisorImages.advisorId, id), eq(advisors.active, true))).limit(1);
     if (!image) return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+    const requestedVersion = request.nextUrl.searchParams.get("v");
+    const contentVersion = image.digest.slice(0, 16);
+    const versioned = requestedVersion === contentVersion;
     const headers = {
       "Content-Type": image.contentType,
-      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Cache-Control": versioned
+        ? "public, max-age=31536000, s-maxage=31536000, immutable"
+        : "public, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "default-src 'none'; sandbox",
       ETag: `"${image.digest}"`,
