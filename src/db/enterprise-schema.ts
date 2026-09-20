@@ -723,6 +723,32 @@ export const mfaCredentials = pgTable("mfa_credentials", {
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
 });
 
+export const portalSessions = pgTable("portal_sessions", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  credentialSignature: text("credential_signature").notNull(),
+  mfaVerified: boolean("mfa_verified").notNull().default(false),
+  userAgent: text("user_agent"),
+  ipHash: text("ip_hash"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+}, (table) => [
+  index("portal_sessions_employee_idx").on(table.employeeId, table.revokedAt, table.expiresAt),
+  index("portal_sessions_expiry_idx").on(table.expiresAt),
+]);
+
+export const portalLoginRateLimits = pgTable("portal_login_rate_limits", {
+  keyHash: text("key_hash").primaryKey(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull().defaultNow(),
+  requestCount: integer("request_count").notNull().default(1),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("portal_login_rate_limits_updated_idx").on(table.updatedAt),
+]);
+
 export const loginEvents = pgTable("login_events", {
   id: serial("id").primaryKey(),
   employeeId: integer("employee_id").references(() => employees.id, { onDelete: "set null" }),
