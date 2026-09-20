@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Check, Copy, Gift, Loader2, Share2, WalletCards } from "lucide-react";
+import { ArrowRight, Check, Copy, Gift, Loader2, Share2, Trophy, WalletCards } from "lucide-react";
+import { REFERRAL_AVATARS } from "@/lib/gamification";
 
 type Links = { shareUrl: string; dashboardUrl: string };
 type Reward = {
@@ -93,6 +94,7 @@ export function ReferralRegistration() {
   const [busy, setBusy] = useState(false);
   const sending = useRef(false);
   const [error, setError] = useState("");
+  const [avatarKey, setAvatarKey] = useState<(typeof REFERRAL_AVATARS)[number]["key"]>("rocket");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,7 +108,15 @@ export function ReferralRegistration() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(15000),
-        body: JSON.stringify({ name: values.get("name"), email: values.get("email"), consent: values.get("consent") === "on" }),
+        body: JSON.stringify({
+          name: values.get("name"),
+          email: values.get("email"),
+          phone: values.get("phone"),
+          displayName: values.get("displayName"),
+          avatarKey,
+          leaderboardOptIn: values.get("leaderboardOptIn") === "on",
+          consent: values.get("consent") === "on",
+        }),
       }));
       setLinks({
         shareUrl: new URL(result.shareUrl, window.location.origin).href,
@@ -135,12 +145,37 @@ export function ReferralRegistration() {
     <p className="text-[15px] leading-relaxed text-steel">Sie geben nur Ihre eigenen Daten an. Empfohlene Personen entscheiden selbst, ob sie sich über Ihren Link bei TarifWerk melden.</p>
     <label className="label">Ihr Name<input name="name" required minLength={2} maxLength={120} autoComplete="name" className="field mt-2" disabled={busy} /></label>
     <label className="label">Ihre E-Mail<input name="email" type="email" required maxLength={200} autoComplete="email" className="field mt-2" disabled={busy} /></label>
+    <label className="label">Ihre Telefonnummer<input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel" className="field mt-2" disabled={busy} /></label>
+    <label className="label">Wunschname im Monatsturm<input name="displayName" required minLength={2} maxLength={40} className="field mt-2" disabled={busy} placeholder="z. B. Marvin M." /></label>
+    <fieldset>
+      <legend className="label">Avatar auswählen</legend>
+      <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {REFERRAL_AVATARS.map((avatar) => (
+          <button
+            key={avatar.key}
+            type="button"
+            disabled={busy}
+            onClick={() => setAvatarKey(avatar.key)}
+            aria-pressed={avatarKey === avatar.key}
+            className={"rounded-xl border p-3 text-center transition " + (avatarKey === avatar.key ? "border-electric bg-electric/[0.08] ring-2 ring-electric/15" : "border-line bg-white hover:border-electric/30")}
+          >
+            <span className="block text-[24px]" aria-hidden>{avatar.symbol}</span>
+            <span className="mt-1 block text-[10px] font-bold text-steel">{avatar.label}</span>
+          </button>
+        ))}
+      </div>
+    </fieldset>
+    <label className="flex items-start gap-3 rounded-2xl border border-line bg-paper p-4 text-[13px] leading-relaxed text-steel">
+      <input type="checkbox" name="leaderboardOptIn" disabled={busy} className="mt-1" />
+      <span><strong className="text-ink">Freiwillig im Empfehlungsturm erscheinen.</strong> Öffentlich sichtbar sind nur Wunschname, Avatar und Monatsfortschritt. E-Mail, Telefonnummer und Kundendaten bleiben verborgen.</span>
+    </label>
     <label className="flex items-start gap-3 text-[14px] leading-relaxed text-steel">
       <input type="checkbox" name="consent" required disabled={busy} className="mt-1" />
       <span>TarifWerk darf meine Angaben zur Zuordnung meiner Empfehlungen und zur Kontaktaufnahme dazu verwenden. Kein Newsletter. <Link href="/datenschutz" className="underline">Datenschutz</Link></span>
     </label>
     {error && <p role="alert" className="text-[14px] text-red-700">{error}</p>}
     <button type="submit" className={button} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Empfehlungslink erstellen</button>
+    <p className="inline-flex items-center gap-2 text-[11.5px] leading-relaxed text-steel"><Trophy className="h-3.5 w-3.5 text-electric-deep" /> Monatsturm: Ein Erfolgsschritt zählt erst, wenn aus einer Empfehlung ein aktivierter Abschluss entstanden ist.</p>
   </form>;
 }
 
