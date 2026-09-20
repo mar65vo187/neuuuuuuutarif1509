@@ -198,16 +198,17 @@ export async function ensureCustomerForLead(leadId: number, user: SessionUser): 
     if (!lead) throw new Error("Lead nicht gefunden.");
     if (user.role !== "admin" && lead.assignedEmployeeId !== user.id) throw new Error("Keine Berechtigung für diesen Lead.");
 
-    const parts = lead.name.trim().split(/\s+/);
-    const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] ?? null;
+    const normalizedName = lead.name.trim();
+    const parts = normalizedName ? normalizedName.split(/\s+/) : [];
+    const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || null;
     const lastName = parts.length > 1 ? parts.at(-1) ?? null : null;
     const [created] = await tx.insert(customers).values({
       customerNumber: customerNumber(),
       type: "private",
       firstName,
       lastName,
-      email: lead.email,
-      phone: lead.phone,
+      email: lead.email || null,
+      phone: lead.phone || null,
       city: lead.region,
       preferredChannel: lead.preferredChannel,
       ownerEmployeeId: lead.assignedEmployeeId ?? user.id,
