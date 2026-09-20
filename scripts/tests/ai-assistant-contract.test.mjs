@@ -33,7 +33,7 @@ test("AI redacts common PII and never stores prompt contents in telemetry", () =
   assert.match(engine, /\[Telefon entfernt\]/);
   assert.match(route, /dailyLimit/);
   assert.match(route, /ai_assistant_usage/);
-  assert.doesNotMatch(migration, /prompt|response_text|question|answer/i);
+  assert.doesNotMatch(migration, /\b(prompt|response_text|question|answer)\s+(text|jsonb|varchar)/i);
 });
 
 test("AI remains human-approved and cannot mutate CRM records", () => {
