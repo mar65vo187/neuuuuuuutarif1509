@@ -1,4 +1,5 @@
 import { pool } from "@/db";
+import { hasProductionBusinessAddress } from "@/lib/business-identity";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,7 +16,7 @@ function revision() {
 export async function GET() {
   const started = Date.now();
   const missingConfiguration = [
-    !process.env.BUSINESS_ADDRESS?.trim() ? "BUSINESS_ADDRESS" : null,
+    !hasProductionBusinessAddress() ? "BUSINESS_ADDRESS" : null,
   ].filter((value): value is string => Boolean(value));
 
   if (process.env.NODE_ENV === "production" && missingConfiguration.length > 0) {
