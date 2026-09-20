@@ -9,6 +9,7 @@ import { leadCallActivitySchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { recommendLeadFollowUp } from "@/lib/call-intelligence";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
+import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     );
   }
   if (!user) return NextResponse.json({ ok: false, error: "Nicht angemeldet." }, { status: 401 });
+  try { await requirePermission(user, PORTAL_PERMISSION.LEAD_EDIT); }
+  catch (error) {
+    const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: unknown }).status) : 403;
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Keine Berechtigung." }, { status: Number.isFinite(status) ? status : 403 });
+  }
 
   const { id: rawId } = await ctx.params;
   const leadId = Number(rawId);
