@@ -1,6 +1,7 @@
 import { audiencePageMetadata } from "@/lib/seo";
 import { ArrowRight } from "lucide-react";
-import { Founder, FinalCta, Process } from "@/components/home/Sections";
+import { Founder } from "@/components/home/Sections";
+import { AudienceFinalCta, AudienceProcess } from "@/components/home/AudienceSections";
 import { PageHero } from "@/components/site/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
@@ -62,8 +63,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </section>
 
-      <Founder />
-      <Process />
+      <Founder audience={audience} />
+      <AudienceProcess audience={audience} />
 
       <section className="bg-paper-2 py-20">
         <div className="container-x grid gap-10 lg:grid-cols-12 lg:items-center">
@@ -88,7 +89,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </section>
 
-      <FinalCta audience={audience} />
+      <AudienceFinalCta audience={audience} />
     </>
   );
 }
