@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Phone, PhoneCall } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Network, Phone, PhoneCall } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
 import { LeadProductManager } from "@/components/portal/LeadProductManager";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
@@ -44,6 +44,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const situation = SITUATIONS.find((s) => s.value === lead.situation)?.label ?? lead.situation;
   const waDigits = lead.phone?.replace(/[^\d+]/g, "").replace(/^\+|^00/, "").replace(/^0/, "49").replace(/\D/g, "");
   const meta = (lead.meta ?? {}) as Record<string, unknown>;
+  const referralSourceCustomerId = typeof meta.referralSourceCustomerId === "number" ? meta.referralSourceCustomerId : null;
+  const referralSourceName = typeof meta.referralSourceName === "string" ? meta.referralSourceName : null;
+  const referralRelationship = typeof meta.referralRelationship === "string" ? meta.referralRelationship : null;
   const intelligence = getLeadIntelligence(lead);
   const intelligenceTone = {
     critical: "border-red-200 bg-red-50 text-red-900",
@@ -86,6 +89,24 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           {lead.email && <a href={`mailto:${lead.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
         </div>
       </header>
+
+      {referralSourceCustomerId && referralSourceName && (
+        <section className="rounded-[20px] border border-electric/15 bg-electric/[0.05] px-4 py-3.5" aria-label="Empfehlungsherkunft">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-electric-deep shadow-sm"><Network className="h-4 w-4" /></span>
+              <div>
+                <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Vitamin B · Kundenempfehlung</p>
+                <p className="mt-0.5 text-[13.5px] font-extrabold">Empfohlen von {referralSourceName}</p>
+                {referralRelationship && <p className="text-[11.5px] text-steel">Beziehung: {referralRelationship}</p>}
+              </div>
+            </div>
+            <Link href={`/portal/kunden/${referralSourceCustomerId}`} className="inline-flex h-9 items-center rounded-full border border-electric/20 bg-white px-3.5 text-[11.5px] font-bold text-electric-deep hover:bg-electric/[0.05]">
+              Empfehlenden Kunden öffnen
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className={`rounded-[22px] border p-4 sm:p-5 ${intelligenceTone}`} aria-label="Next Best Action">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
