@@ -42,7 +42,17 @@ const PRIORITY_STYLES: Record<string, string> = {
   hot: "border-red-300 bg-red-50 text-red-700",
 };
 
-export function LeadBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?: Array<{ id: number; name: string }> }) {
+export function LeadBulkList({
+  rows,
+  assignees = [],
+  canEdit = true,
+  canAssign = false,
+}: {
+  rows: Row[];
+  assignees?: Array<{ id: number; name: string }>;
+  canEdit?: boolean;
+  canAssign?: boolean;
+}) {
   const [selected, setSelected] = useState<number[]>([]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const allSelected = rows.length > 0 && selected.length === rows.length;
@@ -53,15 +63,19 @@ export function LeadBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?
 
   return (
     <div>
-      <div className="flex items-center gap-3 border-b border-line bg-paper/60 px-5 py-3 sm:px-6">
-        <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : rows.map((row) => row.id))} className="h-4 w-4 rounded border-line" aria-label="Alle Leads auswählen" />
-        <p className="text-[11.5px] font-semibold text-steel">{allSelected ? "Alle ausgewählt" : "Mehrfachauswahl"}</p>
-      </div>
-      {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="lead" selectedIds={selected} statusOptions={STATUS_OPTIONS} allowAssignToMe assignees={assignees} onCompleted={() => setSelected([])} /></div>}
+      {canEdit && (
+        <>
+          <div className="flex items-center gap-3 border-b border-line bg-paper/60 px-5 py-3 sm:px-6">
+            <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : rows.map((row) => row.id))} className="h-4 w-4 rounded border-line" aria-label="Alle Leads auswählen" />
+            <p className="text-[11.5px] font-semibold text-steel">{allSelected ? "Alle ausgewählt" : "Mehrfachauswahl"}</p>
+          </div>
+          {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="lead" selectedIds={selected} statusOptions={STATUS_OPTIONS} allowAssignToMe assignees={canAssign ? assignees : []} onCompleted={() => setSelected([])} /></div>}
+        </>
+      )}
       <ul className="divide-y divide-line">
         {rows.map((lead) => (
-          <li key={lead.id} className={"grid grid-cols-[auto_1fr] items-stretch " + (selectedSet.has(lead.id) ? "bg-electric/[0.035]" : "")}>
-            <label className="grid w-12 place-items-center border-r border-line/70 sm:w-14"><input type="checkbox" checked={selectedSet.has(lead.id)} onChange={() => toggle(lead.id)} className="h-4 w-4 rounded border-line" aria-label={(lead.name || `Lead #${lead.id}`) + " auswählen"} /></label>
+          <li key={lead.id} className={(canEdit ? "grid grid-cols-[auto_1fr] " : "block ") + "items-stretch " + (selectedSet.has(lead.id) ? "bg-electric/[0.035]" : "")}>
+            {canEdit && <label className="grid w-12 place-items-center border-r border-line/70 sm:w-14"><input type="checkbox" checked={selectedSet.has(lead.id)} onChange={() => toggle(lead.id)} className="h-4 w-4 rounded border-line" aria-label={(lead.name || `Lead #${lead.id}`) + " auswählen"} /></label>}
             <Link href={"/portal/leads/" + lead.id} className="grid gap-3 px-4 py-4 transition-colors hover:bg-paper sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
