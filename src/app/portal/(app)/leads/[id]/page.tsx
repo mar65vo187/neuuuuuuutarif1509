@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Phone } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Phone, PhoneCall } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
 import { LeadProductManager } from "@/components/portal/LeadProductManager";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
-import { getLead, getLeadNotes, getLeadProductLinks, listLeadProductOptions } from "@/lib/queries";
+import { getLead, getLeadCallActivities, getLeadNotes, getLeadProductLinks, listLeadProductOptions } from "@/lib/queries";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, SITUATIONS } from "@/lib/content";
 import { getLeadIntelligence } from "@/lib/lead-intelligence";
+import { CALL_REACTION_LABELS, CALL_REACHED_PERSON_LABELS } from "@/lib/call-intelligence";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +35,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/leads/${id}`)}`);
   const lead = await getLead(id, user);
   if (!lead) notFound();
-  const [notes, leadProducts, productOptions] = await Promise.all([
+  const [notes, calls, leadProducts, productOptions] = await Promise.all([
     getLeadNotes(id),
+    getLeadCallActivities(id, user),
     getLeadProductLinks(id, user),
     listLeadProductOptions(),
   ]);
@@ -49,6 +51,23 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     normal: "border-electric/15 bg-electric/[0.06] text-ink",
     done: "border-emerald-200 bg-emerald-50 text-emerald-900",
   }[intelligence.tone];
+  const latestCall = calls[0] ?? null;
+  const latestCallIsCurrent = Boolean(
+    latestCall &&
+    lead.lastContactAt &&
+    Math.abs(latestCall.calledAt.getTime() - lead.lastContactAt.getTime()) < 60_000 &&
+    !["termin_bestaetigt", "abgeschlossen", "verloren"].includes(lead.status),
+  );
+  const nextBestLabel = latestCallIsCurrent
+    ? latestCall?.suggestedFollowUpAt
+      ? `Nächster Kontakt: ${formatDate(latestCall.suggestedFollowUpAt)}`
+      : latestCall?.recommendedAction === "appointment"
+        ? "Terminzeit jetzt festhalten"
+        : "Kein automatischer Rückruf empfohlen"
+    : intelligence.label;
+  const nextBestDetail = latestCallIsCurrent && latestCall?.suggestionReason
+    ? latestCall.suggestionReason
+    : intelligence.detail;
 
   return (
     <div className="space-y-6">
@@ -74,8 +93,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ink text-electric-soft"><BrainCircuit className="h-4.5 w-4.5" /></span>
             <div>
               <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] opacity-70">Next Best Action</p>
-              <h2 className="mt-1 text-[16px] font-extrabold">{intelligence.label}</h2>
-              <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed opacity-80">{intelligence.detail}</p>
+              <h2 className="mt-1 text-[16px] font-extrabold">{nextBestLabel}</h2>
+              <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed opacity-80">{nextBestDetail}</p>
             </div>
           </div>
           <div className="shrink-0 rounded-xl border border-current/10 bg-white/50 px-3 py-2 text-right">
@@ -136,6 +155,49 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-[14px] text-emerald-900">
                 <span className="font-bold">Termin:</span> {lead.confirmedSlot} <span className="text-emerald-800/70">(eingetragen am {formatDate(lead.confirmedAt)})</span>
               </div>
+            )}
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="inline-flex items-center gap-2 text-[15px] font-extrabold"><PhoneCall className="h-4 w-4 text-electric-deep" /> Anrufhistorie</h2>
+                <p className="mt-1 text-[11.5px] text-steel">Versuche, Reaktionen und automatisch berechnete Folgekontakte.</p>
+              </div>
+              <span className="rounded-full bg-paper px-2.5 py-1 text-[10.5px] font-bold text-steel">{calls.length} Anruf{calls.length === 1 ? "" : "e"}</span>
+            </div>
+
+            {calls.length ? (
+              <ol className="mt-4 space-y-2.5">
+                {calls.slice(0, 10).map((call) => (
+                  <li key={call.id} className="rounded-xl border border-line bg-white p-3.5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[12.5px] font-extrabold">Versuch #{call.attemptNumber} · {CALL_REACHED_PERSON_LABELS[call.reachedPerson as keyof typeof CALL_REACHED_PERSON_LABELS] ?? call.reachedPerson}</p>
+                        <p className="mt-0.5 text-[11px] text-steel">{formatDate(call.calledAt)}{call.authorName ? ` · ${call.authorName}` : ""}</p>
+                      </div>
+                      <span className="rounded-full border border-electric/15 bg-electric/[0.06] px-2 py-1 text-[10.5px] font-bold text-electric-deep">
+                        {CALL_REACTION_LABELS[call.reaction as keyof typeof CALL_REACTION_LABELS] ?? call.reaction}
+                      </span>
+                    </div>
+
+                    {call.note && <p className="mt-2 whitespace-pre-line text-[12.5px] leading-relaxed text-ink">{call.note}</p>}
+
+                    <div className={"mt-2.5 rounded-lg px-3 py-2 text-[11.5px] leading-relaxed " + (call.autoScheduled && call.suggestedFollowUpAt ? "bg-emerald-50 text-emerald-800" : "bg-paper text-steel")}>
+                      <p className="font-bold">
+                        {call.suggestedFollowUpAt
+                          ? (call.autoScheduled ? "Wiedervorlage gesetzt: " : "Systemvorschlag: ") + formatDate(call.suggestedFollowUpAt)
+                          : call.recommendedAction === "appointment"
+                            ? "Nächster Schritt: Terminzeit eintragen"
+                            : "Kein automatischer Rückruf"}
+                      </p>
+                      {call.suggestionReason && <p className="mt-0.5">{call.suggestionReason}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="mt-4 rounded-xl bg-paper px-4 py-5 text-center text-[12px] text-steel">Noch kein Anruf dokumentiert.</div>
             )}
           </Card>
 
