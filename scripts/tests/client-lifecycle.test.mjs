@@ -16,7 +16,11 @@ function harness(path, initial = []) {
     "react/jsx-runtime": { jsx, jsxs: jsx },
     "lucide-react": new Proxy({}, { get: (_, key) => key }),
     "next/navigation": { useRouter: () => ({ refresh() {} }) },
-    "@/lib/content": { LEAD_STATUS_LABELS: { neu: "Neu" } }, "./ui": { STATUS_STYLES: { neu: "" } },
+    "@/lib/content": {
+      LEAD_STATUS_LABELS: { neu: "Neu" },
+      LEAD_PRIORITY_LABELS: { normal: "Normal" },
+      LEAD_CONTACT_OUTCOME_LABELS: { open: "Noch nicht angerufen" },
+    }, "./ui": { STATUS_STYLES: { neu: "" } },
   };
   const loaded = { exports: {} };
   const source = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -54,7 +58,17 @@ test("leaving chat aborts polling and ignores late unauthorized responses", asyn
 
 test("saving a note preserves text typed while its request is pending", async () => {
   const h = harness("../../src/components/portal/LeadActions.tsx", [null, null, "", "Original note"]);
-  const tree = h.exports.LeadActions({ leadId: 1, status: "neu", confirmedSlot: null, assigned: true, isAppointment: false });
+  const tree = h.exports.LeadActions({
+    leadId: 1,
+    status: "neu",
+    confirmedSlot: null,
+    assigned: true,
+    isAppointment: false,
+    priority: "normal",
+    contactOutcome: "open",
+    nextActionInput: "",
+    tags: [],
+  });
   const nodes = elements(tree);
   const save = nodes.find(node => node.type === "button" && Array.isArray(node.props.children) && node.props.children.includes(" Notiz speichern"));
   const pending = save.props.onClick();
