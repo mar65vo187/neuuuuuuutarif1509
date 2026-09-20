@@ -16,10 +16,11 @@ export function AdvisorAvatar({ initials, imageUrl, name, size = "md", className
   );
 }
 
-export function AdvisorCard({ advisor, highlightTopic, highlightRegion }: { advisor: Advisor; highlightTopic?: string | null; highlightRegion?: string | null }) {
+export function AdvisorCard({ advisor, highlightTopic, highlightRegion, audience = "b2c" }: { advisor: Advisor; highlightTopic?: string | null; highlightRegion?: string | null; audience?: "b2c" | "b2b" }) {
   const query = new URLSearchParams();
   if (highlightTopic) query.set("thema", highlightTopic);
   if (highlightRegion) query.set("region", highlightRegion);
+  query.set("audience", audience);
   const profileHref = `/berater/${advisor.slug}${query.size ? `?${query}` : ""}`;
   return (
     <article className="card-hover group relative flex h-full flex-col overflow-hidden rounded-[26px] border border-line bg-white p-6 sm:p-7">
