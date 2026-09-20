@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
@@ -46,7 +46,20 @@ export async function POST(request: NextRequest) {
       assignee = target.id;
     }
 
-    const createdId = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
+      if (input.entityType !== "general") {
+        const [existing] = await tx.select({ id: tasks.id }).from(tasks)
+          .where(and(
+            eq(tasks.entityType, input.entityType),
+            eq(tasks.entityId, entityId),
+            eq(tasks.assignedToEmployeeId, assignee),
+            eq(tasks.title, input.title),
+            inArray(tasks.status, ["open", "in_progress"]),
+          ))
+          .limit(1);
+        if (existing) return { id: existing.id, deduplicated: true };
+      }
+
       const [created] = await tx.insert(tasks).values({
         entityType: input.entityType,
         entityId,
@@ -67,10 +80,10 @@ export async function POST(request: NextRequest) {
         entityType: input.entityType,
         entityId,
       });
-      return created.id;
+      return { id: created.id, deduplicated: false };
     });
 
-    return NextResponse.json({ ok: true, id: createdId }, { status: 201 });
+    return NextResponse.json({ ok: true, ...result }, { status: result.deduplicated ? 200 : 201 });
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
     const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: unknown }).status) : 500;
