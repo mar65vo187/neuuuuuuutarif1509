@@ -7,7 +7,6 @@ import { JourneyContext } from "@/components/site/JourneyContext";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
 import { publicBusinessPostalAddress } from "@/lib/business-identity";
-import { publicBusinessAddress } from "@/lib/business-identity";
 
 function organizationJsonLd() {
   const businessAddress = publicBusinessPostalAddress();
@@ -36,7 +35,14 @@ function organizationJsonLd() {
     name: SITE.founder,
     jobTitle: SITE.founderTitle,
   },
-  address: publicBusinessAddress(),
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: businessAddress.streetAddress,
+    ...(businessAddress.postalCode ? { postalCode: businessAddress.postalCode } : {}),
+    addressLocality: businessAddress.addressLocality,
+    addressRegion: businessAddress.addressRegion,
+    addressCountry: businessAddress.addressCountry,
+  },
   areaServed: [
     { "@type": "Country", name: "Deutschland" },
     ...REGIONS.filter((region) => !region.startsWith("Deutschlandweit")).map((region) => ({
