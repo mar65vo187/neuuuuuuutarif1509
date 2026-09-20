@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { incentiveCampaigns } from "@/db/enterprise-schema";
+import { employees } from "@/db/schema";
+import { incentiveCampaigns, teams } from "@/db/enterprise-schema";
 import { adminFailure, authorizeAdmin, lockAdminMutation, readAdminJson } from "@/lib/admin-server";
 import { isCompensationOwner } from "@/lib/compensation";
 import { writeAudit } from "@/lib/enterprise";
@@ -18,6 +20,23 @@ export async function POST(request: NextRequest) {
 
     const result = await db.transaction(async (tx) => {
       await lockAdminMutation(tx, admin.id);
+
+      if (parsed.data.audience.startsWith("employee:")) {
+        const employeeId = Number(parsed.data.audience.slice("employee:".length));
+        const [employee] = await tx.select({ id: employees.id }).from(employees)
+          .where(eq(employees.id, employeeId)).limit(1);
+        if (!employee) throw new Error("AUDIENCE_NOT_FOUND");
+      }
+      if (parsed.data.audience.startsWith("team:")) {
+        const teamId = Number(parsed.data.audience.slice("team:".length));
+        const [team] = await tx.select({ id: teams.id }).from(teams)
+          .where(eq(teams.id, teamId)).limit(1);
+        if (!team) throw new Error("AUDIENCE_NOT_FOUND");
+      }
+      if (parsed.data.goalType === "team_orders" && !parsed.data.audience.startsWith("team:")) {
+        throw new Error("TEAM_AUDIENCE_REQUIRED");
+      }
+
       const [created] = await tx.insert(incentiveCampaigns).values({
         title: parsed.data.title,
         description: parsed.data.description || "",
@@ -35,5 +54,13 @@ export async function POST(request: NextRequest) {
       return created;
     });
     return NextResponse.json({ ok: true, id: result.id }, { status: 201 });
-  } catch (error) { return adminFailure(error); }
+  } catch (error) {
+    if (error instanceof Error && error.message === "AUDIENCE_NOT_FOUND") {
+      return NextResponse.json({ ok: false, error: "Mitarbeiter oder Team der Zielgruppe wurde nicht gefunden." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "TEAM_AUDIENCE_REQUIRED") {
+      return NextResponse.json({ ok: false, error: "Team-Abschlüsse benötigen ein konkretes Team als Zielgruppe." }, { status: 422 });
+    }
+    return adminFailure(error);
+  }
 }

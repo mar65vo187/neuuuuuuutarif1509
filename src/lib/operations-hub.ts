@@ -113,27 +113,101 @@ export async function getOperationsHubData(user: SessionUser) {
       .limit(300),
   ]);
 
-  const incentiveProgress = await Promise.all(incentiveRows.map(async (campaign) => {
+  const documentHistoryRows = admin
+    ? await db.select({
+        id: internalDocuments.id,
+        category: internalDocuments.category,
+        title: internalDocuments.title,
+        fileName: internalDocuments.fileName,
+        contentType: internalDocuments.contentType,
+        digest: internalDocuments.digest,
+        sizeBytes: internalDocuments.sizeBytes,
+        version: internalDocuments.version,
+        productId: internalDocuments.productId,
+        productName: products.name,
+        providerId: internalDocuments.providerId,
+        providerName: providers.name,
+        visibility: internalDocuments.visibility,
+        createdAt: internalDocuments.createdAt,
+      }).from(internalDocuments)
+        .leftJoin(products, eq(internalDocuments.productId, products.id))
+        .leftJoin(providers, eq(internalDocuments.providerId, providers.id))
+        .where(and(
+          eq(internalDocuments.active, false),
+          owner ? sql`true` : inArray(internalDocuments.visibility, ["team", "admin"]),
+        ))
+        .orderBy(desc(internalDocuments.createdAt))
+        .limit(150)
+    : [];
+
+  const visibleIncentives = admin
+    ? incentiveRows
+    : incentiveRows.filter((campaign) => {
+        if (campaign.audience === "all") return true;
+        if (campaign.audience.startsWith("employee:")) return Number(campaign.audience.slice("employee:".length)) === user.id;
+        if (campaign.audience.startsWith("team:")) {
+          const teamId = Number(campaign.audience.slice("team:".length));
+          return memberRows.some((member) => member.teamId === teamId && member.employeeId === user.id);
+        }
+        return false;
+      });
+
+  function targetEmployeeIds(audience: string): number[] | null {
+    if (audience === "all") return admin ? null : [user.id];
+    if (audience.startsWith("employee:")) return [Number(audience.slice("employee:".length))];
+    if (audience.startsWith("team:")) {
+      const teamId = Number(audience.slice("team:".length));
+      return memberRows.filter((member) => member.teamId === teamId).map((member) => member.employeeId);
+    }
+    return [];
+  }
+
+  function audienceLabel(audience: string) {
+    if (audience === "all") return "Alle";
+    if (audience.startsWith("employee:")) {
+      const employeeId = Number(audience.slice("employee:".length));
+      return employeeRowsForAudience.find((employee) => employee.id === employeeId)?.name ?? "Mitarbeiter";
+    }
+    if (audience.startsWith("team:")) {
+      const teamId = Number(audience.slice("team:".length));
+      return teamRows.find((team) => team.id === teamId)?.name ?? "Team";
+    }
+    return "Zielgruppe";
+  }
+
+  const employeeRowsForAudience = await db.select({ id: employees.id, name: employees.name })
+    .from(employees).where(eq(employees.active, true)).orderBy(employees.name);
+
+  const incentiveProgress = await Promise.all(visibleIncentives.map(async (campaign) => {
     const starts = campaign.startsAt;
     const ends = campaign.endsAt;
+    const targetIds = targetEmployeeIds(campaign.audience);
+    const advisorCondition = targetIds === null
+      ? sql`true`
+      : targetIds.length
+        ? inArray(orders.advisorEmployeeId, targetIds)
+        : sql`false`;
+
     if (campaign.goalType === "commission") {
       const [row] = await db.select({
-        value: sql<string>`coalesce(sum(coalesce(${commissionEvents.confirmedAmount}, ${commissionEvents.expectedAmount}, 0)),0)::text`,
+        value: sql<string>`coalesce(sum(coalesce(${commissionEvents.confirmedAmount}, 0)),0)::text`,
       }).from(commissionEvents)
         .innerJoin(orders, eq(commissionEvents.orderId, orders.id))
         .where(and(
-          admin ? sql`true` : eq(commissionEvents.employeeId, user.id),
+          advisorCondition,
           gte(orders.createdAt, starts),
           lte(orders.createdAt, ends),
+          inArray(orders.status, ["accepted", "activation_pending", "active"]),
         ));
       return { campaignId: campaign.id, value: Number(row?.value ?? 0) };
     }
 
     const [row] = await db.select({ value: sql<number>`count(*)::int` }).from(orders)
       .where(and(
-        admin ? sql`true` : eq(orders.advisorEmployeeId, user.id),
+        advisorCondition,
         gte(orders.createdAt, starts),
         lte(orders.createdAt, ends),
+        inArray(orders.status, ["accepted", "activation_pending", "active"]),
       ));
     return { campaignId: campaign.id, value: Number(row?.value ?? 0) };
   }));
@@ -165,6 +239,7 @@ export async function getOperationsHubData(user: SessionUser) {
 
   let reconciliation: Array<{
     id: number;
+    orderId: number | null;
     providerId: number | null;
     type: string;
     status: string;
@@ -179,6 +254,7 @@ export async function getOperationsHubData(user: SessionUser) {
   if (owner) {
     reconciliation = await db.select({
       id: reconciliationIssues.id,
+      orderId: reconciliationIssues.orderId,
       providerId: reconciliationIssues.providerId,
       type: reconciliationIssues.type,
       status: reconciliationIssues.status,
@@ -235,14 +311,16 @@ export async function getOperationsHubData(user: SessionUser) {
     owner,
     admin,
     teams: teamRows.map((team) => ({ ...team, members: memberRows.filter((member) => member.teamId === team.id) })),
-    incentives: incentiveRows.map((campaign) => ({
+    incentives: visibleIncentives.map((campaign) => ({
       ...campaign,
+      audienceLabel: audienceLabel(campaign.audience),
       progress: incentiveProgress.find((row) => row.campaignId === campaign.id)?.value ?? 0,
     })),
     training: moduleRows,
     completions: completionRows,
     benefits: benefitRows,
     documents: documentRows,
+    documentHistory: documentHistoryRows,
     employees: employeeRows,
     products: productRows,
     providers: providerRows,
