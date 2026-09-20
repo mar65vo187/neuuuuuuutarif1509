@@ -17,11 +17,34 @@ const leadCommonShape = {
   source: trimmed(120).optional().or(z.literal("")),
   consent: z.literal(true, { message: "Bitte stimme der Datenverarbeitung zu." }),
   website: z.string().max(2000).optional(),
-  meta: z.record(z.string(), z.unknown()).optional(),
 };
+
+const publicLeadMetaSchema = z.object({
+  audience: z.enum(["b2c", "b2b"]).optional(),
+  job: trimmed(160).optional().or(z.literal("")),
+  companyName: trimmed(180).optional().or(z.literal("")),
+  companySize: trimmed(40).optional().or(z.literal("")),
+  landingPath: trimmed(500).optional().or(z.literal("")),
+  requestPath: trimmed(500).optional().or(z.literal("")),
+  referrerHost: trimmed(160).optional().or(z.literal("")),
+  utmSource: trimmed(120).optional().or(z.literal("")),
+  utmMedium: trimmed(120).optional().or(z.literal("")),
+  utmCampaign: trimmed(160).optional().or(z.literal("")),
+  utmContent: trimmed(160).optional().or(z.literal("")),
+  utmTerm: trimmed(160).optional().or(z.literal("")),
+}).strict();
+
+const portalMetaScalar = z.union([z.string().max(500), z.number(), z.boolean(), z.null()]);
+const portalMetaSchema = z.record(z.string().max(80), portalMetaScalar)
+  .superRefine((value, ctx) => {
+    if (Object.keys(value).length > 30) {
+      ctx.addIssue({ code: "custom", message: "Zu viele Metadaten-Felder." });
+    }
+  });
 
 export const leadSchema = z.object({
   ...leadCommonShape,
+  meta: publicLeadMetaSchema.optional(),
   name: trimmed(120).min(2, "Bitte gib deinen Namen an."),
   email: z.string().trim().toLowerCase().email("Bitte gib eine gültige E-Mail-Adresse an.").max(200),
 }).superRefine((data, ctx) => {
@@ -35,6 +58,7 @@ export const leadSchema = z.object({
 
 export const portalLeadCreateSchema = z.object({
   ...leadCommonShape,
+  meta: portalMetaSchema.optional(),
   name: trimmed(120).optional().default(""),
   email: z.union([
     z.literal(""),
