@@ -155,7 +155,7 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
       whatsapp: "WhatsApp",
       items: [
         { q: "Was kostet das erste Gespräch?", a: "Nichts. Erstorientierung und Tarifcheck sind kostenlos und unverbindlich." },
-        { q: "Vergleicht TarifWerk den gesamten Markt?", a: "Nein. Wir arbeiten mit verschiedenen Marktteilnehmern, aber nicht mit jedem Anbieter. Welche Partner für Ihr Thema verfügbar sind, sagen wir Ihnen offen." },
+        { q: "Vergleicht TarifWerk den gesamten Markt?", a: "Nein. Wir arbeiten mit verschiedenen Marktteilnehmern, aber nicht mit jedem Anbieter. Welche Partner für dein Thema verfügbar sind, sagen wir dir offen." },
         { q: "Wie entscheidet ihr, was ihr empfehlt?", a: "Wir schauen zuerst auf deinen Bedarf, die Gesamtkosten, Leistung, Laufzeit und Umsetzbarkeit. Danach erklären wir dir, welche verfügbare Option warum passt." },
         { q: "Wie verdient TarifWerk Geld?", a: "Bei erfolgreicher Vermittlung erhalten wir in vielen Bereichen eine Provision vom jeweiligen Anbieter. Dir erklären wir transparent, wie die jeweilige Vermittlung funktioniert." },
         { q: "Muss ich nach dem Gespräch etwas abschließen?", a: "Nein. Du bekommst eine Einschätzung und entscheidest danach selbst, ob du etwas umsetzen möchtest." },
