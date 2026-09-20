@@ -4,12 +4,11 @@ import { ArrowRight, MapPin } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { useAudience } from "@/components/home/AudienceProvider";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
+import type { AudienceMode } from "@/lib/audience";
 import { LOCATION_OPTIONS, SERVICES } from "@/lib/content";
 
-export function FinderTeaser() {
-  const { audience } = useAudience();
+export function FinderTeaser({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].finder;
   const business = audience === "b2b";
   const [topic, setTopic] = useState<string | null>(null);
