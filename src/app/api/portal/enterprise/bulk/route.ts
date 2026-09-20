@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { leads } from "@/db/schema";
+import { employees, leads } from "@/db/schema";
 import { tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
@@ -13,8 +13,9 @@ import { updateOrder, writeAudit } from "@/lib/enterprise";
 const schema = z.object({
   entity: z.enum(["lead", "order", "task"]),
   ids: z.array(z.number().int().positive()).min(1).max(500),
-  action: z.enum(["status", "assign_to_me"]),
+  action: z.enum(["status", "assign_to_me", "assign_employee"]),
   value: z.string().trim().max(120).optional(),
+  employeeId: z.number().int().positive().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = schema.safeParse(await readJsonBody(request, 32 * 1024));
     if (!parsed.success) return NextResponse.json({ ok: false, error: "Ungültige Bulk-Aktion." }, { status: 422 });
-    const { entity, ids, action, value } = parsed.data;
+    const { entity, ids, action, value, employeeId } = parsed.data;
 
     if (entity === "order") {
       if (action !== "status" || !value || !orderUpdateSchema.shape.status.safeParse(value).success) {
@@ -56,6 +57,16 @@ export async function POST(request: NextRequest) {
           const rows = await tx.update(leads).set({ assignedEmployeeId: user.id, updatedAt: new Date() })
             .where(and(inArray(leads.id, ids), leadAccessCondition(user))).returning({ id: leads.id });
           await writeAudit(tx, user.id, "lead.bulk_assign", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: user.id });
+          return rows.length;
+        }
+        if (action === "assign_employee") {
+          if (user.role !== "admin" || !employeeId) throw new Error("Nur Administratoren dürfen Leads gezielt zuweisen.");
+          const [target] = await tx.select({ id: employees.id }).from(employees)
+            .where(and(eq(employees.id, employeeId), eq(employees.active, true))).limit(1);
+          if (!target) throw new Error("Mitarbeiter nicht gefunden oder nicht aktiv.");
+          const rows = await tx.update(leads).set({ assignedEmployeeId: employeeId, updatedAt: new Date() })
+            .where(and(inArray(leads.id, ids), leadAccessCondition(user))).returning({ id: leads.id });
+          await writeAudit(tx, user.id, "lead.bulk_assign_employee", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: employeeId });
           return rows.length;
         }
         const allowed = ["neu","kontaktiert","termin_bestaetigt","in_beratung","abgeschlossen","verloren"];
