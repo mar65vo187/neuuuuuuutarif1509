@@ -411,17 +411,19 @@ export default async function PortalDashboard() {
       {user.role === "admin" && (
         <Card className="p-0 sm:p-0">
           <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
-            <div className="flex items-center gap-2"><UsersRound className="h-4.5 w-4.5 text-electric-deep" /><div><h2 className="text-[16px] font-extrabold">Team-Auslastung</h2><p className="text-[11.5px] text-steel">Arbeitslast und Engpässe statt Bauchgefühl.</p></div></div>
+            <div className="flex items-center gap-2"><UsersRound className="h-4.5 w-4.5 text-electric-deep" /><div><h2 className="text-[16px] font-extrabold">Team-Auslastung</h2><p className="text-[11.5px] text-steel">Arbeitslast, offene Nacharbeit und CRM-Qualität ohne Mitarbeiter-Ranking.</p></div></div>
             <Link href="/portal/betrieb" className="text-[12px] font-bold text-electric-deep hover:underline">Team steuern</Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-[12.5px]">
-              <thead><tr className="border-b border-line bg-paper/60 text-steel"><th className="px-5 py-3 font-semibold sm:px-6">Mitarbeiter</th><th className="px-4 py-3 font-semibold">Offene Leads</th><th className="px-4 py-3 font-semibold">Offene Tasks</th><th className="px-4 py-3 font-semibold">Überfällig</th><th className="px-4 py-3 font-semibold">Aufträge in Arbeit</th><th className="px-4 py-3 font-semibold">Aktiviert 30T</th></tr></thead>
+            <table className="w-full min-w-[980px] text-left text-[12.5px]">
+              <thead><tr className="border-b border-line bg-paper/60 text-steel"><th className="px-5 py-3 font-semibold sm:px-6">Mitarbeiter</th><th className="px-4 py-3 font-semibold">Offene Leads</th><th className="px-4 py-3 font-semibold">Ohne nächsten Schritt</th><th className="px-4 py-3 font-semibold">Ohne Produktbild</th><th className="px-4 py-3 font-semibold">Offene Aufgaben</th><th className="px-4 py-3 font-semibold">Überfällig</th><th className="px-4 py-3 font-semibold">Aufträge in Arbeit</th><th className="px-4 py-3 font-semibold">Aktiviert 30T</th></tr></thead>
               <tbody>
                 {data.team.map((row) => (
                   <tr key={row.employeeId} className="border-b border-line last:border-0 hover:bg-paper/70">
                     <td className="px-5 py-3.5 sm:px-6"><p className="font-bold">{row.name}</p><p className="text-[10.5px] uppercase tracking-wider text-steel">{row.role === "admin" ? "Admin" : "Berater"}</p></td>
                     <td className="px-4 py-3.5 font-semibold">{row.openLeads}</td>
+                    <td className={"px-4 py-3.5 font-extrabold " + (row.leadsMissingNextAction > 0 ? "text-amber-300" : "text-emerald-300")}>{row.leadsMissingNextAction}</td>
+                    <td className={"px-4 py-3.5 font-extrabold " + (row.leadsWithoutProduct > 0 ? "text-amber-300" : "text-emerald-300")}>{row.leadsWithoutProduct}</td>
                     <td className="px-4 py-3.5 font-semibold">{row.openTasks}</td>
                     <td className={"px-4 py-3.5 font-extrabold " + (row.overdueTasks > 0 ? "text-red-700" : "text-emerald-700")}>{row.overdueTasks}</td>
                     <td className="px-4 py-3.5 font-semibold">{row.activeOrders}</td>
