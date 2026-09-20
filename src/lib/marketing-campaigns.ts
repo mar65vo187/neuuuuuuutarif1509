@@ -12,6 +12,8 @@ export type MarketingCampaign = {
   points: string[];
   proofTitle: string;
   proofItems: Array<{ title: string; text: string }>;
+  seoTitle: string;
+  seoDescription: string;
 };
 
 export const MARKETING_CAMPAIGNS: MarketingCampaign[] = [
@@ -31,6 +33,8 @@ export const MARKETING_CAMPAIGNS: MarketingCampaign[] = [
       "Kosten und Bedingungen verständlich durchgehen",
       "Klarer nächster Schritt statt Produktliste",
     ],
+    seoTitle: "Tarifcheck: Vertrag & Angebot prüfen | TarifWerk",
+    seoDescription: "Bestehenden Vertrag oder Angebot verständlich prüfen: Kosten, Laufzeit, Leistung und Bedingungen gemeinsam einordnen.",
     proofTitle: "Warum diese Anfrage anders aufgebaut ist",
     proofItems: [
       { title: "Bedarf zuerst", text: "Wir beginnen mit deiner Situation und nicht mit einem vorgegebenen Produkt." },
@@ -54,6 +58,8 @@ export const MARKETING_CAMPAIGNS: MarketingCampaign[] = [
       "Fristen und Preisbestandteile verstehen",
       "Nur handeln, wenn es wirklich sinnvoll ist",
     ],
+    seoTitle: "Strom- & Gas-Check persönlich | TarifWerk",
+    seoDescription: "Strom und Gas prüfen: Verbrauch, Abschläge, Preise und Fristen verständlich einordnen und sinnvolle Optionen besprechen.",
     proofTitle: "Ein Tarifcheck ohne Sparversprechen",
     proofItems: [
       { title: "Keine erfundene Ersparnis", text: "Ob sich ein Wechsel lohnt, hängt von deinem konkreten Vertrag und den verfügbaren Optionen ab." },
@@ -77,6 +83,8 @@ export const MARKETING_CAMPAIGNS: MarketingCampaign[] = [
       "Angebote und offene Punkte strukturiert prüfen",
       "Umsetzung mit geeigneten Fachpartnern besprechen",
     ],
+    seoTitle: "Solar & Wärmepumpe gemeinsam prüfen | TarifWerk",
+    seoDescription: "Photovoltaik und Wärmepumpe passend zu Gebäude, Verbrauch und Budget einordnen. Angebote und nächste Schritte strukturiert prüfen.",
     proofTitle: "Erst das Gesamtbild, dann die Technik",
     proofItems: [
       { title: "Gebäude & Verbrauch", text: "Technik wird nicht isoliert vom tatsächlichen Energiebedarf betrachtet." },
@@ -100,6 +108,8 @@ export const MARKETING_CAMPAIGNS: MarketingCampaign[] = [
       "Kosten, Leistung und Umsetzbarkeit gemeinsam betrachten",
       "Nächste Schritte zentral koordinieren",
     ],
+    seoTitle: "Business-Check für Unternehmen | TarifWerk",
+    seoDescription: "Telekommunikation, Energie, Absicherung und weitere Unternehmensthemen strukturiert über einen Ansprechpartner prüfen.",
     proofTitle: "Für Unternehmen, die Schnittstellen reduzieren wollen",
     proofItems: [
       { title: "Zentraler Kontakt", text: "Mehrere Themen laufen über einen Ansprechpartner statt über viele einzelne Rückfragen." },
