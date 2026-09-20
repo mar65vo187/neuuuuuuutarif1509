@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { ArrowLeft, FilePlus2, Mail, MessageCircle, Phone } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Phone } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
 import { LeadProductManager } from "@/components/portal/LeadProductManager";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
 import { getLead, getLeadNotes, getLeadProductLinks, listLeadProductOptions } from "@/lib/queries";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, SITUATIONS } from "@/lib/content";
+import { getLeadIntelligence } from "@/lib/lead-intelligence";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const situation = SITUATIONS.find((s) => s.value === lead.situation)?.label ?? lead.situation;
   const waDigits = lead.phone?.replace(/[^\d+]/g, "").replace(/^\+|^00/, "").replace(/^0/, "49").replace(/\D/g, "");
   const meta = (lead.meta ?? {}) as Record<string, unknown>;
+  const intelligence = getLeadIntelligence(lead);
+  const intelligenceTone = {
+    critical: "border-red-200 bg-red-50 text-red-900",
+    high: "border-amber-200 bg-amber-50 text-amber-900",
+    normal: "border-electric/15 bg-electric/[0.06] text-ink",
+    done: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  }[intelligence.tone];
 
   return (
     <div className="space-y-6">
@@ -59,6 +67,30 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           <a href={`mailto:${lead.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>
         </div>
       </header>
+
+      <section className={`rounded-[22px] border p-4 sm:p-5 ${intelligenceTone}`} aria-label="Next Best Action">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ink text-electric-soft"><BrainCircuit className="h-4.5 w-4.5" /></span>
+            <div>
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] opacity-70">Next Best Action</p>
+              <h2 className="mt-1 text-[16px] font-extrabold">{intelligence.label}</h2>
+              <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed opacity-80">{intelligence.detail}</p>
+            </div>
+          </div>
+          <div className="shrink-0 rounded-xl border border-current/10 bg-white/50 px-3 py-2 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-60">CRM-Vollständigkeit</p>
+            <p className="mt-0.5 text-[20px] font-extrabold">{intelligence.completeness}%</p>
+          </div>
+        </div>
+        {intelligence.missing.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Noch ergänzen:</span>
+            {intelligence.missing.map((item) => <span key={item} className="rounded-full border border-current/15 bg-white/55 px-2 py-0.5">{item}</span>)}
+          </div>
+        )}
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-3">
@@ -140,6 +172,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </div>
           </Card>
 
+          <div id="bearbeiten">
           <Card>
             <h2 className="text-[15px] font-extrabold">Bearbeiten</h2>
             <div className="mt-4">
@@ -156,6 +189,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               />
             </div>
           </Card>
+          </div>
         </div>
       </div>
     </div>
