@@ -56,6 +56,7 @@ export async function listLeads(filter?: {
   priority?: string;
   next?: string;
   productId?: number;
+  productRelation?: string;
   q?: string;
   sort?: string;
 }, user?: SessionUser) {
@@ -65,8 +66,15 @@ export async function listLeads(filter?: {
   if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
   if (filter?.next === "overdue") conditions.push(sql`${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren')`);
   if (filter?.next === "today") conditions.push(sql`${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren')`);
+  const productRelation = filter?.productRelation && ["interest", "existing", "sold"].includes(filter.productRelation)
+    ? filter.productRelation
+    : undefined;
   if (filter?.productId && Number.isSafeInteger(filter.productId) && filter.productId > 0) {
-    conditions.push(sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId})`);
+    conditions.push(productRelation
+      ? sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId} and lpl.relation = ${productRelation})`
+      : sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId})`);
+  } else if (productRelation) {
+    conditions.push(sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.relation = ${productRelation})`);
   }
   const q = filter?.q?.trim().slice(0, 120);
   if (q) {
