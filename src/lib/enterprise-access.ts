@@ -51,6 +51,42 @@ const LEGACY_ADVISOR_DEFAULTS = new Set<PortalPermission>([
  * - The legacy advisor baseline exists only for employees that have no role
  *   assignment yet, so older installations remain usable during rollout.
  */
+export async function listEnterpriseRoleState() {
+  const [roles, grants, assignments] = await Promise.all([
+    db.select({
+      id: roleDefinitions.id,
+      key: roleDefinitions.key,
+      name: roleDefinitions.name,
+      description: roleDefinitions.description,
+      system: roleDefinitions.system,
+    }).from(roleDefinitions).orderBy(roleDefinitions.name),
+    db.select({
+      roleId: rolePermissions.roleId,
+      permissionKey: permissions.key,
+      permissionDescription: permissions.description,
+    }).from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id)),
+    db.select({
+      employeeId: employeeRoleAssignments.employeeId,
+      roleId: employeeRoleAssignments.roleId,
+    }).from(employeeRoleAssignments),
+  ]);
+
+  return {
+    roles: roles.map((role) => ({
+      ...role,
+      permissions: grants
+        .filter((grant) => grant.roleId === role.id)
+        .map((grant) => ({
+          key: grant.permissionKey,
+          description: grant.permissionDescription ?? grant.permissionKey,
+        }))
+        .sort((a, b) => a.key.localeCompare(b.key)),
+    })),
+    assignments,
+  };
+}
+
 export async function permissionKeys(user: SessionUser): Promise<Set<string>> {
   if (user.role === "admin") return new Set(["*"]);
 
