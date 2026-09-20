@@ -224,6 +224,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             existingProductNames: lead.existingProductNames,
             interestProductNames: lead.interestProductNames,
             soldProductNames: lead.soldProductNames,
+            referralSourceName: typeof (lead.meta as Record<string, unknown> | null)?.referralSourceName === "string"
+              ? String((lead.meta as Record<string, unknown>).referralSourceName)
+              : null,
           }))} />
         )}
       </Card>
