@@ -8,7 +8,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { leadCallActivitySchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { recommendLeadFollowUp } from "@/lib/call-intelligence";
-import { emitEvent, writeAudit } from "@/lib/enterprise";
+import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
 
@@ -175,6 +175,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         suggestedFollowUpAt: recommendation.at?.toISOString() ?? null,
         autoScheduled: shouldSchedule,
       });
+
+      if (patch.status && patch.status !== lead.status) {
+        const payload = {
+          assignedEmployeeId: lead.assignedEmployeeId ?? lead.createdByEmployeeId ?? user.id,
+          previousStatus: lead.status,
+          status: patch.status,
+        };
+        await emitEvent(tx, `lead.status.${patch.status}`, "lead", leadId, payload);
+        await runAutomationEvent(tx, `lead.status.${patch.status}`, "lead", leadId, payload, user.id);
+      }
 
       await emitEvent(tx, "lead.call.logged", "lead", leadId, {
         employeeId: user.id,
