@@ -9,10 +9,11 @@ import { LeadForm } from "@/components/forms/LeadForm";
 import { Reveal } from "@/components/ui/Reveal";
 import { getAdvisorBySlug } from "@/lib/queries";
 import { PROCESS, SITE, normalizeTopic, normalizeTopics } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ thema?: string | string[]; region?: string | string[] }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ thema?: string | string[]; region?: string | string[]; audience?: string | string[] }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -26,7 +27,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AdvisorPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { thema: rawTopic, region: rawRegion } = await searchParams;
+  const { thema: rawTopic, region: rawRegion, audience: rawAudience } = await searchParams;
+  const audience = await resolveSiteAudience(rawAudience);
+  const business = audience === "b2b";
   const requestedTopic = Array.isArray(rawTopic) ? rawTopic[0] : rawTopic;
   const region = Array.isArray(rawRegion) ? rawRegion[0] : rawRegion;
   const thema = normalizeTopic(requestedTopic ?? "");
@@ -137,7 +140,7 @@ export default async function AdvisorPage({ params, searchParams }: Props) {
             <p className="eyebrow text-electric-deep">Terminanfrage</p>
             <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Ein Gespräch mit {first}.</h2>
             <p className="mt-4 text-[15.5px] leading-relaxed text-steel">
-              Sie nennen Thema und Wunschzeit – {first} bestätigt Ihnen den Termin persönlich. Telefonisch, per Video oder vor Ort.
+              {business ? `Sie nennen Thema und Wunschzeit – ${first} bestätigt Ihnen den Termin persönlich. Telefonisch, per Video oder vor Ort.` : `Du nennst Thema und Wunschzeit – ${first} bestätigt dir den Termin persönlich. Telefonisch, per Video oder vor Ort.`}
             </p>
             <ol className="mt-8 space-y-4">
               {PROCESS.slice(0, 3).map((p) => (
@@ -153,7 +156,7 @@ export default async function AdvisorPage({ params, searchParams }: Props) {
           </Reveal>
           <Reveal className="lg:col-span-8" delay={0.1}>
             <div className="rounded-[26px] border border-line bg-white p-6 shadow-soft sm:p-9">
-              <LeadForm type="termin" advisorSlug={a.slug} advisorName={a.name} defaultTopic={thema} defaultRegion={(region ?? "").slice(0, 80)} />
+              <LeadForm type="termin" advisorSlug={a.slug} advisorName={a.name} defaultTopic={thema} defaultRegion={(region ?? "").slice(0, 80)} audience={audience} />
             </div>
           </Reveal>
         </div>
