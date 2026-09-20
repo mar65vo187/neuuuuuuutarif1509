@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, FilePlus2, Mail, Phone } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FilePlus2, Mail, Network, Phone, UserRoundCheck } from "lucide-react";
 import { Card, formatDate } from "@/components/portal/ui";
+import { CustomerReferralManager } from "@/components/portal/CustomerReferralManager";
 import { getCurrentUser } from "@/lib/auth";
 import { getCustomer } from "@/lib/enterprise";
 
@@ -17,6 +18,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   if (!data) notFound();
   const { customer } = data;
   const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
+  const hasContact = Boolean(customer.phone || customer.email);
+  const referralRows = data.referrals.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+  }));
 
   return <div className="space-y-6">
     <Link href="/portal/kunden" className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-steel hover:text-ink"><ArrowLeft className="h-4 w-4" /> Zurück zu Kunden</Link>
@@ -28,6 +34,50 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         <Link href={`/portal/auftraege/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>
       </div>
     </header>
+
+    <section className="grid gap-2 sm:grid-cols-3" aria-label="Kunden-Workflow">
+      <div className={"rounded-2xl border px-4 py-3 " + (hasContact ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50")}>
+        <div className="flex items-center gap-2">
+          {hasContact ? <CheckCircle2 className="h-4 w-4 text-emerald-700" /> : <UserRoundCheck className="h-4 w-4 text-amber-700" />}
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em]">1 · Kontakt</p>
+        </div>
+        <p className="mt-1 text-[11.5px] text-steel">{hasContact ? "Kontaktweg vorhanden" : "Telefon oder E-Mail ergänzen"}</p>
+      </div>
+      <div className={"rounded-2xl border px-4 py-3 " + (data.orders.length ? "border-emerald-200 bg-emerald-50" : "border-line bg-white")}>
+        <div className="flex items-center gap-2">
+          <FilePlus2 className={"h-4 w-4 " + (data.orders.length ? "text-emerald-700" : "text-electric-deep")} />
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em]">2 · Auftrag</p>
+        </div>
+        <p className="mt-1 text-[11.5px] text-steel">{data.orders.length ? data.orders.length + " Auftrag/Aufträge vorhanden" : "Bedarf klären und Auftrag anlegen"}</p>
+      </div>
+      <div className={"rounded-2xl border px-4 py-3 " + (data.referrals.length ? "border-electric/20 bg-electric/[0.06]" : "border-line bg-white")}>
+        <div className="flex items-center gap-2">
+          <Network className="h-4 w-4 text-electric-deep" />
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em]">3 · Empfehlungen</p>
+        </div>
+        <p className="mt-1 text-[11.5px] text-steel">{data.referrals.length ? data.referrals.length + " Empfehlung(en) erfasst" : "Nach passenden Empfehlungen fragen"}</p>
+      </div>
+    </section>
+
+    {data.referralSource && (
+      <section className="rounded-[20px] border border-electric/15 bg-electric/[0.05] px-4 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-electric-deep shadow-sm"><Network className="h-4 w-4" /></span>
+            <div>
+              <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Herkunft · Kundenempfehlung</p>
+              <p className="mt-0.5 text-[13.5px] font-extrabold">Empfohlen von {data.referralSource.sourceName}</p>
+              <p className="text-[11.5px] text-steel">{data.referralSource.sourceCustomerNumber}{data.referralSource.relationship ? " · " + data.referralSource.relationship : ""}</p>
+            </div>
+          </div>
+          <Link href={"/portal/kunden/" + data.referralSource.sourceCustomerId} className="inline-flex h-9 items-center rounded-full border border-electric/20 bg-white px-3.5 text-[11.5px] font-bold text-electric-deep hover:bg-electric/[0.05]">
+            Empfehlenden Kunden öffnen
+          </Link>
+        </div>
+        {data.referralSource.note && <p className="mt-2 text-[11.5px] leading-relaxed text-steel">{data.referralSource.note}</p>}
+      </section>
+    )}
+
     <div className="grid gap-4 lg:grid-cols-5">
       <Card className="lg:col-span-2"><h2 className="text-[16px] font-extrabold">Stammdaten</h2><dl className="mt-4 space-y-3 text-[14px]">
         {[
@@ -47,5 +97,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </Link></li>)}</ul>}
       </Card>
     </div>
+
+    <Card>
+      <CustomerReferralManager
+        customerId={customer.id}
+        customerName={name}
+        rows={referralRows}
+      />
+    </Card>
   </div>;
 }
