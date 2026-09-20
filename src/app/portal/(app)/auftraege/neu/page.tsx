@@ -34,7 +34,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
     <header><p className="eyebrow text-electric-deep">Operations</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Auftrag anlegen</h1></header>
     <Card><OrderCreateForm
       customers={customerOptions}
-      leads={leadRows.map((lead) => ({ id: lead.id, label: `${lead.name} · ${lead.topic || "ohne Thema"}` }))}
+      leads={leadRows.map((lead) => ({ id: lead.id, label: `${lead.name || `Lead #${lead.id}`} · ${lead.topic || "ohne Thema"}` }))}
       providers={catalog.providers.map((provider) => ({ id: provider.id, name: provider.name, category: provider.category }))}
       products={catalog.products.map((product) => ({ id: product.id, providerId: product.providerId, name: product.name, category: product.category, expectedCommission: owner ? product.expectedCommission : null }))}
       initialLeadId={initialLeadId}
