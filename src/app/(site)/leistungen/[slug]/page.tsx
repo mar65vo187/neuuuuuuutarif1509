@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/Button";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { REGIONS, SERVICES, SERVICE_IMAGES, SITE, getService } from "@/lib/content";
+import { resolveSiteAudience } from "@/lib/audience-server";
+import { SERVICE_AUDIENCE_COPY } from "@/lib/audience-copy";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ audience?: string | string[] }> };
 
 export function generateStaticParams() {
   return SERVICES.map((s) => ({ slug: s.slug }));
@@ -24,8 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata(`/leistungen/${s.slug}`, { title: s.seoTitle, description: s.seoDescription }, SERVICE_IMAGES[s.key]?.src);
 }
 
-export default async function ServicePage({ params }: Props) {
+export default async function ServicePage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const audience = await resolveSiteAudience((await searchParams).audience);
+  const business = audience === "b2b";
   const s = getService(slug);
   if (!s) notFound();
   const img = SERVICE_IMAGES[s.key];
@@ -90,9 +94,9 @@ export default async function ServicePage({ params }: Props) {
             </nav>
             <p className="eyebrow mt-6 text-electric-soft">{s.eyebrow}</p>
             <h1 className="mt-4 text-[clamp(2.2rem,5vw,4.2rem)] font-extrabold leading-[1.0] tracking-[-0.03em]">{s.headline}</h1>
-            <p className="mt-6 text-[17px] leading-relaxed text-silver">{s.intro}</p>
+            <p className="mt-6 text-[17px] leading-relaxed text-silver">{SERVICE_AUDIENCE_COPY[audience][s.key] ?? s.intro}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button href={`/berater?thema=${encodeURIComponent(s.name)}`} size="lg" iconRight={<ArrowRight />}>
+              <Button href={`/berater?thema=${encodeURIComponent(s.name)}&audience=${audience}`} size="lg" iconRight={<ArrowRight />}>
                 Berater für {s.name}
               </Button>
             </div>
@@ -103,9 +107,9 @@ export default async function ServicePage({ params }: Props) {
       <section className="bg-paper py-20 sm:py-28">
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-5">
-            <p className="eyebrow text-electric-deep">Was wir für Sie prüfen</p>
+            <p className="eyebrow text-electric-deep">{business ? "Was wir für Sie prüfen" : "Was wir für dich prüfen"}</p>
             <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Die Fragen, die vor der Entscheidung beantwortet sein sollten.</h2>
-            <p className="mt-4 text-[15.5px] leading-relaxed text-steel">Nicht mehr, aber auch nicht weniger. Danach wissen Sie, ob und wie es für Sie Sinn ergibt.</p>
+            <p className="mt-4 text-[15.5px] leading-relaxed text-steel">{business ? "Danach wissen Sie, welche Punkte entscheidungsreif sind und wo noch Klärungsbedarf besteht." : "Danach weißt du, was wirklich relevant ist und welcher nächste Schritt für dich Sinn ergibt."}</p>
           </Reveal>
           <Stagger className="grid gap-3 lg:col-span-7" stagger={0.08}>
             {s.checks.map((c, i) => (
@@ -145,8 +149,8 @@ export default async function ServicePage({ params }: Props) {
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <p className="eyebrow text-electric-soft">Kostenlose Erstprüfung</p>
-            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight">Lassen Sie uns über {s.name} sprechen.</h2>
-            <p className="mt-4 text-[15.5px] leading-relaxed text-silver">Zwei Schritte, dann meldet sich ein Berater persönlich bei Ihnen. Ohne Verpflichtung.</p>
+            <h2 className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight">{business ? `Lassen Sie uns über ${s.name} sprechen.` : `Lass uns über ${s.name} sprechen.`}</h2>
+            <p className="mt-4 text-[15.5px] leading-relaxed text-silver">{business ? "Zwei Schritte, dann meldet sich ein Berater persönlich bei Ihnen. Unverbindlich." : "Zwei Schritte, dann meldet sich ein Berater persönlich bei dir. Kostenlos und unverbindlich."}</p>
             <div className="mt-8 border-t border-white/10 pt-6">
               <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-silver">Auch interessant</p>
               <ul className="mt-3 space-y-2">
@@ -162,7 +166,7 @@ export default async function ServicePage({ params }: Props) {
           </Reveal>
           <Reveal className="lg:col-span-8" delay={0.1}>
             <div className="glass rounded-[26px] p-6 sm:p-9">
-              <LeadForm type="beratung" defaultTopic={s.name} tone="dark" source={`leistung:${s.slug}`} />
+              <LeadForm type="beratung" defaultTopic={s.name} tone="dark" source={`leistung:${s.slug}`} audience={audience} />
             </div>
           </Reveal>
         </div>
