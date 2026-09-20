@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  AlertTriangle, Clock3, Euro, FileCheck2, GraduationCap, ListTodo,
-  ReceiptText, RotateCcw, TrendingUp, UserRoundSearch,
+  AlertTriangle, BarChart3, Clock3, Euro, FileCheck2, GraduationCap, ListTodo,
+  Megaphone, ReceiptText, RotateCcw, TrendingUp, UserRoundSearch,
 } from "lucide-react";
 import { Card } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
@@ -99,6 +99,39 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
         <h2 className="text-[16px] font-extrabold">Provider-Performance</h2>
         <p className="mt-1 text-[11.5px] text-steel">Volumen, Aktivierungen und Stornos im gewählten Zeitraum.</p>
         <ul className="mt-4 space-y-3">{report.byProvider.map((row) => <li key={row.provider} className="grid grid-cols-[1fr_auto] gap-3 text-[13px]"><span className="truncate font-semibold">{row.provider}</span><span className="text-right"><strong>{row.count}</strong> Aufträge · <span className="text-emerald-700">{row.active} aktiv</span>{row.cancelled > 0 ? <span className="text-red-700"> · {row.cancelled} Storno</span> : null}{owner ? <span className="block text-[11px] text-steel">{money(Number(row.expected))} erwartet</span> : null}</span></li>)}</ul>
+      </Card>
+    </section>
+
+    <section className="grid gap-4 xl:grid-cols-2" aria-label="Marketing Attribution">
+      <Card>
+        <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Akquise nach Quelle</h2></div>
+        <p className="mt-1 text-[11.5px] text-steel">First-Party-Auswertung der Quelle, die bei der tatsächlichen Anfrage mitgegeben wurde.</p>
+        {report.attribution.bySource.length ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-[12px]">
+              <thead className="text-[10px] font-bold uppercase tracking-[0.11em] text-steel"><tr><th className="pb-2 pr-3">Quelle</th><th className="pb-2 px-2 text-right">Leads</th><th className="pb-2 px-2 text-right">Qualifiziert</th><th className="pb-2 px-2 text-right">Abschluss</th><th className="pb-2 pl-2 text-right">Quote</th></tr></thead>
+              <tbody className="divide-y divide-line">
+                {report.attribution.bySource.map((row) => <tr key={row.source}><td className="py-2.5 pr-3 font-bold">{row.source}</td><td className="px-2 py-2.5 text-right">{row.total}</td><td className="px-2 py-2.5 text-right">{row.qualified}</td><td className="px-2 py-2.5 text-right">{row.completed}</td><td className="py-2.5 pl-2 text-right font-extrabold">{row.conversionRate}%</td></tr>)}
+              </tbody>
+            </table>
+          </div>
+        ) : <p className="mt-4 text-[12px] text-steel">Noch keine Attributionsdaten im gewählten Zeitraum.</p>}
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Kampagnen-Funnel</h2></div>
+        <p className="mt-1 text-[11.5px] text-steel">UTM-Kampagnen und interne Kampagnen-Landingpages bis zum CRM-Abschluss verfolgen.</p>
+        {report.attribution.byCampaign.length ? (
+          <div className="mt-4 space-y-2.5">
+            {report.attribution.byCampaign.map((row) => (
+              <div key={row.campaign} className="rounded-2xl border border-line bg-paper/60 p-3.5">
+                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[12.5px] font-extrabold">{row.campaign.replace(/^campaign:/, "")}</p><p className="mt-0.5 text-[10.5px] text-steel">{row.total} Leads · {row.qualified} qualifiziert · {row.completed} abgeschlossen{row.lost ? " · " + row.lost + " verloren" : ""}</p></div><span className="rounded-full border border-electric/15 bg-electric/[0.06] px-2.5 py-1 text-[11px] font-extrabold text-electric-deep">{row.conversionRate}%</span></div>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/8"><div className="h-full rounded-full bg-electric" style={{ width: Math.min(100, row.qualificationRate) + "%" }} /></div>
+                <p className="mt-1.5 text-[10px] text-steel">{row.qualificationRate}% erreichen Termin, Beratung oder Abschluss</p>
+              </div>
+            ))}
+          </div>
+        ) : <p className="mt-4 text-[12px] text-steel">Noch keine Kampagnen im gewählten Zeitraum.</p>}
       </Card>
     </section>
 
