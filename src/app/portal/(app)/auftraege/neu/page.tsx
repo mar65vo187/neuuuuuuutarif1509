@@ -33,7 +33,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
   }
   return <div className="space-y-6">
     <Link href="/portal/auftraege" className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-steel hover:text-ink"><ArrowLeft className="h-4 w-4" /> Zurück</Link>
-    <header><p className="eyebrow text-electric-deep">Operations</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Auftrag anlegen</h1></header>
+    <header><p className="eyebrow text-electric-deep">Auftragssteuerung</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Auftrag anlegen</h1></header>
     <Card><OrderCreateForm
       customers={customerOptions}
       leads={leadRows.map((lead) => ({ id: lead.id, label: `${lead.name || `Lead #${lead.id}`} · ${lead.topic || "ohne Thema"}` }))}
