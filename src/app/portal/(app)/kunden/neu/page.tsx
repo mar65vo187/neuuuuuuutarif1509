@@ -5,10 +5,12 @@ import { Card } from "@/components/portal/ui";
 import { CustomerCreateForm } from "@/components/portal/CustomerCreateForm";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers } from "@/lib/enterprise";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export default async function NewCustomerPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fkunden%2Fneu");
+  if (!await hasPermission(user, PORTAL_PERMISSION.CUSTOMER_EDIT)) redirect("/portal/kunden");
   const existingCustomers = await listCustomers(user, undefined, 200);
   const referrerOptions = existingCustomers.map((customer) => ({
     id: customer.id,
