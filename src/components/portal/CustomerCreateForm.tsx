@@ -1,6 +1,7 @@
 "use client";
 
 import { Info, Loader2, Network, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { DuplicateIdentityCheck } from "@/components/portal/DuplicateIdentityCheck";
@@ -13,6 +14,7 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<"private" | "business">("private");
+  const [duplicateLink, setDuplicateLink] = useState<{ href: string; label: string } | null>(null);
   const [identity, setIdentity] = useState({ firstName: "", lastName: "", companyName: "", email: "", phone: "" });
   const duplicateName = useMemo(
     () => type === "business"
@@ -28,6 +30,7 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
     saving.current = true;
     setBusy(true);
     setError(null);
+    setDuplicateLink(null);
     const data = new FormData(event.currentTarget);
     try {
       const response = await fetch("/api/portal/enterprise/customers", {
@@ -49,8 +52,11 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
         }),
         signal: AbortSignal.timeout(15000),
       });
-      const json = await response.json() as { ok: boolean; error?: string; customer?: { id: number } };
-      if (!response.ok || !json.ok || !json.customer) throw new Error(json.error ?? "Speichern fehlgeschlagen.");
+      const json = await response.json() as { ok: boolean; error?: string; customer?: { id: number }; duplicate?: { href?: string; label?: string } };
+      if (!response.ok || !json.ok || !json.customer) {
+        if (json.duplicate?.href) setDuplicateLink({ href: json.duplicate.href, label: json.duplicate.label ?? "Bestehenden Datensatz" });
+        throw new Error(json.error ?? "Speichern fehlgeschlagen.");
+      }
       router.push(`/portal/kunden/${json.customer.id}`);
       router.refresh();
     } catch (problem) {
@@ -136,7 +142,7 @@ export function CustomerCreateForm({ referrerOptions = [] }: { referrerOptions?:
         <p>Nach dem Anlegen landest du direkt in der Kundenakte. Dort kannst du Auftrag, nächste Schritte und neue Empfehlungen des Kunden erfassen.</p>
       </div>
 
-      {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">{error}</p>}
+      {error && <div role="alert" className="rounded-xl border border-red-300/40 bg-red-500/[0.07] px-4 py-3 text-[14px] text-red-200"><p>{error}</p>{duplicateLink && <Link href={duplicateLink.href} className="mt-2 inline-flex rounded-full border border-red-300/30 px-3 py-1.5 text-[11.5px] font-extrabold text-white hover:bg-red-400/10">{duplicateLink.label} öffnen</Link>}</div>}
       <button disabled={busy} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-60">
         {busy && <Loader2 className="h-4 w-4 animate-spin" />} Kundenakte anlegen
       </button>
