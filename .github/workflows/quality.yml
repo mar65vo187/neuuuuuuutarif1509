@@ -123,6 +123,7 @@ jobs:
       DATABASE_URL: postgresql://tarifwerk:tarifwerk-runtime-password@localhost:5432/tarifwerk_runtime
       SESSION_SECRET: runtime-test-only-session-signing-key-not-production
       RUNTIME_BASE_URL: http://127.0.0.1:3000
+      BUSINESS_ADDRESS: CI Testadresse 1, 65185 Wiesbaden, Deutschland
     steps:
       - name: Checkout
         uses: actions/checkout@v6
