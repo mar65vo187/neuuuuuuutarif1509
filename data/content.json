@@ -2,14 +2,14 @@
   "purpose": "Read-only snapshot; runtime source remains src/lib/content.ts",
   "site": {
     "name": "TarifWerk",
-    "claim": "Persönliche Beratung. Auf Augenhöhe.",
+    "claim": "Beratung auf Augenhöhe",
     "url": "https://www.tarifwerk.eu",
     "email": "m.egenolf@tarifwerk.eu",
     "whatsappNumber": "4915782301076",
     "whatsappDisplay": "0157 823 010 76",
     "phoneHref": "tel:+4915782301076",
     "founder": "Marvin Noel Egenolf",
-    "founderTitle": "Gründer & Senior Sales Consultant",
+    "founderTitle": "Gründer von TarifWerk",
     "hours": "Täglich 08:00–22:00 Uhr",
     "hq": "Wiesbaden"
   },
