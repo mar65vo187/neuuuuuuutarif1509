@@ -67,6 +67,7 @@ const requiredTables = [
   "login_events",
   "referral_rewards",
   "referral_reward_events",
+  "public_intake_rate_limits",
 ];
 
 const pool = new Pool({
