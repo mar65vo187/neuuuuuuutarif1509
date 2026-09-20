@@ -121,6 +121,9 @@ export const leads = pgTable("leads", {
   assignedEmployeeId: integer("assigned_employee_id").references(() => employees.id, {
     onDelete: "set null",
   }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, {
+    onDelete: "set null",
+  }),
   source: text("source"),
   meta: jsonb("meta").$type<Record<string, unknown>>(),
   confirmedSlot: text("confirmed_slot"),

@@ -17,6 +17,7 @@ type Row = {
   createdAt: string;
   advisorName: string | null;
   assignedName: string | null;
+  createdByName: string | null;
   type: string;
   status: string;
 };
@@ -47,7 +48,12 @@ export function LeadBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2"><p className="text-[15.5px] font-bold">{lead.name}</p><span className="text-[12px] text-steel">#{lead.id}</span>{lead.status === "neu" && <span className="h-2 w-2 rounded-full bg-electric" aria-label="neu" />}</div>
                 <p className="mt-0.5 truncate text-[13.5px] text-steel">{lead.topic ?? "Ohne Thema"} · {lead.region ?? "Region offen"} · {lead.preferredChannel ?? "Kanal offen"}{lead.preferredTime ? " · Wunsch: " + lead.preferredTime : ""}</p>
-                <p className="mt-0.5 text-[12.5px] text-steel">{formatDate(lead.createdAt)}{lead.advisorName ? " · für " + lead.advisorName : ""}{lead.assignedName ? " · bearbeitet von " + lead.assignedName : " · noch nicht übernommen"}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-steel">
+                  <span>{formatDate(lead.createdAt)}</span>
+                  <span className="inline-flex items-center rounded-full border border-electric/15 bg-electric/[0.07] px-2 py-0.5 font-semibold text-ink-700">Angelegt von: {lead.createdByName ?? "Website / System"}</span>
+                  {lead.advisorName ? <span>Wunschberater: {lead.advisorName}</span> : null}
+                  <span>{lead.assignedName ? "Zuständig: " + lead.assignedName : "Noch nicht zugewiesen"}</span>
+                </p>
               </div>
               <div className="flex items-center gap-2 sm:justify-end"><TypeBadge type={lead.type} /><StatusBadge status={lead.status} /><ArrowRight className="hidden h-4 w-4 text-steel sm:block" /></div>
             </Link>
