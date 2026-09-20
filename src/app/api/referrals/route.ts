@@ -6,7 +6,7 @@ import { referrers } from "@/db/referral-schema";
 import { isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { referralRateLimited, referralTokenHash } from "@/lib/referrals";
-import { REFERRAL_AVATARS } from "@/lib/gamification";
+import { REFERRAL_AVATAR_KEYS } from "@/lib/gamification-rules";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ const schema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   phone: z.string().trim().min(6).max(40),
   displayName: z.string().trim().min(2).max(40),
-  avatarKey: z.enum(REFERRAL_AVATARS.map((avatar) => avatar.key) as [typeof REFERRAL_AVATARS[number]["key"], ...typeof REFERRAL_AVATARS[number]["key"][]]),
+  avatarKey: z.enum(REFERRAL_AVATAR_KEYS),
   leaderboardOptIn: z.boolean().default(false),
   consent: z.literal(true),
 }).strict();
