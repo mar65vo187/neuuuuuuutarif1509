@@ -14,6 +14,7 @@ type AudienceCopy = {
     primary: string;
     primaryHref: string;
     secondary: string;
+    secondaryHref: string;
     whatsapp: string;
     checks: string[];
     cardEyebrow: string;
@@ -64,22 +65,23 @@ type AudienceCopy = {
 export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
   b2c: {
     hero: {
-      eyebrow: "Beratung für Tarife, Energie, Versicherungen & mehr",
-      lines: ["Viele Themen.", "", "Klare Entscheidungen."],
-      emphasis: "Ein Ansprechpartner.",
-      body: "Internet, Mobilfunk, Strom, Gas, Versicherungen, Solar, Wärmepumpe oder Immobilien: Sagen Sie uns, worum es geht. Wir erklären Ihnen die Möglichkeiten und sagen offen, was sinnvoll ist – und was nicht.",
-      primary: "Kostenloses Erstgespräch",
-      primaryHref: "#berater-auswahl",
-      secondary: "Leistungen ansehen",
+      eyebrow: "Beratung auf Augenhöhe · persönlich · deutschlandweit",
+      lines: ["Ein Haushalt.", "", "Ein Gesamtblick."],
+      emphasis: "Ein Berater.",
+      body: "Sie haben einen bestehenden Vertrag, ein konkretes Angebot oder mehrere Themen gleichzeitig? Wir ordnen Ihre Situation ein, erklären die Unterschiede verständlich und sagen offen, welcher nächste Schritt sinnvoll ist – und welcher nicht.",
+      primary: "Kostenlose Einschätzung anfragen",
+      primaryHref: "/anfrage",
+      secondary: "Zweite Meinung einholen",
+      secondaryHref: "/anfrage?situation=vergleich",
       whatsapp: "Hallo TarifWerk, ich möchte kurz meine Situation besprechen.",
-      checks: ["kostenlos & unverbindlich", "persönlicher Ansprechpartner", "deutschlandweit"],
+      checks: ["kostenlos & unverbindlich", "persönliche Rückmeldung", "Sie entscheiden selbst"],
       cardEyebrow: "So läuft es ab",
-      cardTitle: "Einfach anfangen.",
+      cardTitle: "In drei Schritten zu Klarheit.",
       cardBadge: "persönlich",
       cardSteps: [
-        { label: "Sie erzählen, worum es geht", sub: "kurz, ohne Unterlagen-Chaos" },
-        { label: "Wir sortieren die Möglichkeiten", sub: "verständlich und nachvollziehbar" },
-        { label: "Sie entscheiden in Ruhe", sub: "mit einem klaren nächsten Schritt" },
+        { label: "Anliegen schildern", sub: "kurz und ohne Unterlagen-Chaos" },
+        { label: "Persönliche Einschätzung", sub: "Optionen und Unterschiede verständlich" },
+        { label: "Sie entscheiden", sub: "ohne Abschlussdruck" },
       ],
       person: "Marvin · Ihr Ansprechpartner",
       personSub: "persönlich erreichbar",
@@ -93,17 +95,17 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
       { k: "Deutschlandweit", v: "digital & nach Absprache vor Ort" },
     ],
     focus: {
-      eyebrow: "Unsere Themen",
-      titleA: "Von Alltagstarifen bis",
-      titleEm: "größeren Entscheidungen.",
+      eyebrow: "Die drei häufigsten Anliegen",
+      titleA: "Dort anfangen, wo",
+      titleEm: "der nächste Schritt zählt.",
       titleB: "",
-      text: "Sie müssen sich nicht bei jedem Thema wieder neu einlesen. Wir helfen Ihnen, Angebote einzuordnen, Unterschiede zu verstehen und den nächsten Schritt sauber zu entscheiden.",
+      text: "Strom & Gas, Internet & Mobilfunk sowie Versicherungen sind häufig der erste Kontaktpunkt. Weitere Bereiche bleiben vollständig verfügbar – aber die Startseite führt zuerst zu den häufigsten Fragen.",
     },
     everyday: {
-      eyebrow: "Weitere Bereiche",
-      title: "Auch dafür müssen Sie nicht wieder bei null anfangen.",
-      text: "Ein Ansprechpartner, der den Zusammenhang kennt – auch wenn sich das Thema ändert.",
-      cardCta: "Mehr dazu",
+      eyebrow: "Alle weiteren Leistungen",
+      title: "Ein Ansprechpartner – auch wenn das Thema größer wird.",
+      text: "Solar, Wärmepumpe, Immobilien, Edelmetalle, Klima und Sicherheit bleiben Teil des Gesamtblicks.",
+      cardCta: "Leistung ansehen",
     },
     manifesto: {
       eyebrow: "So arbeiten wir",
@@ -128,13 +130,12 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
       ],
     },
     process: {
-      eyebrow: "So läuft es ab",
-      title: "Kurz, klar und ohne unnötige Umwege.",
+      eyebrow: "So funktioniert TarifWerk",
+      title: "Anfrage. Einschätzung. Entscheidung.",
       steps: [
-        { step: "01", title: "Thema nennen", text: "Sie sagen uns, worum es geht und was Ihnen wichtig ist." },
-        { step: "02", title: "Situation prüfen", text: "Wir schauen auf Bedarf, bestehende Verträge und relevante Rahmenbedingungen." },
-        { step: "03", title: "Optionen verstehen", text: "Sie bekommen eine verständliche Einordnung der sinnvollen Möglichkeiten." },
-        { step: "04", title: "Nächsten Schritt wählen", text: "Wenn Sie möchten, begleiten wir die Umsetzung und bleiben erreichbar." },
+        { step: "01", title: "Anfrage in wenigen Minuten", text: "Sie nennen Thema, Ausgangslage und wie wir Sie am besten erreichen." },
+        { step: "02", title: "Persönliche Einschätzung", text: "Wir prüfen Bedarf, bestehende Verträge oder Angebote und erklären die relevanten Unterschiede." },
+        { step: "03", title: "Sie entscheiden", text: "Sie erhalten einen klaren nächsten Schritt. Eine Umsetzung erfolgt nur, wenn Sie das möchten." },
       ],
     },
     finder: {
@@ -180,6 +181,7 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
       primary: "Business-Anfrage starten",
       primaryHref: "/anfrage?audience=b2b",
       secondary: "Leistungen ansehen",
+      secondaryHref: "/leistungen",
       whatsapp: "Hallo TarifWerk, ich möchte kurz den Bedarf meines Unternehmens besprechen.",
       checks: ["unverbindliche Bedarfsklärung", "direkter Ansprechpartner", "deutschlandweit"],
       cardEyebrow: "So läuft es ab",

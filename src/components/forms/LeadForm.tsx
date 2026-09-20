@@ -2,6 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { CHANNELS, LOCATION_OPTIONS, SERVICES, SITE, SITUATIONS, TIME_SLOTS, whatsappLink, normalizeTopic } from "@/lib/content";
@@ -12,6 +13,7 @@ type Props = {
   referralCode?: string;
   advisorName?: string;
   defaultTopic?: string;
+  defaultSituation?: string;
   defaultRegion?: string;
   source?: string;
   tone?: "light" | "dark";
@@ -19,7 +21,8 @@ type Props = {
   audience?: "b2c" | "b2b";
 };
 
-export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorName, defaultTopic = "", defaultRegion = "", source, tone = "light", title, audience = "b2c" }: Props) {
+export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorName, defaultTopic = "", defaultSituation = "", defaultRegion = "", source, tone = "light", title, audience = "b2c" }: Props) {
+  const router = useRouter();
   const business = audience === "b2b";
   const dark = tone === "dark";
   const [step, setStep] = useState(0);
@@ -30,7 +33,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
   const [referralConsent, setReferralConsent] = useState(false);
   const [form, setForm] = useState({
     topic: normalizeTopic(defaultTopic),
-    situation: "",
+    situation: SITUATIONS.some((item) => item.value === defaultSituation) ? defaultSituation : "",
     region: defaultRegion.slice(0, 80),
     name: "",
     email: "",
@@ -104,7 +107,12 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         setError(json.error ?? (business ? "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut." : "Etwas ist schiefgelaufen. Bitte versuche es erneut."));
         return;
       }
-      setDone(json.id ?? 0);
+      const leadId = json.id ?? 0;
+      setDone(leadId);
+      const params = new URLSearchParams({ audience, type });
+      if (leadId > 0) params.set("ref", String(leadId));
+      router.push(`/anfrage/danke?${params.toString()}`);
+      return;
     } catch {
       setError("Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie uns telefonisch.");
     } finally {

@@ -3,20 +3,18 @@ import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
 import { AudienceProvider, type AudienceMode } from "@/components/home/AudienceProvider";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
-import { PremiumGuidance } from "@/components/home/PremiumGuidance";
 import { TrustEngine } from "@/components/home/TrustEngine";
+import { DecisionCheck } from "@/components/home/DecisionCheck";
 import { TopicTicker } from "@/components/home/TopicTicker";
 import {
   AudienceEverydaySection,
   AudienceFaqSection,
   AudienceFinalCta,
   AudienceFocusSection,
-  AudienceManifesto,
   AudienceProcess,
   AudienceTrustStrip,
 } from "@/components/home/AudienceSections";
 import { Founder } from "@/components/home/Sections";
-import { ReferralHomeTeaser } from "@/components/referrals/ReferralRewards";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
 import { SERVICES, SITE } from "@/lib/content";
 import { homeAudienceMetadata } from "@/lib/seo";
@@ -66,16 +64,14 @@ export default async function HomePage({ searchParams }: Props) {
       <AudienceProvider initialAudience={initialAudience}>
         <Hero />
         <AudienceTrustStrip />
-        <PremiumGuidance />
-        <TrustEngine />
-        <TopicTicker />
         <AudienceFocusSection />
-        <AudienceEverydaySection />
-        <AudienceManifesto />
-        <FinderTeaser />
         <AudienceProcess />
+        <DecisionCheck />
         <Founder />
-        <ReferralHomeTeaser />
+        <TrustEngine />
+        <FinderTeaser />
+        <AudienceEverydaySection />
+        <TopicTicker />
         <AudienceFaqSection />
         <AudienceFinalCta />
       </AudienceProvider>

@@ -46,7 +46,7 @@ export function Hero() {
           <p key={`${audience}-body`} className="hero-enter mt-6 max-w-2xl text-[16.5px] leading-relaxed text-silver sm:text-[18px] [--hero-delay:280ms]">{copy.body}</p>
           <div className="hero-enter mt-7 flex flex-col gap-3 sm:flex-row sm:items-center [--hero-delay:330ms]">
             <Button href={copy.primaryHref} size="lg" iconRight={<ArrowRight />}>{copy.primary}</Button>
-            <Button href="/leistungen" variant="secondary" size="lg" iconRight={<ArrowRight />}>{copy.secondary}</Button>
+            <Button href={copy.secondaryHref} variant="secondary" size="lg" iconRight={<ArrowRight />}>{copy.secondary}</Button>
           </div>
           <p className="hero-enter mt-3 text-[12.5px] leading-relaxed text-silver/85 [--hero-delay:360ms]">{reassurance}</p>
           <ul key={`${audience}-checks`} className="hero-enter mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver [--hero-delay:390ms]">

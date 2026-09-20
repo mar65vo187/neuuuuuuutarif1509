@@ -3,8 +3,10 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MessageCircle, Phone, Quote } from "lucide-react";
 import { Accordion } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
+import { AdvisorAvatar } from "@/components/advisors/AdvisorCard";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { FAQ, FEATURED_SERVICES, OTHER_SERVICES, PROCESS, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
+import { getAdvisorBySlug } from "@/lib/queries";
 
 /* ------------------------------------------------------------------ */
 /*  Trust-Strip                                                        */
@@ -233,7 +235,17 @@ export function Process() {
 /*  Gründer                                                            */
 /* ------------------------------------------------------------------ */
 
-export function Founder() {
+export async function Founder() {
+  let founderImageUrl: string | null = null;
+  let founderInitials = "ME";
+  try {
+    const founder = await getAdvisorBySlug("marvin-egenolf");
+    founderImageUrl = founder?.imageUrl ?? null;
+    founderInitials = founder?.initials || founderInitials;
+  } catch {
+    // Homepage remains available if advisor storage is temporarily unavailable.
+  }
+
   return (
     <section className="bg-paper-2 py-16 sm:py-20">
       <div className="container-x grid gap-8 lg:grid-cols-12 lg:items-center">
@@ -242,11 +254,18 @@ export function Founder() {
             <div className="absolute inset-0 grid-lines opacity-60" />
             <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-electric/25 blur-[80px]" />
             <div className="relative">
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-full bg-white text-[13px] font-extrabold text-ink">ME</span>
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <AdvisorAvatar
+                  initials={founderInitials}
+                  imageUrl={founderImageUrl}
+                  name={SITE.founder}
+                  size="xl"
+                  className="ring-white/20"
+                />
                 <div>
-                  <p className="font-bold">{SITE.founder}</p>
-                  <p className="text-[12.5px] text-silver">{SITE.founderTitle} · {SITE.hq}</p>
+                  <p className="text-[19px] font-bold">{SITE.founder}</p>
+                  <p className="mt-1 text-[12.5px] text-silver">{SITE.founderTitle} · {SITE.hq}</p>
+                  <p className="mt-2 text-[12px] leading-relaxed text-silver">Persönlicher Ansprechpartner hinter TarifWerk – nicht nur ein Name im Impressum.</p>
                 </div>
               </div>
               <blockquote className="mt-8 text-[clamp(1.45rem,2.8vw,2.15rem)] font-bold leading-[1.08]">

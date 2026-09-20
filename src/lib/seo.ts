@@ -5,8 +5,8 @@ type PageSeo = { title: string; description: string; noindex?: boolean };
 
 export const HOME_AUDIENCE_SEO = {
   b2c: {
-    title: "TarifWerk | Beratung für Tarife, Energie & Versicherungen",
-    description: "Beratung auf Augenhöhe zu Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpen, Versicherungen und Immobilien – persönlich und deutschlandweit.",
+    title: "TarifWerk | Strom, Internet & Versicherungen Wiesbaden",
+    description: "Persönliche Beratung zu Strom, Gas, Internet, Mobilfunk, Versicherungen und weiteren Themen. Kostenlos starten – in Wiesbaden und deutschlandweit.",
   },
   b2b: {
     title: "TarifWerk Business | Telekommunikation, Energie & Absicherung",

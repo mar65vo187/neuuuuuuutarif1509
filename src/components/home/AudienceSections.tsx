@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
 import { useAudience } from "@/components/home/AudienceProvider";
 import { AUDIENCE_COPY, SERVICE_AUDIENCE_COPY } from "@/lib/audience-copy";
-import { FEATURED_SERVICES, OTHER_SERVICES, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
+import { SERVICES, SERVICE_IMAGES, SITE, whatsappLink } from "@/lib/content";
 
 export function AudienceTrustStrip() {
   const { audience } = useAudience();
@@ -31,6 +31,10 @@ export function AudienceFocusSection() {
   const { audience } = useAudience();
   const copy = AUDIENCE_COPY[audience].focus;
   const serviceCopy = SERVICE_AUDIENCE_COPY[audience];
+  const focusKeys = audience === "b2c"
+    ? new Set(["energie", "internet", "versicherungen"])
+    : new Set(["internet", "energie", "versicherungen"]);
+  const focusServices = SERVICES.filter((service) => focusKeys.has(service.key));
 
   return (
     <section className="bg-paper py-16 sm:py-20">
@@ -49,8 +53,8 @@ export function AudienceFocusSection() {
           </Reveal>
         </div>
 
-        <Stagger className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.1}>
-          {FEATURED_SERVICES.map((service, index) => {
+        <Stagger className="mt-10 grid gap-4 md:grid-cols-3" stagger={0.1}>
+          {focusServices.map((service, index) => {
             const image = SERVICE_IMAGES[service.key];
             return (
               <Item key={service.key}>
@@ -60,7 +64,7 @@ export function AudienceFocusSection() {
                       src={image.src}
                       alt={image.alt}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      sizes="(max-width: 768px) 100vw, 33vw"
                       className="object-cover opacity-75 transition-transform duration-700 ease-premium group-hover:scale-[1.035]"
                     />
                   )}
@@ -83,6 +87,11 @@ export function AudienceFocusSection() {
             );
           })}
         </Stagger>
+        <Reveal className="mt-7">
+          <Link href="/leistungen" className="inline-flex items-center gap-2 text-[14px] font-bold text-electric-deep hover:underline">
+            Alle Leistungen ansehen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Reveal>
       </div>
     </section>
   );
@@ -92,6 +101,8 @@ export function AudienceEverydaySection() {
   const { audience } = useAudience();
   const copy = AUDIENCE_COPY[audience].everyday;
   const serviceCopy = SERVICE_AUDIENCE_COPY[audience];
+  const focusKeys = new Set(["energie", "internet", "versicherungen"]);
+  const remainingServices = SERVICES.filter((service) => !focusKeys.has(service.key));
 
   return (
     <section className="bg-paper-2 py-14 sm:py-16">
@@ -103,8 +114,8 @@ export function AudienceEverydaySection() {
           </div>
           <p className="max-w-md text-[14.5px] leading-relaxed text-steel">{copy.text}</p>
         </Reveal>
-        <Stagger className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {OTHER_SERVICES.map((service) => (
+        <Stagger className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {remainingServices.map((service) => (
             <Item key={service.key}>
               <Link href={`/leistungen/${service.slug}`} className="card-hover group flex h-full min-h-[178px] flex-col justify-between rounded-2xl border border-line bg-white p-5">
                 <div>
