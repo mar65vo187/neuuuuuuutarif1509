@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       ilike(leads.name, `%${q}%`),
       ilike(leads.email, `%${q}%`),
       ...(phoneDigits.length >= 4
-        ? [sql`regexp_replace(coalesce(${leads.phone}, ''), '\\D', '', 'g') like ${`%${phoneDigits}%`}`]
+        ? [sql`replace(replace(replace(replace(replace(replace(replace(coalesce(${leads.phone}, ''), ' ', ''), '+', ''), '-', ''), '(', ''), ')', ''), '/', ''), '.', '') like ${`%${phoneDigits}%`}`]
         : [ilike(leads.phone, `%${q}%`)]),
     )!,
   ];
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       sql`lower(trim(concat_ws(' ', coalesce(${customers.firstName}, ''), coalesce(${customers.lastName}, '')))) like lower(${`%${q}%`})`,
       ilike(customers.email, `%${q}%`),
       ...(phoneDigits.length >= 4
-        ? [sql`regexp_replace(coalesce(${customers.phone}, ''), '\\D', '', 'g') like ${`%${phoneDigits}%`}`]
+        ? [sql`replace(replace(replace(replace(replace(replace(replace(coalesce(${customers.phone}, ''), ' ', ''), '+', ''), '-', ''), '(', ''), ')', ''), '/', ''), '.', '') like ${`%${phoneDigits}%`}`]
         : [ilike(customers.phone, `%${q}%`)]),
     )!,
   ];
