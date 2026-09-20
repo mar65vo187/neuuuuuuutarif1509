@@ -1328,7 +1328,7 @@ export async function updateOrder(id: number, input: {
 export async function listTasks(user: SessionUser, status = "open") {
   const conditions = [taskAccess(user)];
   if (status !== "all") conditions.push(eq(tasks.status, status));
-  return db.select({
+  const rows = await db.select({
     task: tasks,
     assigneeName: employees.name,
     overdue: sql<boolean>`coalesce(${tasks.status} = 'open' and ${tasks.dueAt} is not null and ${tasks.dueAt} < now(), false)`,
@@ -1337,6 +1337,82 @@ export async function listTasks(user: SessionUser, status = "open") {
     .where(and(...conditions))
     .orderBy(sql`case when ${tasks.dueAt} is null then 1 else 0 end`, tasks.dueAt, desc(tasks.createdAt))
     .limit(300);
+
+  const leadIds = [...new Set(rows.filter((row) => row.task.entityType === "lead").map((row) => row.task.entityId))];
+  const customerIds = [...new Set(rows.filter((row) => row.task.entityType === "customer").map((row) => row.task.entityId))];
+  const orderIds = [...new Set(rows.filter((row) => row.task.entityType === "order").map((row) => row.task.entityId))];
+
+  const [leadRows, customerRows, orderRows] = await Promise.all([
+    leadIds.length
+      ? db.select({
+          id: leads.id,
+          name: leads.name,
+          topic: leads.topic,
+          phone: leads.phone,
+          email: leads.email,
+          companyName: sql<string | null>`nullif(${leads.meta}->>'companyName','')`,
+        }).from(leads).where(and(inArray(leads.id, leadIds), leadAccessCondition(user)))
+      : Promise.resolve([]),
+    customerIds.length
+      ? db.select({
+          id: customers.id,
+          customerNumber: customers.customerNumber,
+          firstName: customers.firstName,
+          lastName: customers.lastName,
+          companyName: customers.companyName,
+          phone: customers.phone,
+          email: customers.email,
+          city: customers.city,
+        }).from(customers).where(and(inArray(customers.id, customerIds), customerAccess(user), isNull(customers.archivedAt)))
+      : Promise.resolve([]),
+    orderIds.length
+      ? db.select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          customerFirstName: customers.firstName,
+          customerLastName: customers.lastName,
+          customerCompanyName: customers.companyName,
+          providerName: providers.name,
+          productName: products.name,
+        }).from(orders)
+          .innerJoin(customers, eq(orders.customerId, customers.id))
+          .innerJoin(providers, eq(orders.providerId, providers.id))
+          .leftJoin(products, eq(orders.productId, products.id))
+          .where(and(inArray(orders.id, orderIds), orderAccess(user)))
+      : Promise.resolve([]),
+  ]);
+
+  const leadMap = new Map(leadRows.map((row) => [row.id, row]));
+  const customerMap = new Map(customerRows.map((row) => [row.id, row]));
+  const orderMap = new Map(orderRows.map((row) => [row.id, row]));
+
+  return rows.map((row) => {
+    let entityTitle: string | null = null;
+    let entitySubtitle: string | null = null;
+
+    if (row.task.entityType === "lead") {
+      const lead = leadMap.get(row.task.entityId);
+      if (lead) {
+        entityTitle = lead.companyName || lead.name || `Lead #${lead.id}`;
+        entitySubtitle = [lead.companyName ? lead.name : null, lead.topic, lead.phone || lead.email].filter(Boolean).join(" · ");
+      }
+    } else if (row.task.entityType === "customer") {
+      const customer = customerMap.get(row.task.entityId);
+      if (customer) {
+        entityTitle = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.customerNumber;
+        entitySubtitle = [customer.customerNumber, customer.city, customer.phone || customer.email].filter(Boolean).join(" · ");
+      }
+    } else if (row.task.entityType === "order") {
+      const order = orderMap.get(row.task.entityId);
+      if (order) {
+        const customerName = order.customerCompanyName || [order.customerFirstName, order.customerLastName].filter(Boolean).join(" ");
+        entityTitle = customerName || order.orderNumber;
+        entitySubtitle = [order.orderNumber, order.providerName, order.productName].filter(Boolean).join(" · ");
+      }
+    }
+
+    return { ...row, entityTitle, entitySubtitle };
+  });
 }
 
 export async function updateTask(id: number, input: { status?: string; dueAt?: Date | null; priority?: string }, user: SessionUser) {
