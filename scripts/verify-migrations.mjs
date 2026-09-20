@@ -68,6 +68,7 @@ const requiredTables = [
   "referral_rewards",
   "referral_reward_events",
   "public_intake_rate_limits",
+  "marketing_campaign_spend",
   "portal_sessions",
   "portal_login_rate_limits",
 ];
