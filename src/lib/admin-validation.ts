@@ -34,11 +34,11 @@ const accountFields = {
 };
 export const createAccountSchema = z.object({
   ...accountFields,
-  password: z.string().min(12, "Das Passwort muss mindestens 12 Zeichen enthalten.").max(200),
+  password: z.string().min(15, "Das Passwort muss mindestens 15 Zeichen enthalten.").max(200),
 }).strict();
 export const updateAccountSchema = z.object({
   ...accountFields,
-  password: z.string().min(12, "Das Passwort muss mindestens 12 Zeichen enthalten.").max(200).optional(),
+  password: z.string().min(15, "Das Passwort muss mindestens 15 Zeichen enthalten.").max(200).optional(),
 }).strict();
 
 export type AdminProfile = z.infer<typeof publicProfileSchema> & { id: number; name: string; imageUrl: string | null };
