@@ -6,14 +6,15 @@ import {
   BarChart3, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart,
   KeyRound, Lightbulb, ListTodo, LogOut, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, UserRoundCog, UsersRound, WalletCards,
 } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { PortalHelpPanel } from "@/components/portal/PortalHelpPanel";
+import { PortalCommandPalette } from "@/components/portal/PortalCommandPalette";
 import type { SessionUser } from "@/lib/auth";
 import { getPortalHelp } from "@/lib/portal-help";
 
 const NAV = [
-  { href: "/portal", label: "Übersicht", icon: BarChart3, exact: true },
+  { href: "/portal", label: "Command Center", icon: BarChart3, exact: true },
   { href: "/portal/leads", label: "Anfragen & Termine", icon: Inbox },
   { href: "/portal/kunden", label: "Kunden", icon: ContactRound },
   { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness },
@@ -37,6 +38,18 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
   const [navQuery, setNavQuery] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpPath, setHelpPath] = useState(pathname);
+  const [commandOpen, setCommandOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen((value) => !value);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const logout = async () => {
     if (loggingOut.current) return;
@@ -102,10 +115,11 @@ export function PortalShell({ user, children, openCount }: { user: SessionUser; 
             <button type="button" onClick={logout} className="grid h-8 w-8 place-items-center rounded-lg text-silver hover:bg-white/10 hover:text-white" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button>
           </div>
         </div>
-        <button type="button" onClick={logout} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10 lg:hidden" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button>
+        <div className="flex items-center gap-1 lg:hidden"><button type="button" onClick={() => setCommandOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label="Portal durchsuchen"><Search className="h-4 w-4" /></button><button type="button" onClick={logout} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button></div>
       </aside>
-      <div className="min-w-0"><div className="sticky top-0 z-20 hidden border-b border-line bg-paper/90 backdrop-blur-xl lg:block"><div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-8 py-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl border border-electric/15 bg-electric/[0.07] text-electric-deep"><Sparkles className="h-3.5 w-3.5" /></span><div className="min-w-0"><p className="truncate text-[12.5px] font-bold">{currentHelp.title}</p><p className="truncate text-[10.5px] text-steel">{currentHelp.purpose}</p></div></div><button type="button" onClick={() => openHelp()} className="inline-flex h-9 items-center gap-2 rounded-full border border-champagne/25 bg-champagne/8 px-4 text-[12px] font-bold text-ink transition hover:border-champagne/45 hover:bg-champagne/15"><Lightbulb className="h-4 w-4 text-amber-500" />Was kann ich hier machen?</button></div></div><div className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:py-9">{children}</div></div>
+      <div className="min-w-0"><div className="sticky top-0 z-20 hidden border-b border-line bg-paper/90 backdrop-blur-xl lg:block"><div className="mx-auto flex max-w-[1240px] items-center gap-4 px-8 py-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl border border-electric/15 bg-electric/[0.07] text-electric-deep"><Sparkles className="h-3.5 w-3.5" /></span><div className="min-w-0"><p className="truncate text-[12.5px] font-bold">{currentHelp.title}</p><p className="truncate text-[10.5px] text-steel">{currentHelp.purpose}</p></div></div><button type="button" onClick={() => setCommandOpen(true)} className="ml-auto flex h-9 min-w-[240px] items-center gap-2 rounded-xl border border-line bg-white px-3 text-left text-[12px] text-steel shadow-sm transition hover:border-electric/30 hover:text-ink"><Search className="h-4 w-4 text-electric-deep" /><span className="flex-1">Alles durchsuchen…</span><kbd className="rounded-md border border-line bg-paper px-1.5 py-0.5 text-[10px] font-bold text-steel">⌘K</kbd></button><button type="button" onClick={() => openHelp()} className="inline-flex h-9 items-center gap-2 rounded-full border border-champagne/25 bg-champagne/8 px-4 text-[12px] font-bold text-ink transition hover:border-champagne/45 hover:bg-champagne/15"><Lightbulb className="h-4 w-4 text-amber-500" />Hilfe</button></div></div><div className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:py-9">{children}</div></div>
       <button type="button" onClick={() => openHelp()} className="fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-2xl border border-champagne/30 bg-ink text-champagne-soft shadow-[0_18px_50px_-15px_rgba(6,11,22,0.65)] lg:hidden" aria-label={`Info zu ${currentHelp.title}`}><Lightbulb className="h-5 w-5" /></button>
+      <PortalCommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} role={user.role} />
       <PortalHelpPanel topic={selectedHelp} open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
