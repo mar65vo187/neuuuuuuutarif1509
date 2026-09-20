@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlarmClock, ArrowRight, Network, PackageCheck, Sparkles } from "lucide-react";
+import { AlarmClock, ArrowRight, Mail, Network, PackageCheck, Phone, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BulkToolbar } from "@/components/portal/BulkToolbar";
 import { StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
@@ -14,6 +14,8 @@ type Row = {
   region: string | null;
   preferredChannel: string | null;
   preferredTime: string | null;
+  phone: string | null;
+  email: string | null;
   createdAt: string;
   advisorName: string | null;
   assignedName: string | null;
@@ -91,6 +93,12 @@ export function LeadBulkList({
                 </div>
                 {lead.companyName && <p className="mt-1 text-[12.5px] font-bold text-platinum">{lead.companyName}</p>}
                 <p className="mt-0.5 truncate text-[13.5px] text-steel">{lead.topic ?? "Ohne Thema"} · {lead.region ?? "Region offen"} · {lead.preferredChannel ?? "Kanal offen"}{lead.preferredTime ? " · Wunsch: " + lead.preferredTime : ""}</p>
+                {(lead.phone || lead.email) && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11.5px]">
+                    {lead.phone && <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper/70 px-2.5 py-1 font-semibold text-platinum"><Phone className="h-3 w-3 text-electric-soft" /> {lead.phone}</span>}
+                    {lead.email && <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-paper/70 px-2.5 py-1 font-semibold text-platinum"><Mail className="h-3 w-3 shrink-0 text-electric-soft" /><span className="max-w-[260px] truncate">{lead.email}</span></span>}
+                  </div>
+                )}
 
                 {(lead.existingProductNames.length > 0 || lead.interestProductNames.length > 0 || lead.soldProductNames.length > 0) && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
