@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { referrers } from "@/db/referral-schema";
 import { isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
-import { referralRateLimited, referralTokenHash } from "@/lib/referrals";
+import { referralRateLimit, referralTokenHash } from "@/lib/referrals";
 import { REFERRAL_AVATAR_KEYS } from "@/lib/gamification-rules";
 
 export const dynamic = "force-dynamic";
@@ -22,8 +22,18 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 100) || "unknown";
-  if (referralRateLimited(ip)) return NextResponse.json({ ok: false, error: "Bitte versuche es später erneut." }, { status: 429, headers: { "Retry-After": "3600" } });
+  const networkKey = (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")?.trim()
+    || "unknown"
+  ).slice(0, 100);
+  const limit = await referralRateLimit(networkKey);
+  if (limit.limited) {
+    return NextResponse.json(
+      { ok: false, error: "Bitte versuche es später erneut." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
+  }
   try {
     const input = schema.safeParse(await readJsonBody(request, 4096));
     if (!input.success) return NextResponse.json({ ok: false, error: "Bitte Name, E-Mail, Telefonnummer, Wunschname, Avatar und Zustimmung vollständig angeben." }, { status: 422 });
