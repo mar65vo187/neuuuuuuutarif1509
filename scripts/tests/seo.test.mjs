@@ -15,7 +15,7 @@ function load(path, dependencies = {}) {
   return loaded.exports;
 }
 const content = load("../../src/lib/content.ts");
-const { PAGE_SEO, pageMetadata, shortenSeoText } = load("../../src/lib/seo.ts", { "@/lib/content": content });
+const { AUDIENCE_PAGE_SEO, PAGE_SEO, REQUEST_AUDIENCE_SEO, pageMetadata, shortenSeoText } = load("../../src/lib/seo.ts", { "@/lib/content": content });
 
 test("every public SEO title, description, canonical and social preview is route-specific", () => {
   const pages = [...Object.entries(PAGE_SEO), ...content.SERVICES.map((s) => [`/leistungen/${s.slug}`, { title: s.seoTitle, description: s.seoDescription }])];
@@ -31,6 +31,25 @@ test("every public SEO title, description, canonical and social preview is route
     assert.equal(meta.openGraph.url, meta.alternates.canonical);
     assert.ok(meta.openGraph.images[0].url.startsWith(content.SITE.url + "/"));
     assert.equal(meta.robots.index, !details.noindex);
+  }
+});
+
+test("audience-specific SEO variants stay concise and canonical", () => {
+  const variants = [
+    ...Object.entries(AUDIENCE_PAGE_SEO).flatMap(([path, value]) => [
+      [path, "b2c", value.b2c],
+      [path, "b2b", value.b2b],
+    ]),
+    ["/anfrage", "b2c", REQUEST_AUDIENCE_SEO.b2c],
+    ["/anfrage", "b2b", REQUEST_AUDIENCE_SEO.b2b],
+  ];
+
+  for (const [path, audience, details] of variants) {
+    assert.ok(details.title.length < 60, path + " " + audience + " title");
+    assert.ok(details.description.length < 155, path + " " + audience + " description");
+    const meta = pageMetadata(path, details, null, path);
+    assert.equal(meta.alternates.canonical, new URL(path, content.SITE.url).href);
+    assert.equal(meta.openGraph.url, meta.alternates.canonical);
   }
 });
 
