@@ -86,7 +86,12 @@
   .portal-shell .field:focus { border-color: rgba(79, 141, 255, 0.72); background: rgba(7, 18, 35, 0.92); }
   .portal-shell .label { color: #cbd7e8; }
   .portal-shell .text-steel { color: var(--portal-muted); }
-  .portal-shell [class*="text-steel/"] { color: rgba(159, 176, 199, 0.72); }
+  .portal-shell [class*="text-steel/"] { color: rgba(159, 176, 199, 0.78); }
+  .portal-shell .text-electric-deep { color: #8fb8ff; }
+  .portal-shell .text-electric { color: #6fa3ff; }
+  .portal-shell .text-electric-soft { color: #a9c8ff; }
+  .portal-shell .text-champagne { color: #e7c98d; }
+  .portal-shell .text-champagne-soft { color: #f2dbad; }
   .portal-shell .text-ink { color: #f4f8ff; }
   .portal-shell .text-ink-700 { color: #d8e4f4; }
   .portal-shell .border-line { border-color: var(--portal-line); }
@@ -96,6 +101,22 @@
   .portal-shell .bg-paper { background-color: rgba(7, 17, 32, 0.66); }
   .portal-shell .bg-paper-2 { background-color: rgba(12, 25, 45, 0.86); }
   .portal-shell [class*="bg-paper/"] { background-color: rgba(7, 17, 32, 0.58); }
+  .portal-shell .bg-amber-50 { background-color: rgba(245, 158, 11, 0.10); }
+  .portal-shell [class*="bg-amber-50/"] { background-color: rgba(245, 158, 11, 0.08); }
+  .portal-shell .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.10); }
+  .portal-shell [class*="bg-emerald-50/"] { background-color: rgba(16, 185, 129, 0.08); }
+  .portal-shell .bg-red-50 { background-color: rgba(239, 68, 68, 0.10); }
+  .portal-shell [class*="bg-red-50/"] { background-color: rgba(239, 68, 68, 0.08); }
+  .portal-shell .bg-violet-50 { background-color: rgba(139, 92, 246, 0.10); }
+  .portal-shell [class*="bg-violet-50/"] { background-color: rgba(139, 92, 246, 0.08); }
+  .portal-shell .text-amber-700,
+  .portal-shell .text-amber-800 { color: #f6c768; }
+  .portal-shell .text-emerald-700,
+  .portal-shell .text-emerald-800 { color: #72e0b5; }
+  .portal-shell .text-red-700,
+  .portal-shell .text-red-800 { color: #ff9a9a; }
+  .portal-shell .text-violet-700,
+  .portal-shell .text-violet-800 { color: #c9b5ff; }
   .portal-shell .premium-card { border-color: var(--portal-line); background: var(--portal-surface); }
   .portal-shell option { background: #0b172b; color: #f4f8ff; }
   .portal-shell input[type="date"],
