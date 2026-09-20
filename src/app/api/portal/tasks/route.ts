@@ -46,28 +46,31 @@ export async function POST(request: NextRequest) {
       assignee = target.id;
     }
 
-    const [created] = await db.insert(tasks).values({
-      entityType: input.entityType,
-      entityId,
-      assignedToEmployeeId: assignee,
-      createdByEmployeeId: user.id,
-      type: "follow_up",
-      title: input.title,
-      description: input.description || null,
-      priority: input.priority,
-      status: "open",
-      dueAt: input.dueAt ? new Date(input.dueAt) : null,
-    }).returning({ id: tasks.id });
+    const createdId = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(tasks).values({
+        entityType: input.entityType,
+        entityId,
+        assignedToEmployeeId: assignee,
+        createdByEmployeeId: user.id,
+        type: "follow_up",
+        title: input.title,
+        description: input.description || null,
+        priority: input.priority,
+        status: "open",
+        dueAt: input.dueAt ? new Date(input.dueAt) : null,
+      }).returning({ id: tasks.id });
 
-    await writeAudit(db, user.id, "task.create", "task", String(created.id), undefined, {
-      title: input.title,
-      priority: input.priority,
-      assignedToEmployeeId: assignee,
-      entityType: input.entityType,
-      entityId,
+      await writeAudit(tx, user.id, "task.create", "task", String(created.id), undefined, {
+        title: input.title,
+        priority: input.priority,
+        assignedToEmployeeId: assignee,
+        entityType: input.entityType,
+        entityId,
+      });
+      return created.id;
     });
 
-    return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
+    return NextResponse.json({ ok: true, id: createdId }, { status: 201 });
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
     const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: unknown }).status) : 500;
