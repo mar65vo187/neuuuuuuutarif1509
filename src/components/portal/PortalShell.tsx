@@ -18,7 +18,7 @@ const NAV_SECTIONS = [
     label: "Täglich arbeiten",
     items: [
       { href: "/portal", label: "Übersicht & Fokus", icon: BarChart3, exact: true },
-      { href: "/portal/assistent", label: "Arbeitsassistent", icon: BrainCircuit },
+      { href: "/portal/assistent", label: "KI & Arbeitsassistent", icon: BrainCircuit },
       { href: "/portal/leads", label: "Leads & Termine", icon: Inbox },
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.create", "order.edit"] },
