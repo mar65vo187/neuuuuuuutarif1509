@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, BriefcaseBusiness, CalendarClock, ContactRound, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
+  ArrowRight, BrainCircuit, BriefcaseBusiness, CalendarClock, ContactRound, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
   PackageSearch, Search, Settings2, X,
 } from "lucide-react";
 
@@ -45,6 +45,7 @@ export function PortalCommandPalette({
     const permissionSet = new Set(permissions);
     const can = (...keys: string[]) => permissionSet.has("*") || keys.some((key) => permissionSet.has(key));
     return [
+      { id: "assistant", title: "Arbeitsassistent", subtitle: "Erklärbare Prioritäten aus CRM-Daten", href: "/portal/assistent", icon: BrainCircuit },
       { id: "today-followups", title: "Heute nachfassen", subtitle: "Fällige Wiedervorlagen direkt abarbeiten", href: "/portal/leads?next=today&sort=next", icon: CalendarClock },
       { id: "pipeline", title: "Lead-Pipeline", subtitle: "Leads nach Vertriebsphase steuern", href: "/portal/leads/pipeline", icon: LayoutDashboard },
       ...(can("lead.edit") ? [{ id: "new-lead", title: "Neue Anfrage anlegen", subtitle: "Lead manuell erfassen", href: "/portal/leads/neu", icon: Inbox }] : []),
