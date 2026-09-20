@@ -1,6 +1,7 @@
 "use client";
 
 import { Flag, Maximize2, RefreshCw, Trophy, Volume2, VolumeX } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EMPLOYEE_RACE_RULES, REFERRAL_AVATARS } from "@/lib/gamification-rules";
 
@@ -145,7 +146,7 @@ export function PerformanceGameDashboard({ initial }: { initial: Payload }) {
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/10 text-[11px] font-extrabold text-white">
-                      {row.imageUrl ? <img src={row.imageUrl} alt="" className="h-full w-full object-cover" /> : initials(row.name)}
+                      {row.imageUrl ? <span className="relative h-full w-full"><Image src={row.imageUrl} alt="" fill sizes="36px" unoptimized className="object-cover" /></span> : initials(row.name)}
                     </span>
                     <div><p className="text-[13px] font-extrabold text-white">{row.rank}. {row.name}</p><p className="text-[10.5px] text-silver">{row.qualifiedLeads} Leads · {row.b2bLeads} B2B · {row.b2cCloses + row.b2bCloses} Abschlüsse</p></div>
                   </div>
