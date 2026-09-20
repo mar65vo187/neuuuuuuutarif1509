@@ -18,6 +18,7 @@ const requiredTables = [
   "referrals",
   "customers",
   "customer_lead_links",
+  "customer_referrals",
   "customer_consents",
   "providers",
   "products",
