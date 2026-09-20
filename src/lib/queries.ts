@@ -64,7 +64,8 @@ export async function listLeads(filter?: {
   const conditions = [leadAccessCondition(user ?? await requireUser())];
   if (filter?.status && (leads.status.enumValues as readonly string[]).includes(filter.status)) conditions.push(eq(leads.status, filter.status as typeof leads.status.enumValues[number]));
   if (filter?.type && (leads.type.enumValues as readonly string[]).includes(filter.type)) conditions.push(eq(leads.type, filter.type as typeof leads.type.enumValues[number]));
-  if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
+  if (filter?.priority === "attention") conditions.push(sql`${leads.priority} in ('high','hot')`);
+  else if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
   if (filter?.next === "overdue") conditions.push(sql`${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren')`);
   if (filter?.next === "today") conditions.push(sql`${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren')`);
   if (filter?.next === "missing") conditions.push(sql`${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren')`);
