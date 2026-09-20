@@ -173,7 +173,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       key: `lead-${lead.id}`,
       kind: "lead",
       priority: age >= 3 * DAY ? "critical" : "high",
-      title: lead.name,
+      title: lead.name || `Lead #${lead.id}`,
       subtitle: `${lead.topic ?? "Anfrage"} · seit mehr als ${age >= 3 * DAY ? "72" : "24"} Stunden neu`,
       href: `/portal/leads/${lead.id}`,
       timestamp: lead.createdAt.toISOString(),
