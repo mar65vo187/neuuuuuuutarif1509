@@ -23,6 +23,18 @@ test("race scoring uses creator-owned qualified leads and real activations", () 
   assert.match(engine, /timezone\('Europe\/Berlin', now\(\)\)/);
 });
 
+test("challenge history is reproducible for a selected month", () => {
+  const engine = read("src/lib/gamification.ts");
+  const api = read("src/app/api/portal/games/route.ts");
+  const dashboard = read("src/components/portal/PerformanceGameDashboard.tsx");
+  assert.match(engine, /gameMonthDate/);
+  assert.match(engine, /\$1::timestamptz/);
+  assert.match(api, /searchParams\.get\("month"\)/);
+  assert.match(api, /gameMonthDate\(month\)/);
+  assert.match(dashboard, /type="month"/);
+  assert.match(dashboard, /\/api\/portal\/games\?month=/);
+});
+
 test("referral tower is opt-in and exposes no contact fields", () => {
   const engine = read("src/lib/gamification.ts");
   const api = read("src/app/api/referrals/tower/route.ts");
