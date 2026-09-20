@@ -15,6 +15,15 @@ test("TarifWerk brand schema uses a stable square search asset", () => {
   assert.match(siteLayout, /postalCode/);
 });
 
+test("public search identity uses one canonical production host", () => {
+  const proxy = read("src/proxy.ts");
+  const robots = read("src/app/robots.ts");
+  assert.match(proxy, /request\.nextUrl\.hostname === "tarifwerk\.eu"/);
+  assert.match(proxy, /canonical\.hostname = "www\.tarifwerk\.eu"/);
+  assert.match(proxy, /NextResponse\.redirect\(canonical, 308\)/);
+  assert.match(robots, /host: SITE\.url/);
+});
+
 test("profile image pipeline is editable and normalized to one size", () => {
   const editor = read("src/components/portal/ImageCropEditor.tsx");
   const advisorRoute = read("src/app/api/portal/admin/advisors/[id]/image/route.ts");
