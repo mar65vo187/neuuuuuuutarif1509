@@ -3,6 +3,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees } from "@/db/schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
+import { employeeRoleAssignments, permissions, roleDefinitions, rolePermissions } from "@/db/enterprise-schema";
 
 export const accountSelection = {
   id: employees.id,
@@ -21,6 +22,43 @@ export const accountSelection = {
 export async function listAdminAccounts() {
   return db.select({ ...accountSelection, advisor: advisors }).from(employees)
     .leftJoin(advisors, eq(employees.advisorId, advisors.id)).orderBy(asc(employees.name));
+}
+
+
+export async function listEnterpriseRoleState() {
+  const [roles, grants, assignments] = await Promise.all([
+    db.select({
+      id: roleDefinitions.id,
+      key: roleDefinitions.key,
+      name: roleDefinitions.name,
+      description: roleDefinitions.description,
+      system: roleDefinitions.system,
+    }).from(roleDefinitions).orderBy(asc(roleDefinitions.name)),
+    db.select({
+      roleId: rolePermissions.roleId,
+      permissionKey: permissions.key,
+      permissionDescription: permissions.description,
+    }).from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id)),
+    db.select({
+      employeeId: employeeRoleAssignments.employeeId,
+      roleId: employeeRoleAssignments.roleId,
+    }).from(employeeRoleAssignments),
+  ]);
+
+  return {
+    roles: roles.map((role) => ({
+      ...role,
+      permissions: grants
+        .filter((grant) => grant.roleId === role.id)
+        .map((grant) => ({
+          key: grant.permissionKey,
+          description: grant.permissionDescription ?? grant.permissionKey,
+        }))
+        .sort((a, b) => a.key.localeCompare(b.key)),
+    })),
+    assignments,
+  };
 }
 
 export async function authorizeAdmin(request: NextRequest, mutation = true) {
