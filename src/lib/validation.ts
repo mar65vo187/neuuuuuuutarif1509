@@ -29,6 +29,20 @@ export const leadSchema = z.object({
   }
 });
 
+export const portalLeadCreateSchema = z.intersection(
+  leadSchema,
+  z.object({
+    status: z.enum(["neu", "kontaktiert", "termin_bestaetigt", "in_beratung", "abgeschlossen", "verloren"]).default("neu"),
+    priority: z.enum(["low", "normal", "high", "hot"]).default("normal"),
+    contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).default("open"),
+    nextActionAt: z.string().datetime().nullable().optional(),
+    tags: z.array(trimmed(40)).max(12).default([]),
+    confirmedSlot: trimmed(160).optional().or(z.literal("")),
+    productId: z.number().int().positive().optional(),
+    productRelation: z.enum(["interest", "existing", "sold"]).optional(),
+  }),
+);
+
 export type LeadInput = z.infer<typeof leadSchema>;
 
 export const loginSchema = z.object({
@@ -42,7 +56,20 @@ export const leadUpdateSchema = z.object({
   confirmedSlot: trimmed(160).optional(),
   assignToMe: z.boolean().optional(),
   note: trimmed(2000).optional(),
-}).refine((data) => Boolean(data.status || data.confirmedSlot || data.assignToMe || data.note), {
+  priority: z.enum(["low", "normal", "high", "hot"]).optional(),
+  contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).optional(),
+  nextActionAt: z.string().datetime().nullable().optional(),
+  tags: z.array(trimmed(40)).max(12).optional(),
+}).refine((data) => Boolean(
+  data.status ||
+  data.confirmedSlot ||
+  data.assignToMe ||
+  data.note ||
+  data.priority ||
+  data.contactOutcome ||
+  data.nextActionAt !== undefined ||
+  data.tags
+), {
   message: "Bitte gib eine Änderung an.",
 });
 

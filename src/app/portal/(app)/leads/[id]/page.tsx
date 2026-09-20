@@ -3,11 +3,27 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ArrowLeft, FilePlus2, Mail, MessageCircle, Phone } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
+import { LeadProductManager } from "@/components/portal/LeadProductManager";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
-import { getLead, getLeadNotes } from "@/lib/queries";
-import { SITUATIONS } from "@/lib/content";
+import { getLead, getLeadNotes, getLeadProductLinks, listLeadProductOptions } from "@/lib/queries";
+import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, SITUATIONS } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
+
+function toBerlinDateTimeInput(value: Date | null) {
+  if (!value) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: raw } = await params;
@@ -17,7 +33,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/leads/${id}`)}`);
   const lead = await getLead(id, user);
   if (!lead) notFound();
-  const notes = await getLeadNotes(id);
+  const [notes, leadProducts, productOptions] = await Promise.all([
+    getLeadNotes(id),
+    getLeadProductLinks(id, user),
+    listLeadProductOptions(),
+  ]);
   const situation = SITUATIONS.find((s) => s.value === lead.situation)?.label ?? lead.situation;
   const waDigits = lead.phone?.replace(/[^\d+]/g, "").replace(/^\+|^00/, "").replace(/^0/, "49").replace(/\D/g, "");
   const meta = (lead.meta ?? {}) as Record<string, unknown>;
@@ -55,6 +75,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 ["Telefon", lead.phone],
                 ["Angelegt von", lead.createdByName ?? "Website / System"],
                 ["Zuständig", lead.assignedName ?? "noch niemand"],
+                ["Priorität", LEAD_PRIORITY_LABELS[lead.priority] ?? lead.priority],
+                ["Gesprächsausgang", LEAD_CONTACT_OUTCOME_LABELS[lead.contactOutcome] ?? lead.contactOutcome],
+                ["Letzter Kontakt", lead.lastContactAt ? formatDate(lead.lastContactAt) : "–"],
+                ["Nächste Aktion", lead.nextActionAt ? formatDate(lead.nextActionAt) : "–"],
               ].map(([k, v]) => (
                 <div key={k as string}>
                   <dt className="text-[12px] font-semibold uppercase tracking-wider text-steel">{k}</dt>
@@ -71,9 +95,14 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 <p className="mt-1 whitespace-pre-line text-[14.5px] leading-relaxed">{lead.message}</p>
               </div>
             )}
+            {lead.tags.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {lead.tags.map((tag) => <span key={tag} className="chip border-champagne/25 bg-champagne/10 text-ink-700">{tag}</span>)}
+              </div>
+            )}
             {lead.confirmedSlot && (
               <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-[14px] text-emerald-900">
-                <span className="font-bold">Bestätigter Termin:</span> {lead.confirmedSlot} <span className="text-emerald-800/70">(bestätigt am {formatDate(lead.confirmedAt)})</span>
+                <span className="font-bold">Termin:</span> {lead.confirmedSlot} <span className="text-emerald-800/70">(eingetragen am {formatDate(lead.confirmedAt)})</span>
               </div>
             )}
           </Card>
@@ -91,11 +120,40 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </Card>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <h2 className="text-[15px] font-extrabold">Produkte & Potenzial</h2>
+            <p className="mt-1 text-[12px] text-steel">Direkt sichtbar: vorhandene Produkte, Interessen und Abschlüsse.</p>
+            <div className="mt-4">
+              <LeadProductManager
+                leadId={lead.id}
+                products={productOptions}
+                links={leadProducts.map((item) => ({
+                  productId: item.productId,
+                  relation: item.relation,
+                  note: item.note,
+                  productName: item.productName,
+                  category: item.category,
+                  providerName: item.providerName,
+                }))}
+              />
+            </div>
+          </Card>
+
           <Card>
             <h2 className="text-[15px] font-extrabold">Bearbeiten</h2>
             <div className="mt-4">
-              <LeadActions leadId={lead.id} status={lead.status} confirmedSlot={lead.confirmedSlot} assigned={Boolean(lead.assignedEmployeeId)} isAppointment={lead.type === "termin"} />
+              <LeadActions
+                leadId={lead.id}
+                status={lead.status}
+                confirmedSlot={lead.confirmedSlot}
+                assigned={Boolean(lead.assignedEmployeeId)}
+                isAppointment={lead.type === "termin"}
+                priority={lead.priority}
+                contactOutcome={lead.contactOutcome}
+                nextActionInput={toBerlinDateTimeInput(lead.nextActionAt)}
+                tags={lead.tags}
+              />
             </div>
           </Card>
         </div>

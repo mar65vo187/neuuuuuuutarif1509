@@ -461,11 +461,28 @@ export const TIME_SLOTS = [
 
 export const LEAD_STATUS_LABELS: Record<string, string> = {
   neu: "Neu",
-  kontaktiert: "Kontaktiert",
-  termin_bestaetigt: "Termin bestätigt",
+  kontaktiert: "Angerufen",
+  termin_bestaetigt: "Terminiert",
   in_beratung: "In Beratung",
   abgeschlossen: "Abgeschlossen",
   verloren: "Nicht zustande gekommen",
+};
+
+export const LEAD_PRIORITY_LABELS: Record<string, string> = {
+  low: "Niedrig",
+  normal: "Normal",
+  high: "Hoch",
+  hot: "Hot Lead",
+};
+
+export const LEAD_CONTACT_OUTCOME_LABELS: Record<string, string> = {
+  open: "Noch nicht angerufen",
+  reached: "Erreicht",
+  no_answer: "Keine Antwort",
+  callback: "Rückruf vereinbart",
+  voicemail: "Mailbox",
+  wrong_number: "Falsche Nummer",
+  not_interested: "Kein Interesse",
 };
 
 export const LEAD_TYPE_LABELS: Record<string, string> = {

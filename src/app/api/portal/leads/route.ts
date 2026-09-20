@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, leadNotes, leads } from "@/db/schema";
+import { leadProductLinks, products, tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
-import { leadSchema } from "@/lib/validation";
+import { portalLeadCreateSchema } from "@/lib/validation";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +22,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: error instanceof RequestBodyError ? error.message : "Ungültige Anfrage." }, { status: error instanceof RequestBodyError ? error.status : 400 });
   }
 
-  const parsed = leadSchema.safeParse({ ...(body as object), consent: true, source: "portal" });
+  const parsed = portalLeadCreateSchema.safeParse({ ...(body as object), consent: true, source: "portal" });
   if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Bitte die Eingaben prüfen." }, { status: 422 });
   const data = parsed.data;
+  if (data.status === "termin_bestaetigt" && !data.confirmedSlot?.trim()) {
+    return NextResponse.json({ ok: false, error: "Für einen terminierten Lead bitte eine Terminzeit eintragen." }, { status: 422 });
+  }
 
   try {
     let advisorId: number | null = null;
@@ -33,8 +37,21 @@ export async function POST(request: NextRequest) {
       advisorId = advisor.id;
     }
     const created = await db.transaction(async (tx) => {
+      let selectedProduct: { id: number; name: string } | null = null;
+      if (data.productId) {
+        const [product] = await tx.select({ id: products.id, name: products.name }).from(products)
+          .where(and(eq(products.id, data.productId), eq(products.active, true))).limit(1);
+        if (!product) throw new Error("Das ausgewählte Produkt ist nicht verfügbar.");
+        selectedProduct = product;
+      }
+
+      const now = new Date();
+      const nextActionAt = data.nextActionAt ? new Date(data.nextActionAt) : null;
+      const closed = ["abgeschlossen", "verloren"].includes(data.status);
+
       const [lead] = await tx.insert(leads).values({
         type: data.type,
+        status: data.status,
         name: data.name,
         email: data.email,
         phone: data.phone || null,
@@ -48,16 +65,70 @@ export async function POST(request: NextRequest) {
         assignedEmployeeId: user.id,
         createdByEmployeeId: user.id,
         source: "portal",
+        priority: data.priority,
+        contactOutcome: data.contactOutcome,
+        nextActionAt: closed ? null : nextActionAt,
+        lastContactAt: data.contactOutcome !== "open" || data.status === "kontaktiert" ? now : null,
+        closedAt: closed ? now : null,
+        tags: [...new Set(data.tags.map((tag) => tag.trim()).filter(Boolean))].slice(0, 12),
+        confirmedSlot: data.status === "termin_bestaetigt" ? data.confirmedSlot || null : null,
+        confirmedAt: data.status === "termin_bestaetigt" ? now : null,
       }).returning({ id: leads.id });
-      await tx.insert(leadNotes).values({ leadId: lead.id, employeeId: user.id, kind: "system", body: `${user.name} hat den Lead im Mitarbeiterportal angelegt.` });
-      await writeAudit(tx, user.id, "lead.created", "lead", lead.id, undefined, { source: "portal", type: data.type });
-      await emitEvent(tx, "lead.created", "lead", lead.id, { assignedEmployeeId: user.id, source: "portal" });
-      await runAutomationEvent(tx, "lead.created", "lead", lead.id, { assignedEmployeeId: user.id, source: "portal" }, user.id);
+
+      const systemNotes = [`${user.name} hat den Lead im Mitarbeiterportal angelegt.`];
+      if (selectedProduct && data.productRelation) {
+        await tx.insert(leadProductLinks).values({
+          leadId: lead.id,
+          productId: selectedProduct.id,
+          relation: data.productRelation,
+          createdByEmployeeId: user.id,
+        });
+        systemNotes.push(`Produktzuordnung beim Anlegen: ${selectedProduct.name} · ${data.productRelation}.`);
+      }
+
+      if (!closed && nextActionAt) {
+        await tx.insert(tasks).values({
+          entityType: "lead",
+          entityId: lead.id,
+          assignedToEmployeeId: user.id,
+          createdByEmployeeId: user.id,
+          type: "crm_follow_up",
+          title: `Lead nachfassen: ${data.name}`,
+          priority: data.priority === "hot" ? "critical" : data.priority === "high" ? "high" : "normal",
+          status: "open",
+          dueAt: nextActionAt,
+        });
+        systemNotes.push("Wiedervorlage wurde automatisch als Aufgabe angelegt.");
+      }
+
+      await tx.insert(leadNotes).values(systemNotes.map((note) => ({ leadId: lead.id, employeeId: user.id, kind: "system", body: note })));
+      await writeAudit(tx, user.id, "lead.created", "lead", lead.id, undefined, {
+        source: "portal",
+        type: data.type,
+        status: data.status,
+        priority: data.priority,
+        contactOutcome: data.contactOutcome,
+        nextActionAt: closed ? null : nextActionAt,
+        productId: selectedProduct?.id ?? null,
+        productRelation: data.productRelation ?? null,
+      });
+      await emitEvent(tx, "lead.created", "lead", lead.id, {
+        assignedEmployeeId: user.id,
+        source: "portal",
+        status: data.status,
+        priority: data.priority,
+      });
+      await runAutomationEvent(tx, "lead.created", "lead", lead.id, {
+        assignedEmployeeId: user.id,
+        source: "portal",
+        status: data.status,
+        priority: data.priority,
+      }, user.id);
       return lead;
     });
     return NextResponse.json({ ok: true, id: created.id });
-  } catch {
+  } catch (error) {
     console.error("[portal/leads] insert failed");
-    return NextResponse.json({ ok: false, error: "Der Lead konnte gerade nicht gespeichert werden." }, { status: 503 });
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Der Lead konnte gerade nicht gespeichert werden." }, { status: 503 });
   }
 }

@@ -1,22 +1,49 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CalendarCheck, Check, Loader2, UserPlus } from "lucide-react";
+import { AlarmClock, CalendarCheck, Check, Flame, Loader2, PhoneCall, Save, Tags, UserPlus } from "lucide-react";
 import { useRef, useState } from "react";
-import { LEAD_STATUS_LABELS } from "@/lib/content";
+import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
 import { STATUS_STYLES } from "./ui";
 
-type Props = { leadId: number; status: string; confirmedSlot: string | null; assigned: boolean; isAppointment: boolean };
+type Props = {
+  leadId: number;
+  status: string;
+  confirmedSlot: string | null;
+  assigned: boolean;
+  isAppointment: boolean;
+  priority: string;
+  contactOutcome: string;
+  nextActionInput: string;
+  tags: string[];
+};
 
-export function LeadActions({ leadId, status, confirmedSlot, assigned, isAppointment }: Props) {
+function localDateTimeValue(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function LeadActions({
+  leadId,
+  status,
+  confirmedSlot,
+  assigned,
+  isAppointment,
+  priority,
+  contactOutcome,
+  nextActionInput,
+  tags,
+}: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [slot, setSlot] = useState(confirmedSlot ?? "");
   const [note, setNote] = useState("");
+  const [crmPriority, setCrmPriority] = useState(priority);
+  const [outcome, setOutcome] = useState(contactOutcome);
+  const [nextAction, setNextAction] = useState(nextActionInput);
+  const [tagText, setTagText] = useState(tags.join(", "));
   const saving = useRef(false);
-  const [previousSlot, setPreviousSlot] = useState(confirmedSlot);
-  if (confirmedSlot !== previousSlot) { setPreviousSlot(confirmedSlot); setSlot(confirmedSlot ?? ""); }
 
   const patch = async (key: string, body: Record<string, unknown>) => {
     if (saving.current) return false;
@@ -28,7 +55,13 @@ export function LeadActions({ leadId, status, confirmedSlot, assigned, isAppoint
     setBusy(key);
     setError(null);
     try {
-      const res = await fetch(`/api/portal/leads/${leadId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body.status === "termin_bestaetigt" ? { ...body, confirmedSlot: slot.trim() } : body), signal: AbortSignal.timeout(15000) });
+      const payload = body.status === "termin_bestaetigt" ? { ...body, confirmedSlot: slot.trim() } : body;
+      const res = await fetch(`/api/portal/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15000),
+      });
       if (res.status === 401) {
         window.location.replace(`/portal/login?next=${encodeURIComponent(`/portal/leads/${leadId}`)}`);
         return false;
@@ -49,6 +82,23 @@ export function LeadActions({ leadId, status, confirmedSlot, assigned, isAppoint
     }
   };
 
+  function setFollowUp(days: number) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    date.setHours(9, 0, 0, 0);
+    setNextAction(localDateTimeValue(date));
+  }
+
+  const saveCrm = () => {
+    const parsedTags = [...new Set(tagText.split(",").map((tag) => tag.trim()).filter(Boolean))].slice(0, 12);
+    return patch("crm", {
+      priority: crmPriority,
+      contactOutcome: outcome,
+      nextActionAt: nextAction ? new Date(nextAction).toISOString() : null,
+      tags: parsedTags,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {!assigned && (
@@ -58,36 +108,93 @@ export function LeadActions({ leadId, status, confirmedSlot, assigned, isAppoint
       )}
 
       <div>
-        <p className="label">Status</p>
+        <p className="label">Pipeline-Status</p>
         <div className="flex flex-wrap gap-2">
-          {Object.entries(LEAD_STATUS_LABELS).map(([k, label]) => (
+          {Object.entries(LEAD_STATUS_LABELS).map(([key, label]) => (
             <button
-              key={k}
+              key={key}
               type="button"
-              disabled={busy !== null || k === status}
-              onClick={() => patch(`status:${k}`, { status: k, confirmedSlot: k === "termin_bestaetigt" && slot ? slot : undefined })}
-              className={`chip h-9 px-3.5 transition-all disabled:cursor-default ${k === status ? STATUS_STYLES[k] + " ring-2 ring-offset-1 ring-ink/10" : "border-line bg-white text-ink-700 hover:border-ink/40"}`}
+              disabled={busy !== null || key === status}
+              onClick={() => patch(`status:${key}`, { status: key, confirmedSlot: key === "termin_bestaetigt" && slot ? slot : undefined })}
+              className={`chip h-9 px-3.5 transition-all disabled:cursor-default ${key === status ? (STATUS_STYLES[key] ?? "border-line") + " ring-2 ring-offset-1 ring-ink/10" : "border-line bg-white text-ink-700 hover:border-ink/40"}`}
             >
-              {busy === `status:${k}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : label}
+              {busy === `status:${key}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : label}
             </button>
           ))}
         </div>
       </div>
 
+      <div className="rounded-2xl border border-electric/15 bg-[linear-gradient(145deg,rgba(79,141,255,0.10),rgba(255,255,255,0.94))] p-4">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-electric-soft"><Flame className="h-4 w-4" /></span>
+          <div>
+            <p className="text-[14px] font-extrabold">CRM-Steuerung</p>
+            <p className="mt-0.5 text-[12px] leading-relaxed text-steel">Priorität, Gesprächsausgang und nächste Aktion steuern die tägliche Bearbeitung.</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3">
+          <label>
+            <span className="label">Priorität</span>
+            <select className="field" value={crmPriority} onChange={(event) => setCrmPriority(event.target.value)}>
+              {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </label>
+
+          <label>
+            <span className="label">Gesprächsausgang</span>
+            <div className="relative">
+              <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
+              <select className="field pl-10" value={outcome} onChange={(event) => setOutcome(event.target.value)}>
+                {Object.entries(LEAD_CONTACT_OUTCOME_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </select>
+            </div>
+          </label>
+
+          <div>
+            <label htmlFor="next-action" className="label">Wiedervorlage / nächste Aktion</label>
+            <div className="relative">
+              <AlarmClock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
+              <input id="next-action" type="datetime-local" className="field pl-10" value={nextAction} onChange={(event) => setNextAction(event.target.value)} />
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[1, 3, 7].map((days) => (
+                <button key={days} type="button" onClick={() => setFollowUp(days)} className="chip border-line bg-white text-ink-700 hover:border-electric/30">+{days} Tag{days > 1 ? "e" : ""}</button>
+              ))}
+              <button type="button" onClick={() => setNextAction("")} className="chip border-line bg-white text-steel hover:border-red-200 hover:text-red-600">Entfernen</button>
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-steel">Beim Speichern wird automatisch eine passende Aufgabe im Aufgabenbereich erstellt oder aktualisiert.</p>
+          </div>
+
+          <label>
+            <span className="label">Tags</span>
+            <div className="relative">
+              <Tags className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-steel" />
+              <input className="field pl-10" value={tagText} onChange={(event) => setTagText(event.target.value)} placeholder="z. B. Familie, Glasfaser, Wechsel 2027" maxLength={500} />
+            </div>
+            <span className="mt-1 block text-[10.5px] text-steel">Mit Komma trennen, maximal 12 Tags.</span>
+          </label>
+
+          <button type="button" disabled={busy !== null} onClick={saveCrm} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-electric px-4 text-[13px] font-extrabold text-white shadow-[0_12px_30px_-16px_rgba(79,141,255,0.8)] transition hover:bg-electric-deep disabled:opacity-50">
+            {busy === "crm" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} CRM-Daten speichern
+          </button>
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
         <p className="inline-flex items-center gap-2 text-[14px] font-bold text-emerald-900"><CalendarCheck className="h-4 w-4" /> {isAppointment ? "Termin bestätigen" : "Termin vereinbaren"}</p>
-        <p className="mt-1 text-[12.5px] text-emerald-800/80">Trage die abgestimmte Zeit ein. Der Status wechselt auf „Termin bestätigt“ und wird im Verlauf dokumentiert.</p>
+        <p className="mt-1 text-[12.5px] text-emerald-800/80">Trage die abgestimmte Zeit ein. Der Lead wird anschließend direkt als „Terminiert“ einsortiert.</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <input className="field flex-1" placeholder="z. B. Di, 14.05. · 18:30 Uhr · Video-Call" value={slot} onChange={(e) => setSlot(e.target.value)} maxLength={160} />
+          <input className="field flex-1" placeholder="z. B. Di, 14.05. · 18:30 Uhr · Video-Call" value={slot} onChange={(event) => setSlot(event.target.value)} maxLength={160} />
           <button type="button" disabled={busy !== null || !slot.trim()} onClick={() => patch("confirm", { status: "termin_bestaetigt", confirmedSlot: slot.trim() })} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-[14px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
-            {busy === "confirm" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Bestätigen
+            {busy === "confirm" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Termin speichern
           </button>
         </div>
       </div>
 
       <div>
         <label htmlFor="note" className="label">Interne Notiz</label>
-        <textarea id="note" rows={3} className="field" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Gesprächsnotiz, nächste Schritte, Besonderheiten …" maxLength={2000} />
+        <textarea id="note" rows={3} className="field" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Gesprächsnotiz, nächste Schritte, Besonderheiten …" maxLength={2000} />
         <button
           type="button"
           disabled={busy !== null || !note.trim()}

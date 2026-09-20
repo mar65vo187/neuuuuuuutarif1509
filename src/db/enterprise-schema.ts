@@ -94,6 +94,19 @@ export const products = pgTable("products", {
 ]);
 
 
+export const leadProductLinks = pgTable("lead_product_links", {
+  leadId: integer("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  relation: text("relation").notNull().default("interest"),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("lead_product_relation_unique").on(table.leadId, table.productId, table.relation),
+  index("lead_product_lead_idx").on(table.leadId, table.relation),
+  index("lead_product_product_idx").on(table.productId, table.relation),
+]);
+
 export const providerProfiles = pgTable("provider_profiles", {
   providerId: integer("provider_id").primaryKey().references(() => providers.id, { onDelete: "cascade" }),
   partnerType: text("partner_type").notNull().default("provider"),
