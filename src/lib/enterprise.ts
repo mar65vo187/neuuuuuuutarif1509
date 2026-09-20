@@ -33,6 +33,7 @@ import { isCompensationOwner } from "@/lib/compensation";
 import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 import { leadAccessCondition } from "@/lib/queries";
 import { getCustomerIntelligence } from "@/lib/customer-intelligence";
+import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -262,6 +263,9 @@ export async function createCustomer(input: {
   referralNote?: string;
 }, user: SessionUser) {
   return db.transaction(async (tx) => {
+    const duplicate = await lockAndFindStrongContactDuplicate(tx, { email: input.email, phone: input.phone }, user);
+    if (duplicate) throw contactDuplicateError(duplicate);
+
     const [created] = await tx.insert(customers).values({
       customerNumber: customerNumber(),
       type: input.type === "business" ? "business" : "private",
@@ -376,6 +380,9 @@ export async function createCustomerReferral(input: {
     const topics = [...new Set((input.topics ?? []).map((topic) => topic.trim()).filter(Boolean))].slice(0, 12);
     const note = input.note?.trim() || "";
     const sourceName = source.companyName || [source.firstName, source.lastName].filter(Boolean).join(" ") || source.customerNumber;
+
+    const strongDuplicate = await lockAndFindStrongContactDuplicate(tx, { email, phone }, user);
+    if (strongDuplicate) throw contactDuplicateError(strongDuplicate);
 
     if (email || phone) {
       const duplicateConditions: SQL[] = [];
