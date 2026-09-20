@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
-import { commissionEvents, customers, orders, tasks } from "@/db/enterprise-schema";
+import { auditEvents, commissionEvents, customers, orders, tasks } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { leadAccessCondition } from "@/lib/queries";
@@ -84,6 +84,15 @@ export type CommandCenterData = {
     paid: number;
     outstanding: number;
     overdue: number;
+  };
+  integrity: null | {
+    unassignedOpenLeads: number;
+    unownedCustomers: number;
+    unassignedOpenOrders: number;
+    unassignedOpenTasks: number;
+    overdueLeadActions: number;
+    staleOrders: number;
+    auditEvents24h: number;
   };
 };
 
@@ -342,6 +351,38 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     }).sort((a, b) => b.overdueTasks - a.overdueTasks || b.openTasks - a.openTasks || b.openLeads - a.openLeads);
   }
 
+  let integrity: CommandCenterData["integrity"] = null;
+  if (user.role === "admin") {
+    const [leadRow, customerRow, orderRow, taskRow, auditRow] = await Promise.all([
+      db.select({
+        unassigned: sql<number>`count(*) filter (where ${leads.assignedEmployeeId} is null and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+        overdueAction: sql<number>`count(*) filter (where ${leads.nextActionAt} is not null and ${leads.nextActionAt} < ${now} and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+      }).from(leads),
+      db.select({
+        unowned: sql<number>`count(*) filter (where ${customers.ownerEmployeeId} is null and ${customers.archivedAt} is null)::int`,
+      }).from(customers),
+      db.select({
+        unassigned: sql<number>`count(*) filter (where ${orders.advisorEmployeeId} is null and ${orders.status} not in ('active','rejected','cancelled','storno'))::int`,
+        stale: sql<number>`count(*) filter (where ${orders.updatedAt} < ${ago7d} and ${orders.status} not in ('active','rejected','cancelled','storno'))::int`,
+      }).from(orders),
+      db.select({
+        unassigned: sql<number>`count(*) filter (where ${tasks.assignedToEmployeeId} is null and ${tasks.status} in ('open','in_progress'))::int`,
+      }).from(tasks),
+      db.select({
+        count: sql<number>`count(*) filter (where ${auditEvents.createdAt} >= ${ago24})::int`,
+      }).from(auditEvents),
+    ]);
+    integrity = {
+      unassignedOpenLeads: leadRow[0]?.unassigned ?? 0,
+      unownedCustomers: customerRow[0]?.unowned ?? 0,
+      unassignedOpenOrders: orderRow[0]?.unassigned ?? 0,
+      unassignedOpenTasks: taskRow[0]?.unassigned ?? 0,
+      overdueLeadActions: leadRow[0]?.overdueAction ?? 0,
+      staleOrders: orderRow[0]?.stale ?? 0,
+      auditEvents24h: auditRow[0]?.count ?? 0,
+    };
+  }
+
   let finance: CommandCenterData["finance"] = null;
   if (isCompensationOwner(user)) {
     const [row] = await db.select({
@@ -378,5 +419,6 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     taskAssignees,
     momentum,
     finance,
+    integrity,
   };
 }
