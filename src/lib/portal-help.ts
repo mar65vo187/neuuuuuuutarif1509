@@ -8,6 +8,13 @@ export type PortalHelpTopic = {
 
 export const PORTAL_HELP: PortalHelpTopic[] = [
   {
+    href: "/portal/assistent",
+    title: "Arbeitsassistent",
+    purpose: "Erklärbare Priorisierung aus CRM-Daten: Der Assistent zeigt, was als Nächstes Aufmerksamkeit braucht und warum.",
+    actions: ["Kritische Nacharbeit zuerst erkennen", "Direkt in betroffene Leads, Aufgaben, Aufträge oder Kunden springen", "Begründung jeder Empfehlung nachvollziehen", "Menschliche Freigabe bei wichtigen Änderungen beibehalten"],
+    tips: ["Der Assistent verändert keine Kunden-, Auftrags- oder Provisionsdaten automatisch.", "Empfehlungen sind Arbeitsprioritäten und ersetzen keine fachliche Beratung oder Freigabe."],
+  },
+  {
     href: "/portal/verwaltung",
     title: "Mitarbeiter verwalten",
     purpose: "Interne Benutzer, Rollen, Profile und Zugänge zentral verwalten.",
