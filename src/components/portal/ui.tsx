@@ -25,7 +25,7 @@ export function formatDate(d: Date | string | null | undefined) {
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-[22px] border border-white/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(239,244,251,0.92))] p-5 shadow-[0_22px_55px_-34px_rgba(6,11,22,0.52),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-ink/[0.035] sm:p-6 ${className}`}
+      className={`portal-card rounded-[22px] border border-white/10 bg-[linear-gradient(145deg,rgba(15,27,49,0.96),rgba(8,18,34,0.94))] p-5 text-slate-100 shadow-[0_24px_64px_-34px_rgba(0,0,0,0.72),inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.035] sm:p-6 ${className}`}
     >
       {children}
     </div>
