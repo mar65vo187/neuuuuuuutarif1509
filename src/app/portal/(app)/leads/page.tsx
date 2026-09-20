@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ArrowRight, Plus } from "lucide-react";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
+import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { LEAD_STATUS_LABELS, LEAD_TYPE_LABELS } from "@/lib/content";
 import { listLeads } from "@/lib/queries";
+import { listSavedViews } from "@/lib/portal-productivity";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const { status, type } = await searchParams;
   const s = status && STATUSES.includes(status) ? status : undefined;
   const t = type && TYPES.includes(type) ? type : undefined;
-  const rows = await listLeads({ status: s, type: t }, user);
+  const [rows, savedViews] = await Promise.all([
+    listLeads({ status: s, type: t }, user),
+    listSavedViews(user, "leads"),
+  ]);
 
   const link = (next: { status?: string; type?: string }) => {
     const p = new URLSearchParams();
@@ -52,6 +57,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           ))}
         </div>
       </div>
+
+      <SavedViewsBar area="leads" basePath="/portal/leads" views={savedViews} currentFilters={{ ...(s ? { status: s } : {}), ...(t ? { type: t } : {}) }} />
 
       <Card className="p-0 sm:p-0">
         {rows.length === 0 ? (
