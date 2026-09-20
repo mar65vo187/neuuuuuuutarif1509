@@ -4,11 +4,13 @@ import { ArrowRight, BadgeEuro, Car, CheckCircle2, Dumbbell, Gift, GraduationCap
 import { db } from "@/db";
 import { referrers } from "@/db/referral-schema";
 import { ReferralRegistration } from "@/components/referrals/ReferralPanel";
+import { ReferralTower } from "@/components/referrals/ReferralTower";
 import { ReferralPipeline, ReferralRewardMatrix } from "@/components/referrals/ReferralRewards";
 import { PageHero } from "@/components/site/PageHero";
 import { REFERRAL_CODE } from "@/lib/referrals";
 import { REFERRAL_MAX_VOUCHER, formatEuro } from "@/lib/referral-rewards";
 import { pageMetadata } from "@/lib/seo";
+import { getReferralTower } from "@/lib/gamification";
 
 export const dynamic = "force-dynamic";
 export const metadata = pageMetadata("/freund-werben");
@@ -66,6 +68,8 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
     </>;
   }
 
+  const tower = await getReferralTower().catch(() => null);
+
   return <>
     <PageHero
       eyebrow="TarifWerk Empfehlungsprogramm"
@@ -104,6 +108,8 @@ export default async function ReferralPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
     </section>
+
+    {tower && <ReferralTower initial={tower} />}
 
     <ReferralRewardMatrix />
 
