@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { SERVICES, SITE } from "@/lib/content";
 import { getActiveAdvisors } from "@/lib/queries";
 import { LOCAL_PAGE_LIST } from "@/lib/local-pages";
-import { MARKETING_CAMPAIGNS } from "@/lib/marketing-campaigns";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +29,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.82,
   }));
 
-  const campaignPages: MetadataRoute.Sitemap = MARKETING_CAMPAIGNS.map((campaign) => ({
-    url: `${SITE.url}/kampagne/${campaign.slug}`,
-    changeFrequency: "monthly",
-    priority: campaign.slug === "business-check" ? 0.86 : 0.84,
-  }));
 
   // Keep the core sitemap available to crawlers even if the advisor database
   // is temporarily unavailable. Dynamic advisor URLs are appended when healthy.
@@ -46,8 +40,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
       ...(a.imageUrl ? { images: [new URL(a.imageUrl, SITE.url).href] } : {}),
     }));
-    return [...statics, ...services, ...localPages, ...campaignPages, ...advisorUrls];
+    return [...statics, ...services, ...localPages, ...advisorUrls];
   } catch {
-    return [...statics, ...services, ...localPages, ...campaignPages];
+    return [...statics, ...services, ...localPages];
   }
 }
