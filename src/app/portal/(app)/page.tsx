@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   AlertTriangle, ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, ContactRound,
-  CalendarClock, Euro, Flame, Inbox, ListTodo, PackageSearch, Plus, Sparkles, Target, TrendingUp, Trophy, UsersRound,
+  Activity, CalendarClock, Euro, Flame, Inbox, ListTodo, PackageSearch, Plus, ShieldCheck, Sparkles, Target, TrendingUp, Trophy, UserRoundX, UsersRound,
 } from "lucide-react";
 import { BarSeries } from "@/components/portal/Charts";
 import { QuickTaskComposer } from "@/components/portal/QuickTaskComposer";
@@ -10,6 +10,7 @@ import { Card } from "@/components/portal/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { LEAD_STATUS_LABELS } from "@/lib/content";
 import { getCommandCenterData, type FocusItem } from "@/lib/portal-command-center";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,21 @@ export default async function PortalDashboard() {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal");
 
-  const data = await getCommandCenterData(user);
+  const [data, capabilities] = await Promise.all([
+    getCommandCenterData(user),
+    permissionSnapshot(user, [
+      PORTAL_PERMISSION.LEAD_EDIT,
+      PORTAL_PERMISSION.CUSTOMER_EDIT,
+      PORTAL_PERMISSION.ORDER_CREATE,
+      PORTAL_PERMISSION.TASK_MANAGE,
+      PORTAL_PERMISSION.REPORT_SALES,
+    ] as const),
+  ]);
+  const canLeadEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canCustomerEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canOrderCreate = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
+  const canTaskManage = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
+  const canReport = capabilities[PORTAL_PERMISSION.REPORT_SALES];
   const workOrders = data.orderPipeline
     .filter((row) => !["active", "rejected", "cancelled", "storno"].includes(row.status))
     .reduce((sum, row) => sum + row.count, 0);
@@ -66,7 +81,7 @@ export default async function PortalDashboard() {
     { label: "Aufgaben fällig", value: data.metrics.dueTasks24h, hint: "nächste 24 Stunden", href: "/portal/aufgaben", Icon: Clock3 },
     { label: "Aufmerksamkeit", value: attention, hint: data.metrics.overdueTasks + " Tasks überfällig", href: "#fokus", Icon: AlertTriangle, attention: attention > 0 },
     { label: "Kunden", value: data.metrics.customers, hint: "aktive Kundenakten", href: "/portal/kunden", Icon: ContactRound },
-    { label: "Abschlüsse 30T", value: data.metrics.wins30, hint: "abgeschlossene Leads", href: "/portal/reporting", Icon: TrendingUp },
+    { label: "Abschlüsse 30T", value: data.metrics.wins30, hint: "abgeschlossene Leads", href: canReport ? "/portal/reporting" : "/portal/leads?status=abgeschlossen", Icon: TrendingUp },
   ];
   const firstFocus = data.focus[0] ?? null;
   const salesControl = [
@@ -87,9 +102,9 @@ export default async function PortalDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13px] font-semibold hover:border-electric/30 hover:text-electric-deep"><Plus className="h-4 w-4" /> Lead</Link>
-          <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13px] font-semibold hover:border-electric/30 hover:text-electric-deep"><Plus className="h-4 w-4" /> Kunde</Link>
-          <Link href="/portal/auftraege/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Auftrag</Link>
+          {canLeadEdit && <Link href="/portal/leads/neu" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13px] font-semibold hover:border-electric/30 hover:text-electric-deep"><Plus className="h-4 w-4" /> Lead</Link>}
+          {canCustomerEdit && <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13px] font-semibold hover:border-electric/30 hover:text-electric-deep"><Plus className="h-4 w-4" /> Kunde</Link>}
+          {canOrderCreate && <Link href="/portal/auftraege/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Auftrag</Link>}
         </div>
       </header>
 
@@ -142,7 +157,7 @@ export default async function PortalDashboard() {
                 <p className="text-[10px] font-semibold text-steel">aktiv</p>
               </div>
             </div>
-            <Link href="/portal/leads/neu" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-bold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Lead eintragen</Link>
+            {canLeadEdit && <Link href="/portal/leads/neu" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-bold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Lead eintragen</Link>}
           </div>
         </div>
       </section>
@@ -242,11 +257,9 @@ export default async function PortalDashboard() {
         </Card>
 
         <Card>
-          <div className="flex items-center gap-2"><ListTodo className="h-4.5 w-4.5 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Schnelle Aufgabe</h2></div>
-          <p className="mt-1 text-[12px] text-steel">Eine Wiedervorlage ohne Seitenwechsel anlegen.</p>
-          <div className="mt-4">
-            <QuickTaskComposer assignees={data.taskAssignees} currentUserId={user.id} />
-          </div>
+          <div className="flex items-center gap-2"><ListTodo className="h-4.5 w-4.5 text-electric-deep" /><h2 className="text-[16px] font-extrabold">{canTaskManage ? "Schnelle Aufgabe" : "Aufgaben"}</h2></div>
+          <p className="mt-1 text-[12px] text-steel">{canTaskManage ? "Eine Wiedervorlage ohne Seitenwechsel anlegen." : "Diese Rolle kann Aufgaben ansehen, aber keine neuen Aufgaben anlegen."}</p>
+          {canTaskManage && <div className="mt-4"><QuickTaskComposer assignees={data.taskAssignees} currentUserId={user.id} /></div>}
         </Card>
       </section>
 
@@ -292,6 +305,43 @@ export default async function PortalDashboard() {
               <p className="mt-3 text-[22px] font-extrabold tracking-tight">{value}</p>
             </Link>
           ))}
+        </section>
+      )}
+
+      {data.integrity && (
+        <section aria-label="Operations Integrity">
+          <Card>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="eyebrow text-electric-deep"><ShieldCheck className="h-3.5 w-3.5" /> Operations Control</p>
+                <h2 className="mt-1 text-[18px] font-extrabold">Datenintegrität & SLA</h2>
+                <p className="mt-1 text-[12px] text-steel">Verwaiste Zuständigkeiten und festhängende Vorgänge früh erkennen, bevor sie im Vertrieb oder Kundenservice verloren gehen.</p>
+              </div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1.5 text-[11px] font-bold text-steel"><Activity className="h-3.5 w-3.5 text-electric-deep" /> {data.integrity.auditEvents24h} Audit-Events · 24h</span>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {[
+                ["Unzugewiesene Leads", data.integrity.unassignedOpenLeads, "/portal/leads", UserRoundX],
+                ["Kunden ohne Owner", data.integrity.unownedCustomers, "/portal/kunden", ContactRound],
+                ["Aufträge ohne Owner", data.integrity.unassignedOpenOrders, "/portal/auftraege", BriefcaseBusiness],
+                ["Aufgaben ohne Owner", data.integrity.unassignedOpenTasks, "/portal/aufgaben", ListTodo],
+                ["Überfällige Lead-Aktionen", data.integrity.overdueLeadActions, "/portal/leads?next=overdue&sort=next", AlertTriangle],
+                ["Stagnierende Aufträge >7T", data.integrity.staleOrders, "/portal/auftraege", Clock3],
+              ].map(([label, value, href, Icon]) => {
+                const count = Number(value);
+                const IconComponent = Icon as typeof AlertTriangle;
+                return (
+                  <Link key={String(label)} href={String(href)} className={"rounded-2xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-soft " + (count > 0 ? "border-amber-200 bg-amber-50/70" : "border-emerald-200 bg-emerald-50/60")}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div><p className="text-[11px] font-extrabold uppercase tracking-[0.11em] text-steel">{String(label)}</p><p className="mt-1.5 text-[24px] font-extrabold leading-none">{count}</p></div>
+                      <IconComponent className={"h-4 w-4 " + (count > 0 ? "text-amber-700" : "text-emerald-700")} />
+                    </div>
+                    <p className="mt-2 text-[11px] font-semibold text-steel">{count > 0 ? "Prüfung erforderlich" : "Sauber"}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          </Card>
         </section>
       )}
 
