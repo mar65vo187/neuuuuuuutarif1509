@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db, pool } from "@/db";
@@ -33,11 +33,17 @@ function localRateLimited(key: string) {
 }
 
 async function sharedRateLimit(networkKey: string) {
-  const keyHash = createHash("sha256").update("lead-intake:v1:" + networkKey).digest("hex");
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) return { limited: localRateLimited(networkKey), retryAfter: 60 };
+  const keyHash = createHmac("sha256", secret).update("lead-intake:v1:" + networkKey).digest("hex");
   try {
     const result = await pool.query<{ request_count: number; reset_at: Date }>(
       `
-        WITH updated AS (
+        WITH cleanup AS (
+          DELETE FROM public_intake_rate_limits
+          WHERE updated_at < now() - interval '24 hours'
+        ),
+        updated AS (
           INSERT INTO public_intake_rate_limits (key_hash, window_started_at, request_count, updated_at)
           VALUES ($1, now(), 1, now())
           ON CONFLICT (key_hash) DO UPDATE SET
@@ -77,7 +83,7 @@ export async function POST(req: NextRequest) {
   const limit = await sharedRateLimit(networkKey);
   if (limit.limited) {
     return NextResponse.json(
-      { ok: false, error: "Zu viele Anfragen. Bitte versuche es in ein paar Minuten erneut." },
+      { ok: false, error: "Zu viele Anfragen. Bitte später erneut versuchen." },
       { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
     );
   }
