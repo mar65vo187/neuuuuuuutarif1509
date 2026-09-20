@@ -31,7 +31,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
-      <div><p className="eyebrow text-electric-deep">Operations</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Aufträge & Verträge</h1><p className="text-[14px] text-steel">{rows.length} Vorgänge in dieser Ansicht</p></div>
+      <div><p className="eyebrow text-electric-deep">Auftragssteuerung</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Aufträge & Verträge</h1><p className="text-[14px] text-steel">{rows.length} Vorgänge in dieser Ansicht</p></div>
       <div className="flex gap-2"><a href="/api/portal/enterprise/export?type=orders" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>
       <Link href="/portal/auftraege/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Auftrag anlegen</Link></div>
     </header>
