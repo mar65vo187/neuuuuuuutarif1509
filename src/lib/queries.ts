@@ -48,6 +48,7 @@ export type LeadRow = typeof leads.$inferSelect & {
   existingProductNames: string[];
   interestProductNames: string[];
   soldProductNames: string[];
+  nextActionOverdue: boolean;
 };
 
 export async function listLeads(filter?: {
@@ -95,6 +96,7 @@ export async function listLeads(filter?: {
     existingProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'existing'), '{}'::text[])`,
     interestProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'interest'), '{}'::text[])`,
     soldProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'sold'), '{}'::text[])`,
+    nextActionOverdue: sql<boolean>`coalesce(${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren'), false)`,
   };
 
   const base = db
@@ -118,6 +120,7 @@ export async function listLeads(filter?: {
     existingProductNames: r.existingProductNames ?? [],
     interestProductNames: r.interestProductNames ?? [],
     soldProductNames: r.soldProductNames ?? [],
+    nextActionOverdue: Boolean(r.nextActionOverdue),
   })) as LeadRow[];
 }
 
@@ -133,6 +136,7 @@ export async function getLead(id: number, user?: SessionUser) {
       existingProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'existing'), '{}'::text[])`,
       interestProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'interest'), '{}'::text[])`,
       soldProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'sold'), '{}'::text[])`,
+      nextActionOverdue: sql<boolean>`coalesce(${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren'), false)`,
     })
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
@@ -148,6 +152,7 @@ export async function getLead(id: number, user?: SessionUser) {
     existingProductNames: row.existingProductNames ?? [],
     interestProductNames: row.interestProductNames ?? [],
     soldProductNames: row.soldProductNames ?? [],
+    nextActionOverdue: Boolean(row.nextActionOverdue),
   } as LeadRow;
 }
 
@@ -300,6 +305,7 @@ export async function getDashboardStats(user?: SessionUser) {
       existingProductNames: [],
       interestProductNames: [],
       soldProductNames: [],
+      nextActionOverdue: false,
     })) as LeadRow[],
     series,
   };
