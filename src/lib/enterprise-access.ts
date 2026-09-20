@@ -72,10 +72,14 @@ export async function permissionKeys(user: SessionUser): Promise<Set<string>> {
       .where(and(eq(employeeRoleAssignments.employeeId, user.id)));
 
     return new Set(rows.map((row) => row.key));
-  } catch {
-    // If the enterprise RBAC tables are temporarily unavailable, keep the
-    // historical advisor baseline rather than granting elevated permissions.
-    return new Set(LEGACY_ADVISOR_DEFAULTS);
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : typeof error === "object" && error && "cause" in error && (error as { cause?: { code?: unknown } }).cause?.code
+        ? String((error as { cause?: { code?: unknown } }).cause?.code ?? "")
+        : "";
+    if (code === "42P01") return new Set(LEGACY_ADVISOR_DEFAULTS);
+    return new Set();
   }
 }
 
