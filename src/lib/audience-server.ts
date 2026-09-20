@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import type { AudienceMode } from "@/components/home/AudienceProvider";
+import type { AudienceMode } from "@/lib/audience";
 
 export function audienceFromParam(raw: string | string[] | undefined): AudienceMode | null {
   const value = Array.isArray(raw) ? raw[0] : raw;
