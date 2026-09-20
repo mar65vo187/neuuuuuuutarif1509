@@ -13,8 +13,8 @@ export default async function OperationsHubPage() {
   const data = await getOperationsHubData(user);
   return <div className="space-y-6">
     <header>
-      <p className="eyebrow text-electric-deep">Operations</p>
-      <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Team, Incentives & Wissen</h1>
+      <p className="eyebrow text-electric-deep">Team & Qualität</p>
+      <h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Team, Schulungen & Betriebsqualität</h1>
       <p className="mt-2 max-w-3xl text-[14px] leading-relaxed text-steel">
         Teamstruktur, Schulungsfreigaben, Benefits, Incentives, Dokumente und Provider-Abgleich zentral im TarifWerk-Backoffice.
       </p>
