@@ -194,20 +194,31 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
     </section>
 
     <section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
-      <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
-        <div className="flex items-center gap-3"><BadgeEuro className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Verdienstrechner</h2><p className="text-[12.5px] text-steel">Simulation auf Basis einer Anbieter-Provision.</p></div></div>
-        <label className="label mt-5">Anbieter-Provision (€)<input inputMode="decimal" className="field" value={providerAmount} onChange={(event) => setProviderAmount(event.target.value)} /></label>
+      {isOwner ? <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
+        <div className="flex items-center gap-3"><BadgeEuro className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Verdienstrechner</h2><p className="text-[12.5px] text-steel">Owner-Simulation auf Basis der Provider-Provision.</p></div></div>
+        <label className="label mt-5">Provider-Provision (€)<input inputMode="decimal" className="field" value={providerAmount} onChange={(event) => setProviderAmount(event.target.value)} /></label>
         <div className="mt-5 overflow-hidden rounded-2xl border border-line">
           {[
-            ["Anbieter-Provision", simulation.gross, "100 %"],
+            ["Provider-Provision", simulation.gross, "100 %"],
             ["Mitarbeiteranteil", simulation.payout, pct(selected.payoutPercent)],
             ["Storno-Rücklage", simulation.reserve, pct(selected.reservePercent)],
             ["Operativer Firmenanteil", simulation.company, pct(Math.max(0, 100 - selected.payoutPercent - selected.reservePercent))],
             ["Zusätzliche Treue-Sparprojektion", simulation.savings, pct(selected.savingsPercent)],
           ].map(([label, value, share], index) => <div key={String(label)} className={`flex items-center justify-between gap-4 px-4 py-3 text-[13.5px] ${index ? "border-t border-line" : ""}`}><div><p className="font-semibold text-ink">{label}</p><p className="text-[11.5px] text-steel">{share}</p></div><p className="font-extrabold text-ink">{money(Number(value))}</p></div>)}
         </div>
-        <p className="mt-3 text-[11.5px] leading-relaxed text-steel">Der Treue-Sparbaustein wird separat dargestellt und nicht vom Mitarbeiteranteil abgezogen. Eine tatsächliche Gutschrift richtet sich nach dem intern freigegebenen Modell und den dokumentierten Bedingungen.</p>
-      </div>
+        <p className="mt-3 text-[11.5px] leading-relaxed text-steel">Interne Kalkulation. Provider-, Rücklagen- und Firmenwerte sind ausschließlich für den Owner bestimmt.</p>
+      </div> : <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
+        <div className="flex items-center gap-3"><BadgeEuro className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">Ihre Provisionsübersicht</h2><p className="text-[12.5px] text-steel">Nur Ihre persönlichen Vergütungswerte.</p></div></div>
+        <div className="mt-5 overflow-hidden rounded-2xl border border-line">
+          {[
+            ["Erwarteter Anteil", selected.employeeExpected],
+            ["Bestätigter Anteil", selected.employeeConfirmed],
+            ["Ausgezahlter Anteil", selected.employeePaid],
+            ["Noch offen", Math.max(0, selected.employeeConfirmed - selected.employeePaid)],
+          ].map(([label, value], index) => <div key={String(label)} className={`flex items-center justify-between gap-4 px-4 py-3 text-[13.5px] ${index ? "border-t border-line" : ""}`}><p className="font-semibold text-ink">{label}</p><p className="font-extrabold text-ink">{money(Number(value))}</p></div>)}
+        </div>
+        <p className="mt-3 text-[11.5px] leading-relaxed text-steel">Interne Provider-, Rücklagen- und Firmenkalkulationen werden in Ihrem Mitarbeiterzugang nicht übertragen.</p>
+      </div>}
 
       <div className="rounded-[22px] border border-line bg-white p-5 sm:p-6">
         <div className="flex items-center gap-3"><CalendarClock className="h-5 w-5 text-electric-deep" /><div><h2 className="text-[17px] font-extrabold">10-Jahres-Treueplan</h2><p className="text-[12.5px] text-steel">Langfristiger Firmenbonus mit klarer Laufzeit.</p></div></div>
@@ -216,7 +227,7 @@ export function CompensationDashboard({ rows, isOwner, asOf }: { rows: Row[]; is
         <div className="mt-2 flex justify-between text-[11.5px] text-steel"><span>{loyaltyYears} Jahre erreicht</span><span>{selected.loyaltyVestingYears} Jahre Ziel</span></div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Echtes Treueguthaben</p><p className="mt-1 text-[25px] font-extrabold">{money(selected.loyaltyBalance)}</p><p className="mt-1 text-[11.5px] text-steel">{money(selected.loyaltyCredits)} gutgeschrieben · {money(selected.loyaltyPayouts)} ausgezahlt/korrigiert</p></div>
-          <div className="rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Sparprojektion</p><p className="mt-1 text-[25px] font-extrabold">{money(selected.savingsProjection)}</p><p className="mt-1 text-[11.5px] text-steel">Rechnerisch auf Basis der erfassten Provider-Provisionen und der hinterlegten Sparquote.</p></div>
+          {isOwner ? <div className="rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Sparprojektion</p><p className="mt-1 text-[25px] font-extrabold">{money(selected.savingsProjection)}</p><p className="mt-1 text-[11.5px] text-steel">Owner-Projektion auf Basis der internen Provider-Daten und der hinterlegten Sparquote.</p></div> : <div className="rounded-2xl bg-paper p-4"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-electric-deep">Planfortschritt</p><p className="mt-1 text-[25px] font-extrabold">{Math.round(loyaltyProgress)} %</p><p className="mt-1 text-[11.5px] text-steel">Fortschritt bis zur hinterlegten Auszahlungsreife des Treueplans.</p></div>}
         </div>
       </div>
     </section>
