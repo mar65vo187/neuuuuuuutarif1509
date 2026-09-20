@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, Maximize2, RefreshCw, Trophy, Volume2, VolumeX } from "lucide-react";
+import { CalendarDays, Flag, Maximize2, RefreshCw, Trophy, Volume2, VolumeX } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EMPLOYEE_RACE_RULES, REFERRAL_AVATARS } from "@/lib/gamification-rules";
@@ -76,7 +76,7 @@ export function PerformanceGameDashboard({ initial }: { initial: Payload }) {
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     try {
-      const response = await fetch("/api/portal/games", { cache: "no-store", signal: AbortSignal.timeout(10000) });
+      const response = await fetch("/api/portal/games?month=" + encodeURIComponent(data.race.period.key), { cache: "no-store", signal: AbortSignal.timeout(10000) });
       const json = await response.json().catch(() => null) as ({ ok?: boolean } & Payload) | null;
       if (!response.ok || !json?.ok) return;
       const nextOwnPoints = json.race.rows.find((row) => row.employeeId === json.currentUserId)?.points ?? 0;
@@ -90,7 +90,7 @@ export function PerformanceGameDashboard({ initial }: { initial: Payload }) {
     } finally {
       if (manual) setRefreshing(false);
     }
-  }, [sound]);
+  }, [data.race.period.key, sound]);
 
   useEffect(() => {
     const timer = window.setInterval(() => void load(false), 10_000);
@@ -109,6 +109,18 @@ export function PerformanceGameDashboard({ initial }: { initial: Payload }) {
             <p className="mt-2 max-w-3xl text-[12.5px] leading-relaxed text-silver">Punkte entstehen ausschließlich aus echten CRM-Ereignissen. Der Monatsstand startet am 1. automatisch neu; historische CRM-Daten bleiben unverändert erhalten.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <label className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 text-[11.5px] font-bold text-silver">
+              <CalendarDays className="h-4 w-4" />
+              <input
+                type="month"
+                value={data.race.period.key}
+                onChange={(event) => {
+                  if (event.target.value) window.location.assign("/portal/rennen?month=" + encodeURIComponent(event.target.value));
+                }}
+                className="bg-transparent text-white outline-none [color-scheme:dark]"
+                aria-label="Challenge-Monat auswählen"
+              />
+            </label>
             <button type="button" onClick={() => setSound((value) => !value)} className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 text-[11.5px] font-bold text-silver hover:bg-white/10 hover:text-white">
               {sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />} Sound {sound ? "an" : "aus"}
             </button>
