@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlarmClock, ArrowRight, CalendarCheck, CheckCircle2, Flame, Loader2, PhoneCall, Sparkles } from "lucide-react";
+import { AlarmClock, ArrowRight, BriefcaseBusiness, CalendarCheck, CheckCircle2, Flame, Loader2, Mail, Phone, PhoneCall, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { formatDate } from "@/components/portal/ui";
@@ -17,6 +17,9 @@ type Row = {
   nextActionOverdue: boolean;
   confirmedSlot: string | null;
   phone: string | null;
+  email: string | null;
+  companyName: string | null;
+  audience: "b2c" | "b2b";
   createdByName: string | null;
   existingProductNames: string[];
   interestProductNames: string[];
@@ -100,11 +103,22 @@ export function LeadPipelineBoard({ rows }: { rows: Row[] }) {
                   <article key={row.id} className="rounded-2xl border border-line bg-white p-3.5 shadow-[0_14px_32px_-26px_rgba(6,11,22,0.55)]">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <Link href={`/portal/leads/${row.id}`} className="block truncate text-[14px] font-extrabold hover:text-electric-deep">{row.name}</Link>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          <Link href={`/portal/leads/${row.id}`} className="min-w-0 truncate text-[14px] font-extrabold hover:text-electric-deep">{row.name}</Link>
+                          {row.audience === "b2b" && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-champagne/25 bg-champagne/10 px-2 py-0.5 text-[9.5px] font-extrabold text-champagne-soft"><BriefcaseBusiness className="h-2.5 w-2.5" /> Business</span>}
+                        </div>
+                        {row.companyName && <p className="mt-0.5 truncate text-[11.5px] font-bold text-platinum">{row.companyName}</p>}
                         <p className="mt-0.5 truncate text-[11.5px] text-steel">{row.topic ?? "Ohne Thema"} · #{row.id}</p>
                       </div>
                       <span className={`chip shrink-0 px-2 py-0.5 text-[10px] ${PRIORITY[row.priority] ?? PRIORITY.normal}`}>{row.priority === "hot" ? "HOT" : row.priority === "high" ? "HOCH" : row.priority === "low" ? "NIEDRIG" : "NORMAL"}</span>
                     </div>
+
+                    {(row.phone || row.email) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {row.phone && <a href={`tel:${row.phone}`} className="inline-flex max-w-full items-center gap-1 rounded-lg border border-line bg-paper/70 px-2 py-1 text-[10px] font-semibold text-platinum hover:border-electric/30"><Phone className="h-3 w-3 text-electric-soft" /> <span className="truncate">{row.phone}</span></a>}
+                        {row.email && <a href={`mailto:${row.email}`} className="inline-flex max-w-full items-center gap-1 rounded-lg border border-line bg-paper/70 px-2 py-1 text-[10px] font-semibold text-platinum hover:border-electric/30"><Mail className="h-3 w-3 shrink-0 text-electric-soft" /> <span className="max-w-[190px] truncate">{row.email}</span></a>}
+                      </div>
+                    )}
 
                     <div className={`mt-3 rounded-xl border px-3 py-2 ${INTELLIGENCE[row.intelligence.tone]}`}>
                       <p className="text-[11.5px] font-extrabold">{row.intelligence.label}</p>
