@@ -3,64 +3,64 @@
   "routes": [
     {
       "path": "/",
-      "title": "Persönliche Beratung in Wiesbaden | TarifWerk",
-      "description": "Energie, Internet, Solar oder Immobilien: Finde deinen persönlichen Berater in Wiesbaden und digital deutschlandweit. Jetzt Erstgespräch anfragen.",
+      "title": "TarifWerk | Strom, Internet & Versicherungen Wiesbaden",
+      "description": "Persönliche Beratung zu Strom, Gas, Internet, Mobilfunk, Versicherungen und weiteren Themen. Kostenlos starten – in Wiesbaden und deutschlandweit.",
       "canonical": "https://www.tarifwerk.eu/",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/leistungen",
-      "title": "Beratung zu Energie, Solar & Immobilien | TarifWerk",
-      "description": "Entdecke acht Beratungsbereiche von Internet und Energie bis Solar und Immobilien. Finde die passende Unterstützung und frage dein Erstgespräch an.",
+      "title": "Leistungen: Tarife, Energie, Solar & mehr | TarifWerk",
+      "description": "Internet, Mobilfunk, Strom, Gas, Solar, Wärmepumpe, Versicherungen, Immobilien und mehr: persönliche TarifWerk Beratung deutschlandweit.",
       "canonical": "https://www.tarifwerk.eu/leistungen",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/berater",
-      "title": "Persönlichen Berater finden | TarifWerk",
-      "description": "Finde deinen Ansprechpartner nach Thema und Region: vor Ort nach Absprache oder digital deutschlandweit. Jetzt Berater wählen und Termin anfragen.",
+      "title": "TarifWerk Berater finden | Persönlich & deutschlandweit",
+      "description": "TarifWerk Ansprechpartner nach Thema und Region finden. Persönliche Beratung vor Ort oder digital deutschlandweit – kostenlos und unverbindlich starten.",
       "canonical": "https://www.tarifwerk.eu/berater",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/anfrage",
-      "title": "Kostenloses Erstgespräch anfragen | TarifWerk",
-      "description": "Thema wählen, Kontaktdaten senden, persönlich beraten lassen. Frage jetzt deine kostenlose und unverbindliche Erstorientierung bei TarifWerk an.",
+      "title": "Kostenlose Beratung anfragen | TarifWerk",
+      "description": "Thema wählen, Kontaktdaten senden und persönlich beraten lassen. Kostenlose und unverbindliche Erstorientierung bei TarifWerk anfragen.",
       "canonical": "https://www.tarifwerk.eu/anfrage",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/ueber-uns",
-      "title": "Über uns: Menschen & Beratung | TarifWerk",
-      "description": "Lerne TarifWerk und Gründer Marvin Noel Egenolf kennen. Persönliche Beratung aus Wiesbaden mit festem Ansprechpartner. Entdecke unsere Arbeitsweise.",
+      "title": "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden",
+      "description": "TarifWerk aus Wiesbaden: persönliche Beratung mit einem festen Ansprechpartner für Tarife, Energie und wichtige Entscheidungen – deutschlandweit.",
       "canonical": "https://www.tarifwerk.eu/ueber-uns",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/karriere",
       "title": "Berater werden: Karriere bei TarifWerk",
-      "description": "Du erklärst verständlich und hörst Menschen zu? Entdecke die Arbeit als Berater bei TarifWerk und stelle dich mit deiner Bewerbung vor.",
+      "description": "Sie erklären verständlich und hören Menschen zu? Lernen Sie die Arbeit als Berater bei TarifWerk kennen und bewerben Sie sich bei uns.",
       "canonical": "https://www.tarifwerk.eu/karriere",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/faq",
-      "title": "Beratung: Fragen zu Kosten & Ablauf | TarifWerk",
-      "description": "Was kostet das Erstgespräch? Wie läuft eine Terminanfrage ab? Lies die Antworten zu TarifWerk und finde den passenden Einstieg in deine Beratung.",
+      "title": "TarifWerk FAQ | Kosten, Ablauf & Beratung",
+      "description": "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung – transparent und verständlich erklärt.",
       "canonical": "https://www.tarifwerk.eu/faq",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/freund-werben",
-      "title": "Freunde werben & Beratung empfehlen | TarifWerk",
-      "description": "Empfiehl TarifWerk mit deinem persönlichen Link und behalte deine Empfehlungen im Blick. Jetzt Empfehlungslink erstellen und mit Freunden teilen.",
+      "title": "Freunde werben: bis 1.000 € Wunschgutschein | TarifWerk",
+      "description": "TarifWerk empfehlen und bei erfolgreicher Vermittlung je nach Bereich bis zu 1.000 € Wunschgutschein erhalten. Persönlicher Link und transparenter Status.",
       "canonical": "https://www.tarifwerk.eu/freund-werben",
       "source": "src/lib/seo.ts"
     },
     {
       "path": "/freund-werben/status",
       "title": "Dein Empfehlungsstatus | TarifWerk",
-      "description": "Rufe deinen persönlichen Empfehlungsstatus mit deinem privaten Zugangslink auf und behalte zugeordnete Anfragen im Blick.",
+      "description": "Deinen persönlichen Empfehlungsstatus mit privatem Zugangslink öffnen und zugeordnete Empfehlungen und Prämien im Blick behalten.",
       "noindex": true,
       "canonical": "https://www.tarifwerk.eu/freund-werben/status",
       "source": "src/lib/seo.ts"
@@ -68,7 +68,7 @@
     {
       "path": "/impressum",
       "title": "Impressum & Kontakt | TarifWerk",
-      "description": "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informiere dich über die Verantwortlichkeiten und nutze unsere Kontaktmöglichkeiten.",
+      "description": "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informationen zu Verantwortlichkeiten und unseren Kontaktmöglichkeiten.",
       "noindex": true,
       "canonical": "https://www.tarifwerk.eu/impressum",
       "source": "src/lib/seo.ts"
@@ -76,7 +76,7 @@
     {
       "path": "/datenschutz",
       "title": "Datenschutzerklärung | TarifWerk",
-      "description": "Erfahre, wie TarifWerk personenbezogene Daten verarbeitet und welche Rechte du hast. Lies die Datenschutzhinweise und kontaktiere uns bei Fragen.",
+      "description": "Erfahren Sie, wie TarifWerk personenbezogene Daten verarbeitet, welche Rechte Sie haben und wie Sie uns bei Datenschutzfragen kontaktieren.",
       "noindex": true,
       "canonical": "https://www.tarifwerk.eu/datenschutz",
       "source": "src/lib/seo.ts"
@@ -84,7 +84,7 @@
     {
       "path": "/agb",
       "title": "Allgemeine Geschäftsbedingungen | TarifWerk",
-      "description": "Lies die Bedingungen zur Beratung und Vermittlung bei TarifWerk. Informiere dich über Ablauf, Vergütung und Termine vor deiner Anfrage.",
+      "description": "Lesen Sie die Bedingungen zur Beratung und Vermittlung bei TarifWerk sowie Hinweise zu Ablauf, Vergütung und Terminen.",
       "noindex": true,
       "canonical": "https://www.tarifwerk.eu/agb",
       "source": "src/lib/seo.ts"
@@ -92,35 +92,35 @@
     {
       "path": "/leistungen/internet-glasfaser-tv",
       "title": "Internet, Mobilfunk & TV: Beratung | TarifWerk",
-      "description": "Internet, Glasfaser, Mobilfunk oder TV: Lass Verfügbarkeit und Vertragsbedingungen persönlich einordnen. Jetzt Beratung zu deinem Anschluss anfragen.",
+      "description": "Internet, Glasfaser, Mobilfunk und TV persönlich einordnen: Verfügbarkeit, Netz, Leistung und Vertragsbedingungen verständlich prüfen.",
       "canonical": "https://www.tarifwerk.eu/leistungen/internet-glasfaser-tv",
       "source": "src/lib/content.ts"
     },
     {
       "path": "/leistungen/strom-gas",
       "title": "Strom & Gas: Persönliche Tarifberatung | TarifWerk",
-      "description": "Verbrauch, Preise und Kündigungsfristen verständlich prüfen: Finde heraus, ob ein Strom- oder Gaswechsel zu dir passt. Jetzt Erstgespräch anfragen.",
+      "description": "Strom und Gas verständlich prüfen: Verbrauch, Preise, Fristen und sinnvolle Wechseloptionen persönlich einordnen.",
       "canonical": "https://www.tarifwerk.eu/leistungen/strom-gas",
       "source": "src/lib/content.ts"
     },
     {
       "path": "/leistungen/versicherungen",
       "title": "Versicherungen verständlich prüfen | TarifWerk",
-      "description": "Lass bestehende Versicherungen und deinen Absicherungsbedarf verständlich einordnen. Frage jetzt dein Erstgespräch mit TarifWerk an.",
+      "description": "Versicherungen verständlich einordnen: bestehenden Schutz, mögliche Lücken und tatsächlichen Bedarf gemeinsam prüfen.",
       "canonical": "https://www.tarifwerk.eu/leistungen/versicherungen",
       "source": "src/lib/content.ts"
     },
     {
       "path": "/leistungen/sicherheitsloesungen",
       "title": "Sicherheitslösungen: Persönliche Beratung | TarifWerk",
-      "description": "Alarmanlage, Überwachung oder Smart Home: Kläre deinen Bedarf und passende nächste Schritte mit Fachpartnern. Jetzt Beratung anfragen.",
+      "description": "Alarmanlage, Überwachung oder Smart Home: Bedarf, Technik und passende nächste Schritte gemeinsam mit Fachpartnern einordnen.",
       "canonical": "https://www.tarifwerk.eu/leistungen/sicherheitsloesungen",
       "source": "src/lib/content.ts"
     },
     {
       "path": "/leistungen/klimaanlagen",
       "title": "Klimaanlagen: Bedarf & Optionen klären | TarifWerk",
-      "description": "Welche Klimaanlage passt zu Raum, Nutzung und Budget? Lass deine Möglichkeiten mit passenden Fachpartnern einordnen. Jetzt Erstgespräch anfragen.",
+      "description": "Klimaanlagen passend zu Raum, Nutzung, Energiebedarf und Budget einordnen – gemeinsam mit geeigneten Fachpartnern.",
       "canonical": "https://www.tarifwerk.eu/leistungen/klimaanlagen",
       "source": "src/lib/content.ts"
     },
@@ -141,7 +141,7 @@
     {
       "path": "/leistungen/immobilien",
       "title": "Immobilien: Persönliche Orientierung | TarifWerk",
-      "description": "Eigenheim oder Kapitalanlage? Sortiere deine Immobilienfragen und finde passende Fachpartner. Jetzt deine persönliche Erstorientierung anfragen.",
+      "description": "Immobilienfragen rund um Eigenheim oder Kapitalanlage strukturieren und passende nächste Fachschritte einordnen.",
       "canonical": "https://www.tarifwerk.eu/leistungen/immobilien",
       "source": "src/lib/content.ts"
     }

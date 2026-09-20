@@ -29,13 +29,137 @@
       ]
     },
     {
+      "routePattern": "/api/internal/process-outbox",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
       "routePattern": "/api/leads",
       "methods": [
         "POST"
       ]
     },
     {
+      "routePattern": "/api/portal/account/password",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
       "routePattern": "/api/portal/admin/advisors/[id]/image",
+      "methods": [
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/catalog/commission",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/catalog/pool",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/catalog",
+      "methods": [
+        "POST",
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/catalog/updates",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/enterprise/automations",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/enterprise/catalog",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/enterprise/process-outbox",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/enterprise/webhooks",
+      "methods": [
+        "GET",
+        "POST",
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/benefits",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/commission/[id]/paid",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/documents",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/incentives",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/reconciliation/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/reconciliation",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/team",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/operations/training",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/referrals/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/admin/users/[id]/image",
       "methods": [
         "POST",
         "DELETE"
@@ -56,6 +180,12 @@
       ]
     },
     {
+      "routePattern": "/api/portal/catalog/updates/[id]/read",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
       "routePattern": "/api/portal/chat",
       "methods": [
         "GET",
@@ -63,9 +193,75 @@
       ]
     },
     {
+      "routePattern": "/api/portal/compensation/[id]/loyalty",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/compensation/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/documents/[id]",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/employees/[id]/image",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/enterprise/bulk",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/enterprise/customers",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/enterprise/export",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/enterprise/orders/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/enterprise/orders",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/enterprise/tasks/[id]",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
       "routePattern": "/api/portal/leads/[id]",
       "methods": [
         "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/leads",
+      "methods": [
+        "POST"
       ]
     },
     {
@@ -78,6 +274,44 @@
       "routePattern": "/api/portal/logout",
       "methods": [
         "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/notifications",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/search",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/security/mfa",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/tasks",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/training/certificates/[code]",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "routePattern": "/api/portal/views",
+      "methods": [
+        "POST",
+        "DELETE"
       ]
     },
     {

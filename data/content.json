@@ -22,9 +22,9 @@
       "featured": false,
       "eyebrow": "Verbunden im Alltag",
       "headline": "Gut verbunden. Klar entschieden.",
-      "intro": "Internet inklusive Glasfaser, Mobilfunk und TV: Wir prüfen mit dir Verfügbarkeit, Netz, Datenvolumen, Nutzung und Vertragsbedingungen. Damit deine Verbindung zu deinem Alltag oder deinem Unternehmen passt.",
+      "intro": "Internet inklusive Glasfaser, Mobilfunk und TV: Verfügbarkeit, Netz, Datenvolumen, Nutzung und Vertragsbedingungen werden gemeinsam eingeordnet – passend zu Haushalt oder Unternehmen.",
       "checks": [
-        "Verfügbarkeit an deiner Adresse klären",
+        "Verfügbarkeit am Anschluss prüfen",
         "Bandbreite und TV-Bedarf bestimmen",
         "Laufzeiten, Fristen und Gesamtkosten vergleichen",
         "Kündigung und Wechsel gemeinsam vorbereiten",
@@ -44,18 +44,18 @@
         }
       ],
       "seoTitle": "Internet, Mobilfunk & TV: Beratung | TarifWerk",
-      "seoDescription": "Internet, Glasfaser, Mobilfunk oder TV: Lass Verfügbarkeit und Vertragsbedingungen persönlich einordnen. Jetzt Beratung zu deinem Anschluss anfragen.",
+      "seoDescription": "Internet, Glasfaser, Mobilfunk und TV persönlich einordnen: Verfügbarkeit, Netz, Leistung und Vertragsbedingungen verständlich prüfen.",
       "tickerLabel": "Internet, Mobilfunk, TV"
     },
     {
       "key": "energie",
       "slug": "strom-gas",
       "name": "Strom & Gas",
-      "short": "Deine Energieverträge. Verständlich sortiert.",
+      "short": "Energieverträge. Verständlich sortiert.",
       "featured": false,
       "eyebrow": "Energie im Alltag",
-      "headline": "Klare Sicht auf deine Energiekosten.",
-      "intro": "Wir schauen auf Verbrauch, Konditionen und Kündigungsfristen. Du erfährst, welche Optionen zu dir passen und ob ein Wechsel sinnvoll ist.",
+      "headline": "Klare Sicht auf Energiekosten.",
+      "intro": "Verbrauch, Konditionen und Kündigungsfristen werden gemeinsam geprüft. So wird klar, welche Optionen passen und ob ein Wechsel überhaupt sinnvoll ist.",
       "checks": [
         "Abrechnung und Abschläge einordnen",
         "Preisbestandteile und Boni nachvollziehen",
@@ -69,28 +69,28 @@
       ],
       "faq": [
         {
-          "q": "Kümmert ihr euch um den Wechsel?",
-          "a": "Wenn du möchtest, begleiten wir den kompletten Prozess."
+          "q": "Begleitet TarifWerk auch den Wechsel?",
+          "a": "Ja. Auf Wunsch begleiten wir den kompletten Prozess."
         }
       ],
       "seoTitle": "Strom & Gas: Persönliche Tarifberatung | TarifWerk",
-      "seoDescription": "Verbrauch, Preise und Kündigungsfristen verständlich prüfen: Finde heraus, ob ein Strom- oder Gaswechsel zu dir passt. Jetzt Erstgespräch anfragen.",
+      "seoDescription": "Strom und Gas verständlich prüfen: Verbrauch, Preise, Fristen und sinnvolle Wechseloptionen persönlich einordnen.",
       "tickerLabel": "Alltagstarife (Strom & Gas)"
     },
     {
       "key": "versicherungen",
       "slug": "versicherungen",
       "name": "Versicherungen",
-      "short": "Schutz für das, was dir wichtig ist.",
+      "short": "Schutz, der zum tatsächlichen Bedarf passt.",
       "featured": true,
       "eyebrow": "Sicherheit & Vorsorge",
       "headline": "Absicherung mit Augenmaß.",
-      "intro": "Welche Risiken möchtest du absichern? Wir sortieren mit dir vorhandene Verträge und deinen Bedarf und binden passende Fachpartner ein.",
+      "intro": "Bestehende Verträge, tatsächlicher Absicherungsbedarf und mögliche Lücken werden gemeinsam sortiert; bei Bedarf kommen passende Fachpartner hinzu.",
       "checks": [
         "Bestehende Verträge und Bedarf ordnen",
         "Mögliche Lücken und Doppelungen erkennen",
         "Beiträge und Leistungen verständlich vergleichen",
-        "Veränderungen in deinem Leben berücksichtigen"
+        "Veränderungen in Lebens- oder Arbeitssituation berücksichtigen"
       ],
       "forWhom": [
         "Junge Familien",
@@ -100,11 +100,11 @@
       "faq": [
         {
           "q": "Verkauft ihr mir Verträge, die ich nicht brauche?",
-          "a": "Nein. Wir sagen dir auch, wenn du etwas kündigen solltest."
+          "a": "Nein. Auch eine Kündigung oder das Beibehalten eines bestehenden Vertrags kann das richtige Ergebnis sein."
         }
       ],
       "seoTitle": "Versicherungen verständlich prüfen | TarifWerk",
-      "seoDescription": "Lass bestehende Versicherungen und deinen Absicherungsbedarf verständlich einordnen. Frage jetzt dein Erstgespräch mit TarifWerk an.",
+      "seoDescription": "Versicherungen verständlich einordnen: bestehenden Schutz, mögliche Lücken und tatsächlichen Bedarf gemeinsam prüfen.",
       "tickerLabel": "Versicherungen"
     },
     {
@@ -114,8 +114,8 @@
       "short": "Ein gutes Gefühl beginnt zu Hause.",
       "featured": false,
       "eyebrow": "Zuhause & Sicherheit",
-      "headline": "Sicherheit, die zu deinem Objekt passt.",
-      "intro": "Alarmanlagen, Überwachung und Smart Home: Wir klären deinen Bedarf und helfen bei der Einordnung passender Lösungen und Fachpartner.",
+      "headline": "Sicherheit, die zum Objekt passt.",
+      "intro": "Alarmanlagen, Überwachung und Smart Home: Wir klären Ihren Bedarf und helfen bei der Einordnung passender Lösungen und Fachpartner.",
       "checks": [
         "Bedarf und mögliche Schwachstellen besprechen",
         "Funk, Kabel und Smart Home vergleichen",
@@ -129,11 +129,11 @@
       "faq": [
         {
           "q": "Wie läuft die erste Beratung ab?",
-          "a": "Wir klären deinen Bedarf und stimmen die nächsten Schritte persönlich mit dir ab."
+          "a": "Wir klären den Bedarf und stimmen die nächsten sinnvollen Schritte persönlich ab."
         }
       ],
       "seoTitle": "Sicherheitslösungen: Persönliche Beratung | TarifWerk",
-      "seoDescription": "Alarmanlage, Überwachung oder Smart Home: Kläre deinen Bedarf und passende nächste Schritte mit Fachpartnern. Jetzt Beratung anfragen.",
+      "seoDescription": "Alarmanlage, Überwachung oder Smart Home: Bedarf, Technik und passende nächste Schritte gemeinsam mit Fachpartnern einordnen.",
       "tickerLabel": "Rund um Sicherheit"
     },
     {
@@ -143,8 +143,8 @@
       "short": "Räume zum Wohlfühlen.",
       "featured": false,
       "eyebrow": "Wohnen & Komfort",
-      "headline": "Ein gutes Klima. Nach deinem Maß.",
-      "intro": "Raumgröße, Nutzung und Budget bestimmen, welche Klimaanlage passt. Wir helfen dir bei der Orientierung und der Abstimmung mit Fachpartnern.",
+      "headline": "Ein gutes Klima. Passend geplant.",
+      "intro": "Raumgröße, Nutzung und Budget bestimmen, welche Klimaanlage passt. TarifWerk unterstützt bei Orientierung und Abstimmung mit Fachpartnern.",
       "checks": [
         "Raumgröße und Nutzung berücksichtigen",
         "Lösungen und Energieverbrauch vergleichen",
@@ -158,11 +158,11 @@
       "faq": [
         {
           "q": "Wie läuft die erste Beratung ab?",
-          "a": "Wir klären deinen Bedarf und stimmen die nächsten Schritte persönlich mit dir ab."
+          "a": "Wir klären den Bedarf und stimmen die nächsten sinnvollen Schritte persönlich ab."
         }
       ],
       "seoTitle": "Klimaanlagen: Bedarf & Optionen klären | TarifWerk",
-      "seoDescription": "Welche Klimaanlage passt zu Raum, Nutzung und Budget? Lass deine Möglichkeiten mit passenden Fachpartnern einordnen. Jetzt Erstgespräch anfragen.",
+      "seoDescription": "Klimaanlagen passend zu Raum, Nutzung, Energiebedarf und Budget einordnen – gemeinsam mit geeigneten Fachpartnern.",
       "tickerLabel": "Klimaanlagen"
     },
     {
@@ -173,9 +173,9 @@
       "featured": true,
       "eyebrow": "Energie & Zukunft",
       "headline": "Strom und Wärme gemeinsam durchdenken.",
-      "intro": "Passt eine Solaranlage mit Wärmepumpe zu deinem Zuhause? Wir betrachten Dach, Gebäude, Verbrauch, Budget und Angebote gemeinsam und stimmen die nächsten Schritte mit passenden Fachpartnern ab.",
+      "intro": "Solar und Wärmepumpe werden als Gesamtprojekt betrachtet: Dach, Gebäude, Verbrauch, Budget, Angebote und sinnvolle nächste Schritte.",
       "checks": [
-        "Dachfläche und deinen Strombedarf einordnen",
+        "Dachfläche und Ihren Strombedarf einordnen",
         "Photovoltaik und Speicher zusammen betrachten",
         "Wirtschaftlichkeit nachvollziehbar prüfen lassen",
         "Angebote und Umsetzung mit Fachpartnern besprechen",
@@ -195,7 +195,7 @@
         },
         {
           "q": "Muss ich mich für einen Anbieter entscheiden?",
-          "a": "Nein. Wir arbeiten unabhängig mit mehreren Partnern und zeigen dir passende Optionen."
+          "a": "Nein. TarifWerk arbeitet mit mehreren Partnern und ordnet verfügbare Optionen transparent ein."
         }
       ],
       "seoTitle": "Photovoltaik & Wärmepumpe: Beratung | TarifWerk",
@@ -215,7 +215,7 @@
       "checks": [
         "Physische Metalle und andere Formen unterscheiden",
         "Kaufpreise, Aufschläge und Lagerung verstehen",
-        "Risiken und deinen Zeithorizont besprechen",
+        "Risiken und Ihren Zeithorizont besprechen",
         "Seriöse Angebote nachvollziehbar einordnen"
       ],
       "forWhom": [
@@ -226,7 +226,7 @@
       "faq": [
         {
           "q": "Ist Gold immer eine gute Idee?",
-          "a": "Nein. Edelmetalle sind ein Baustein, kein Allheilmittel. Wir sagen dir offen, wenn andere Themen für dich Vorrang haben."
+          "a": "Nein. Edelmetalle sind ein Baustein, kein Allheilmittel. Wenn andere Themen Vorrang haben, sagen wir das offen."
         },
         {
           "q": "Garantiert ihr Wertsteigerungen?",
@@ -241,11 +241,11 @@
       "key": "immobilien",
       "slug": "immobilien",
       "name": "Immobilien",
-      "short": "Raum für deine nächsten Schritte.",
+      "short": "Raum für den nächsten Schritt.",
       "featured": true,
       "eyebrow": "Wohnen & Vermögen",
       "headline": "Ein neues Kapitel. Gut durchdacht.",
-      "intro": "Eigenheim, Kapitalanlage oder eine erste Orientierung: Wir sortieren deine Fragen und bringen dich mit passenden Fachpartnern zusammen.",
+      "intro": "Eigenheim, Kapitalanlage oder erste Orientierung: Fragen werden strukturiert und bei Bedarf mit passenden Fachpartnern weitergeführt.",
       "checks": [
         "Ziele, Budget und Nebenkosten einordnen",
         "Lage, Zustand und laufende Kosten mitdenken",
@@ -260,7 +260,7 @@
       "faq": [
         {
           "q": "Vermittelt ihr auch Objekte?",
-          "a": "Wir arbeiten mit ausgewählten Marktteilnehmern zusammen und zeigen dir Optionen, die zu deiner Situation passen. Die Entscheidung bleibt immer bei dir."
+          "a": "Wir arbeiten mit ausgewählten Marktteilnehmern zusammen und zeigen passende Optionen transparent auf. Die Entscheidung bleibt immer beim Kunden."
         },
         {
           "q": "Was kostet die Erstberatung?",
@@ -268,30 +268,30 @@
         }
       ],
       "seoTitle": "Immobilien: Persönliche Orientierung | TarifWerk",
-      "seoDescription": "Eigenheim oder Kapitalanlage? Sortiere deine Immobilienfragen und finde passende Fachpartner. Jetzt deine persönliche Erstorientierung anfragen.",
+      "seoDescription": "Immobilienfragen rund um Eigenheim oder Kapitalanlage strukturieren und passende nächste Fachschritte einordnen.",
       "tickerLabel": "Immobilien"
     }
   ],
   "faq": [
     {
       "q": "Was kostet das erste Gespräch?",
-      "a": "Erstorientierung und Tarifcheck sind kostenlos und unverbindlich. Bei einer konkreten Vermittlung erklären wir dir die jeweiligen Konditionen und die Vergütung vor deiner Entscheidung."
+      "a": "Erstorientierung und Tarifcheck sind kostenlos und unverbindlich. Vor einer konkreten Vermittlung werden Konditionen und Vergütung transparent erklärt."
     },
     {
-      "q": "Was bedeutet unabhängig bei TarifWerk?",
-      "a": "Wir arbeiten mit verschiedenen großen und kleineren Marktteilnehmern und sind nicht auf einen einzigen Anbieter festgelegt. Welche Partner und Optionen für dein Anliegen verfügbar sind, besprechen wir transparent. Wir versprechen keine vollständige Abdeckung des gesamten Marktes."
+      "q": "Vergleicht TarifWerk den gesamten Markt?",
+      "a": "Nein. TarifWerk arbeitet mit verschiedenen großen und kleineren Marktteilnehmern, aber nicht mit jedem Anbieter. Verfügbare Partner und Optionen werden offen benannt."
     },
     {
       "q": "Bleibt mein Berater auch nach dem Abschluss erreichbar?",
-      "a": "Ja. Dein persönlicher Berater bleibt dein Ansprechpartner – bei Rückfragen, Änderungen und weiteren Themen, die für dich relevant werden."
+      "a": "Ja. Der persönliche Berater bleibt Ansprechpartner – auch bei Rückfragen, Änderungen und späteren Themen."
     },
     {
       "q": "Wie läuft eine Terminanfrage ab?",
-      "a": "Du teilst uns dein Anliegen und deine Wunschzeit mit. Ein Mitarbeiter meldet sich und bestätigt den Termin persönlich. Deine Anfrage ist noch keine verbindliche Terminbuchung."
+      "a": "Anliegen und Wunschzeit werden übermittelt. Ein Mitarbeiter meldet sich persönlich und bestätigt den Termin; die Anfrage selbst ist noch keine verbindliche Buchung."
     },
     {
       "q": "Beratet ihr auch Selbstständige und Unternehmen?",
-      "a": "Ja. Wir begleiten Privatkunden, Selbstständige und Unternehmen. Wir sprechen über deinen konkreten Bedarf und stimmen die passenden nächsten Schritte mit dir ab."
+      "a": "Ja. TarifWerk begleitet Privatkunden, Selbstständige und Unternehmen und stimmt die nächsten Schritte passend zum konkreten Bedarf ab."
     },
     {
       "q": "Kann ich mich deutschlandweit beraten lassen?",
@@ -299,33 +299,37 @@
     },
     {
       "q": "Wie verdient TarifWerk Geld?",
-      "a": "Bei erfolgreicher Vermittlung erhalten wir eine Provision vom jeweiligen Anbieter. Erstorientierung und Tarifcheck sind kostenfrei. Die konkreten Vergütungsbedingungen erklären wir dir im Gespräch."
+      "a": "Bei erfolgreicher Vermittlung erhält TarifWerk in vielen Bereichen eine Provision vom jeweiligen Anbieter. Erstorientierung und Tarifcheck sind kostenfrei; relevante Vergütung und Empfehlungskriterien werden transparent erläutert."
+    },
+    {
+      "q": "Wie entscheidet ihr, was ihr empfehlt?",
+      "a": "Ausgangspunkt ist immer die konkrete Situation. Danach werden Kriterien wie Leistung, Gesamtkosten, Laufzeit, Bedarf und Umsetzbarkeit festgelegt und verfügbare Optionen nachvollziehbar eingeordnet."
     },
     {
       "q": "Muss ich mich sofort entscheiden?",
-      "a": "Nein. Du bekommst eine verständliche Einschätzung und entscheidest in Ruhe. Auch wenn sich nichts ändern soll, ist Klarheit ein gutes Ergebnis."
+      "a": "Nein. Ziel des ersten Gesprächs ist Klarheit über Situation und Möglichkeiten. Ob anschließend etwas umgesetzt wird, bleibt vollständig offen."
     }
   ],
   "process": [
     {
       "step": "01",
-      "title": "Du meldest dich",
-      "text": "Per Formular, WhatsApp oder Anruf – mit deinem Thema und wann es dir passt."
+      "title": "Situation schildern",
+      "text": "Kurz klären, worum es geht, was heute besteht und welche Kriterien wichtig sind."
     },
     {
       "step": "02",
-      "title": "Wir prüfen",
-      "text": "Dein Berater schaut auf deine Situation und bestehende Verträge. Nachvollziehbar, ohne Fachchinesisch."
+      "title": "Wir sortieren die Fakten",
+      "text": "Bedarf, bestehende Verträge, relevante Kosten, Fristen und Rahmenbedingungen kommen auf den Tisch."
     },
     {
       "step": "03",
-      "title": "Du bekommst Klarheit",
-      "text": "Eine ehrliche Einschätzung und konkrete Optionen. Ob und was du umsetzt, entscheidest du."
+      "title": "Unterschiede verstehen",
+      "text": "Konkrete Optionen werden verständlich eingeordnet – inklusive Grenzen und Bedingungen."
     },
     {
       "step": "04",
-      "title": "Wir bleiben",
-      "text": "Wenn du möchtest, begleiten wir die Umsetzung – und sind auch danach dein Ansprechpartner."
+      "title": "Nächsten Schritt begleiten",
+      "text": "Wenn eine Entscheidung getroffen ist, koordinieren wir die Umsetzung und bleiben erreichbar."
     }
   ],
   "experiments": {
