@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees, leadNotes, leads, teamMessages, type Advisor } from "@/db/schema";
-import { leadProductLinks, products, providers } from "@/db/enterprise-schema";
+import { leadCallActivities, leadProductLinks, products, providers } from "@/db/enterprise-schema";
 import { SITE } from "@/lib/content";
 import { requireUser, type SessionUser } from "@/lib/auth";
 
@@ -220,6 +220,32 @@ export async function getLeadProductLinks(leadId: number, user?: SessionUser) {
     .innerJoin(providers, eq(products.providerId, providers.id))
     .where(eq(leadProductLinks.leadId, leadId))
     .orderBy(leadProductLinks.relation, products.category, providers.name, products.name);
+}
+
+export async function getLeadCallActivities(leadId: number, user?: SessionUser) {
+  if (!await getLead(leadId, user)) return [];
+  return db
+    .select({
+      id: leadCallActivities.id,
+      calledAt: leadCallActivities.calledAt,
+      reachedPerson: leadCallActivities.reachedPerson,
+      reaction: leadCallActivities.reaction,
+      outcome: leadCallActivities.outcome,
+      attemptNumber: leadCallActivities.attemptNumber,
+      note: leadCallActivities.note,
+      requestedCallbackAt: leadCallActivities.requestedCallbackAt,
+      suggestedFollowUpAt: leadCallActivities.suggestedFollowUpAt,
+      suggestionReason: leadCallActivities.suggestionReason,
+      recommendedAction: leadCallActivities.recommendedAction,
+      autoScheduled: leadCallActivities.autoScheduled,
+      createdAt: leadCallActivities.createdAt,
+      authorName: employees.name,
+    })
+    .from(leadCallActivities)
+    .leftJoin(employees, eq(leadCallActivities.employeeId, employees.id))
+    .where(eq(leadCallActivities.leadId, leadId))
+    .orderBy(desc(leadCallActivities.calledAt), desc(leadCallActivities.id))
+    .limit(50);
 }
 
 export async function getLeadNotes(leadId: number) {
