@@ -112,7 +112,7 @@ export function AdvisorFinder({ advisors }: { advisors: Advisor[] }) {
             >
               <p className="text-[19px] font-bold text-ink">Für diese Kombination haben wir gerade niemanden vor Ort.</p>
               <p className="mx-auto mt-2 max-w-md text-[15px] text-steel">
-                Digital beraten wir Sie trotzdem persönlich – oder senden Sie uns kurz eine Anfrage. Wir finden den richtigen Weg.
+                Digital beraten wir deutschlandweit persönlich. Alternativ reicht eine kurze Anfrage – wir finden den passenden nächsten Weg.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Button onClick={() => update({ region: "" })} variant="dark">Alle Regionen anzeigen</Button>
