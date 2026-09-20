@@ -15,6 +15,8 @@ test("employee race rules match the defined monthly scoring model", () => {
 test("race scoring uses creator-owned qualified leads and real activations", () => {
   const engine = read("src/lib/gamification.ts");
   assert.match(engine, /l\.created_by_employee_id AS employee_id/);
+  assert.match(engine, /row_number\(\) OVER/);
+  assert.match(engine, /contact_rank = 1/);
   assert.match(engine, /nullif\(trim\(coalesce\(l\.topic/);
   assert.match(engine, /order_status_history osh/);
   assert.match(engine, /osh\.to_status = 'active'/);
@@ -49,4 +51,15 @@ test("profile images are cropped interactively and normalized server-side to 120
   assert.match(editor, /type="range"/);
   assert.match(advisorRoute, /width: 1200, height: 1200, fit: "cover"/);
   assert.match(employeeRoute, /width: 1200, height: 1200, fit: "cover"/);
+});
+
+test("campaign pages capture first-party journey context and referral registration is shared-rate-limited", () => {
+  const campaign = read("src/app/kampagne/[slug]/page.tsx");
+  const referrals = read("src/lib/referrals.ts");
+  const route = read("src/app/api/referrals/route.ts");
+  assert.match(campaign, /JourneyContext/);
+  assert.match(referrals, /public_intake_rate_limits/);
+  assert.match(referrals, /createHmac\("sha256", secret\)/);
+  assert.match(route, /await referralRateLimit/);
+  assert.match(route, /Retry-After/);
 });
