@@ -30,7 +30,9 @@ type Row = {
   soldProductNames: string[];
 };
 
-const STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => ({ value, label }));
+const STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS)
+  .filter(([value]) => value !== "termin_bestaetigt")
+  .map(([value, label]) => ({ value, label }));
 
 const PRIORITY_STYLES: Record<string, string> = {
   low: "border-line bg-paper text-steel",
