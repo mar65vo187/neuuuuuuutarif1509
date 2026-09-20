@@ -5,6 +5,8 @@ export const EMPLOYEE_RACE_RULES = {
   b2bClose: 4,
 } as const;
 
+export const REFERRAL_AVATAR_KEYS = ["rocket", "bolt", "star", "compass", "crown", "spark"] as const;
+
 export const REFERRAL_AVATARS = [
   { key: "rocket", label: "Rakete", symbol: "🚀" },
   { key: "bolt", label: "Blitz", symbol: "⚡" },
@@ -14,4 +16,4 @@ export const REFERRAL_AVATARS = [
   { key: "spark", label: "Funke", symbol: "✨" },
 ] as const;
 
-export type ReferralAvatarKey = (typeof REFERRAL_AVATARS)[number]["key"];
+export type ReferralAvatarKey = (typeof REFERRAL_AVATAR_KEYS)[number];
