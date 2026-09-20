@@ -81,6 +81,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             createdAt: lead.createdAt.toISOString(),
             advisorName: lead.advisorName,
             assignedName: lead.assignedName,
+            createdByName: lead.createdByName,
             type: lead.type,
             status: lead.status,
           }))} />
