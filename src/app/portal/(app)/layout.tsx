@@ -8,6 +8,7 @@ import { PortalShell } from "@/components/portal/PortalShell";
 import { getCurrentUser } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { getUnreadNotificationCount } from "@/lib/portal-productivity";
+import { permissionKeys } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
     redirect(`/portal/login?next=${encodeURIComponent(requested)}`);
   }
 
+  const effectivePermissions = [...await permissionKeys(user)];
   let openCount = 0;
   let notificationCount = 0;
   try {
@@ -39,7 +41,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   }
 
   return (
-    <PortalShell user={user} openCount={openCount} notificationCount={notificationCount}>
+    <PortalShell user={user} permissions={effectivePermissions} openCount={openCount} notificationCount={notificationCount}>
       {children}
     </PortalShell>
   );
