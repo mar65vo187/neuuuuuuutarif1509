@@ -30,7 +30,13 @@ export async function authorizeAdmin(request: NextRequest, mutation = true) {
   }
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
-  if (user.role !== "admin") return NextResponse.json({ ok: false, error: "Nur Administratoren dürfen Benutzer verwalten." }, { status: 403 });
+  if (user.role !== "admin") return NextResponse.json({ ok: false, error: "Nur Administratoren dürfen diesen Bereich verwalten." }, { status: 403 });
+  if (mutation && user.mfaVerified !== true) {
+    return NextResponse.json(
+      { ok: false, error: "Für Administrator-Aktionen muss zuerst die Zwei-Faktor-Anmeldung unter Sicherheit aktiviert werden." },
+      { status: 428, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   return user;
 }
 
