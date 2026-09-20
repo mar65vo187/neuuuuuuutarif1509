@@ -17,12 +17,12 @@ const NAV_SECTIONS = [
   {
     label: "Täglich arbeiten",
     items: [
-      { href: "/portal", label: "Command Center", icon: BarChart3, exact: true },
-      { href: "/portal/leads", label: "Anfragen & Termine", icon: Inbox },
+      { href: "/portal", label: "Übersicht & Fokus", icon: BarChart3, exact: true },
+      { href: "/portal/leads", label: "Leads & Termine", icon: Inbox },
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.create", "order.edit"] },
       { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
-      { href: "/portal/inbox", label: "Inbox", icon: Bell },
+      { href: "/portal/inbox", label: "Benachrichtigungen", icon: Bell },
     ],
   },
   {
@@ -35,25 +35,25 @@ const NAV_SECTIONS = [
   {
     label: "Team & Entwicklung",
     items: [
-      { href: "/portal/betrieb", label: "Team & Betrieb", icon: UsersRound },
+      { href: "/portal/betrieb", label: "Team & Betriebsqualität", icon: UsersRound },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
-      { href: "/portal/chat", label: "Interne Chats", icon: MessageSquare },
+      { href: "/portal/chat", label: "Team-Chat", icon: MessageSquare },
       { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
     ],
   },
   {
     label: "Steuerung",
     items: [
-      { href: "/portal/finanzen", label: "Provisionen", icon: WalletCards, anyPermission: ["commission.read.self", "commission.read.team", "commission.read.all", "report.finance"] },
-      { href: "/portal/reporting", label: "Reporting", icon: LineChart, anyPermission: ["report.sales", "report.finance"] },
+      { href: "/portal/finanzen", label: "Provisionsübersicht", icon: WalletCards, anyPermission: ["commission.read.self", "commission.read.team", "commission.read.all", "report.finance"] },
+      { href: "/portal/reporting", label: "Auswertungen", icon: LineChart, anyPermission: ["report.sales", "report.finance"] },
     ],
   },
   {
     label: "Administration",
     items: [
-      { href: "/portal/einstellungen", label: "Einstellungen", icon: KeyRound },
+      { href: "/portal/einstellungen", label: "Mein Zugang", icon: KeyRound },
       { href: "/portal/sicherheit", label: "Sicherheit", icon: ShieldCheck },
-      { href: "/portal/system", label: "System", icon: Settings2, adminOnly: true },
+      { href: "/portal/system", label: "Automationen & Audit", icon: Settings2, adminOnly: true },
     ],
   },
 ] as const;
@@ -122,7 +122,7 @@ export function PortalShell({
   const openHelp = (path = pathname) => { setHelpPath(path); setHelpOpen(true); };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_88%_0%,rgba(79,141,255,0.24),transparent_30%),radial-gradient(circle_at_12%_100%,rgba(217,184,119,0.20),transparent_28%),linear-gradient(145deg,#d9e2ee_0%,#edf1f6_48%,#d4dfec_100%)] text-ink lg:grid lg:grid-cols-[284px_1fr]">
+    <div className="portal-shell min-h-screen bg-[radial-gradient(circle_at_82%_-8%,rgba(79,141,255,0.22),transparent_34%),radial-gradient(circle_at_8%_108%,rgba(217,184,119,0.12),transparent_32%),linear-gradient(145deg,#06101f_0%,#0a1426_48%,#07111f_100%)] text-slate-100 lg:grid lg:grid-cols-[284px_1fr]">
       <aside className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-[radial-gradient(circle_at_top_left,rgba(79,141,255,0.16),transparent_32%),#060b16] px-5 py-3 text-white lg:h-screen lg:flex-col lg:items-stretch lg:justify-start lg:border-b-0 lg:border-r lg:border-white/8 lg:px-5 lg:py-6">
         <div className="flex items-center gap-3"><Logo size={30} href="/portal" /><div className="hidden lg:block"><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-electric-soft">TarifWerk OS</p><p className="mt-0.5 text-[11.5px] text-silver">Sales & Operations</p></div></div>
         <div className="hidden lg:mt-6 lg:block"><label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" /><input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.055] pl-9 pr-3 text-[12.5px] text-white placeholder:text-silver/65 focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/15" placeholder="Bereich suchen…" aria-label="Portalbereich suchen" /></label></div>
@@ -166,7 +166,7 @@ export function PortalShell({
         </div>
         <div className="flex items-center gap-1 lg:hidden"><button type="button" onClick={() => setCommandOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label="Portal durchsuchen"><Search className="h-4 w-4" /></button><button type="button" onClick={logout} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button></div>
       </aside>
-      <div className="min-w-0"><div className="sticky top-0 z-20 hidden border-b border-white/10 bg-ink-900/95 text-white shadow-[0_14px_40px_-28px_rgba(6,11,22,0.9)] backdrop-blur-xl lg:block"><div className="mx-auto flex max-w-[1240px] items-center gap-4 px-8 py-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl border border-electric/25 bg-electric/10 text-electric-soft"><Sparkles className="h-3.5 w-3.5" /></span><div className="min-w-0"><p className="truncate text-[12.5px] font-bold text-white">{currentHelp.title}</p><p className="truncate text-[10.5px] text-silver">{currentHelp.purpose}</p></div></div><button type="button" onClick={() => setCommandOpen(true)} className="ml-auto flex h-9 min-w-[240px] items-center gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 text-left text-[12px] text-silver shadow-sm transition hover:border-electric/35 hover:bg-white/[0.08] hover:text-white"><Search className="h-4 w-4 text-electric-soft" /><span className="flex-1">Alles durchsuchen…</span><kbd className="rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-silver">⌘K</kbd></button><button type="button" onClick={() => openHelp()} className="inline-flex h-9 items-center gap-2 rounded-full border border-champagne/30 bg-champagne/10 px-4 text-[12px] font-bold text-champagne-soft transition hover:border-champagne/50 hover:bg-champagne/15"><Lightbulb className="h-4 w-4 text-champagne" />Hilfe</button></div></div><div className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:py-9">{children}</div></div>
+      <div className="portal-workspace min-w-0"><div className="sticky top-0 z-20 hidden border-b border-white/10 bg-ink-900/95 text-white shadow-[0_14px_40px_-28px_rgba(6,11,22,0.9)] backdrop-blur-xl lg:block"><div className="mx-auto flex max-w-[1240px] items-center gap-4 px-8 py-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl border border-electric/25 bg-electric/10 text-electric-soft"><Sparkles className="h-3.5 w-3.5" /></span><div className="min-w-0"><p className="truncate text-[12.5px] font-bold text-white">{currentHelp.title}</p><p className="truncate text-[10.5px] text-silver">{currentHelp.purpose}</p></div></div><button type="button" onClick={() => setCommandOpen(true)} className="ml-auto flex h-9 min-w-[240px] items-center gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 text-left text-[12px] text-silver shadow-sm transition hover:border-electric/35 hover:bg-white/[0.08] hover:text-white"><Search className="h-4 w-4 text-electric-soft" /><span className="flex-1">Alles durchsuchen…</span><kbd className="rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-silver">⌘K</kbd></button><button type="button" onClick={() => openHelp()} className="inline-flex h-9 items-center gap-2 rounded-full border border-champagne/30 bg-champagne/10 px-4 text-[12px] font-bold text-champagne-soft transition hover:border-champagne/50 hover:bg-champagne/15"><Lightbulb className="h-4 w-4 text-champagne" />Hilfe</button></div></div><div className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:py-9">{children}</div></div>
       <button type="button" onClick={() => openHelp()} className="fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-2xl border border-champagne/30 bg-ink text-champagne-soft shadow-[0_18px_50px_-15px_rgba(6,11,22,0.65)] lg:hidden" aria-label={`Info zu ${currentHelp.title}`}><Lightbulb className="h-5 w-5" /></button>
       <PortalCommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} role={user.role} permissions={permissions} />
       <PortalHelpPanel topic={selectedHelp} open={helpOpen} onClose={() => setHelpOpen(false)} />
