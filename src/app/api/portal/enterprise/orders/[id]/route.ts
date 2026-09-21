@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { updateOrder } from "@/lib/enterprise";
-import { requirePermission } from "@/lib/enterprise-access";
+import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { isCompensationOwner } from "@/lib/compensation";
 
@@ -13,12 +13,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
   try {
-    await requirePermission(user, "order.edit");
+    await requirePermission(user, PORTAL_PERMISSION.ORDER_EDIT);
     const raw = (await context.params).id;
     const id = Number(raw);
     if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id < 1) return NextResponse.json({ ok: false, error: "Ungültige ID." }, { status: 400 });
     const parsed = orderUpdateSchema.safeParse(await readJsonBody(request, 32 * 1024));
     if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Bitte Eingaben prüfen." }, { status: 422 });
+    if (parsed.data.status && ["cancelled", "storno"].includes(parsed.data.status)) {
+      await requirePermission(user, PORTAL_PERMISSION.ORDER_CANCEL);
+    }
     const order = await updateOrder(id, parsed.data, user);
     const safeOrder = isCompensationOwner(user) ? order : { ...order, expectedCommission: null };
     return NextResponse.json({ ok: true, order: safeOrder });
