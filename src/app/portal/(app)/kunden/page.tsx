@@ -11,6 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; focus?: string; page?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fkunden");
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.CUSTOMER_EXPORT] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canRead = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || canEdit;
+  if (!canRead) redirect("/portal");
+  const canExport = capabilities[PORTAL_PERMISSION.CUSTOMER_EXPORT];
   const { q, focus: rawFocus, page: rawPage } = await searchParams;
   const focus = rawFocus && ["review", "opportunity", "risk"].includes(rawFocus) ? rawFocus as "review" | "opportunity" | "risk" : undefined;
   const parsedPage = rawPage ? Number(rawPage) : 1;
@@ -22,10 +27,6 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   const hasPreviousPage = page > 1;
   const rangeStart = rows.length ? (page - 1) * pageSize + 1 : 0;
   const rangeEnd = rows.length ? rangeStart + rows.length - 1 : 0;
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.CUSTOMER_EXPORT] as const);
-  const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
-  const canExport = user.role === "admin" || capabilities[PORTAL_PERMISSION.CUSTOMER_EXPORT];
-
   const pageHref = (nextPage: number) => {
     const params = new URLSearchParams();
     if (q?.trim()) params.set("q", q.trim());
