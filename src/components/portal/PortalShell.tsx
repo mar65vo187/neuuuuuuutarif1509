@@ -38,7 +38,7 @@ const NAV_SECTIONS = [
     label: "Team & Entwicklung",
     items: [
       { href: "/portal/betrieb", label: "Team & Betriebsqualität", icon: UsersRound },
-      { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy },
+      { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy, anyPermission: ["lead.edit"] },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Team-Chat", icon: MessageSquare },
       { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
@@ -48,7 +48,7 @@ const NAV_SECTIONS = [
     label: "Steuerung",
     items: [
       { href: "/portal/finanzen", label: "Provisionsübersicht", icon: WalletCards, anyPermission: ["commission.read.self", "commission.read.team", "commission.read.all", "report.finance"] },
-      { href: "/portal/reporting", label: "Auswertungen", icon: LineChart, anyPermission: ["report.sales", "report.finance"] },
+      { href: "/portal/reporting", label: "Auswertungen", icon: LineChart, anyPermission: ["report.sales"] },
     ],
   },
   {
