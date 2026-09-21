@@ -8,19 +8,36 @@ import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; focus?: string }> }) {
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; focus?: string; page?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fkunden");
-  const { q, focus: rawFocus } = await searchParams;
+  const { q, focus: rawFocus, page: rawPage } = await searchParams;
   const focus = rawFocus && ["review", "opportunity", "risk"].includes(rawFocus) ? rawFocus as "review" | "opportunity" | "risk" : undefined;
-  const rows = await listCustomers(user, q, 150, { focus });
+  const parsedPage = rawPage ? Number(rawPage) : 1;
+  const page = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? Math.min(parsedPage, 100000) : 1;
+  const pageSize = 50;
+  const queriedRows = await listCustomers(user, q, pageSize, { focus, page, lookahead: true });
+  const hasNextPage = queriedRows.length > pageSize;
+  const rows = queriedRows.slice(0, pageSize);
+  const hasPreviousPage = page > 1;
+  const rangeStart = rows.length ? (page - 1) * pageSize + 1 : 0;
+  const rangeEnd = rows.length ? rangeStart + rows.length - 1 : 0;
   const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.CUSTOMER_EXPORT] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canExport = user.role === "admin" || capabilities[PORTAL_PERMISSION.CUSTOMER_EXPORT];
 
+  const pageHref = (nextPage: number) => {
+    const params = new URLSearchParams();
+    if (q?.trim()) params.set("q", q.trim());
+    if (focus) params.set("focus", focus);
+    if (nextPage > 1) params.set("page", String(nextPage));
+    const query = params.toString();
+    return `/portal/kunden${query ? `?${query}` : ""}`;
+  };
+
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
-      <div><p className="eyebrow text-electric-deep">CRM · Kundenreise</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Kunden</h1><p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-steel">{rows.length} Kunden · Herkunft, Aufträge und Empfehlungsnetzwerk bleiben miteinander verknüpft.</p></div>
+      <div><p className="eyebrow text-electric-deep">CRM · Kundenreise</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Kunden</h1><p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-steel">{rows.length ? `Kunden ${rangeStart}–${rangeEnd}` : "Keine Kunden in dieser Ansicht"} · Herkunft, Aufträge und Empfehlungsnetzwerk bleiben miteinander verknüpft.</p></div>
       <div className="flex gap-2">
         {canExport && <a href="/api/portal/enterprise/export?type=customers" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>}
         {canEdit && <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Kunde anlegen</Link>}
@@ -68,5 +85,13 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         </Link></li>;
       })}</ul>}
     </Card>
+    {(hasPreviousPage || hasNextPage || rows.length > 0) && <nav className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-[0_12px_30px_-28px_rgba(6,11,22,0.45)]" aria-label="Kunden-Seiten">
+      <p className="text-[11.5px] font-semibold text-steel">{rows.length ? `Kunden ${rangeStart}–${rangeEnd}` : "Keine Kunden auf dieser Seite"}</p>
+      <div className="flex items-center gap-2">
+        {hasPreviousPage ? <Link href={pageHref(page - 1)} className="inline-flex h-9 items-center rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold text-ink hover:border-electric/30">Zurück</Link> : <span className="inline-flex h-9 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Zurück</span>}
+        <span className="min-w-20 text-center text-[11.5px] font-extrabold text-ink">Seite {page}</span>
+        {hasNextPage ? <Link href={pageHref(page + 1)} className="inline-flex h-9 items-center rounded-xl bg-electric px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">Weiter</Link> : <span className="inline-flex h-9 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Weiter</span>}
+      </div>
+    </nav>}
   </div>;
 }
