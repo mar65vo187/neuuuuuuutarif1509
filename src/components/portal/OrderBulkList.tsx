@@ -25,10 +25,13 @@ const STATUS_OPTIONS = [
 
 const LABELS = Object.fromEntries(STATUS_OPTIONS.map((option) => [option.value, option.label]));
 
-export function OrderBulkList({ rows, showCommission, canEdit }: { rows: Row[]; showCommission: boolean; canEdit: boolean }) {
+export function OrderBulkList({ rows, showCommission, canEdit, canCancel }: { rows: Row[]; showCommission: boolean; canEdit: boolean; canCancel: boolean }) {
   const [selected, setSelected] = useState<number[]>([]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const allSelected = rows.length > 0 && selected.length === rows.length;
+  const availableStatusOptions = canCancel
+    ? STATUS_OPTIONS
+    : STATUS_OPTIONS.filter((option) => !["cancelled", "storno"].includes(option.value));
 
   function toggle(id: number) {
     setSelected((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
@@ -42,7 +45,7 @@ export function OrderBulkList({ rows, showCommission, canEdit }: { rows: Row[]; 
             <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : rows.map((row) => row.id))} className="h-4 w-4 rounded border-line" aria-label="Alle Aufträge auswählen" />
             <p className="text-[11.5px] font-semibold text-steel">Mehrfachauswahl · Storno nur mit Sicherheitsabfrage</p>
           </div>
-          {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="order" selectedIds={selected} statusOptions={STATUS_OPTIONS} onCompleted={() => setSelected([])} /></div>}
+          {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="order" selectedIds={selected} statusOptions={availableStatusOptions} onCompleted={() => setSelected([])} /></div>}
         </>
       ) : (
         <div className="border-b border-line bg-paper/60 px-5 py-3 text-[11.5px] font-semibold text-steel sm:px-6">Nur Leserechte · Änderungen sind für diese Rolle deaktiviert.</div>
