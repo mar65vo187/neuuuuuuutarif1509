@@ -18,8 +18,12 @@ test("lead list uses bounded server-side pagination instead of a fixed 300-row w
 
 test("quick called action no longer claims that the lead was reached", () => {
   const pipeline = read("../../src/components/portal/LeadPipelineBoard.tsx");
-  assert.match(pipeline, /patch\(row, \{ status: "kontaktiert" \}\)/);
+  assert.match(pipeline, /status: "kontaktiert", contactOutcome: "attempted"/);
   assert.doesNotMatch(pipeline, /status: "kontaktiert", contactOutcome: "reached"/);
+  const content = read("../../src/lib/content.ts");
+  const validation = read("../../src/lib/validation.ts");
+  assert.match(content, /attempted: "Angerufen · Ergebnis offen"/);
+  assert.match(validation, /"open", "attempted", "reached"/);
 });
 
 test("closed leads cannot create or keep automatic callback tasks", () => {
