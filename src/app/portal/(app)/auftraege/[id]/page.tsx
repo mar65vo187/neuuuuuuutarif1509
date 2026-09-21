@@ -7,7 +7,7 @@ import { ProviderCommissionAction } from "@/components/portal/ProviderCommission
 import { getCurrentUser } from "@/lib/auth";
 import { getOrder } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
-import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +53,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id < 1) notFound();
   const user = await getCurrentUser();
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/auftraege/${id}`)}`);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+  const canRead = capabilities[PORTAL_PERMISSION.ORDER_READ] || canEdit;
+  if (!canRead) redirect("/portal");
   const data = await getOrder(id, user);
   if (!data) notFound();
-  const canEdit = await hasPermission(user, PORTAL_PERMISSION.ORDER_EDIT);
   const customerName = data.customer.companyName || [data.customer.firstName, data.customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
   const owner = isCompensationOwner(user);
   const orderFacts: Array<[string, string | null]> = [
