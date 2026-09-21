@@ -60,78 +60,91 @@ export default async function PortalDashboard() {
     getCommandCenterData(user),
     permissionSnapshot(user, [
       PORTAL_PERMISSION.LEAD_EDIT,
+      PORTAL_PERMISSION.CUSTOMER_READ,
       PORTAL_PERMISSION.CUSTOMER_EDIT,
+      PORTAL_PERMISSION.ORDER_READ,
       PORTAL_PERMISSION.ORDER_CREATE,
+      PORTAL_PERMISSION.ORDER_EDIT,
       PORTAL_PERMISSION.TASK_MANAGE,
       PORTAL_PERMISSION.REPORT_SALES,
     ] as const),
   ]);
   const canLeadEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canLeadRead = canLeadEdit;
   const canCustomerEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canCustomerRead = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || canCustomerEdit;
   const canOrderCreate = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
+  const canOrderEdit = capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+  const canOrderRead = capabilities[PORTAL_PERMISSION.ORDER_READ] || canOrderEdit;
   const canTaskManage = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
   const canReport = capabilities[PORTAL_PERMISSION.REPORT_SALES];
   const workOrders = data.orderPipeline
     .filter((row) => !["active", "rejected", "cancelled", "storno"].includes(row.status))
     .reduce((sum, row) => sum + row.count, 0);
-  const attention = data.metrics.untouchedLeads24h + data.metrics.overdueTasks + data.metrics.attentionOrders + data.metrics.dueCustomerReviews + data.metrics.atRiskCustomers;
+  const attention =
+    (canLeadRead ? data.metrics.untouchedLeads24h : 0)
+    + (canTaskManage ? data.metrics.overdueTasks : 0)
+    + (canOrderRead ? data.metrics.attentionOrders : 0)
+    + (canCustomerRead ? data.metrics.dueCustomerReviews + data.metrics.atRiskCustomers : 0);
 
   const kpis = [
-    { label: "Offene Leads", value: data.metrics.openLeads, hint: data.metrics.newLeads24h + " neu in 24h", href: "/portal/leads", Icon: Inbox },
-    { label: "Aufträge in Arbeit", value: workOrders, hint: data.metrics.activeOrders + " bereits aktiv", href: "/portal/auftraege", Icon: BriefcaseBusiness },
-    { label: "Aufgaben fällig", value: data.metrics.dueTasks24h, hint: "nächste 24 Stunden", href: "/portal/aufgaben", Icon: Clock3 },
-    { label: "Aufmerksamkeit", value: attention, hint: data.metrics.overdueTasks + " Tasks überfällig", href: "#fokus", Icon: AlertTriangle, attention: attention > 0 },
-    { label: "Kunden", value: data.metrics.customers, hint: "aktive Kundenakten", href: "/portal/kunden", Icon: ContactRound },
-    { label: "Abschlüsse 30T", value: data.metrics.wins30, hint: "abgeschlossene Leads", href: canReport ? "/portal/reporting" : "/portal/leads?status=abgeschlossen", Icon: TrendingUp },
+    ...(canLeadRead ? [{ label: "Offene Leads", value: data.metrics.openLeads, hint: data.metrics.newLeads24h + " neu in 24h", href: "/portal/leads", Icon: Inbox }] : []),
+    ...(canOrderRead ? [{ label: "Aufträge in Arbeit", value: workOrders, hint: data.metrics.activeOrders + " bereits aktiv", href: "/portal/auftraege", Icon: BriefcaseBusiness }] : []),
+    ...(canTaskManage ? [{ label: "Aufgaben fällig", value: data.metrics.dueTasks24h, hint: "nächste 24 Stunden", href: "/portal/aufgaben", Icon: Clock3 }] : []),
+    ...(attention > 0 ? [{ label: "Aufmerksamkeit", value: attention, hint: "sichtbare Prioritäten aus deinem Arbeitsbereich", href: "#fokus", Icon: AlertTriangle, attention: true }] : []),
+    ...(canCustomerRead ? [{ label: "Kunden", value: data.metrics.customers, hint: "aktive Kundenakten", href: "/portal/kunden", Icon: ContactRound }] : []),
+    ...(canLeadRead ? [{ label: "Abschlüsse 30T", value: data.metrics.wins30, hint: "abgeschlossene Leads", href: canReport ? "/portal/reporting" : "/portal/leads?status=abgeschlossen", Icon: TrendingUp }] : []),
   ];
   const firstFocus = data.focus[0] ?? null;
-  const salesControl = [
+  const salesControl = canLeadRead ? [
     { label: "Hot Leads", value: data.metrics.hotLeads, hint: "hohe Priorität", href: "/portal/leads?priority=attention", Icon: Flame, tone: "border-champagne/30 bg-champagne/10" },
     { label: "Heute nachfassen", value: data.metrics.dueLeadFollowUpsToday, hint: "geplante Kontakte", href: "/portal/leads?next=today&sort=next", Icon: CalendarClock, tone: "border-electric/20 bg-electric/[0.06]" },
     { label: "Ohne nächsten Schritt", value: data.metrics.leadsMissingNextAction, hint: "CRM-Lücke schließen", href: "/portal/leads?next=missing", Icon: Target, tone: "border-amber-200 bg-amber-50/80" },
     { label: "Ohne Produktprofil", value: data.metrics.leadsWithoutProduct, hint: "Potenzial ergänzen", href: "/portal/leads?relation=none", Icon: PackageSearch, tone: "border-violet-200 bg-violet-50/80" },
-  ];
-  const customerControl = [
+  ] : [];
+  const customerControl = canCustomerRead ? [
     { label: "Reviews fällig", value: data.metrics.dueCustomerReviews, hint: "Bestandscheck jetzt", href: "/portal/kunden?focus=review", Icon: Clock3, tone: "border-amber-200 bg-amber-50/80" },
     { label: "Offene Potenziale", value: data.metrics.openCustomerOpportunities, hint: "qualifizieren oder terminieren", href: "/portal/kunden?focus=opportunity", Icon: Target, tone: "border-electric/20 bg-electric/[0.06]" },
     { label: "Risiko-Kunden", value: data.metrics.atRiskCustomers, hint: "Beziehung aktiv prüfen", href: "/portal/kunden?focus=risk", Icon: AlertTriangle, tone: "border-red-200 bg-red-50/70" },
-  ];
+  ] : [];
   const qualityChecks = [
-    { label: "Nächster Schritt gesetzt", open: data.metrics.leadsMissingNextAction, href: "/portal/leads?next=missing", detail: "Jeder offene Lead braucht eine konkrete nächste Aktion.", Icon: Target },
-    { label: "Produktbild gepflegt", open: data.metrics.leadsWithoutProduct, href: "/portal/leads?relation=none", detail: "Bedarf, Bestand oder Abschluss sollten nachvollziehbar dokumentiert sein.", Icon: PackageSearch },
-    { label: "Aufgaben im Zeitplan", open: data.metrics.overdueTasks, href: "/portal/aufgaben", detail: "Überfällige Aufgaben zuerst schließen oder neu terminieren.", Icon: Clock3 },
-    { label: "Bestandschecks aktuell", open: data.metrics.dueCustomerReviews, href: "/portal/kunden?focus=review", detail: "Fällige Kundenreviews aktiv bearbeiten statt liegen lassen.", Icon: CheckCircle2 },
+    ...(canLeadRead ? [
+      { label: "Nächster Schritt gesetzt", open: data.metrics.leadsMissingNextAction, href: "/portal/leads?next=missing", detail: "Jeder offene Lead braucht eine konkrete nächste Aktion.", Icon: Target },
+      { label: "Produktbild gepflegt", open: data.metrics.leadsWithoutProduct, href: "/portal/leads?relation=none", detail: "Bedarf, Bestand oder Abschluss sollten nachvollziehbar dokumentiert sein.", Icon: PackageSearch },
+    ] : []),
+    ...(canTaskManage ? [{ label: "Aufgaben im Zeitplan", open: data.metrics.overdueTasks, href: "/portal/aufgaben", detail: "Überfällige Aufgaben zuerst schließen oder neu terminieren.", Icon: Clock3 }] : []),
+    ...(canCustomerRead ? [{ label: "Bestandschecks aktuell", open: data.metrics.dueCustomerReviews, href: "/portal/kunden?focus=review", detail: "Fällige Kundenreviews aktiv bearbeiten statt liegen lassen.", Icon: CheckCircle2 }] : []),
   ];
   const assistantRecommendations = [
-    ...(data.metrics.overdueTasks > 0 ? [{
+    ...(canTaskManage && data.metrics.overdueTasks > 0 ? [{
       key: "overdue-tasks",
       priority: "hoch",
       title: "Überfällige Aufgaben zuerst bereinigen",
       reason: data.metrics.overdueTasks + " Aufgabe" + (data.metrics.overdueTasks === 1 ? " ist" : "n sind") + " überfällig. Das ist konkreter als neue Arbeit zu beginnen.",
       href: "/portal/aufgaben",
     }] : []),
-    ...(data.metrics.untouchedLeads24h > 0 ? [{
+    ...(canLeadRead && data.metrics.untouchedLeads24h > 0 ? [{
       key: "untouched-leads",
       priority: "hoch",
       title: "Unberührte Leads prüfen",
       reason: data.metrics.untouchedLeads24h + " neue Anfrage" + (data.metrics.untouchedLeads24h === 1 ? " wartet" : "n warten") + " seit mehr als 24 Stunden auf dokumentierte Bearbeitung.",
       href: "/portal/leads?priority=attention",
     }] : []),
-    ...(data.metrics.atRiskCustomers > 0 ? [{
+    ...(canCustomerRead && data.metrics.atRiskCustomers > 0 ? [{
       key: "risk-customers",
       priority: "mittel",
       title: "Risiko-Kunden aktiv prüfen",
       reason: data.metrics.atRiskCustomers + " Kundenakte" + (data.metrics.atRiskCustomers === 1 ? " ist" : "n sind") + " als gefährdet oder erhöhtes Risiko markiert.",
       href: "/portal/kunden?focus=risk",
     }] : []),
-    ...(data.metrics.leadsMissingNextAction > 0 ? [{
+    ...(canLeadRead && data.metrics.leadsMissingNextAction > 0 ? [{
       key: "next-action",
       priority: "mittel",
       title: "Nächste Schritte vervollständigen",
       reason: data.metrics.leadsMissingNextAction + " offene Lead" + (data.metrics.leadsMissingNextAction === 1 ? " hat" : "s haben") + " noch keine konkrete nächste Aktion.",
       href: "/portal/leads?next=missing",
     }] : []),
-    ...(data.metrics.dueCustomerReviews > 0 ? [{
+    ...(canCustomerRead && data.metrics.dueCustomerReviews > 0 ? [{
       key: "reviews",
       priority: "normal",
       title: "Fällige Bestandschecks einplanen",
