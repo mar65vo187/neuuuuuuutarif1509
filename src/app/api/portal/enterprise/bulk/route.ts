@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: "Ungültiger Auftragsstatus." }, { status: 422 });
       }
       if (ids.length > 100) return NextResponse.json({ ok: false, error: "Maximal 100 Aufträge pro Bulk-Aktion." }, { status: 422 });
+      if (["cancelled", "storno"].includes(value)) await requirePermission(user, PORTAL_PERMISSION.ORDER_CANCEL);
 
       let changed = 0;
       const failed: Array<{ id: number; error: string }> = [];
