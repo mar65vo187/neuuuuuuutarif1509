@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart, Megaphone,
-  KeyRound, Lightbulb, ListTodo, LogOut, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards,
+  KeyRound, Lightbulb, ListTodo, LogOut, Menu, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards, X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -82,6 +82,7 @@ export function PortalShell({
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpPath, setHelpPath] = useState(pathname);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -129,7 +130,7 @@ export function PortalShell({
       <aside className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-[radial-gradient(circle_at_top_left,rgba(79,141,255,0.16),transparent_32%),#060b16] px-5 py-3 text-white lg:h-screen lg:flex-col lg:items-stretch lg:justify-start lg:border-b-0 lg:border-r lg:border-white/8 lg:px-5 lg:py-6">
         <div className="flex items-center gap-3"><Logo size={30} href="/portal" /><div className="hidden lg:block"><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-electric-soft">TarifWerk Portal</p><p className="mt-0.5 text-[11.5px] text-silver">Vertrieb & Betrieb</p></div></div>
         <div className="hidden lg:mt-6 lg:block"><label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" /><input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.055] pl-9 pr-3 text-[12.5px] text-white placeholder:text-silver/65 focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/15" placeholder="Bereich suchen…" aria-label="Portalbereich suchen" /></label></div>
-        <nav className="no-scrollbar flex max-w-[calc(100vw-120px)] gap-1 overflow-x-auto lg:mt-5 lg:max-w-none lg:flex-col lg:gap-4 lg:overflow-y-auto" aria-label="Portal">
+        <nav className="no-scrollbar hidden lg:mt-5 lg:flex lg:max-w-none lg:flex-col lg:gap-4 lg:overflow-y-auto" aria-label="Portal">
           {navigationSections.map((section) => (
             <div key={section.label} className="contents lg:block">
               <p className="mb-1 hidden px-3 text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-silver/45 lg:block">{section.label}</p>
@@ -156,6 +157,36 @@ export function PortalShell({
             </div>
           ))}
         </nav>
+        {mobileNavOpen && (
+          <div className="absolute left-3 right-3 top-full z-50 mt-2 max-h-[calc(100vh-88px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#07111f]/[0.98] p-3 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl lg:hidden">
+            <div className="mb-3 flex items-center justify-between px-2">
+              <div><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-electric-soft">Navigation</p><p className="mt-0.5 text-[11.5px] text-silver">Bereich direkt öffnen</p></div>
+              <button type="button" onClick={() => setMobileNavOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-silver hover:bg-white/10 hover:text-white" aria-label="Menü schließen"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-4">
+              {navigationSections.map((section) => (
+                <section key={section.label}>
+                  <p className="mb-1 px-2 text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-silver/50">{section.label}</p>
+                  <div className="space-y-1">
+                    {section.items.map((n) => {
+                      const exact = "exact" in n && n.exact;
+                      const active = exact ? pathname === n.href : pathname.startsWith(n.href);
+                      const Icon = n.icon;
+                      return (
+                        <Link key={n.href} href={n.href} onClick={() => setMobileNavOpen(false)} aria-current={active ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold ${active ? "bg-white/10 text-white" : "text-silver hover:bg-white/6 hover:text-white"}`}>
+                          <Icon className={`h-4 w-4 shrink-0 ${active ? "text-electric-soft" : ""}`} />
+                          <span className="min-w-0 flex-1 truncate">{n.label}</span>
+                          {n.href === "/portal/leads" && openCount > 0 && <span className="rounded-full bg-electric px-2 py-0.5 text-[10px] font-bold text-white">{openCount > 99 ? "99+" : openCount}</span>}
+                          {n.href === "/portal/inbox" && notificationCount > 0 && <span className="rounded-full bg-champagne px-2 py-0.5 text-[10px] font-extrabold text-ink">{notificationCount > 99 ? "99+" : notificationCount}</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="hidden lg:mt-auto lg:block">
           <Link href="/" className="inline-flex items-center gap-2 text-[13px] text-silver hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Website öffnen</Link>
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/8 bg-white/5 p-3">
@@ -167,7 +198,7 @@ export function PortalShell({
             <button type="button" onClick={logout} className="grid h-8 w-8 place-items-center rounded-lg text-silver hover:bg-white/10 hover:text-white" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button>
           </div>
         </div>
-        <div className="flex items-center gap-1 lg:hidden"><button type="button" onClick={() => setCommandOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label="Portal durchsuchen"><Search className="h-4 w-4" /></button><button type="button" onClick={logout} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button></div>
+        <div className="flex items-center gap-1 lg:hidden"><button type="button" onClick={() => setMobileNavOpen((value) => !value)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 text-[11px] font-bold text-white hover:bg-white/10" aria-label={mobileNavOpen ? "Menü schließen" : "Menü öffnen"} aria-expanded={mobileNavOpen}><Menu className="h-4 w-4" /><span>Menü</span></button><button type="button" onClick={() => setCommandOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label="Portal durchsuchen"><Search className="h-4 w-4" /></button><button type="button" onClick={logout} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-silver hover:bg-white/10" aria-label={logoutError ?? "Abmelden"} title={logoutError}><LogOut className="h-4 w-4" /></button></div>
       </aside>
       <div className="portal-workspace min-w-0"><div className="sticky top-0 z-20 hidden border-b border-white/10 bg-ink-900/95 text-white shadow-[0_14px_40px_-28px_rgba(6,11,22,0.9)] backdrop-blur-xl lg:block"><div className="mx-auto flex max-w-[1240px] items-center gap-4 px-8 py-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-xl border border-electric/25 bg-electric/10 text-electric-soft"><Sparkles className="h-3.5 w-3.5" /></span><div className="min-w-0"><p className="truncate text-[12.5px] font-bold text-white">{currentHelp.title}</p><p className="truncate text-[10.5px] text-silver">{currentHelp.purpose}</p></div></div><button type="button" onClick={() => setCommandOpen(true)} className="ml-auto flex h-9 min-w-[240px] items-center gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 text-left text-[12px] text-silver shadow-sm transition hover:border-electric/35 hover:bg-white/[0.08] hover:text-white"><Search className="h-4 w-4 text-electric-soft" /><span className="flex-1">Alles durchsuchen…</span><kbd className="rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-silver">⌘K</kbd></button><button type="button" onClick={() => openHelp()} className="inline-flex h-9 items-center gap-2 rounded-full border border-champagne/30 bg-champagne/10 px-4 text-[12px] font-bold text-champagne-soft transition hover:border-champagne/50 hover:bg-champagne/15"><Lightbulb className="h-4 w-4 text-champagne" />Hilfe</button></div></div><div className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:py-9">{children}</div></div>
       <button type="button" onClick={() => openHelp()} className="fixed bottom-5 right-5 z-50 grid h-12 w-12 place-items-center rounded-2xl border border-champagne/30 bg-ink text-champagne-soft shadow-[0_18px_50px_-15px_rgba(6,11,22,0.65)] lg:hidden" aria-label={`Info zu ${currentHelp.title}`}><Lightbulb className="h-5 w-5" /></button>
