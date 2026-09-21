@@ -120,11 +120,18 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Keine Prämie sollte nur aufgrund einer neuen Anfrage als verdient gelten.", "Bedingungen müssen vor einer Auszahlung eindeutig dokumentiert sein."],
   },
   {
+    href: "/portal/audit",
+    title: "Audit & Compliance",
+    purpose: "Änderungen im CRM revisionsnah nachvollziehen, ohne Zugriff auf die administrative Systemkonfiguration zu benötigen.",
+    actions: ["Audit-Ereignisse durchsuchen", "Nach Datensatztyp filtern", "Akteur und Zeitpunkt nachvollziehen", "Dokumentierte Vorher-/Nachher-Werte prüfen"],
+    tips: ["Audit-Daten sind eine Kontrollspur und keine normale Arbeitsnotiz.", "Zugriff erhalten nur Rollen mit dem Recht audit.read."],
+  },
+  {
     href: "/portal/system",
-    title: "Automationen & Audit",
-    purpose: "Katalog, sichere Automationen, Qualitäts-Wächter, Integrationen und Audit-Funktionen administrativ kontrollieren.",
-    actions: ["Systemdaten und Kataloge prüfen", "Automationen verwalten", "Täglichen Qualitäts-Wächter kontrollieren", "Audit-Ereignisse nachvollziehen", "Technische Auffälligkeiten erkennen"],
-    tips: ["Audit-Historien nicht manipulieren oder als normale Notizen verwenden.", "Ändern Sie Automationen nur mit klarer fachlicher Wirkung."],
+    title: "Automationen & Integrationen",
+    purpose: "Katalog, sichere Automationen, Qualitäts-Wächter und Integrationen administrativ kontrollieren.",
+    actions: ["Systemdaten und Kataloge prüfen", "Automationen verwalten", "Täglichen Qualitäts-Wächter kontrollieren", "Integrationen überwachen", "Technische Auffälligkeiten erkennen"],
+    tips: ["Audit-Prüfungen erfolgen im separaten Bereich Audit & Compliance.", "Ändern Sie Automationen nur mit klarer fachlicher Wirkung."],
   },
   {
     href: "/portal/sicherheit",
