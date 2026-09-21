@@ -5,6 +5,7 @@ import { auditEvents, commissionEvents, customerCrmProfiles, customerOpportuniti
 import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { leadAccessCondition } from "@/lib/queries";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -112,10 +113,23 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
   const ago14d = new Date(now.getTime() - 14 * DAY);
   const ago30d = new Date(now.getTime() - 30 * DAY);
 
-  const leadAccess = leadAccessCondition(user);
-  const orderCondition = orderAccess(user);
-  const taskCondition = taskAccess(user);
-  const customerCondition = customerAccess(user);
+  const capabilities = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.LEAD_EDIT,
+    PORTAL_PERMISSION.CUSTOMER_READ,
+    PORTAL_PERMISSION.CUSTOMER_EDIT,
+    PORTAL_PERMISSION.ORDER_READ,
+    PORTAL_PERMISSION.ORDER_EDIT,
+    PORTAL_PERMISSION.TASK_MANAGE,
+  ] as const);
+  const canLead = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+  const canTask = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
+
+  const leadAccess = canLead ? leadAccessCondition(user) : sql`false`;
+  const orderCondition = canOrder ? orderAccess(user) : sql`false`;
+  const taskCondition = canTask ? taskAccess(user) : sql`false`;
+  const customerCondition = canCustomer ? customerAccess(user) : sql`false`;
 
   const [
     leadMetricsRows,
@@ -249,6 +263,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       count: sql<number>`count(*)::int`,
     }).from(leads)
       .where(and(
+        leadAccess,
         eq(leads.createdByEmployeeId, user.id),
         gte(leads.createdAt, new Date(now.getTime() - MOMENTUM_HISTORY_DAYS * DAY)),
       ))
@@ -313,11 +328,11 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     const overdue = task.dueAt ? task.dueAt.getTime() < now.getTime() : false;
     const dueSoon = task.dueAt ? task.dueAt.getTime() <= next24.getTime() : false;
     if (!overdue && !dueSoon && task.priority !== "critical" && task.priority !== "high") continue;
-    const href = task.entityType === "order"
+    const href = task.entityType === "order" && canOrder
       ? `/portal/auftraege/${task.entityId}`
-      : task.entityType === "customer"
+      : task.entityType === "customer" && canCustomer
         ? `/portal/kunden/${task.entityId}`
-        : task.entityType === "lead"
+        : task.entityType === "lead" && canLead
           ? `/portal/leads/${task.entityId}`
           : "/portal/aufgaben";
     focus.push({
