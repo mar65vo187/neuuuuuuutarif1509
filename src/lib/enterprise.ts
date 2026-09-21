@@ -1750,14 +1750,38 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
   };
 }
 
-export async function listAuditEvents(limit = 100) {
+export async function listAuditEvents(limit = 100, filter?: {
+  page?: number;
+  lookahead?: boolean;
+  q?: string;
+  entityType?: string;
+}) {
+  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
+  const pageSize = Math.max(1, Math.min(limit, 500));
+  const queryLimit = Math.min(pageSize + (filter?.lookahead ? 1 : 0), 500);
+  const offset = (page - 1) * pageSize;
+  const conditions: SQL[] = [];
+  const q = filter?.q?.trim().slice(0, 120);
+  const entityType = filter?.entityType?.trim().slice(0, 60);
+  if (q) {
+    conditions.push(or(
+      ilike(auditEvents.action, `%${q}%`),
+      ilike(auditEvents.entityType, `%${q}%`),
+      ilike(auditEvents.entityId, `%${q}%`),
+      ilike(employees.name, `%${q}%`),
+    )!);
+  }
+  if (entityType) conditions.push(eq(auditEvents.entityType, entityType));
+
   return db.select({
     event: auditEvents,
     actorName: employees.name,
   }).from(auditEvents)
     .leftJoin(employees, eq(auditEvents.actorEmployeeId, employees.id))
-    .orderBy(desc(auditEvents.createdAt))
-    .limit(Math.max(1, Math.min(limit, 500)));
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(auditEvents.createdAt), desc(auditEvents.id))
+    .limit(queryLimit)
+    .offset(offset);
 }
 
 export async function listAutomations() {
