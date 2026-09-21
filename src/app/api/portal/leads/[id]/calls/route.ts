@@ -92,9 +92,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         requestedCallbackAt,
       });
 
-      const shouldSchedule = data.autoSchedule && recommendation.action === "call_again" && Boolean(recommendation.at);
+      const closedLead = ["abgeschlossen", "verloren"].includes(lead.status);
+      const shouldSchedule = !closedLead && data.autoSchedule && recommendation.action === "call_again" && Boolean(recommendation.at);
       const explicitDoNotContact = data.reaction === "do_not_contact";
-      const stopAutoFollowUp = (data.autoSchedule && recommendation.action === "no_auto_call") || explicitDoNotContact;
+      const stopAutoFollowUp = closedLead || (data.autoSchedule && recommendation.action === "no_auto_call") || explicitDoNotContact;
       const nextActionAt = shouldSchedule ? recommendation.at : stopAutoFollowUp ? null : lead.nextActionAt;
 
       const patch: Partial<typeof leads.$inferInsert> = {
