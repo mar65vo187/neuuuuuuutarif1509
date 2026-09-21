@@ -99,6 +99,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const canReadOrders = await hasPermission(user, "order.read") || await hasPermission(user, "order.edit");
+  if (!canReadOrders) {
+    return NextResponse.json({ ok: false, error: "Keine Berechtigung für Auftragsdaten." }, { status: 403 });
+  }
+
   const pageSize = 300;
   const fetchPage = (page: number) => listOrders(user, { page }, pageSize);
 
