@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, Gift, Inbox, LineChart, Megaphone,
+  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, FileCheck2, Gift, Inbox, LineChart, Megaphone,
   KeyRound, Lightbulb, ListTodo, LogOut, Menu, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards, X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -19,10 +19,10 @@ const NAV_SECTIONS = [
     items: [
       { href: "/portal", label: "Übersicht & Fokus", icon: BarChart3, exact: true },
       { href: "/portal/assistent", label: "KI & Arbeitsassistent", icon: BrainCircuit },
-      { href: "/portal/leads", label: "Leads & Termine", icon: Inbox },
+      { href: "/portal/leads", label: "Leads & Termine", icon: Inbox, anyPermission: ["lead.edit"] },
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
-      { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.create", "order.edit"] },
-      { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo },
+      { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.edit"] },
+      { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo, anyPermission: ["task.manage"] },
       { href: "/portal/inbox", label: "Benachrichtigungen", icon: Bell },
     ],
   },
@@ -56,7 +56,8 @@ const NAV_SECTIONS = [
     items: [
       { href: "/portal/einstellungen", label: "Mein Zugang", icon: KeyRound },
       { href: "/portal/sicherheit", label: "Sicherheit", icon: ShieldCheck },
-      { href: "/portal/system", label: "Automationen & Audit", icon: Settings2, adminOnly: true },
+      { href: "/portal/audit", label: "Audit & Compliance", icon: FileCheck2, anyPermission: ["audit.read"] },
+      { href: "/portal/system", label: "Automationen & Integrationen", icon: Settings2, adminOnly: true },
     ],
   },
 ] as const;

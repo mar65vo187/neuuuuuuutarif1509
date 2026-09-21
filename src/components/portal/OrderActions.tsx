@@ -19,7 +19,7 @@ const LABELS: Record<string, string> = {
   storno: "Storno / Rückbelastung",
 };
 
-export function OrderActions({ orderId, status, providerStatus, externalOrderId }: { orderId: number; status: string; providerStatus: string | null; externalOrderId: string | null }) {
+export function OrderActions({ orderId, status, providerStatus, externalOrderId, canCancel }: { orderId: number; status: string; providerStatus: string | null; externalOrderId: string | null; canCancel: boolean }) {
   const router = useRouter();
   const saving = useRef(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,6 +27,9 @@ export function OrderActions({ orderId, status, providerStatus, externalOrderId 
   const [provider, setProvider] = useState(providerStatus ?? "");
   const [external, setExternal] = useState(externalOrderId ?? "");
   const [reason, setReason] = useState("");
+  const visibleStatuses = canCancel
+    ? ORDER_STATUSES
+    : ORDER_STATUSES.filter((value) => !["cancelled", "storno"].includes(value));
 
   async function patch(key: string, body: Record<string, unknown>) {
     if (saving.current) return;
@@ -56,7 +59,7 @@ export function OrderActions({ orderId, status, providerStatus, externalOrderId 
       <div>
         <p className="label">Auftragsstatus</p>
         <div className="flex flex-wrap gap-2">
-          {ORDER_STATUSES.map((value) => (
+          {visibleStatuses.map((value) => (
             <button key={value} type="button" disabled={busy !== null || value === status}
               onClick={() => patch(`status:${value}`, { status: value, cancellationReason: ["cancelled","storno"].includes(value) ? reason || undefined : undefined })}
               className={`chip h-9 px-3.5 ${value === status ? "border-ink bg-ink text-white" : "border-line bg-white text-ink-700 hover:border-ink/40"}`}>
@@ -65,7 +68,7 @@ export function OrderActions({ orderId, status, providerStatus, externalOrderId 
           ))}
         </div>
       </div>
-      <label className="label">Storno-/Ablehnungsgrund<textarea rows={2} maxLength={1000} className="field" value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+      {canCancel && <label className="label">Stornogrund<textarea rows={2} maxLength={1000} className="field" value={reason} onChange={(e) => setReason(e.target.value)} /></label>}
       <div className="grid gap-3">
         <label className="label">Providerstatus<input maxLength={160} className="field" value={provider} onChange={(e) => setProvider(e.target.value)} /></label>
         <label className="label">Externe Auftrags-ID<input maxLength={160} className="field" value={external} onChange={(e) => setExternal(e.target.value)} /></label>

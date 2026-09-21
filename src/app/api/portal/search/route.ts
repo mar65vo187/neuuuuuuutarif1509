@@ -6,6 +6,7 @@ import { tasks } from "@/db/enterprise-schema";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers, listOrders } from "@/lib/enterprise";
 import { leadAccessCondition } from "@/lib/queries";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,18 @@ export async function GET(request: NextRequest) {
   if (q.length < 2) return NextResponse.json({ ok: true, results: [] satisfies SearchResult[] });
 
   try {
+    const capabilities = await permissionSnapshot(user, [
+      PORTAL_PERMISSION.LEAD_EDIT,
+      PORTAL_PERMISSION.CUSTOMER_READ,
+      PORTAL_PERMISSION.CUSTOMER_EDIT,
+      PORTAL_PERMISSION.ORDER_READ,
+      PORTAL_PERMISSION.ORDER_EDIT,
+      PORTAL_PERMISSION.TASK_MANAGE,
+    ] as const);
+    const canLead = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+    const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+    const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+    const canTask = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
     const taskCondition = user.role === "admin" ? sql`true` : eq(tasks.assignedToEmployeeId, user.id);
     const employeePromise = user.role === "admin"
       ? db.select({ id: employees.id, name: employees.name, email: employees.email, role: employees.role })
@@ -35,7 +48,7 @@ export async function GET(request: NextRequest) {
       : Promise.resolve([]);
 
     const [leadRows, customerRows, orderRows, taskRows, employeeRows] = await Promise.all([
-      db.select({
+      canLead ? db.select({
         id: leads.id,
         name: leads.name,
         topic: leads.topic,
@@ -54,10 +67,10 @@ export async function GET(request: NextRequest) {
           ),
         ))
         .orderBy(desc(leads.updatedAt))
-        .limit(7),
-      listCustomers(user, q, 7),
-      listOrders(user, { search: q }, 7),
-      db.select({
+        .limit(7) : Promise.resolve([]),
+      canCustomer ? listCustomers(user, q, 7) : Promise.resolve([]),
+      canOrder ? listOrders(user, { search: q }, 7) : Promise.resolve([]),
+      canTask ? db.select({
         id: tasks.id,
         title: tasks.title,
         description: tasks.description,
@@ -71,7 +84,7 @@ export async function GET(request: NextRequest) {
           or(ilike(tasks.title, `%${q}%`), ilike(tasks.description, `%${q}%`)),
         ))
         .orderBy(desc(tasks.updatedAt))
-        .limit(6),
+        .limit(6) : Promise.resolve([]),
       employeePromise,
     ]);
 
@@ -102,11 +115,11 @@ export async function GET(request: NextRequest) {
         kind: "task" as const,
         title: row.title,
         subtitle: [row.priority, row.status, row.description].filter(Boolean).join(" · "),
-        href: row.entityType === "order"
+        href: row.entityType === "order" && canOrder
           ? `/portal/auftraege/${row.entityId}`
-          : row.entityType === "customer"
+          : row.entityType === "customer" && canCustomer
             ? `/portal/kunden/${row.entityId}`
-            : row.entityType === "lead"
+            : row.entityType === "lead" && canLead
               ? `/portal/leads/${row.entityId}`
               : "/portal/aufgaben",
       })),

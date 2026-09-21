@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, BrainCircuit, BriefcaseBusiness, CalendarClock, ContactRound, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
+  ArrowRight, BrainCircuit, BriefcaseBusiness, CalendarClock, ContactRound, FileCheck2, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
   Megaphone, PackageSearch, Search, Settings2, Trophy, X,
 } from "lucide-react";
 
@@ -46,17 +46,20 @@ export function PortalCommandPalette({
     const can = (...keys: string[]) => permissionSet.has("*") || keys.some((key) => permissionSet.has(key));
     return [
       { id: "assistant", title: "Arbeitsassistent", subtitle: "Erklärbare Prioritäten aus CRM-Daten", href: "/portal/assistent", icon: BrainCircuit },
-      { id: "today-followups", title: "Heute nachfassen", subtitle: "Fällige Wiedervorlagen direkt abarbeiten", href: "/portal/leads?next=today&sort=next", icon: CalendarClock },
-      { id: "pipeline", title: "Lead-Pipeline", subtitle: "Leads nach Vertriebsphase steuern", href: "/portal/leads/pipeline", icon: LayoutDashboard },
-      ...(can("lead.edit") ? [{ id: "new-lead", title: "Neue Anfrage anlegen", subtitle: "Lead manuell erfassen", href: "/portal/leads/neu", icon: Inbox }] : []),
+      ...(can("lead.edit") ? [
+        { id: "today-followups", title: "Heute nachfassen", subtitle: "Fällige Wiedervorlagen direkt abarbeiten", href: "/portal/leads?next=today&sort=next", icon: CalendarClock },
+        { id: "pipeline", title: "Lead-Pipeline", subtitle: "Leads nach Vertriebsphase steuern", href: "/portal/leads/pipeline", icon: LayoutDashboard },
+        { id: "new-lead", title: "Neue Anfrage anlegen", subtitle: "Lead manuell erfassen", href: "/portal/leads/neu", icon: Inbox },
+      ] : []),
       ...(can("customer.edit") ? [{ id: "new-customer", title: "Neuen Kunden anlegen", subtitle: "Kundenakte erstellen", href: "/portal/kunden/neu", icon: ContactRound }] : []),
       ...(can("order.create") ? [{ id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness }] : []),
-      { id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und offene Nacharbeit", href: "/portal/aufgaben", icon: ListTodo },
+      ...(can("task.manage") ? [{ id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und offene Nacharbeit", href: "/portal/aufgaben", icon: ListTodo }] : []),
       { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
       { id: "team-challenges", title: "Team-Challenges", subtitle: "Monats-Rennstrecke und Empfehlungsturm", href: "/portal/rennen", icon: Trophy },
       ...(can("report.sales") ? [{ id: "campaigns", title: "Kampagnen öffnen", subtitle: "Landingpages, UTM-Links und Attribution", href: "/portal/kampagnen", icon: Megaphone }] : []),
       ...(can("report.sales", "report.finance") ? [{ id: "reporting", title: "Auswertungen öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart }] : []),
-      ...(role === "admin" ? [{ id: "system", title: "Automationen & Audit öffnen", subtitle: "Automationen, Audit und Integrationen", href: "/portal/system", icon: Settings2 }] : []),
+      ...(can("audit.read") ? [{ id: "audit", title: "Audit & Compliance", subtitle: "Änderungen, Akteure und Systemereignisse nachvollziehen", href: "/portal/audit", icon: FileCheck2 }] : []),
+      ...(role === "admin" ? [{ id: "system", title: "Automationen & Integrationen", subtitle: "Automationen und Integrationen administrieren", href: "/portal/system", icon: Settings2 }] : []),
     ];
   }, [permissions, role]);
 

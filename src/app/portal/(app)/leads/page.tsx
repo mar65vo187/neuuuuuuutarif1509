@@ -40,6 +40,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.LEAD_ASSIGN] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
   const canAssign = capabilities[PORTAL_PERMISSION.LEAD_ASSIGN];
+  if (!canEdit) redirect("/portal");
 
   const params = await searchParams;
   const s = params.status && STATUSES.includes(params.status) ? params.status : undefined;

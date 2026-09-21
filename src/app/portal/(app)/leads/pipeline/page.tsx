@@ -5,12 +5,14 @@ import { getCurrentUser } from "@/lib/auth";
 import { listLeads } from "@/lib/queries";
 import { getLeadIntelligence } from "@/lib/lead-intelligence";
 import { LeadPipelineBoard } from "@/components/portal/LeadPipelineBoard";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadPipelinePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fleads%2Fpipeline");
+  if (!await hasPermission(user, PORTAL_PERMISSION.LEAD_EDIT)) redirect("/portal");
 
   const rows = await listLeads({ sort: "next" }, user);
   const serialized = rows.map((lead) => ({

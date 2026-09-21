@@ -17,11 +17,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id < 1) notFound();
   const user = await getCurrentUser();
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/kunden/${id}`)}`);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canRead = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || canEdit;
+  if (!canRead) redirect("/portal");
+  const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
   const data = await getCustomer360(id, user);
   if (!data) notFound();
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
-  const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
-  const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
   const { customer } = data;
   const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
   const hasContact = Boolean(customer.phone || customer.email);
