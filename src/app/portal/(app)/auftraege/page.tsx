@@ -9,6 +9,7 @@ import { listOrders } from "@/lib/enterprise";
 import { ORDER_STATUSES } from "@/lib/enterprise-validation";
 import { isCompensationOwner } from "@/lib/compensation";
 import { listSavedViews } from "@/lib/portal-productivity";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 const LABELS: Record<string, string> = {
   draft:"Entwurf", documents_missing:"Unterlagen fehlen", ready_to_submit:"Einreichbereit", submitted:"Eingereicht",
@@ -21,6 +22,11 @@ export const dynamic = "force-dynamic";
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; page?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fauftraege");
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const canEdit = capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+  const canRead = capabilities[PORTAL_PERMISSION.ORDER_READ] || canEdit;
+  if (!canRead) redirect("/portal");
+  const canCreate = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
   const { status, q, page: rawPage } = await searchParams;
   const validStatus = status && ORDER_STATUSES.includes(status as typeof ORDER_STATUSES[number]) ? status : undefined;
   const parsedPage = rawPage ? Number(rawPage) : 1;
@@ -50,7 +56,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="eyebrow text-electric-deep">Auftragssteuerung</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Aufträge & Verträge</h1><p className="text-[14px] text-steel">{rows.length ? `Vorgänge ${rangeStart}–${rangeEnd}` : "Keine Vorgänge in dieser Ansicht"}</p></div>
       <div className="flex gap-2"><a href="/api/portal/enterprise/export?type=orders" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>
-      <Link href="/portal/auftraege/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Auftrag anlegen</Link></div>
+      {canCreate && <Link href="/portal/auftraege/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Auftrag anlegen</Link>}</div>
     </header>
     <form className="grid gap-3 sm:grid-cols-[1fr_220px]">
       <div className="relative"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" /><input name="q" defaultValue={q ?? ""} className="field pl-11" placeholder="Auftrag, Kunde, externe ID …" /></div>
@@ -58,7 +64,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     </form>
     <SavedViewsBar area="orders" basePath="/portal/auftraege" views={savedViews} currentFilters={{ ...(validStatus ? { status: validStatus } : {}), ...(q?.trim() ? { q: q.trim() } : {}) }} />
     <Card className="p-0 sm:p-0">{rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Aufträge gefunden.</p> :
-      <OrderBulkList showCommission={owner} rows={rows.map((row) => ({
+      <OrderBulkList canEdit={canEdit} showCommission={owner} rows={rows.map((row) => ({
         id: row.order.id,
         orderNumber: row.order.orderNumber,
         customerName: row.customer.companyName || [row.customer.firstName, row.customer.lastName].filter(Boolean).join(" "),
