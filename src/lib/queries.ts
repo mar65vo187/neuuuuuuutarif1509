@@ -120,10 +120,10 @@ export async function listLeads(filter?: {
     .where(conditions.length ? and(...conditions) : undefined);
 
   const rows = filter?.sort === "next"
-    ? await base.orderBy(sql`case when ${leads.nextActionAt} is null then 1 else 0 end`, asc(leads.nextActionAt), desc(leads.updatedAt)).limit(queryLimit).offset(offset)
+    ? await base.orderBy(sql`case when ${leads.nextActionAt} is null then 1 else 0 end`, asc(leads.nextActionAt), desc(leads.updatedAt), desc(leads.id)).limit(queryLimit).offset(offset)
     : filter?.sort === "oldest"
-      ? await base.orderBy(asc(leads.createdAt)).limit(queryLimit).offset(offset)
-      : await base.orderBy(desc(leads.createdAt)).limit(queryLimit).offset(offset);
+      ? await base.orderBy(asc(leads.createdAt), asc(leads.id)).limit(queryLimit).offset(offset)
+      : await base.orderBy(desc(leads.createdAt), desc(leads.id)).limit(queryLimit).offset(offset);
 
   return rows.map((r) => ({
     ...r.lead,
