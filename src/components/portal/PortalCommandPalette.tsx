@@ -55,9 +55,9 @@ export function PortalCommandPalette({
       ...(can("order.create") ? [{ id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness }] : []),
       ...(can("task.manage") ? [{ id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und offene Nacharbeit", href: "/portal/aufgaben", icon: ListTodo }] : []),
       { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
-      { id: "team-challenges", title: "Team-Challenges", subtitle: "Monats-Rennstrecke und Empfehlungsturm", href: "/portal/rennen", icon: Trophy },
+      ...(can("lead.edit") ? [{ id: "team-challenges", title: "Team-Challenges", subtitle: "Monats-Rennstrecke und Empfehlungsturm", href: "/portal/rennen", icon: Trophy }] : []),
       ...(can("report.sales") ? [{ id: "campaigns", title: "Kampagnen öffnen", subtitle: "Landingpages, UTM-Links und Attribution", href: "/portal/kampagnen", icon: Megaphone }] : []),
-      ...(can("report.sales", "report.finance") ? [{ id: "reporting", title: "Auswertungen öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart }] : []),
+      ...(can("report.sales") ? [{ id: "reporting", title: "Auswertungen öffnen", subtitle: "Pipeline, Leistung und Datenqualität", href: "/portal/reporting", icon: LineChart }] : []),
       ...(can("audit.read") ? [{ id: "audit", title: "Audit & Compliance", subtitle: "Änderungen, Akteure und Systemereignisse nachvollziehen", href: "/portal/audit", icon: FileCheck2 }] : []),
       ...(role === "admin" ? [{ id: "system", title: "Automationen & Integrationen", subtitle: "Automationen und Integrationen administrieren", href: "/portal/system", icon: Settings2 }] : []),
     ];
