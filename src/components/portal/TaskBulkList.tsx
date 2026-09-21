@@ -19,6 +19,7 @@ type Row = {
   overdue: boolean;
   entityTitle: string | null;
   entitySubtitle: string | null;
+  entityHref: string | null;
 };
 
 const STATUS_OPTIONS = [
@@ -46,7 +47,7 @@ export function TaskBulkList({ rows }: { rows: Row[] }) {
       {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="task" selectedIds={selected} statusOptions={STATUS_OPTIONS} onCompleted={() => setSelected([])} /></div>}
       <ul className="divide-y divide-line">
         {rows.map((task) => {
-          const href = task.entityType === "order" ? "/portal/auftraege/" + task.entityId : task.entityType === "customer" ? "/portal/kunden/" + task.entityId : task.entityType === "lead" ? "/portal/leads/" + task.entityId : "/portal/aufgaben";
+          const href = task.entityHref || "/portal/aufgaben";
           return (
             <li key={task.id} className={"grid grid-cols-[auto_1fr] " + (selectedSet.has(task.id) ? "bg-electric/[0.035]" : "")}>
               <label className="grid w-12 place-items-center border-r border-line/70 sm:w-14"><input type="checkbox" checked={selectedSet.has(task.id)} onChange={() => toggle(task.id)} className="h-4 w-4 rounded border-line" aria-label={task.title + " auswählen"} /></label>
