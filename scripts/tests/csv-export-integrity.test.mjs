@@ -41,9 +41,10 @@ test("streaming CSV continues across full pages instead of truncating at the fir
     },
     (value) => [value],
   );
-  const text = await new Response(stream).text();
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
   assert.deepEqual(calls, [1, 2]);
-  assert.equal(text, '\uFEFF"ID"\r\n"1"\r\n"2"\r\n"3"\r\n');
+  assert.deepEqual([...bytes.slice(0, 3)], [0xEF, 0xBB, 0xBF]);
+  assert.equal(new TextDecoder().decode(bytes.slice(3)), '"ID"\r\n"1"\r\n"2"\r\n"3"\r\n');
 });
 
 test("enterprise exports page through customers, orders and commissions", () => {
