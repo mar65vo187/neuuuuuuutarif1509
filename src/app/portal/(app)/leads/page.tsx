@@ -56,7 +56,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const pageSize = 50;
 
   const [queriedRows, savedViews, assignees, overview, productOptions] = await Promise.all([
-    listLeads({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort, page, pageSize: pageSize + 1 }, user),
+    listLeads({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort, page, pageSize, lookahead: true }, user),
     listSavedViews(user, "leads"),
     canAssign
       ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
