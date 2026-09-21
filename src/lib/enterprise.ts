@@ -518,7 +518,7 @@ export async function listCustomers(
     crmRiskLevel: sql<string | null>`(
       select ccp.risk_level from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
     )`,
-  }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(queryLimit).offset(offset);
+  }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt), desc(customers.id)).limit(queryLimit).offset(offset);
 }
 
 export async function getCustomer(id: number, user: SessionUser) {
@@ -1105,7 +1105,7 @@ export async function listOrders(
     .leftJoin(products, eq(orders.productId, products.id))
     .leftJoin(employees, eq(orders.advisorEmployeeId, employees.id))
     .where(and(...conditions))
-    .orderBy(desc(orders.updatedAt))
+    .orderBy(desc(orders.updatedAt), desc(orders.id))
     .limit(queryLimit)
     .offset(offset);
 }
@@ -1366,7 +1366,7 @@ export async function listTasks(
   }).from(tasks)
     .leftJoin(employees, eq(tasks.assignedToEmployeeId, employees.id))
     .where(and(...conditions))
-    .orderBy(sql`case when ${tasks.dueAt} is null then 1 else 0 end`, tasks.dueAt, desc(tasks.createdAt))
+    .orderBy(sql`case when ${tasks.dueAt} is null then 1 else 0 end`, tasks.dueAt, desc(tasks.createdAt), desc(tasks.id))
     .limit(queryLimit)
     .offset(offset);
 
