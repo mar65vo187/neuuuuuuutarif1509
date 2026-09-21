@@ -35,7 +35,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { getCustomerIntelligence } from "@/lib/customer-intelligence";
 import { percentage } from "@/lib/bi-metrics";
 import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
-import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { permissionSnapshot, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -1509,6 +1509,7 @@ export async function getFinanceStats(user: SessionUser) {
 }
 
 export async function getEnterpriseReport(user: SessionUser, days = 30) {
+  await requirePermission(user, PORTAL_PERMISSION.REPORT_SALES);
   const boundedDays = Math.max(1, Math.min(days, 365));
   const now = new Date();
   const periodMs = boundedDays * 24 * 60 * 60_000;
