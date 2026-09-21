@@ -35,6 +35,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { getCustomerIntelligence } from "@/lib/customer-intelligence";
 import { percentage } from "@/lib/bi-metrics";
 import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -1370,12 +1371,23 @@ export async function listTasks(
     .limit(queryLimit)
     .offset(offset);
 
+  const capabilities = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.LEAD_EDIT,
+    PORTAL_PERMISSION.CUSTOMER_READ,
+    PORTAL_PERMISSION.CUSTOMER_EDIT,
+    PORTAL_PERMISSION.ORDER_READ,
+    PORTAL_PERMISSION.ORDER_EDIT,
+  ] as const);
+  const canLead = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
+  const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+
   const leadIds = [...new Set(rows.filter((row) => row.task.entityType === "lead").map((row) => row.task.entityId))];
   const customerIds = [...new Set(rows.filter((row) => row.task.entityType === "customer").map((row) => row.task.entityId))];
   const orderIds = [...new Set(rows.filter((row) => row.task.entityType === "order").map((row) => row.task.entityId))];
 
   const [leadRows, customerRows, orderRows] = await Promise.all([
-    leadIds.length
+    canLead && leadIds.length
       ? db.select({
           id: leads.id,
           name: leads.name,
@@ -1385,7 +1397,7 @@ export async function listTasks(
           companyName: sql<string | null>`nullif(${leads.meta}->>'companyName','')`,
         }).from(leads).where(and(inArray(leads.id, leadIds), leadAccessCondition(user)))
       : Promise.resolve([]),
-    customerIds.length
+    canCustomer && customerIds.length
       ? db.select({
           id: customers.id,
           customerNumber: customers.customerNumber,
@@ -1397,7 +1409,7 @@ export async function listTasks(
           city: customers.city,
         }).from(customers).where(and(inArray(customers.id, customerIds), customerAccess(user), isNull(customers.archivedAt)))
       : Promise.resolve([]),
-    orderIds.length
+    canOrder && orderIds.length
       ? db.select({
           id: orders.id,
           orderNumber: orders.orderNumber,
@@ -1421,18 +1433,21 @@ export async function listTasks(
   return rows.map((row) => {
     let entityTitle: string | null = null;
     let entitySubtitle: string | null = null;
+    let entityHref: string | null = null;
 
     if (row.task.entityType === "lead") {
       const lead = leadMap.get(row.task.entityId);
       if (lead) {
         entityTitle = lead.companyName || lead.name || `Lead #${lead.id}`;
         entitySubtitle = [lead.companyName ? lead.name : null, lead.topic, lead.phone || lead.email].filter(Boolean).join(" · ");
+        entityHref = `/portal/leads/${lead.id}`;
       }
     } else if (row.task.entityType === "customer") {
       const customer = customerMap.get(row.task.entityId);
       if (customer) {
         entityTitle = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.customerNumber;
         entitySubtitle = [customer.customerNumber, customer.city, customer.phone || customer.email].filter(Boolean).join(" · ");
+        entityHref = `/portal/kunden/${customer.id}`;
       }
     } else if (row.task.entityType === "order") {
       const order = orderMap.get(row.task.entityId);
@@ -1440,10 +1455,11 @@ export async function listTasks(
         const customerName = order.customerCompanyName || [order.customerFirstName, order.customerLastName].filter(Boolean).join(" ");
         entityTitle = customerName || order.orderNumber;
         entitySubtitle = [order.orderNumber, order.providerName, order.productName].filter(Boolean).join(" · ");
+        entityHref = `/portal/auftraege/${order.id}`;
       }
     }
 
-    return { ...row, entityTitle, entitySubtitle };
+    return { ...row, entityTitle, entitySubtitle, entityHref };
   });
 }
 
