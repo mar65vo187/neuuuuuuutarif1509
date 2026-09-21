@@ -170,6 +170,7 @@ export default async function PortalDashboard() {
         </div>
       </header>
 
+      {canLeadRead && (
       <section className="rounded-[22px] border border-line bg-white p-4 shadow-soft sm:p-5" aria-label="Tagesleistung">
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.2fr_auto] xl:items-center">
           <div className="min-w-0">
@@ -223,7 +224,9 @@ export default async function PortalDashboard() {
           </div>
         </div>
       </section>
+      )}
 
+      {kpis.length > 0 && (
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" aria-label="Kennzahlen">
         {kpis.map(({ label, value, hint, href, Icon, attention: isAttention }) => (
           <Link key={label} href={href} className={"rounded-[20px] border p-4 transition hover:-translate-y-0.5 hover:shadow-soft " + (isAttention ? "border-amber-200 bg-amber-50/70" : "border-line bg-white")}>
@@ -233,6 +236,7 @@ export default async function PortalDashboard() {
           </Link>
         ))}
       </section>
+      )}
 
       <section aria-label="Erklärbarer Arbeitsassistent">
         <Card className="overflow-hidden border-electric/15 bg-[linear-gradient(135deg,rgba(79,141,255,0.08),rgba(8,18,34,0.92))]">
@@ -294,7 +298,7 @@ export default async function PortalDashboard() {
           )}
         </Card>
 
-        <Card>
+        {salesControl.length > 0 && (        <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="eyebrow text-electric-deep">Vertriebssteuerung</p>
@@ -314,9 +318,10 @@ export default async function PortalDashboard() {
               </Link>
             ))}
           </div>
-        </Card>
+        </Card>)}
       </section>
 
+      {canLeadRead && (
       <section aria-label="Team-Challenges">
         <Link href="/portal/rennen" className="group block overflow-hidden rounded-[24px] border border-electric/20 bg-[radial-gradient(circle_at_top_right,rgba(79,141,255,.18),transparent_38%),linear-gradient(145deg,rgba(13,28,52,.96),rgba(7,17,32,.96))] p-5 transition hover:-translate-y-0.5 hover:border-electric/35 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -328,7 +333,9 @@ export default async function PortalDashboard() {
           </div>
         </Link>
       </section>
+      )}
 
+      {qualityChecks.length > 0 && (
       <section aria-label="Arbeitsqualität">
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -355,7 +362,9 @@ export default async function PortalDashboard() {
           </div>
         </Card>
       </section>
+      )}
 
+      {customerControl.length > 0 && (
       <section aria-label="Bestandskundensteuerung">
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -379,6 +388,7 @@ export default async function PortalDashboard() {
           </div>
         </Card>
       </section>
+      )}
 
       <section id="fokus" className="grid gap-4 xl:grid-cols-[1.45fr_0.75fr]">
         <Card className="p-0 sm:p-0">
@@ -387,7 +397,7 @@ export default async function PortalDashboard() {
               <p className="eyebrow text-electric-deep">Arbeitsfokus</p>
               <h2 className="mt-1 text-[18px] font-extrabold">Was jetzt Aufmerksamkeit braucht</h2>
             </div>
-            <Link href="/portal/aufgaben" className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-electric-deep hover:underline">Alle Aufgaben <ArrowRight className="h-3.5 w-3.5" /></Link>
+            {canTaskManage && <Link href="/portal/aufgaben" className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-electric-deep hover:underline">Alle Aufgaben <ArrowRight className="h-3.5 w-3.5" /></Link>}
           </div>
           {data.focus.length ? (
             <ul className="divide-y divide-line">
@@ -411,14 +421,18 @@ export default async function PortalDashboard() {
           )}
         </Card>
 
+        {canTaskManage && (
         <Card>
-          <div className="flex items-center gap-2"><ListTodo className="h-4.5 w-4.5 text-electric-deep" /><h2 className="text-[16px] font-extrabold">{canTaskManage ? "Schnelle Aufgabe" : "Aufgaben"}</h2></div>
-          <p className="mt-1 text-[12px] text-steel">{canTaskManage ? "Eine Wiedervorlage ohne Seitenwechsel anlegen." : "Diese Rolle kann Aufgaben ansehen, aber keine neuen Aufgaben anlegen."}</p>
-          {canTaskManage && <div className="mt-4"><QuickTaskComposer assignees={data.taskAssignees} currentUserId={user.id} /></div>}
+          <div className="flex items-center gap-2"><ListTodo className="h-4.5 w-4.5 text-electric-deep" /><h2 className="text-[16px] font-extrabold">Schnelle Aufgabe</h2></div>
+          <p className="mt-1 text-[12px] text-steel">Eine Wiedervorlage ohne Seitenwechsel anlegen.</p>
+          <div className="mt-4"><QuickTaskComposer assignees={data.taskAssignees} currentUserId={user.id} /></div>
         </Card>
+        )}
       </section>
 
+      {(canLeadRead || canOrderRead) && (
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        {canLeadRead && (
         <Card>
           <div className="flex items-center justify-between gap-3">
             <div><h2 className="text-[16px] font-extrabold">Lead-Eingang · 14 Tage</h2><p className="text-[12px] text-steel">Tatsächliche neue Anfragen in deinem Sichtbereich.</p></div>
@@ -426,26 +440,28 @@ export default async function PortalDashboard() {
           </div>
           <div className="mt-5"><BarSeries data={data.leadSeries} /></div>
         </Card>
+        )}
 
         <Card>
           <h2 className="text-[16px] font-extrabold">Pipeline kompakt</h2>
           <p className="text-[12px] text-steel">Leads und Aufträge ohne Wechsel in Auswertungen.</p>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-            <div>
+            {canLeadRead && <div>
               <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-steel">Leads</p>
               <ul className="mt-2 space-y-2">
                 {data.leadPipeline.filter((row) => row.count > 0).map((row) => <li key={row.status} className="flex items-center justify-between gap-3 text-[12.5px]"><span className="truncate">{LEAD_STATUS_LABELS[row.status] ?? row.status}</span><strong>{row.count}</strong></li>)}
               </ul>
-            </div>
-            <div>
+            </div>}
+            {canOrderRead && <div>
               <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-steel">Aufträge</p>
               <ul className="mt-2 space-y-2">
                 {data.orderPipeline.filter((row) => row.count > 0).map((row) => <li key={row.status} className="flex items-center justify-between gap-3 text-[12.5px]"><span className="truncate">{ORDER_LABELS[row.status] ?? row.status}</span><strong>{row.count}</strong></li>)}
               </ul>
-            </div>
+            </div>}
           </div>
         </Card>
       </section>
+      )}
 
       {data.finance && (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Owner Finanzüberblick">
