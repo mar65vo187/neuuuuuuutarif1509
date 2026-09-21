@@ -6,7 +6,7 @@ import { getCommandCenterData } from "@/lib/portal-command-center";
 import { Card } from "@/components/portal/ui";
 import { WorkAssistantActions } from "@/components/portal/WorkAssistantActions";
 import { AiSalesAssistant } from "@/components/portal/AiSalesAssistant";
-import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 import { buildWorkAssistant } from "@/lib/work-assistant";
 import { aiProviderStatus } from "@/lib/ai-sales-assistant";
 
@@ -26,10 +26,16 @@ type AssistantItem = {
 export default async function WorkAssistantPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fassistent");
-  const [data, canTaskManage] = await Promise.all([
+  const [data, capabilities] = await Promise.all([
     getCommandCenterData(user),
-    hasPermission(user, PORTAL_PERMISSION.TASK_MANAGE),
+    permissionSnapshot(user, [
+      PORTAL_PERMISSION.TASK_MANAGE,
+      PORTAL_PERMISSION.ORDER_READ,
+      PORTAL_PERMISSION.ORDER_EDIT,
+    ] as const),
   ]);
+  const canTaskManage = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
+  const canOrderRead = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
   const m = data.metrics;
   const suggestions = buildWorkAssistant(data);
   const aiStatus = aiProviderStatus();
@@ -140,22 +146,22 @@ export default async function WorkAssistantPage() {
         trainingIncluded={aiStatus.trainingIncluded}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Assistentenstatus">
+      <section className={"grid gap-3 sm:grid-cols-2 " + (canOrderRead ? "xl:grid-cols-4" : "xl:grid-cols-3")} aria-label="Assistentenstatus">
         <Card className="sm:p-5">
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Empfehlungen</p>
           <p className="mt-2 text-[28px] font-extrabold">{items.length}</p>
-          <p className="mt-1 text-[11.5px] text-steel">aus aktuellem Arbeitsbestand</p>
+          <p className="mt-1 text-[11.5px] text-steel">aus deinem freigegebenen Arbeitsbestand</p>
         </Card>
         <Card className="sm:p-5">
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Kritisch</p>
           <p className="mt-2 text-[28px] font-extrabold">{items.filter((item) => item.priority === "critical").length}</p>
           <p className="mt-1 text-[11.5px] text-steel">zuerst prüfen</p>
         </Card>
-        <Card className="sm:p-5">
+        {canOrderRead && <Card className="sm:p-5">
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Providerwarnungen</p>
           <p className="mt-2 text-[28px] font-extrabold">{m.providerWarnings}</p>
           <p className="mt-1 text-[11.5px] text-steel">Referenz, Status, Unterlagen oder Aktivierung</p>
-        </Card>
+        </Card>}
         <Card className="sm:p-5">
           <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-steel">Automatische Änderungen</p>
           <p className="mt-2 text-[28px] font-extrabold">0</p>
