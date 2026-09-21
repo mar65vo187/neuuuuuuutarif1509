@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getEnterpriseReport } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
 import { BI_METRICS, BI_METRIC_BY_KEY } from "@/lib/bi-metrics";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ function trend(value: number) {
 export default async function ReportingPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Freporting");
+  if (!await hasPermission(user, PORTAL_PERMISSION.REPORT_SALES)) redirect("/portal");
 
   const { days: raw } = await searchParams;
   const days = [7, 30, 90, 365].includes(Number(raw)) ? Number(raw) : 30;
