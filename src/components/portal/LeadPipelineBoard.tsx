@@ -141,7 +141,7 @@ export function LeadPipelineBoard({ rows }: { rows: Row[] }) {
 
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {row.status === "neu" && (
-                        <button disabled={busy !== null} onClick={() => patch(row, { status: "kontaktiert", contactOutcome: "reached" })} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-ink px-2.5 text-[10.5px] font-bold text-white hover:bg-electric disabled:opacity-50">
+                        <button disabled={busy !== null} onClick={() => patch(row, { status: "kontaktiert", contactOutcome: "attempted" })} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-ink px-2.5 text-[10.5px] font-bold text-white hover:bg-electric disabled:opacity-50">
                           {busy === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <PhoneCall className="h-3 w-3" />} Angerufen
                         </button>
                       )}

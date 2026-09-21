@@ -60,6 +60,9 @@ export async function listLeads(filter?: {
   productRelation?: string;
   q?: string;
   sort?: string;
+  page?: number;
+  pageSize?: number;
+  lookahead?: boolean;
 }, user?: SessionUser) {
   const conditions = [leadAccessCondition(user ?? await requireUser())];
   if (filter?.status && (leads.status.enumValues as readonly string[]).includes(filter.status)) conditions.push(eq(leads.status, filter.status as typeof leads.status.enumValues[number]));
@@ -92,6 +95,12 @@ export async function listLeads(filter?: {
     )!);
   }
 
+  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
+  const requestedPageSize = Number.isSafeInteger(filter?.pageSize) && Number(filter?.pageSize) > 0 ? Number(filter?.pageSize) : 300;
+  const pageSize = Math.min(requestedPageSize, 300);
+  const queryLimit = Math.min(pageSize + (filter?.lookahead ? 1 : 0), 300);
+  const offset = (page - 1) * pageSize;
+
   const selection = {
     lead: leads,
     advisorName: advisors.name,
@@ -111,10 +120,10 @@ export async function listLeads(filter?: {
     .where(conditions.length ? and(...conditions) : undefined);
 
   const rows = filter?.sort === "next"
-    ? await base.orderBy(sql`case when ${leads.nextActionAt} is null then 1 else 0 end`, asc(leads.nextActionAt), desc(leads.updatedAt)).limit(300)
+    ? await base.orderBy(sql`case when ${leads.nextActionAt} is null then 1 else 0 end`, asc(leads.nextActionAt), desc(leads.updatedAt)).limit(queryLimit).offset(offset)
     : filter?.sort === "oldest"
-      ? await base.orderBy(asc(leads.createdAt)).limit(300)
-      : await base.orderBy(desc(leads.createdAt)).limit(300);
+      ? await base.orderBy(asc(leads.createdAt)).limit(queryLimit).offset(offset)
+      : await base.orderBy(desc(leads.createdAt)).limit(queryLimit).offset(offset);
 
   return rows.map((r) => ({
     ...r.lead,
