@@ -442,7 +442,12 @@ export async function createCustomerReferral(input: {
   });
 }
 
-export async function listCustomers(user: SessionUser, search?: string, limit = 100, filter?: { focus?: "review" | "opportunity" | "risk" }) {
+export async function listCustomers(
+  user: SessionUser,
+  search?: string,
+  limit = 100,
+  filter?: { focus?: "review" | "opportunity" | "risk"; page?: number; lookahead?: boolean },
+) {
   const conditions = [customerAccess(user), isNull(customers.archivedAt)];
   const q = search?.trim();
   if (q) {
@@ -471,6 +476,11 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
     where ccp.customer_id = ${customers.id}
       and (ccp.relationship_status = 'at_risk' or ccp.risk_level in ('high','critical'))
   )`);
+  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
+  const pageSize = Math.max(1, Math.min(limit, 200));
+  const queryLimit = pageSize + (filter?.lookahead ? 1 : 0);
+  const offset = (page - 1) * pageSize;
+
   return db.select({
     ...getTableColumns(customers),
     referralCount: sql<number>`(select count(*)::int from customer_referrals cr where cr.source_customer_id = ${customers.id})`,
@@ -508,7 +518,7 @@ export async function listCustomers(user: SessionUser, search?: string, limit = 
     crmRiskLevel: sql<string | null>`(
       select ccp.risk_level from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
     )`,
-  }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(Math.max(1, Math.min(limit, 200)));
+  }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt)).limit(queryLimit).offset(offset);
 }
 
 export async function getCustomer(id: number, user: SessionUser) {
@@ -1062,7 +1072,11 @@ export async function listCatalog() {
   return { providers: providerRows, products: productRows };
 }
 
-export async function listOrders(user: SessionUser, filter?: { status?: string; search?: string }, limit = 150) {
+export async function listOrders(
+  user: SessionUser,
+  filter?: { status?: string; search?: string; page?: number; lookahead?: boolean },
+  limit = 150,
+) {
   const conditions = [orderAccess(user)];
   if (filter?.status) conditions.push(eq(orders.status, filter.status));
   const search = filter?.search?.trim();
@@ -1074,6 +1088,11 @@ export async function listOrders(user: SessionUser, filter?: { status?: string; 
     ilike(customers.lastName, `%${search}%`),
     ilike(customers.companyName, `%${search}%`),
   )!);
+  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
+  const pageSize = Math.max(1, Math.min(limit, 300));
+  const queryLimit = pageSize + (filter?.lookahead ? 1 : 0);
+  const offset = (page - 1) * pageSize;
+
   return db.select({
     order: orders,
     customer: customers,
@@ -1087,7 +1106,8 @@ export async function listOrders(user: SessionUser, filter?: { status?: string; 
     .leftJoin(employees, eq(orders.advisorEmployeeId, employees.id))
     .where(and(...conditions))
     .orderBy(desc(orders.updatedAt))
-    .limit(Math.max(1, Math.min(limit, 300)));
+    .limit(queryLimit)
+    .offset(offset);
 }
 
 export async function getOrder(id: number, user: SessionUser) {
@@ -1325,9 +1345,20 @@ export async function updateOrder(id: number, input: {
   });
 }
 
-export async function listTasks(user: SessionUser, status = "open") {
+export async function listTasks(
+  user: SessionUser,
+  status = "open",
+  options?: { page?: number; pageSize?: number; lookahead?: boolean },
+) {
   const conditions = [taskAccess(user)];
   if (status !== "all") conditions.push(eq(tasks.status, status));
+  const page = Number.isSafeInteger(options?.page) && Number(options?.page) > 0 ? Number(options?.page) : 1;
+  const pageSize = Number.isSafeInteger(options?.pageSize) && Number(options?.pageSize) > 0
+    ? Math.min(Number(options?.pageSize), 300)
+    : 300;
+  const queryLimit = pageSize + (options?.lookahead ? 1 : 0);
+  const offset = (page - 1) * pageSize;
+
   const rows = await db.select({
     task: tasks,
     assigneeName: employees.name,
@@ -1336,7 +1367,8 @@ export async function listTasks(user: SessionUser, status = "open") {
     .leftJoin(employees, eq(tasks.assignedToEmployeeId, employees.id))
     .where(and(...conditions))
     .orderBy(sql`case when ${tasks.dueAt} is null then 1 else 0 end`, tasks.dueAt, desc(tasks.createdAt))
-    .limit(300);
+    .limit(queryLimit)
+    .offset(offset);
 
   const leadIds = [...new Set(rows.filter((row) => row.task.entityType === "lead").map((row) => row.task.entityId))];
   const customerIds = [...new Set(rows.filter((row) => row.task.entityType === "customer").map((row) => row.task.entityId))];
