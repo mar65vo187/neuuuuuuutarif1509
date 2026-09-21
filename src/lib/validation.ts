@@ -66,7 +66,7 @@ export const portalLeadCreateSchema = z.object({
   ]).optional().default(""),
   status: z.enum(["neu", "kontaktiert", "termin_bestaetigt", "in_beratung", "abgeschlossen", "verloren"]).default("neu"),
   priority: z.enum(["low", "normal", "high", "hot"]).default("normal"),
-  contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).default("open"),
+  contactOutcome: z.enum(["open", "attempted", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).default("open"),
   nextActionAt: z.string().datetime().nullable().optional(),
   tags: z.array(trimmed(40)).max(12).default([]),
   confirmedSlot: trimmed(160).optional().or(z.literal("")),
@@ -111,7 +111,7 @@ export const leadUpdateSchema = z.object({
   assignToMe: z.boolean().optional(),
   note: trimmed(2000).optional(),
   priority: z.enum(["low", "normal", "high", "hot"]).optional(),
-  contactOutcome: z.enum(["open", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).optional(),
+  contactOutcome: z.enum(["open", "attempted", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).optional(),
   nextActionAt: z.string().datetime().nullable().optional(),
   tags: z.array(trimmed(40)).max(12).optional(),
 }).refine((data) => Boolean(
