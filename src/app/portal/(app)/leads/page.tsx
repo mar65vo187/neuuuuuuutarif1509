@@ -30,6 +30,7 @@ type LeadSearchParams = {
   relation?: string;
   q?: string;
   sort?: string;
+  page?: string;
 };
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<LeadSearchParams> }) {
@@ -50,9 +51,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const relation = params.relation && ["interest", "existing", "sold", "none"].includes(params.relation) ? params.relation : undefined;
   const q = params.q?.trim().slice(0, 120) || undefined;
   const sort = params.sort && SORTS.has(params.sort) ? params.sort : "newest";
+  const parsedPage = params.page ? Number(params.page) : 1;
+  const page = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? Math.min(parsedPage, 100000) : 1;
+  const pageSize = 50;
 
-  const [rows, savedViews, assignees, overview, productOptions] = await Promise.all([
-    listLeads({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort }, user),
+  const [queriedRows, savedViews, assignees, overview, productOptions] = await Promise.all([
+    listLeads({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort, page, pageSize: pageSize + 1 }, user),
     listSavedViews(user, "leads"),
     canAssign
       ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
@@ -60,6 +64,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     getLeadCrmOverview(user),
     listLeadProductOptions(),
   ]);
+
+  const hasNextPage = queriedRows.length > pageSize;
+  const rows = queriedRows.slice(0, pageSize);
+  const hasPreviousPage = page > 1;
+  const rangeStart = rows.length ? (page - 1) * pageSize + 1 : 0;
+  const rangeEnd = rows.length ? rangeStart + rows.length - 1 : 0;
 
   const current: Record<string, string | undefined> = {
     status: s,
@@ -76,6 +86,14 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     const merged = { ...current, ...changes };
     const nextParams = new URLSearchParams();
     for (const [key, value] of Object.entries(merged)) if (value) nextParams.set(key, value);
+    const query = nextParams.toString();
+    return `/portal/leads${query ? `?${query}` : ""}`;
+  };
+
+  const pageLink = (nextPage: number) => {
+    const nextParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(current)) if (value) nextParams.set(key, value);
+    if (nextPage > 1) nextParams.set("page", String(nextPage));
     const query = nextParams.toString();
     return `/portal/leads${query ? `?${query}` : ""}`;
   };
@@ -245,6 +263,31 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           }))} />
         )}
       </Card>
+
+      {(hasPreviousPage || hasNextPage || rows.length > 0) && (
+        <nav className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-3" aria-label="Lead-Seiten">
+          <p className="text-[11.5px] font-semibold text-silver">
+            {rows.length ? `Leads ${rangeStart}–${rangeEnd}` : "Keine Leads auf dieser Seite"}
+          </p>
+          <div className="flex items-center gap-2">
+            {hasPreviousPage ? (
+              <Link href={pageLink(page - 1)} className="inline-flex h-9 items-center rounded-xl border border-white/10 bg-white/[0.06] px-3 text-[11.5px] font-bold text-white hover:border-electric/30 hover:bg-white/[0.1]">
+                Zurück
+              </Link>
+            ) : (
+              <span className="inline-flex h-9 items-center rounded-xl border border-white/5 px-3 text-[11.5px] font-bold text-silver/40">Zurück</span>
+            )}
+            <span className="min-w-20 text-center text-[11.5px] font-extrabold text-white">Seite {page}</span>
+            {hasNextPage ? (
+              <Link href={pageLink(page + 1)} className="inline-flex h-9 items-center rounded-xl bg-electric px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">
+                Weiter
+              </Link>
+            ) : (
+              <span className="inline-flex h-9 items-center rounded-xl border border-white/5 px-3 text-[11.5px] font-bold text-silver/40">Weiter</span>
+            )}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
