@@ -477,6 +477,7 @@ export const LEAD_PRIORITY_LABELS: Record<string, string> = {
 
 export const LEAD_CONTACT_OUTCOME_LABELS: Record<string, string> = {
   open: "Noch nicht angerufen",
+  attempted: "Angerufen · Ergebnis offen",
   reached: "Erreicht",
   no_answer: "Keine Antwort",
   callback: "Rückruf vereinbart",
