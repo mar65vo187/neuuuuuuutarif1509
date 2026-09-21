@@ -8,8 +8,10 @@ test("lead list uses bounded server-side pagination instead of a fixed 300-row w
   const queries = read("../../src/lib/queries.ts");
   const page = read("../../src/app/portal/(app)/leads/page.tsx");
   assert.match(queries, /pageSize\?: number/);
-  assert.match(queries, /\.limit\(pageSize\)\.offset\(offset\)/);
-  assert.match(page, /pageSize: pageSize \+ 1/);
+  assert.match(queries, /const queryLimit = Math\.min\(pageSize \+ \(filter\?\.lookahead \? 1 : 0\), 300\)/);
+  assert.match(queries, /const offset = \(page - 1\) \* pageSize/);
+  assert.match(queries, /\.limit\(queryLimit\)\.offset\(offset\)/);
+  assert.match(page, /pageSize, lookahead: true/);
   assert.match(page, /aria-label="Lead-Seiten"/);
   assert.match(page, /Seite \{page\}/);
 });
