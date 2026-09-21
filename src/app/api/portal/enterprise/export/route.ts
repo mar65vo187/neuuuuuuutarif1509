@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     }).from(commissionEvents)
       .innerJoin(orders, eq(commissionEvents.orderId, orders.id))
       .where(and(access))
-      .orderBy(desc(commissionEvents.createdAt))
+      .orderBy(desc(commissionEvents.createdAt), desc(commissionEvents.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
