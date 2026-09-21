@@ -54,3 +54,16 @@ test("enterprise exports page through customers, orders and commissions", () => 
   assert.doesNotMatch(route, /\.limit\(1000\)/);
   assert.match(route, /X-Content-Type-Options/);
 });
+
+
+test("paged CRM queries use deterministic ID tie-breakers", () => {
+  const leads = readFileSync(new URL("../../src/lib/queries.ts", import.meta.url), "utf8");
+  const enterprise = readFileSync(new URL("../../src/lib/enterprise.ts", import.meta.url), "utf8");
+  const route = readFileSync(new URL("../../src/app/api/portal/enterprise/export/route.ts", import.meta.url), "utf8");
+  assert.match(leads, /desc\(leads\.createdAt\), desc\(leads\.id\)/);
+  assert.match(leads, /asc\(leads\.createdAt\), asc\(leads\.id\)/);
+  assert.match(enterprise, /desc\(customers\.updatedAt\), desc\(customers\.id\)/);
+  assert.match(enterprise, /desc\(orders\.updatedAt\), desc\(orders\.id\)/);
+  assert.match(enterprise, /desc\(tasks\.createdAt\), desc\(tasks\.id\)/);
+  assert.match(route, /desc\(commissionEvents\.createdAt\), desc\(commissionEvents\.id\)/);
+});
