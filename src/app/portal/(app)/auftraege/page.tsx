@@ -22,11 +22,12 @@ export const dynamic = "force-dynamic";
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; page?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fauftraege");
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT, PORTAL_PERMISSION.ORDER_CREATE, PORTAL_PERMISSION.ORDER_CANCEL] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.ORDER_EDIT];
   const canRead = capabilities[PORTAL_PERMISSION.ORDER_READ] || canEdit;
   if (!canRead) redirect("/portal");
   const canCreate = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
+  const canCancel = capabilities[PORTAL_PERMISSION.ORDER_CANCEL];
   const { status, q, page: rawPage } = await searchParams;
   const validStatus = status && ORDER_STATUSES.includes(status as typeof ORDER_STATUSES[number]) ? status : undefined;
   const parsedPage = rawPage ? Number(rawPage) : 1;
@@ -64,7 +65,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     </form>
     <SavedViewsBar area="orders" basePath="/portal/auftraege" views={savedViews} currentFilters={{ ...(validStatus ? { status: validStatus } : {}), ...(q?.trim() ? { q: q.trim() } : {}) }} />
     <Card className="p-0 sm:p-0">{rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Aufträge gefunden.</p> :
-      <OrderBulkList canEdit={canEdit} showCommission={owner} rows={rows.map((row) => ({
+      <OrderBulkList canEdit={canEdit} canCancel={canCancel} showCommission={owner} rows={rows.map((row) => ({
         id: row.order.id,
         orderNumber: row.order.orderNumber,
         customerName: row.customer.companyName || [row.customer.firstName, row.customer.lastName].filter(Boolean).join(" "),
