@@ -9,12 +9,14 @@ import { db } from "@/db";
 import { employees } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { listTasks } from "@/lib/enterprise";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function TasksPage({ searchParams }: { searchParams: Promise<{ status?: string; page?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Faufgaben");
+  if (!await hasPermission(user, PORTAL_PERMISSION.TASK_MANAGE)) redirect("/portal");
   const { status, page: rawPage } = await searchParams;
   const selected = ["open","in_progress","completed","cancelled","all"].includes(status ?? "") ? status! : "open";
   const parsedPage = rawPage ? Number(rawPage) : 1;
