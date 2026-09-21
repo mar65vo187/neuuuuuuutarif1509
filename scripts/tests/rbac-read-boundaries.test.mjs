@@ -87,3 +87,18 @@ test("navigation and command palette hide inaccessible operational areas", () =>
   assert.match(palette, /can\("task\.manage"\)/);
   assert.match(palette, /can\("audit\.read"\)/);
 });
+
+
+test("order.cancel is enforced independently from order.edit", () => {
+  const single = read("src/app/api/portal/enterprise/orders/[id]/route.ts");
+  const bulk = read("src/app/api/portal/enterprise/bulk/route.ts");
+  const detail = read("src/app/portal/(app)/auftraege/[id]/page.tsx");
+  const actions = read("src/components/portal/OrderActions.tsx");
+  const bulkList = read("src/components/portal/OrderBulkList.tsx");
+  assert.match(single, /PORTAL_PERMISSION\.ORDER_CANCEL/);
+  assert.match(single, /\["cancelled", "storno"\]\.includes\(parsed\.data\.status\)/);
+  assert.match(bulk, /\["cancelled", "storno"\]\.includes\(value\).*PORTAL_PERMISSION\.ORDER_CANCEL/s);
+  assert.match(detail, /const canCancel = capabilities\[PORTAL_PERMISSION\.ORDER_CANCEL\]/);
+  assert.match(actions, /visibleStatuses = canCancel/);
+  assert.match(bulkList, /availableStatusOptions = canCancel/);
+});
