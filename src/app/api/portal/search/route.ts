@@ -115,11 +115,11 @@ export async function GET(request: NextRequest) {
         kind: "task" as const,
         title: row.title,
         subtitle: [row.priority, row.status, row.description].filter(Boolean).join(" · "),
-        href: row.entityType === "order"
+        href: row.entityType === "order" && canOrder
           ? `/portal/auftraege/${row.entityId}`
-          : row.entityType === "customer"
+          : row.entityType === "customer" && canCustomer
             ? `/portal/kunden/${row.entityId}`
-            : row.entityType === "lead"
+            : row.entityType === "lead" && canLead
               ? `/portal/leads/${row.entityId}`
               : "/portal/aufgaben",
       })),
