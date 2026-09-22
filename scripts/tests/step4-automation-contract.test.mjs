@@ -47,6 +47,8 @@ test("scheduled operations sweep only creates internal tasks and audit records",
   assert.match(source, /order_sla_review/);
   assert.match(source, /opportunity_review/);
   assert.match(source, /customer_risk_review/);
+  assert.match(source, /getOperationsPolicy\(\)/);
+  assert.match(source, /operationsPolicy:/);
   assert.doesNotMatch(source, /\bUPDATE\s+(leads|customers|orders|customer_opportunities)\b/i);
   assert.doesNotMatch(source, /sendEmail|sendSms|whatsapp|fetch\(/i);
 });
