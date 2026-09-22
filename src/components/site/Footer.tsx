@@ -14,7 +14,7 @@ export function Footer({ audience }: { audience: AudienceMode }) {
         <div className="grid gap-10 md:grid-cols-12">
           <div className="md:col-span-4">
             <Logo size={38} />
-            <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed">Persönliche Beratung zu Tarifen, Energie, Versicherungen, Solar, Immobilien und mehr – deutschlandweit.</p>
+            <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed">Persönliche Beratung und Vermittlungskoordination für Alltag, Zuhause und Vermögen – deutschlandweit.</p>
             <div className="mt-6 flex flex-col gap-2 text-[14.5px]">
               <a href={SITE.phoneHref} className="inline-flex items-center gap-2 hover:text-white"><Phone className="h-4 w-4 text-electric-soft" /> {SITE.whatsappDisplay}</a>
               <a href={`mailto:${SITE.email}`} className="inline-flex items-center gap-2 hover:text-white"><Mail className="h-4 w-4 text-electric-soft" /> {SITE.email}</a>
