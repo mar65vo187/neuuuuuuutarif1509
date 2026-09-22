@@ -85,7 +85,7 @@ test("pagination rejects malformed limits and never emits negative or infinite o
   assert.equal(maximum.offset, 300);
 });
 
-test("employee count and page use the identical creator-only condition and filters", async () => {
+test("employee count and page use identical creator-or-assignee scope and filters", async () => {
   const h = harness();
   await h.queries.listLeadsPage({ status: "neu", priority: "high", productId: 17, productRelation: "interest", q: "Müller" }, employee);
   const selects = h.calls.filter(call => call.sql.startsWith("select"));
@@ -108,7 +108,7 @@ test("only admins have unrestricted visibility and omitted users are authenticat
   const authenticated = harness();
   await authenticated.queries.listLeadsPage();
   assert.equal(authenticated.authCalls, 1);
-  assert.deepEqual(authenticated.calls.find(call => call.sql.startsWith("select")).params, [42]);
+  assert.deepEqual(authenticated.calls.find(call => call.sql.startsWith("select")).params, [42, 42]);
 });
 
 test("all sorting modes use a stable lead ID tiebreaker", async () => {
@@ -132,7 +132,7 @@ test("search wildcards and quotes remain literal bound search values", async () 
   await h.queries.listLeadsPage({ q: malicious }, employee);
   const count = h.calls.find(call => call.sql.startsWith("select"));
   assert.doesNotMatch(count.sql, /OR 1=1/);
-  assert.deepEqual(count.params, [42, ...Array(5).fill(leadSearchPattern(malicious))]);
+  assert.deepEqual(count.params, [42, 42, ...Array(5).fill(leadSearchPattern(malicious))]);
 });
 
 test("without product profile ignores a conflicting product select and agrees with the open-lead KPI", async () => {
@@ -145,7 +145,17 @@ test("without product profile ignores a conflicting product select and agrees wi
   assert.match(count.sql, /not exists \(select 1 from lead_product_links/);
   assert.match(count.sql, /in \('high','hot'\) and "leads"\."status" not in \('abgeschlossen','verloren'\)/);
   assert.match(count.sql, /lpl\.lead_id = "leads"\."id"\) and "leads"\."status" not in \('abgeschlossen','verloren'\)/);
-  assert.deepEqual(count.params, [42]);
+  assert.deepEqual(count.params, [42, 42]);
+});
+
+test("assignee filter narrows the already permission-scoped lead set", async () => {
+  const h = harness();
+  await h.queries.listLeadsPage({ assignedEmployeeId: 17 }, employee);
+  const count = h.calls.find(call => call.sql.startsWith("select"));
+  assert.match(count.sql, /"leads"\."created_by_employee_id" = \$1/);
+  assert.match(count.sql, /"leads"\."assigned_employee_id" = \$2/);
+  assert.match(count.sql, /"leads"\."assigned_employee_id" = \$3/);
+  assert.deepEqual(count.params, [42, 42, 17]);
 });
 
 test("invalid product relations and IDs do not become SQL filters", () => {
