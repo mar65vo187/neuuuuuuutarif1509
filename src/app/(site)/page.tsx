@@ -3,7 +3,6 @@ import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
 import { FinderTeaser } from "@/components/home/FinderTeaser";
 import { TrustEngine } from "@/components/home/TrustEngine";
-import { PremiumGuidance } from "@/components/home/PremiumGuidance";
 import { DecisionCheck } from "@/components/home/DecisionCheck";
 import { SessionIntentCard } from "@/components/home/SessionIntentCard";
 import { BrandIdentitySection } from "@/components/home/BrandIdentitySection";
@@ -65,7 +64,6 @@ export default async function HomePage({ searchParams }: Props) {
       <SessionIntentCard audience={initialAudience} />
       <AudienceFocusSection audience={initialAudience} />
       <AudienceEverydaySection audience={initialAudience} />
-      <PremiumGuidance audience={initialAudience} />
       <DecisionCheck audience={initialAudience} />
       <TrustEngine audience={initialAudience} />
       <FinderTeaser audience={initialAudience} />
