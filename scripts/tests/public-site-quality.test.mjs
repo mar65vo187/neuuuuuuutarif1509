@@ -145,3 +145,12 @@ test("homepage leads with the business model instead of founder repetition", () 
   assert.doesNotMatch(finalCta, /SITE\.whatsappDisplay/);
   assert.doesNotMatch(leadForm, /SITE\.whatsappDisplay/);
 });
+
+test("homepage avoids redundant guidance sections and keeps phone disclosure focused", () => {
+  const homepage = read("src/app/(site)/page.tsx");
+  const footer = read("src/components/site/Footer.tsx");
+
+  assert.doesNotMatch(homepage, /PremiumGuidance/);
+  assert.match(footer, /Persönliche Beratung und Vermittlungskoordination für Alltag, Zuhause und Vermögen/);
+  assert.match(footer, /SITE\.whatsappDisplay/);
+});
