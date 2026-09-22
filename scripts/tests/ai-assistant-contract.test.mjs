@@ -4,8 +4,11 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../../" + path, import.meta.url), "utf8");
 
-test("real AI assistant supports Gemini free tier and OpenRouter free fallback", () => {
+test("real AI assistant supports Xkiro, Gemini and OpenRouter providers", () => {
   const engine = read("src/lib/ai-sales-assistant.ts");
+  assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
+  assert.match(engine, /qwen\/qwen3\.8-omni-flash:free/);
+  assert.match(engine, /XKIRO_API_KEY/);
   assert.match(engine, /generativelanguage\.googleapis\.com\/v1beta\/interactions/);
   assert.match(engine, /gemini-3\.8-flash/);
   assert.match(engine, /store:\s*false/);
