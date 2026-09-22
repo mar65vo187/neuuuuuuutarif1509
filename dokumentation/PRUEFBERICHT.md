@@ -57,7 +57,7 @@ Eine zusätzliche direkte Abhängigkeit: sharp 0.34.5 zur vollständigen Bilddek
 - Keine Veröffentlichung auf tarifwerk.eu, Vercel oder Sites; kein GitHub-Push. Produktive PostgreSQL-Verbindung, dauerhaftes Session-Geheimnis und eigenes Admin-Passwort müssen gesetzt werden. Es wurden keine Zugangsdaten erfunden.
 - Kein vollständiger Browserdurchlauf mit echten Klicks, Drag-and-drop, Back/Forward oder mehreren Viewports; kein gerenderter Pixelvergleich und kein produktiver Last-/Mehrinstanztest. Der Designabgleich bezieht sich auf Dateien und Quellcodeattribute.
 - PostgreSQL-kompatible Tests ersetzen nicht den Test gegen den konkreten Datenbankdienst und dessen TLS-/Proxy-Konfiguration. Rate-Limits sind pro Prozess implementiert; verteilter Betrieb benötigt passende Infrastruktur.
-- Die vollständige Geschäftsadresse fehlt im ursprünglichen Impressum. Sie muss vor Veröffentlichung ergänzt werden. Vorhandene Rechtstexte wurden nicht rechtlich geprüft; die Datenschutzinformation und Löschprozesse müssen das neue Empfehlungsprogramm berücksichtigen.
+- Das Impressum wurde mit der vom Betreiber bereitgestellten vollständigen Geschäftsadresse Karawankenstraße 1, 65187 Wiesbaden sowie den aktuellen Kontaktangaben ergänzt. Die Rechtstexte wurden nicht unabhängig anwaltlich geprüft; Datenschutzinformation und Löschprozesse müssen mit dem tatsächlich betriebenen Empfehlungsprogramm übereinstimmen.
 - Ein zweiseitiges monetäres Vorteilsprogramm benötigt reale Konditionen und Abwicklung. Die ZIP enthält das technisch funktionierende Empfehlungs- und Statussystem, keine erfundene Zahlungsintegration.
 - Externe Telefon-, WhatsApp-, Werbe- und Trackingdienste wurden nicht durch Testanfragen ausgelöst.
 
