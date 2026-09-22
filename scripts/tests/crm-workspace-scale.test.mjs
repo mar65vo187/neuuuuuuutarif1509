@@ -8,7 +8,7 @@ test("customer, order and task queries use gap-free bounded pagination", () => {
   const enterprise = read("../../src/lib/enterprise.ts");
   assert.match(enterprise, /filter\?: \{ focus\?: "review" \| "opportunity" \| "risk"; page\?: number; lookahead\?: boolean \}/);
   assert.match(enterprise, /filter\?: \{ status\?: string; search\?: string; page\?: number; lookahead\?: boolean \}/);
-  assert.match(enterprise, /options\?: \{ page\?: number; pageSize\?: number; lookahead\?: boolean \}/);
+  assert.match(enterprise, /priority\?: "low" \| "normal" \| "high" \| "critical"/);\n  assert.match(enterprise, /due\?: "overdue" \| "today" \| "upcoming" \| "no_due"/);\n  assert.match(enterprise, /assigneeId\?: number/);\n  assert.match(enterprise, /entityType\?: "general" \| "lead" \| "customer" \| "order"/);
   assert.match(enterprise, /const offset = \(page - 1\) \* pageSize/g);
   const offsetMatches = enterprise.match(/const offset = \(page - 1\) \* pageSize/g) ?? [];
   assert.ok(offsetMatches.length >= 3);
@@ -35,7 +35,8 @@ test("order workspace paginates while preserving search and status", () => {
 test("task workspace paginates without losing selected status", () => {
   const page = read("../../src/app/portal/(app)/aufgaben/page.tsx");
   assert.match(page, /pageSize = 50/);
-  assert.match(page, /listTasks\(user, selected, \{ page, pageSize, lookahead: true \}\)/);
-  assert.match(page, /encodeURIComponent\(selected\)/);
+  assert.match(page, /listTasks\(user, selected, \{[\s\S]*page,[\s\S]*pageSize,[\s\S]*lookahead: true,[\s\S]*priority,[\s\S]*due,[\s\S]*assigneeId,[\s\S]*entityType,[\s\S]*search: q/);
+  assert.match(page, /const currentFilters: Record<string, string>/);
+  assert.match(page, /href\(\{ page: String\(page \+ 1\) \}\)/);
   assert.match(page, /aria-label="Aufgaben-Seiten"/);
 });
