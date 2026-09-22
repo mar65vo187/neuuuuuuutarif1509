@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 type TaskPriority = "low" | "normal" | "high" | "critical";
 type DueFilter = "overdue" | "today" | "upcoming" | "no_due";
-type EntityFilter = "general" | "lead" | "customer" | "order";
+type EntityFilter = "general" | "lead" | "customer" | "order" | "service_case";
 
 export default async function TasksPage({
   searchParams,
@@ -46,7 +46,7 @@ export default async function TasksPage({
   const selected = ["open", "in_progress", "completed", "cancelled", "all"].includes(status ?? "") ? status! : "open";
   const priority = ["low", "normal", "high", "critical"].includes(rawPriority ?? "") ? rawPriority as TaskPriority : undefined;
   const due = ["overdue", "today", "upcoming", "no_due"].includes(rawDue ?? "") ? rawDue as DueFilter : undefined;
-  const entityType = ["general", "lead", "customer", "order"].includes(rawEntity ?? "") ? rawEntity as EntityFilter : undefined;
+  const entityType = ["general", "lead", "customer", "order", "service_case"].includes(rawEntity ?? "") ? rawEntity as EntityFilter : undefined;
   const q = rawSearch?.trim().slice(0, 200) || undefined;
   const parsedAssignee = rawAssignee ? Number(rawAssignee) : NaN;
   const assigneeId = user.role === "admin" && Number.isSafeInteger(parsedAssignee) && parsedAssignee > 0 ? parsedAssignee : undefined;
@@ -165,6 +165,7 @@ export default async function TasksPage({
             <option value="lead">Lead</option>
             <option value="customer">Kunde</option>
             <option value="order">Auftrag</option>
+            <option value="service_case">Servicefall</option>
           </select>
         </label>
         {user.role === "admin" ? (
