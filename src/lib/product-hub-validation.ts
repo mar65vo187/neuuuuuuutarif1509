@@ -7,6 +7,11 @@ const money = z.union([
   z.string().trim().regex(/^\d{1,9}([.,]\d{1,2})?$/),
 ]).transform((value) => Number(String(value).replace(",", ".")));
 
+const productImage = z.string().trim().max(1000).refine(
+  (value) => value === "" || value.startsWith("/assets/") || /^https:\/\/images\.pexels\.com\//.test(value),
+  { message: "Produktbild muss aus /assets oder von images.pexels.com stammen." },
+);
+
 const channelSchema = z.object({
   channel: text(80).min(2),
   status: z.enum(["allowed", "conditional", "blocked"]),
@@ -39,6 +44,7 @@ export const hubProductCreateSchema = z.object({
   audience: z.enum(["private", "business", "both"]).default("both"),
   lifecycleStatus: z.enum(["active", "new", "test", "paused", "do_not_market", "phasing_out", "ended"]).default("active"),
   description: text(5000).optional(),
+  imageUrl: productImage.optional(),
   region: text(300).default("Deutschland"),
   submissionUrl: z.string().trim().url().max(500).optional().or(z.literal("")),
   supportContact: text(500).optional(),

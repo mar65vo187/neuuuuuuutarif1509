@@ -47,3 +47,15 @@ test("daily CRM product workflows reuse the visual catalog", () => {
     assert.match(source, /next\/image/);
   }
 });
+
+test("product-specific image overrides are persisted and validated", () => {
+  const dbSchema = readFileSync("src/db/enterprise-schema.ts", "utf8");
+  const validation = readFileSync("src/lib/product-hub-validation.ts", "utf8");
+  const api = readFileSync("src/app/api/portal/admin/catalog/route.ts", "utf8");
+  const migration = readFileSync("migrations/0021_product_catalog_images.sql", "utf8");
+
+  assert.match(dbSchema, /imageUrl: text\("image_url"\)/);
+  assert.match(validation, /images\\\.pexels\\\.com/);
+  assert.match(api, /imageUrl: parsed\.data\.imageUrl/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS image_url text/);
+});

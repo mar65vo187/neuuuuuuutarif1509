@@ -23,6 +23,7 @@ type Product = {
   audience: string;
   lifecycleStatus: string;
   description: string;
+  imageUrl: string | null;
   region: string;
   submissionUrl: string | null;
   supportContact: string | null;
@@ -341,7 +342,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
 
     <section className="grid gap-4 xl:grid-cols-2">
       {filtered.map((product) => {
-        const visual = getProductVisual(product.category, product.name, product.providerName);
+        const visual = getProductVisual(product.imageUrl, product.category, product.name, product.providerName);
         const knowledgeScore = productKnowledgeScore(product);
         const allowedChannels = product.marketingChannels.filter((channel) => channel.status === "allowed").length;
         return <article key={product.id} className="overflow-hidden rounded-[24px] border border-line bg-white shadow-[0_18px_46px_rgba(16,24,40,0.055)]">
@@ -466,6 +467,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
           audience: form.get("audience"),
           lifecycleStatus: form.get("lifecycleStatus"),
           description: form.get("description"),
+          imageUrl: form.get("imageUrl"),
           region: form.get("region"),
           submissionUrl: form.get("submissionUrl"),
           supportContact: form.get("supportContact"),
@@ -496,6 +498,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label">Zielgruppe<select name="audience" defaultValue={selectedProduct.audience} className="field"><option value="both">Privat & Business</option><option value="private">Privat</option><option value="business">Business</option></select></label>
             <label className="label">Status<select name="lifecycleStatus" defaultValue={selectedProduct.lifecycleStatus} className="field"><option value="active">Aktiv</option><option value="new">Neu</option><option value="test">Testphase</option><option value="paused">Pausiert</option><option value="do_not_market">Nicht vermarkten</option><option value="phasing_out">Auslaufend</option><option value="ended">Beendet</option></select></label>
             <label className="label sm:col-span-2">Beschreibung<textarea name="description" rows={3} defaultValue={selectedProduct.description} className="field" /></label>
+            <label className="label sm:col-span-2">Produktbild · optional<input name="imageUrl" type="url" maxLength={1000} defaultValue={selectedProduct.imageUrl ?? ""} placeholder="https://images.pexels.com/... · leer = automatisches Branchenbild" className="field" /><span className="mt-1 block text-[10.5px] font-normal text-steel">Leeren, um wieder das automatische TarifWerk-Branchenbild zu verwenden.</span></label>
             <label className="label">Region<input name="region" defaultValue={selectedProduct.region} className="field" /></label>
             <label className="label">Einreichungsportal<input name="submissionUrl" type="url" defaultValue={selectedProduct.submissionUrl ?? ""} className="field" /></label>
             <label className="label sm:col-span-2">Supportkontakt<input name="supportContact" defaultValue={selectedProduct.supportContact ?? ""} className="field" /></label>
@@ -587,7 +590,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
 
         <form onSubmit={(event) => submit(event, "product", (form) => ({
           kind: "product", providerId: Number(form.get("providerId")), name: form.get("name"), category: form.get("category"), sku: form.get("sku"),
-          audience: form.get("audience"), lifecycleStatus: form.get("lifecycleStatus"), description: form.get("description"), region: form.get("region"),
+          audience: form.get("audience"), lifecycleStatus: form.get("lifecycleStatus"), description: form.get("description"), imageUrl: form.get("imageUrl"), region: form.get("region"),
           submissionUrl: form.get("submissionUrl"), supportContact: form.get("supportContact"), completionProcess: form.get("completionProcess"),
           marketingChannels: channels(form.get("marketingChannels")), marketingConditions: form.get("marketingConditions"),
           salesArguments: lines(form.get("salesArguments")), shortPitch: form.get("shortPitch"), phonePitch: form.get("phonePitch"), d2dPitch: form.get("d2dPitch"), b2bPitch: form.get("b2bPitch"),
@@ -604,6 +607,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label">Zielgruppe<select name="audience" className="field"><option value="both">Privat & Business</option><option value="private">Privat</option><option value="business">Business</option></select></label>
             <label className="label">Status<select name="lifecycleStatus" className="field"><option value="active">Aktiv</option><option value="new">Neu</option><option value="test">Testphase</option><option value="paused">Pausiert</option><option value="do_not_market">Nicht vermarkten</option><option value="phasing_out">Auslaufend</option><option value="ended">Beendet</option></select></label>
             <label className="label sm:col-span-2">Beschreibung<textarea name="description" rows={3} maxLength={5000} className="field" /></label>
+            <label className="label sm:col-span-2">Produktbild · optional<input name="imageUrl" type="url" maxLength={1000} placeholder="https://images.pexels.com/... · leer = automatisches Branchenbild" className="field" /><span className="mt-1 block text-[10.5px] font-normal text-steel">Erlaubt: Pexels-Bild-URL. Ohne Eintrag wählt TarifWerk automatisch ein passendes Bild nach Produktbereich.</span></label>
             <label className="label">Region<input name="region" defaultValue="Deutschland" maxLength={300} className="field" /></label>
             <label className="label">Einreichungsportal<input name="submissionUrl" type="url" maxLength={500} className="field" /></label>
             <label className="label sm:col-span-2">Supportkontakt<input name="supportContact" maxLength={500} className="field" /></label>

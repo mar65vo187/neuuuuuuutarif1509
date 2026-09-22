@@ -72,6 +72,15 @@ const RULES: Array<{ terms: string[]; visual: ProductVisual }> = [
 ];
 
 export function getProductVisual(...values: Array<string | null | undefined>): ProductVisual | null {
+  const explicit = values[0]?.trim();
+  if (explicit && (explicit.startsWith("/assets/") || /^https:\/\/images\.pexels\.com\//.test(explicit))) {
+    const label = values.slice(1).filter(Boolean).join(" · ");
+    return {
+      src: explicit,
+      alt: label ? `Produktbild für ${label}` : "Produktbild",
+      position: "center",
+    };
+  }
   const haystack = values.filter(Boolean).join(" ").toLocaleLowerCase("de-DE");
   return RULES.find((rule) => rule.terms.some((term) => haystack.includes(term)))?.visual ?? null;
 }

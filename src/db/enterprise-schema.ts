@@ -193,6 +193,7 @@ export const productCatalogProfiles = pgTable("product_catalog_profiles", {
   audience: text("audience").notNull().default("both"),
   lifecycleStatus: text("lifecycle_status").notNull().default("active"),
   description: text("description").notNull().default(""),
+  imageUrl: text("image_url"),
   region: text("region").notNull().default("Deutschland"),
   submissionUrl: text("submission_url"),
   supportContact: text("support_contact"),
