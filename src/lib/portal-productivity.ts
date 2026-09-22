@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, ilike, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   automationRules,
@@ -22,7 +22,7 @@ export type NotificationInboxView = "active" | "unread" | "read" | "snoozed" | "
 
 export async function listInAppNotifications(user: SessionUser, options: {
   view?: NotificationInboxView;
-  priority?: "normal" | "high" | "critical";
+  priority?: "normal" | "high" | "critical" | "urgent";
   q?: string;
   page?: number;
   pageSize?: number;
@@ -49,7 +49,11 @@ export async function listInAppNotifications(user: SessionUser, options: {
     eq(notificationQueue.channel, "in_app"),
     lte(notificationQueue.scheduledAt, now),
     viewCondition,
-    options.priority ? eq(notificationQueue.priority, options.priority) : undefined,
+    options.priority === "urgent"
+      ? inArray(notificationQueue.priority, ["high", "critical"])
+      : options.priority
+        ? eq(notificationQueue.priority, options.priority)
+        : undefined,
     q ? or(
       ilike(notificationQueue.subject, `%${q}%`),
       ilike(notificationQueue.body, `%${q}%`),
