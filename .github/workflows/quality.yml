@@ -29,6 +29,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Repository completeness
+        run: npm run audit:repo
+
       - name: Public performance guard
         run: npm run perf:guard
 
