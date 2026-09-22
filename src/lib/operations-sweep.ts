@@ -8,6 +8,7 @@ export type OperationsSweepResult = {
   staleOrders: number;
   opportunities: number;
   atRiskCustomers: number;
+  serviceEscalations: number;
 };
 
 export async function runOperationsSweep(): Promise<OperationsSweepResult> {
@@ -18,7 +19,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
     const lock = await client.query<{ locked: boolean }>("select pg_try_advisory_xact_lock(772020260920) as locked");
     if (!lock.rows[0]?.locked) {
       await client.query("ROLLBACK");
-      return { skipped: true, leads: 0, customerReviews: 0, staleOrders: 0, opportunities: 0, atRiskCustomers: 0 };
+      return { skipped: true, leads: 0, customerReviews: 0, staleOrders: 0, opportunities: 0, atRiskCustomers: 0, serviceEscalations: 0 };
     }
 
     const leads = await client.query<{ id: number }>(`
@@ -186,6 +187,48 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       RETURNING id
     `);
 
+    const serviceEscalations = await client.query<{ id: number }>(`
+      INSERT INTO notification_queue (
+        employee_id, channel, category, priority, subject, body,
+        entity_type, entity_id, action_url, metadata, status, scheduled_at, created_at
+      )
+      SELECT
+        sc.owner_employee_id,
+        'in_app',
+        'service',
+        CASE WHEN sc.priority = 'critical' THEN 'critical' ELSE 'high' END,
+        'Service-SLA überschritten · ' || sc.case_number,
+        sc.subject,
+        'service_case',
+        sc.id::text,
+        '/portal/service/' || sc.id::text,
+        jsonb_build_object(
+          'reason', 'sla_overdue',
+          'caseNumber', sc.case_number,
+          'dueAt', sc.due_at,
+          'priority', sc.priority
+        ),
+        'pending',
+        now(),
+        now()
+      FROM service_cases sc
+      WHERE sc.owner_employee_id IS NOT NULL
+        AND sc.status IN ('open','in_progress','waiting_customer','waiting_provider')
+        AND sc.due_at < now()
+        AND NOT EXISTS (
+          SELECT 1 FROM notification_queue nq
+          WHERE nq.employee_id = sc.owner_employee_id
+            AND nq.category = 'service'
+            AND nq.entity_type = 'service_case'
+            AND nq.entity_id = sc.id::text
+            AND nq.metadata->>'reason' = 'sla_overdue'
+            AND nq.created_at >= sc.due_at
+        )
+      ORDER BY sc.due_at ASC
+      LIMIT 500
+      RETURNING id
+    `);
+
     const result: OperationsSweepResult = {
       skipped: false,
       leads: leads.rowCount ?? 0,
@@ -193,6 +236,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       staleOrders: staleOrders.rowCount ?? 0,
       opportunities: opportunities.rowCount ?? 0,
       atRiskCustomers: riskCustomers.rowCount ?? 0,
+      serviceEscalations: serviceEscalations.rowCount ?? 0,
     };
 
     await client.query(
