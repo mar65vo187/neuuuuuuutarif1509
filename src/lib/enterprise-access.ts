@@ -15,6 +15,9 @@ export const PORTAL_PERMISSION = {
   ORDER_EDIT: "order.edit",
   ORDER_CANCEL: "order.cancel",
   TASK_MANAGE: "task.manage",
+  SERVICE_READ: "service.read",
+  SERVICE_EDIT: "service.edit",
+  SERVICE_ASSIGN: "service.assign",
   COMMISSION_READ_SELF: "commission.read.self",
   COMMISSION_READ_TEAM: "commission.read.team",
   COMMISSION_READ_ALL: "commission.read.all",
@@ -38,6 +41,8 @@ const LEGACY_ADVISOR_DEFAULTS = new Set<PortalPermission>([
   PORTAL_PERMISSION.ORDER_CREATE,
   PORTAL_PERMISSION.ORDER_EDIT,
   PORTAL_PERMISSION.TASK_MANAGE,
+  PORTAL_PERMISSION.SERVICE_READ,
+  PORTAL_PERMISSION.SERVICE_EDIT,
   PORTAL_PERMISSION.COMMISSION_READ_SELF,
 ]);
 
@@ -227,6 +232,14 @@ export function listOrderAssignableEmployees() {
 
 export function getOrderAssignableEmployee(employeeId: number) {
   return getAssignableEmployee(employeeId, PORTAL_PERMISSION.ORDER_EDIT);
+}
+
+export function listServiceAssignableEmployees() {
+  return listAssignableEmployees(PORTAL_PERMISSION.SERVICE_EDIT);
+}
+
+export function getServiceAssignableEmployee(employeeId: number) {
+  return getAssignableEmployee(employeeId, PORTAL_PERMISSION.SERVICE_EDIT);
 }
 
 export async function hasPermission(user: SessionUser, key: PortalPermission | string) {
