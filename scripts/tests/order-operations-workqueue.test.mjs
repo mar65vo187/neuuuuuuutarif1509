@@ -84,6 +84,14 @@ test("order reassignment transfers only active operational tasks, not finance hi
   assert.doesNotMatch(route, /employeeId: target\.id[\s\S]*commission/s);
 });
 
+test("command center drills directly into actionable order queues", () => {
+  const dashboard = read("src/app/portal/(app)/page.tsx");
+
+  assert.match(dashboard, /\/portal\/auftraege\?focus=unassigned/);
+  assert.match(dashboard, /\/portal\/auftraege\?focus=attention/);
+  assert.match(dashboard, /\/portal\/auftraege\?advisor=\$\{row\.employeeId\}/);
+});
+
 test("provider selector is permission-scoped through orderAccess", () => {
   const enterprise = read("src/lib/enterprise.ts");
 
