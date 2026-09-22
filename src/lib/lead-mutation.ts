@@ -16,7 +16,7 @@ export async function reassignLeadFollowUps(
 ) {
   const ids = [...new Set(leadIds.filter((id) => Number.isSafeInteger(id) && id > 0))];
   if (!ids.length) return 0;
-  const rows = await tx.update(tasks).set({
+  await tx.update(tasks).set({
     assignedToEmployeeId: ownerId,
     updatedAt: now,
   }).where(and(
@@ -24,8 +24,7 @@ export async function reassignLeadFollowUps(
     eq(tasks.type, "crm_follow_up"),
     inArray(tasks.entityId, ids),
     inArray(tasks.status, ["open", "in_progress"]),
-  )).returning({ id: tasks.id });
-  return rows.length;
+  ));
 }
 
 /** The caller must hold the lead's row lock for the entire transaction. */
