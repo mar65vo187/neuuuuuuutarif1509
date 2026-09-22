@@ -529,11 +529,11 @@ export default async function PortalDashboard() {
                 {data.team.map((row) => (
                   <tr key={row.employeeId} className="border-b border-line last:border-0 hover:bg-paper/70">
                     <td className="px-5 py-3.5 sm:px-6"><p className="font-bold">{row.name}</p><p className="text-[10.5px] uppercase tracking-wider text-steel">{row.role === "admin" ? "Admin" : "Berater"}</p></td>
-                    <td className="px-4 py-3.5 font-semibold">{row.openLeads}</td>
+                    <td className="px-4 py-3.5 font-semibold"><Link href={`/portal/leads?assignee=${row.employeeId}`} className="inline-flex min-h-10 items-center rounded-lg px-2 hover:bg-paper hover:text-electric-deep" aria-label={`Leads von ${row.name} öffnen`}>{row.openLeads}</Link></td>
                     <td className={"px-4 py-3.5 font-extrabold " + (row.leadsMissingNextAction > 0 ? "text-amber-300" : "text-emerald-300")}>{row.leadsMissingNextAction}</td>
                     <td className={"px-4 py-3.5 font-extrabold " + (row.leadsWithoutProduct > 0 ? "text-amber-300" : "text-emerald-300")}>{row.leadsWithoutProduct}</td>
-                    <td className="px-4 py-3.5 font-semibold">{row.openTasks}</td>
-                    <td className={"px-4 py-3.5 font-extrabold " + (row.overdueTasks > 0 ? "text-red-700" : "text-emerald-700")}>{row.overdueTasks}</td>
+                    <td className="px-4 py-3.5 font-semibold"><Link href={`/portal/aufgaben?status=open&assignee=${row.employeeId}`} className="inline-flex min-h-10 items-center rounded-lg px-2 hover:bg-paper hover:text-electric-deep" aria-label={`Aufgaben von ${row.name} öffnen`}>{row.openTasks}</Link></td>
+                    <td className={"px-4 py-3.5 font-extrabold " + (row.overdueTasks > 0 ? "text-red-700" : "text-emerald-700")}><Link href={`/portal/aufgaben?status=all&due=overdue&assignee=${row.employeeId}`} className="inline-flex min-h-10 items-center rounded-lg px-2 hover:bg-paper" aria-label={`Überfällige Aufgaben von ${row.name} öffnen`}>{row.overdueTasks}</Link></td>
                     <td className="px-4 py-3.5 font-semibold">{row.activeOrders}</td>
                     <td className="px-4 py-3.5 font-semibold">{row.wins30}</td>
                   </tr>
