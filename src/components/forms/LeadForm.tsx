@@ -369,7 +369,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
         </div>
       </div>
       <p className={`mt-4 text-[12.5px] ${muted}`}>
-        Direkter Kontakt? <a className="font-semibold underline underline-offset-2" href={SITE.phoneHref}>{SITE.whatsappDisplay}</a> – täglich 08–22 Uhr.
+        Lieber direkt sprechen? <a className="font-semibold underline underline-offset-2" href={SITE.phoneHref}>Anrufen</a> oder über WhatsApp schreiben – täglich 08–22 Uhr.
       </p>
     </form>
   );

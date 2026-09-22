@@ -68,7 +68,7 @@ test("brand search essentials remain wired into metadata and homepage", () => {
   assert.match(siteLayout, /"@type": "WebSite"/);
   assert.match(siteLayout, /favicon\.svg/);
   assert.match(homepage, /<BrandIdentitySection audience=\{initialAudience\} \/>/);
-  assert.match(brand, /TarifWerk · \{SITE\.hq\}/);
+  assert.match(brand, /Was TarifWerk bündelt/);\n  assert.match(brand, /Ein Ansprechpartner für Alltag, Zuhause und Vermögen/);
 });
 
 test("paid campaign landing pages cannot dilute the organic index", () => {
@@ -130,4 +130,18 @@ test("literal internal public links resolve to a real app page", () => {
     }
   }
   assert.deepEqual([...unresolved], []);
+});
+
+test("homepage leads with the business model instead of founder repetition", () => {
+  const homepage = read("src/app/(site)/page.tsx");
+  const copy = read("src/lib/audience-copy.ts");
+  const hero = read("src/components/home/Hero.tsx");
+  const finalCta = read("src/components/home/AudienceSections.tsx");
+  const leadForm = read("src/components/forms/LeadForm.tsx");
+
+  assert.match(copy, /TarifWerk bündelt Internet, Mobilfunk & TV, Strom & Gas, Versicherungen, Solar & Wärmepumpe, Immobilien, Edelmetalle, Klima und Sicherheit/);
+  assert.doesNotMatch(homepage, /<Founder /);
+  assert.doesNotMatch(hero, /Marvin · dein Ansprechpartner|Marvin · Ihr Ansprechpartner/);
+  assert.doesNotMatch(finalCta, /SITE\.whatsappDisplay/);
+  assert.doesNotMatch(leadForm, /SITE\.whatsappDisplay/);
 });

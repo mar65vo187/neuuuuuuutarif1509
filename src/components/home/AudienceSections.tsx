@@ -260,7 +260,7 @@ export function AudienceFinalCta({ audience }: { audience: AudienceMode }) {
             >
               <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-silver">{copy.whatsappEyebrow}</span>
               <span className="mt-3 text-[19px] font-bold">WhatsApp</span>
-              <span className="mt-1 text-[13.5px] text-silver">{SITE.whatsappDisplay}</span>
+              <span className="mt-1 text-[13.5px] text-silver">Direkt eine Nachricht senden</span>
               <MessageCircle className="mt-auto h-5 w-5 pt-6 text-[#25D366]" />
             </a>
           </Item>

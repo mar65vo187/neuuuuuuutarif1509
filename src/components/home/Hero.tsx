@@ -7,10 +7,6 @@ import { withAudience, type AudienceMode } from "@/lib/audience";
 export function Hero({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].hero;
 
-  const trustAnchor = audience === "b2b"
-    ? "Ein Ansprechpartner statt Vertragskomplexität. Sie entscheiden selbst, ob und wie Sie weitergehen."
-    : "Ein Ansprechpartner statt Tarif-Dschungel. Du entscheidest selbst, ob und wie es weitergeht.";
-
   const reassurance = audience === "b2b"
     ? "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen"
     : "Kostenlose Erstorientierung · transparent erklärt · die Entscheidung bleibt bei dir";
@@ -45,7 +41,6 @@ export function Hero({ audience }: { audience: AudienceMode }) {
           <ul key={`${audience}-checks`} aria-label="Vorteile der Erstberatung" className="hero-enter mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-silver [--hero-delay:390ms]">
             {copy.checks.map((item) => <li key={item} className="inline-flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/7"><Check className="h-3.5 w-3.5 text-electric-soft" aria-hidden="true" /></span>{item}</li>)}
           </ul>
-          <div className="hero-enter mt-5 inline-flex max-w-xl items-start gap-2.5 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-[12.5px] leading-relaxed text-silver [--hero-delay:430ms]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-electric-soft" aria-hidden="true" /><span>{trustAnchor}</span></div>
         </div>
 
         <div className="hero-enter lg:col-span-5 [--hero-delay:220ms]"><div className="mx-auto w-full max-w-[430px]"><div className="glass relative overflow-hidden rounded-[26px] p-5 shadow-soft sm:p-6">

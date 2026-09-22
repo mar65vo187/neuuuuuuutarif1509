@@ -16,7 +16,6 @@ import {
   AudienceProcess,
   AudienceTrustStrip,
 } from "@/components/home/AudienceSections";
-import { Founder } from "@/components/home/Sections";
 import { AUDIENCE_COPY } from "@/lib/audience-copy";
 import { SERVICES, SITE } from "@/lib/content";
 import { homeAudienceMetadata } from "@/lib/seo";
@@ -71,7 +70,6 @@ export default async function HomePage({ searchParams }: Props) {
       <TrustEngine audience={initialAudience} />
       <FinderTeaser audience={initialAudience} />
       <AudienceProcess audience={initialAudience} />
-      <Founder audience={initialAudience} />
       <TopicTicker />
       <AudienceFaqSection audience={initialAudience} />
       <AudienceFinalCta audience={initialAudience} />
