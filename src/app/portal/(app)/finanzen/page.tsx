@@ -71,6 +71,28 @@ export default async function FinancePage() {
       {canExport && <a href="/api/portal/enterprise/export?type=commissions" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>}
     </header>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{kpis.map(([label,value,Icon]) => <Card key={label}><div className="flex items-center justify-between"><p className="text-[13px] font-semibold text-steel">{label}</p><Icon className="h-4.5 w-4.5 text-electric-deep" /></div><p className="mt-3 text-[28px] font-extrabold tracking-tight">{value}</p></Card>)}</div>
+    {scope !== "self" && <Card>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div><p className="eyebrow text-electric-deep">Freigegebener Scope</p><h2 className="mt-2 text-[16px] font-extrabold">Provisionen nach Mitarbeitenden</h2></div>
+        <span className="text-[12px] text-steel">{compensationRows.length} Mitarbeitende</span>
+      </div>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[760px] text-[12.5px]">
+          <thead><tr className="border-b border-line text-left text-steel"><th className="px-3 py-2.5 font-semibold">Mitarbeiter</th><th className="px-3 py-2.5 font-semibold">Stufe</th><th className="px-3 py-2.5 text-right font-semibold">Erwartet</th><th className="px-3 py-2.5 text-right font-semibold">Bestätigt</th><th className="px-3 py-2.5 text-right font-semibold">Ausgezahlt</th><th className="px-3 py-2.5 text-right font-semibold">Offen</th></tr></thead>
+          <tbody>{compensationRows.map((row) => {
+            const rowOpen = Math.max(0, row.employeeConfirmed - row.employeePaid);
+            return <tr key={row.employeeId} className="border-b border-line last:border-0">
+              <td className="px-3 py-3"><p className="font-semibold text-ink">{row.name}</p><p className="mt-0.5 text-[11px] text-steel">{row.email}</p></td>
+              <td className="px-3 py-3 font-semibold">{row.payoutPercent} %</td>
+              <td className="px-3 py-3 text-right tabular-nums">{money(row.employeeExpected)}</td>
+              <td className="px-3 py-3 text-right tabular-nums">{money(row.employeeConfirmed)}</td>
+              <td className="px-3 py-3 text-right tabular-nums">{money(row.employeePaid)}</td>
+              <td className="px-3 py-3 text-right font-semibold tabular-nums">{money(rowOpen)}</td>
+            </tr>;
+          })}</tbody>
+        </table>
+      </div>
+    </Card>}
     {user.role === "admin" && <Card><div className="flex items-center justify-between"><h2 className="text-[16px] font-extrabold">Offene Reconciliation-Fälle</h2><span className="text-[12px] text-steel">{issues.length}</span></div>
       {issues.length === 0 ? <p className="mt-4 text-[14px] text-steel">Keine offenen Abweichungen.</p> : <ul className="mt-3 divide-y divide-line">{issues.map((issue) => <li key={issue.id} className="flex flex-wrap justify-between gap-3 py-3 text-[14px]"><div><p className="font-semibold">{issue.type} · {issue.reference || "ohne Referenz"}</p><p className="text-[12px] text-steel">{issue.status}</p></div><p className="font-semibold">{money(Number(issue.differenceAmount ?? 0))}</p></li>)}</ul>}
     </Card>}
