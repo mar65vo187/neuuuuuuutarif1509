@@ -25,6 +25,8 @@ test("customer portfolio bulk mutations are permission-scoped and audited", () =
   assert.match(route, /inArray\(customers\.id, ids\), customerAccess\(user\)/);
   assert.match(route, /\.for\("update"\)/);
   assert.match(route, /Maximal 100 Kunden pro Bulk-Aktion/);
+  assert.match(route, /const ids = \[\.\.\.new Set\(parsed\.data\.ids\)\]/);
+  assert.match(route, /validActions\[entity\]\.has\(action\)/);
   assert.match(route, /onConflictDoUpdate\(\{[\s\S]*target: customerCrmProfiles\.customerId/);
   assert.match(route, /"customer\.bulk_profile"/);
 });
