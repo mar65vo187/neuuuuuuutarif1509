@@ -66,7 +66,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const q = params.q?.trim().slice(0, 200) || undefined;
   const validStatus = params.status && ORDER_STATUSES.includes(params.status as typeof ORDER_STATUSES[number]) ? params.status : undefined;
   const rawFocus = params.focus as Focus | undefined;
-  const focus = rawFocus && rawFocus in FOCUS_LABELS && (rawFocus !== "unassigned" || user.role === "admin") ? rawFocus : undefined;
+  const focus = rawFocus && Object.prototype.hasOwnProperty.call(FOCUS_LABELS, rawFocus) && (rawFocus !== "unassigned" || user.role === "admin") ? rawFocus : undefined;
   const providerNumber = params.provider ? Number(params.provider) : NaN;
   const providerId = Number.isSafeInteger(providerNumber) && providerNumber > 0 ? providerNumber : undefined;
   const advisorNumber = params.advisor ? Number(params.advisor) : NaN;
