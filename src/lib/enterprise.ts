@@ -141,11 +141,25 @@ export async function runAutomationEvent(
         }
         if (action.type === "notification" && typeof action.body === "string") {
           const employeeId = typeof payload.assignedEmployeeId === "number" ? payload.assignedEmployeeId : actorEmployeeId ?? null;
+          const actionUrl = entityType === "lead"
+            ? `/portal/leads/${entityId}`
+            : entityType === "customer"
+              ? `/portal/kunden/${entityId}`
+              : entityType === "order"
+                ? `/portal/auftraege/${entityId}`
+                : null;
+          const priority = action.priority === "critical" || action.priority === "high" ? action.priority : "normal";
           await tx.insert(notificationQueue).values({
             employeeId,
             channel: "in_app",
+            category: "automation",
+            priority,
             subject: typeof action.subject === "string" ? action.subject : null,
             body: action.body,
+            entityType,
+            entityId: String(entityId),
+            actionUrl,
+            metadata: { eventType, ruleId: rule.id },
           });
         }
       }
