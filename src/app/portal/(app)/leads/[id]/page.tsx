@@ -279,6 +279,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     productName: item.productName,
                     category: item.category,
                     providerName: item.providerName,
+                    imageUrl: item.imageUrl,
                   }))}
                 />
               ) : (
