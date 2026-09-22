@@ -10,5 +10,5 @@ Empfehlungsprogramm: /freund-werben. Keine erfundenen Rabatte, keine automatisch
 Verwaltung nach Anmeldung: /portal/verwaltung; alternativ /admin.
 Produktive Datenbankverbindung, eigenes Session-Geheimnis und ein selbst gewähltes Admin-Passwort sind erforderlich. Keine Standardzugänge enthalten.
 
-Nicht veröffentlicht. Die vollständige Geschäftsadresse fehlt im gelieferten Impressum und muss vor dem Livegang ergänzt werden.
+Das Impressum enthält die vom Betreiber bereitgestellte vollständige Geschäftsadresse Karawankenstraße 1, 65187 Wiesbaden sowie Telefon und E-Mail.
 Details zu tatsächlich durchgeführten Prüfungen: PRUEFBERICHT.md.
