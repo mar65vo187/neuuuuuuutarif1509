@@ -567,6 +567,44 @@ export const tasks = pgTable("tasks", {
   index("tasks_entity_idx").on(table.entityType, table.entityId),
 ]);
 
+export const serviceCases = pgTable("service_cases", {
+  id: serial("id").primaryKey(),
+  caseNumber: text("case_number").notNull().unique(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
+  orderId: integer("order_id").references(() => orders.id, { onDelete: "set null" }),
+  ownerEmployeeId: integer("owner_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  type: text("type").notNull().default("general"),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("normal"),
+  subject: text("subject").notNull(),
+  description: text("description").notNull().default(""),
+  dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+  firstResponseAt: timestamp("first_response_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  resolution: text("resolution"),
+  lastActivityAt: timestamp("last_activity_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("service_cases_owner_status_due_idx").on(table.ownerEmployeeId, table.status, table.dueAt),
+  index("service_cases_customer_idx").on(table.customerId, table.createdAt),
+  index("service_cases_order_idx").on(table.orderId, table.createdAt),
+  index("service_cases_status_due_idx").on(table.status, table.dueAt),
+]);
+
+export const serviceCaseEvents = pgTable("service_case_events", {
+  id: serial("id").primaryKey(),
+  serviceCaseId: integer("service_case_id").notNull().references(() => serviceCases.id, { onDelete: "cascade" }),
+  actorEmployeeId: integer("actor_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  type: text("type").notNull(),
+  fromValue: text("from_value"),
+  toValue: text("to_value"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("service_case_events_case_idx").on(table.serviceCaseId, table.createdAt)]);
+
 export const auditEvents = pgTable("audit_events", {
   id: serial("id").primaryKey(),
   actorEmployeeId: integer("actor_employee_id").references(() => employees.id, { onDelete: "set null" }),
@@ -823,6 +861,10 @@ export const operationsPolicy = pgTable("operations_policy", {
   providerStatusMissingHours: integer("provider_status_missing_hours").notNull().default(48),
   activationStaleDays: integer("activation_stale_days").notNull().default(7),
   documentsStaleHours: integer("documents_stale_hours").notNull().default(48),
+  serviceCriticalHours: integer("service_critical_hours").notNull().default(4),
+  serviceHighHours: integer("service_high_hours").notNull().default(24),
+  serviceNormalHours: integer("service_normal_hours").notNull().default(72),
+  serviceLowHours: integer("service_low_hours").notNull().default(120),
   updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -837,5 +879,7 @@ export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type CommissionEvent = typeof commissionEvents.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type ServiceCase = typeof serviceCases.$inferSelect;
+export type ServiceCaseEvent = typeof serviceCaseEvents.$inferSelect;
 export type LeadCallActivity = typeof leadCallActivities.$inferSelect;
 export type OperationsPolicyRow = typeof operationsPolicy.$inferSelect;

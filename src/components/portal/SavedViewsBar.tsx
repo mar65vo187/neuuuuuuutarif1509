@@ -18,7 +18,7 @@ export function SavedViewsBar({
   views,
   currentFilters,
 }: {
-  area: "leads" | "orders" | "customers" | "tasks";
+  area: "leads" | "orders" | "customers" | "tasks" | "service";
   basePath: string;
   views: View[];
   currentFilters: Record<string, string>;
@@ -31,9 +31,11 @@ export function SavedViewsBar({
     ? "z. B. Reviews diese Woche"
     : area === "tasks"
       ? "z. B. Kritisch & überfällig"
-      : area === "orders"
-        ? "z. B. Provider-Prüfung"
-        : "z. B. Neue Energie-Leads";
+      : area === "service"
+        ? "z. B. Providerfälle überfällig"
+        : area === "orders"
+          ? "z. B. Provider-Prüfung"
+          : "z. B. Neue Energie-Leads";
 
   function href(filters: Record<string, unknown>) {
     const params = new URLSearchParams();

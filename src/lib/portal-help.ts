@@ -99,6 +99,13 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Nutzen Sie Aufgaben für alles, was sonst im Kopf oder Chat verloren gehen würde.", "Überfällige Aufgaben sind ein Frühwarnsignal für Prozessprobleme."],
   },
   {
+    href: "/portal/service",
+    title: "Service & Fälle",
+    purpose: "Reklamationen, Providerprobleme, Kündigungs- und Servicefälle getrennt vom Vertriebsstatus mit SLA und Zuständigkeit steuern.",
+    actions: ["Servicefall aus der Kundenakte anlegen", "Priorität und Fallart dokumentieren", "Zuständigkeit und Bearbeitungsstatus steuern", "Lösung nachvollziehbar abschließen", "Fallhistorie und verknüpfte Aufgabe prüfen"],
+    tips: ["Hohe und kritische Fälle erzeugen zusätzlich einen internen Action-Inbox-Hinweis.", "Das Service-SLA kommt aus der zentralen Operations-Policy und wird bei Prioritätswechsel neu berechnet.", "Ein Servicefall verändert niemals automatisch Vertrag, Provision oder Kundenkommunikation."],
+  },
+  {
     href: "/portal/inbox",
     title: "Action Inbox",
     purpose: "Persönliche Arbeitsmeldungen nach Dringlichkeit bündeln und direkt mit dem auslösenden CRM-Vorgang verbinden.",

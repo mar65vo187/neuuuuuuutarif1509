@@ -7,7 +7,7 @@ import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { writeAudit } from "@/lib/enterprise";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 
-const areaSchema = z.enum(["leads", "orders", "customers", "tasks"]);
+const areaSchema = z.enum(["leads", "orders", "customers", "tasks", "service"]);
 
 const saveSchema = z.object({
   area: areaSchema,
@@ -20,14 +20,16 @@ const deleteSchema = z.object({
   id: z.number().int().positive(),
 });
 
-function sanitizeFilters(area: "leads" | "orders" | "customers" | "tasks", filters: Record<string, string>) {
+function sanitizeFilters(area: "leads" | "orders" | "customers" | "tasks" | "service", filters: Record<string, string>) {
   const allowed = area === "leads"
     ? new Set(["status", "type", "priority", "next", "product", "relation", "assignee", "q", "sort"])
     : area === "customers"
       ? new Set(["focus", "q"])
       : area === "tasks"
         ? new Set(["status", "priority", "due", "assignee", "entity", "q"])
-        : new Set(["status", "provider", "advisor", "focus", "q"]);
+        : area === "service"
+          ? new Set(["status", "priority", "type", "focus", "owner", "q"])
+          : new Set(["status", "provider", "advisor", "focus", "q"]);
   return Object.fromEntries(
     Object.entries(filters)
       .filter(([key, value]) => allowed.has(key) && value.trim())

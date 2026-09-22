@@ -39,6 +39,7 @@ function safeActionUrl(row: {
   if (row.entityType === "lead") return `/portal/leads/${id}`;
   if (row.entityType === "customer") return `/portal/kunden/${id}`;
   if (row.entityType === "order") return `/portal/auftraege/${id}`;
+  if (row.entityType === "service_case") return `/portal/service/${id}`;
   if (row.entityType === "task") return `/portal/aufgaben?q=${id}`;
   return null;
 }

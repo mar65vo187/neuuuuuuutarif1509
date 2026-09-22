@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, FileCheck2, Gift, Inbox, LineChart, Megaphone,
+  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, FileCheck2, Gift, Headphones, Inbox, LineChart, Megaphone,
   KeyRound, Lightbulb, ListTodo, LogOut, Menu, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards, X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -23,6 +23,7 @@ const NAV_SECTIONS = [
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.edit"] },
       { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo, anyPermission: ["task.manage"] },
+      { href: "/portal/service", label: "Service & Fälle", icon: Headphones, anyPermission: ["service.read", "service.edit", "service.assign"] },
       { href: "/portal/inbox", label: "Action Inbox", icon: Bell },
     ],
   },

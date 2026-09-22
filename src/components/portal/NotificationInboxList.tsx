@@ -46,6 +46,7 @@ function categoryLabel(value: string) {
   if (value === "automation") return "Automation";
   if (value === "quality") return "Qualität";
   if (value === "system") return "System";
+  if (value === "service") return "Service";
   return value || "Hinweis";
 }
 

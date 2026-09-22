@@ -12,9 +12,9 @@ test("customer workspace supports personal saved portfolio views", () => {
   assert.match(page, /listSavedViews\(user, "customers"\)/);
   assert.match(page, /area="customers"/);
   assert.match(page, /currentFilters=\{\{[\s\S]*focus[\s\S]*q:/);
-  assert.match(route, /z\.enum\(\["leads", "orders", "customers", "tasks"\]\)/);
+  assert.match(route, /z\.enum\(\["leads", "orders", "customers", "tasks", "service"\]\)/);
   assert.match(route, /area === "customers"[\s\S]*new Set\(\["focus", "q"\]\)/);
-  assert.match(bar, /"leads" \| "orders" \| "customers" \| "tasks"/);
+  assert.match(bar, /"leads" \| "orders" \| "customers" \| "tasks" \| "service"/);
 });
 
 test("customer portfolio bulk mutations are permission-scoped and audited", () => {

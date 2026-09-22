@@ -24,7 +24,7 @@ export type FocusItem = {
   title: string;
   subtitle: string;
   href: string;
-  entityType: "general" | "lead" | "customer" | "order";
+  entityType: "general" | "lead" | "customer" | "order" | "service_case";
   entityId: number;
   timestamp: string | null;
 };
@@ -132,6 +132,9 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       PORTAL_PERMISSION.ORDER_READ,
       PORTAL_PERMISSION.ORDER_EDIT,
       PORTAL_PERMISSION.TASK_MANAGE,
+      PORTAL_PERMISSION.SERVICE_READ,
+      PORTAL_PERMISSION.SERVICE_EDIT,
+      PORTAL_PERMISSION.SERVICE_ASSIGN,
     ] as const),
   ]);
   const policyCutoffs = operationsPolicyCutoffs(operationsPolicy, now);
@@ -151,6 +154,10 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
   const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
   const canTask = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
+  const canService = capabilities[PORTAL_PERMISSION.SERVICE_READ]
+    || capabilities[PORTAL_PERMISSION.SERVICE_EDIT]
+    || capabilities[PORTAL_PERMISSION.SERVICE_ASSIGN]
+    || user.role === "admin";
 
   const leadAccess = canLead ? leadAccessCondition(user) : sql`false`;
   const orderCondition = canOrder ? orderAccess(user) : sql`false`;
@@ -352,7 +359,9 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
         ? `/portal/kunden/${task.entityId}`
         : task.entityType === "lead" && canLead
           ? `/portal/leads/${task.entityId}`
-          : "/portal/aufgaben";
+          : task.entityType === "service_case" && canService
+            ? `/portal/service/${task.entityId}`
+            : "/portal/aufgaben";
     focus.push({
       key: `task-${task.id}`,
       kind: "task",
@@ -360,7 +369,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       title: task.title,
       subtitle: overdue ? "Aufgabe ist überfällig" : task.dueAt ? "Aufgabe ist innerhalb der nächsten 24 Stunden fällig" : `Priorität: ${task.priority}`,
       href,
-      entityType: task.entityType === "lead" || task.entityType === "customer" || task.entityType === "order" ? task.entityType : "general",
+      entityType: task.entityType === "lead" || task.entityType === "customer" || task.entityType === "order" || task.entityType === "service_case" ? task.entityType : "general",
       entityId: task.entityType === "general" ? 0 : task.entityId,
       timestamp: task.dueAt?.toISOString() ?? null,
     });

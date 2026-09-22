@@ -20,6 +20,10 @@ function valuesOf(row: Partial<OperationsPolicyValues>): OperationsPolicyValues 
     providerStatusMissingHours: row.providerStatusMissingHours ?? DEFAULT_OPERATIONS_POLICY.providerStatusMissingHours,
     activationStaleDays: row.activationStaleDays ?? DEFAULT_OPERATIONS_POLICY.activationStaleDays,
     documentsStaleHours: row.documentsStaleHours ?? DEFAULT_OPERATIONS_POLICY.documentsStaleHours,
+    serviceCriticalHours: row.serviceCriticalHours ?? DEFAULT_OPERATIONS_POLICY.serviceCriticalHours,
+    serviceHighHours: row.serviceHighHours ?? DEFAULT_OPERATIONS_POLICY.serviceHighHours,
+    serviceNormalHours: row.serviceNormalHours ?? DEFAULT_OPERATIONS_POLICY.serviceNormalHours,
+    serviceLowHours: row.serviceLowHours ?? DEFAULT_OPERATIONS_POLICY.serviceLowHours,
   };
 }
 

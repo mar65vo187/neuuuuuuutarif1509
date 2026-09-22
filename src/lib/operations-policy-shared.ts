@@ -8,6 +8,10 @@ export type OperationsPolicyValues = {
   providerStatusMissingHours: number;
   activationStaleDays: number;
   documentsStaleHours: number;
+  serviceCriticalHours: number;
+  serviceHighHours: number;
+  serviceNormalHours: number;
+  serviceLowHours: number;
 };
 
 export type OperationsPolicySnapshot = OperationsPolicyValues & {
@@ -25,6 +29,10 @@ export const DEFAULT_OPERATIONS_POLICY: OperationsPolicyValues = {
   providerStatusMissingHours: 48,
   activationStaleDays: 7,
   documentsStaleHours: 48,
+  serviceCriticalHours: 4,
+  serviceHighHours: 24,
+  serviceNormalHours: 72,
+  serviceLowHours: 120,
 };
 
 const HOUR = 60 * 60 * 1000;
@@ -44,6 +52,21 @@ export function operationsPolicyCutoffs(policy: OperationsPolicyValues, now = ne
   };
 }
 
+export function serviceCaseDueAt(
+  policy: OperationsPolicyValues,
+  priority: "low" | "normal" | "high" | "critical",
+  now = new Date(),
+) {
+  const hours = priority === "critical"
+    ? policy.serviceCriticalHours
+    : priority === "high"
+      ? policy.serviceHighHours
+      : priority === "low"
+        ? policy.serviceLowHours
+        : policy.serviceNormalHours;
+  return new Date(now.getTime() + hours * HOUR);
+}
+
 export const OPERATIONS_POLICY_FIELDS: Array<{
   key: keyof OperationsPolicyValues;
   label: string;
@@ -59,4 +82,8 @@ export const OPERATIONS_POLICY_FIELDS: Array<{
   { key: "providerStatusMissingHours", label: "Provider-Status fehlt", unit: "Stunden", description: "Zeit nach Einreichung bis ein fehlender Provider-Status auffällig wird." },
   { key: "activationStaleDays", label: "Aktivierung ohne Bewegung", unit: "Tage", description: "Ab wann eine offene Aktivierung als festhängend gilt." },
   { key: "documentsStaleHours", label: "Unterlagen fehlen", unit: "Stunden", description: "Ab wann ein Auftrag mit fehlenden Unterlagen als SLA-Warnung gilt." },
+  { key: "serviceCriticalHours", label: "Service · kritisch", unit: "Stunden", description: "Reaktionsziel für kritische Service-, Reklamations- oder Providerfälle." },
+  { key: "serviceHighHours", label: "Service · hoch", unit: "Stunden", description: "Reaktionsziel für hoch priorisierte Servicefälle." },
+  { key: "serviceNormalHours", label: "Service · normal", unit: "Stunden", description: "Reaktionsziel für normale Servicefälle." },
+  { key: "serviceLowHours", label: "Service · niedrig", unit: "Stunden", description: "Reaktionsziel für niedrig priorisierte Servicefälle." },
 ];

@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, BrainCircuit, BriefcaseBusiness, CalendarClock, ContactRound, FileCheck2, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
+  ArrowRight, BrainCircuit, BriefcaseBusiness, CalendarClock, ContactRound, FileCheck2, Headphones, Inbox, LayoutDashboard, LineChart, ListTodo, Loader2,
   Megaphone, PackageSearch, Search, Settings2, Trophy, X,
 } from "lucide-react";
 
 type Result = {
   id: string;
-  kind: "lead" | "customer" | "order" | "task" | "employee";
+  kind: "lead" | "customer" | "order" | "task" | "service_case" | "employee";
   title: string;
   subtitle: string;
   href: string;
@@ -20,6 +20,7 @@ const KIND_LABEL: Record<Result["kind"], string> = {
   customer: "Kunde",
   order: "Auftrag",
   task: "Aufgabe",
+  service_case: "Servicefall",
   employee: "Mitarbeiter",
 };
 
@@ -54,6 +55,7 @@ export function PortalCommandPalette({
       ...(can("customer.edit") ? [{ id: "new-customer", title: "Neuen Kunden anlegen", subtitle: "Kundenakte erstellen", href: "/portal/kunden/neu", icon: ContactRound }] : []),
       ...(can("order.create") ? [{ id: "new-order", title: "Neuen Auftrag anlegen", subtitle: "Vertrag / Auftrag erfassen", href: "/portal/auftraege/neu", icon: BriefcaseBusiness }] : []),
       ...(can("task.manage") ? [{ id: "tasks", title: "Aufgaben öffnen", subtitle: "Wiedervorlagen und offene Nacharbeit", href: "/portal/aufgaben", icon: ListTodo }] : []),
+      ...(can("service.read", "service.edit", "service.assign") ? [{ id: "service", title: "Servicefälle öffnen", subtitle: "Reklamationen, Providerfälle und SLA-Nacharbeit", href: "/portal/service", icon: Headphones }] : []),
       { id: "products", title: "Produkte & Partner", subtitle: "Vertriebswissen und Abschlusswege", href: "/portal/produkte", icon: PackageSearch },
       { id: "team-challenges", title: "Team-Challenges", subtitle: "Monats-Rennstrecke und Empfehlungsturm", href: "/portal/rennen", icon: Trophy },
       ...(can("report.sales") ? [{ id: "campaigns", title: "Kampagnen öffnen", subtitle: "Landingpages, UTM-Links und Attribution", href: "/portal/kampagnen", icon: Megaphone }] : []),
