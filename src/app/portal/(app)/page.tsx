@@ -497,7 +497,7 @@ export default async function PortalDashboard() {
                 ["Aufträge ohne Owner", data.integrity.unassignedOpenOrders, "/portal/auftraege?focus=unassigned", BriefcaseBusiness],
                 ["Aufgaben ohne Owner", data.integrity.unassignedOpenTasks, "/portal/aufgaben", ListTodo],
                 ["Überfällige Lead-Aktionen", data.integrity.overdueLeadActions, "/portal/leads?next=overdue&sort=next", AlertTriangle],
-                ["Stagnierende Aufträge >7T", data.integrity.staleOrders, "/portal/auftraege?focus=attention", Clock3],
+                [`Stagnierende Aufträge >${data.operationsPolicy.orderStaleDays}T`, data.integrity.staleOrders, "/portal/auftraege?focus=attention", Clock3],
               ].map(([label, value, href, Icon]) => {
                 const count = Number(value);
                 const IconComponent = Icon as typeof AlertTriangle;
