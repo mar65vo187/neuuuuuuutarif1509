@@ -1,8 +1,10 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type FormEvent } from "react";
+import { getProductVisual } from "@/lib/product-visuals";
 
 type CustomerOption = { id: number; label: string; customerNumber: string };
 type LeadOption = { id: number; label: string };
@@ -36,6 +38,8 @@ export function OrderCreateForm({
   const [providerId, setProviderId] = useState<number>(initialProviderId ?? providers[0]?.id ?? 0);
   const [productId, setProductId] = useState<number>(initialProductId ?? 0);
   const availableProducts = useMemo(() => products.filter((product) => product.providerId === providerId), [products, providerId]);
+  const selectedProduct = products.find((product) => product.id === productId) ?? null;
+  const selectedVisual = selectedProduct ? getProductVisual(selectedProduct.category, selectedProduct.name) : null;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,6 +122,20 @@ export function OrderCreateForm({
         <label className="label">Externe Auftrags-ID<input name="externalOrderId" maxLength={160} className="field" /></label>
         {canEditCommission ? <label className="label">Provider-Provision überschreiben (€)<input name="expectedCommission" inputMode="decimal" placeholder="nur Owner, optional" className="field" /></label> : <div className="rounded-xl border border-line bg-paper px-4 py-3 text-[12.5px] text-steel">Die Provisionsbasis wird automatisch aus dem internen Produktkatalog übernommen.</div>}
       </div>
+      {selectedProduct && <div className="overflow-hidden rounded-2xl border border-line bg-white">
+        <div className="grid sm:grid-cols-[150px_1fr]">
+          {selectedVisual ? <div className="relative min-h-28 bg-ink">
+            <Image src={selectedVisual.src} alt={selectedVisual.alt} fill sizes="150px" className="object-cover" style={{ objectPosition: selectedVisual.position }} />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-ink/10" />
+          </div> : <div className="grid min-h-28 place-items-center bg-paper text-[11px] font-bold uppercase tracking-[0.1em] text-steel">Produkt</div>}
+          <div className="p-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-electric-deep">Ausgewähltes Produkt</p>
+            <p className="mt-1 text-[16px] font-extrabold text-ink">{selectedProduct.name}</p>
+            <p className="mt-1 text-[12px] text-steel">{selectedProduct.category}</p>
+            <p className="mt-3 text-[12px] leading-relaxed text-steel">Der Auftrag wird mit diesem Produkt verknüpft. Provider und Produkt werden vor dem Speichern nochmals serverseitig geprüft.</p>
+          </div>
+        </div>
+      </div>}
       <label className="label">Interne Notiz<textarea name="note" rows={3} maxLength={2000} className="field" /></label>
       {providers.length === 0 && <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-800">Es ist noch kein Provider hinterlegt. Ein Administrator kann Provider unter System & Integrationen anlegen.</p>}
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">{error}</p>}

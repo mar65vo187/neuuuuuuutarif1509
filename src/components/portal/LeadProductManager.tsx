@@ -1,8 +1,10 @@
 "use client";
 
 import { BadgeCheck, Loader2, PackagePlus, ShoppingBag, Sparkles, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import { getProductVisual } from "@/lib/product-visuals";
 
 type ProductOption = {
   id: number;
@@ -82,6 +84,8 @@ export function LeadProductManager({
   }
 
   const selectedKey = productId ? `${productId}:${relation}` : "";
+  const selectedProduct = products.find((product) => String(product.id) === productId) ?? null;
+  const selectedVisual = selectedProduct ? getProductVisual(selectedProduct.category, selectedProduct.name, selectedProduct.providerName) : null;
 
   return (
     <div className="space-y-5">
@@ -106,6 +110,19 @@ export function LeadProductManager({
               ))}
             </select>
           </label>
+
+          {selectedProduct && <div className="overflow-hidden rounded-xl border border-line bg-white">
+            <div className="grid grid-cols-[92px_1fr]">
+              {selectedVisual ? <div className="relative min-h-20 bg-ink">
+                <Image src={selectedVisual.src} alt={selectedVisual.alt} fill sizes="92px" className="object-cover" style={{ objectPosition: selectedVisual.position }} />
+              </div> : <div className="grid min-h-20 place-items-center bg-paper text-[10px] font-bold text-steel">PRODUKT</div>}
+              <div className="min-w-0 p-3">
+                <p className="truncate text-[13px] font-extrabold text-ink">{selectedProduct.name}</p>
+                <p className="mt-0.5 truncate text-[11px] text-steel">{selectedProduct.providerName} · {selectedProduct.category}</p>
+                <p className="mt-2 text-[10.5px] leading-snug text-steel">Die Zuordnung dokumentiert Bedarf oder Bestand am Lead; sie erstellt noch keinen Auftrag.</p>
+              </div>
+            </div>
+          </div>}
 
           <div>
             <p className="label">Zuordnung</p>
@@ -152,6 +169,10 @@ export function LeadProductManager({
               <ul className="mt-3 space-y-2">
                 {group.items.map((item) => (
                   <li key={`${item.productId}:${item.relation}`} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${RELATION_STYLES[item.relation] ?? "border-line bg-paper"}`}>
+                    {(() => {
+                      const visual = getProductVisual(item.category, item.productName, item.providerName);
+                      return visual ? <span className="relative h-10 w-12 shrink-0 overflow-hidden rounded-lg bg-ink"><Image src={visual.src} alt="" fill sizes="48px" className="object-cover" style={{ objectPosition: visual.position }} /></span> : null;
+                    })()}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[12.5px] font-extrabold">{item.productName}</p>
                       <p className="truncate text-[10.5px] opacity-75">{item.providerName} · {item.category}</p>

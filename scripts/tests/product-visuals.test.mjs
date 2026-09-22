@@ -35,3 +35,15 @@ test("remote visual host is allowed by Next and CSP", () => {
   assert.match(nextConfig, /images\.pexels\.com/);
   assert.match(security, /images\.pexels\.com/);
 });
+
+test("daily CRM product workflows reuse the visual catalog", () => {
+  for (const path of [
+    "src/components/portal/OrderCreateForm.tsx",
+    "src/components/portal/LeadProductManager.tsx",
+    "src/components/portal/LeadCreateForm.tsx",
+  ]) {
+    const source = readFileSync(path, "utf8");
+    assert.match(source, /getProductVisual/);
+    assert.match(source, /next\/image/);
+  }
+});

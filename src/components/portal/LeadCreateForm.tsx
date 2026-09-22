@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { AlarmClock, ArrowLeft, Flame, Loader2, PackagePlus, Save, Tags } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS, SERVICES } from "@/lib/content";
 import { DuplicateIdentityCheck } from "@/components/portal/DuplicateIdentityCheck";
+import { getProductVisual } from "@/lib/product-visuals";
 
 type ProductOption = {
   id: number;
@@ -222,13 +224,17 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
               ) : products.map((product) => {
                 const selected = selectedProductIds.includes(product.id);
                 return (
-                  <label key={product.id} className={`flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 transition-colors ${selected ? "bg-electric/[0.08]" : "hover:bg-paper"}`}>
+                  <label key={product.id} className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${selected ? "bg-electric/[0.08]" : "hover:bg-paper"}`}>
                     <input
                       type="checkbox"
                       checked={selected}
                       onChange={() => toggleProduct(product.id)}
-                      className="mt-0.5 h-4 w-4 rounded border-line"
+                      className="h-4 w-4 shrink-0 rounded border-line"
                     />
+                    {(() => {
+                      const visual = getProductVisual(product.category, product.name, product.providerName);
+                      return visual ? <span className="relative h-11 w-14 shrink-0 overflow-hidden rounded-lg bg-ink"><Image src={visual.src} alt="" fill sizes="56px" className="object-cover" style={{ objectPosition: visual.position }} /></span> : null;
+                    })()}
                     <span className="min-w-0">
                       <span className="block text-[12.5px] font-bold text-ink">{product.name}</span>
                       <span className="block truncate text-[11px] text-steel">{product.category} · {product.providerName}</span>
