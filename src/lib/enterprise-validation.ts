@@ -187,6 +187,10 @@ export const operationsPolicyUpdateSchema = z.object({
   providerStatusMissingHours: z.coerce.number().int().min(1).max(720),
   activationStaleDays: z.coerce.number().int().min(1).max(90),
   documentsStaleHours: z.coerce.number().int().min(1).max(720),
+  serviceCriticalHours: z.coerce.number().int().min(1).max(168),
+  serviceHighHours: z.coerce.number().int().min(1).max(336),
+  serviceNormalHours: z.coerce.number().int().min(1).max(720),
+  serviceLowHours: z.coerce.number().int().min(1).max(1440),
 }).strict().superRefine((value, ctx) => {
   if (value.leadNextActionHighHours < value.leadNextActionMissingHours) {
     ctx.addIssue({
@@ -195,4 +199,31 @@ export const operationsPolicyUpdateSchema = z.object({
       message: "Die Hoch-Prioritätsgrenze darf nicht vor der ersten Lead-Wiedervorlage liegen.",
     });
   }
+  if (!(value.serviceCriticalHours <= value.serviceHighHours
+    && value.serviceHighHours <= value.serviceNormalHours
+    && value.serviceNormalHours <= value.serviceLowHours)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["serviceCriticalHours"],
+      message: "Service-SLAs müssen von kritisch bis niedrig aufsteigend sein.",
+    });
+  }
 });
+
+export const serviceCaseCreateSchema = z.object({
+  customerId: positiveId,
+  orderId: positiveId.nullable().optional(),
+  ownerEmployeeId: positiveId.optional(),
+  type: z.enum(["general", "complaint", "provider_issue", "billing", "cancellation", "documents", "technical"]).default("general"),
+  priority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
+  subject: text(180).min(3),
+  description: text(4000).optional().default(""),
+}).strict();
+
+export const serviceCaseUpdateSchema = z.object({
+  status: z.enum(["open", "in_progress", "waiting_customer", "waiting_provider", "resolved", "closed"]).optional(),
+  priority: z.enum(["low", "normal", "high", "critical"]).optional(),
+  ownerEmployeeId: positiveId.nullable().optional(),
+  note: text(3000).optional(),
+  resolution: text(3000).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, { message: "Keine Änderung angegeben." });
