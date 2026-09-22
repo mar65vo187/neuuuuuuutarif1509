@@ -158,6 +158,7 @@ const automationNotificationActionSchema = z.object({
   type: z.literal("notification"),
   subject: text(180).min(1),
   body: text(1000).min(1),
+  priority: z.enum(["normal", "high", "critical"]).default("normal"),
 }).strict();
 
 export const automationCreateSchema = z.object({
