@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { leadNotes, leads } from "@/db/schema";
-import { tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
@@ -10,6 +9,7 @@ import { leadUpdateSchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { isTerminalLeadStatus, syncLeadFollowUp } from "@/lib/lead-mutation";
 
 export const dynamic = "force-dynamic";
 
@@ -44,16 +44,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const [existing] = await tx.select().from(leads).where(and(eq(leads.id, id), leadAccessCondition(user))).limit(1).for("update");
     if (!existing) return NextResponse.json({ ok: false, error: "Anfrage nicht gefunden." }, { status: 404 });
 
-    const patch: Partial<typeof leads.$inferInsert> = { updatedAt: new Date() };
+    const now = new Date();
+    const patch: Partial<typeof leads.$inferInsert> = { updatedAt: now };
     const systemNotes: string[] = [];
 
     const autoCalledStatus = !data.status && data.contactOutcome && data.contactOutcome !== "open" && existing.status === "neu"
       ? "kontaktiert" as const
       : undefined;
     const requestedStatus = data.status ?? autoCalledStatus;
+    const effectiveStatus = requestedStatus ?? existing.status;
 
     if (requestedStatus === "termin_bestaetigt" && !(data.confirmedSlot || existing.confirmedSlot)) {
       return NextResponse.json({ ok: false, error: "Bitte trage zuerst eine abgestimmte Terminzeit ein." }, { status: 422 });
+    }
+    if (data.nextActionAt && isTerminalLeadStatus(effectiveStatus)) {
+      return NextResponse.json({ ok: false, error: "Bitte öffne den Lead zuerst wieder, bevor du eine Wiedervorlage setzt." }, { status: 422 });
     }
 
     if (data.assignToMe && existing.assignedEmployeeId !== user.id) {
@@ -90,70 +95,46 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       systemNotes.push(`Status geändert: ${LEAD_STATUS_LABELS[existing.status]} → ${LEAD_STATUS_LABELS[requestedStatus]}.`);
       if (requestedStatus === "kontaktiert" && !patch.lastContactAt) patch.lastContactAt = new Date();
       if (requestedStatus === "termin_bestaetigt") {
-        patch.confirmedAt = new Date();
-        if (data.confirmedSlot) patch.confirmedSlot = data.confirmedSlot;
-        systemNotes.push(`Termin eingetragen${data.confirmedSlot ? `: ${data.confirmedSlot}` : ""}.`);
+        patch.confirmedAt = now;
+        systemNotes.push(`Termin eingetragen: ${data.confirmedSlot || existing.confirmedSlot}.`);
       }
       if (["neu", "kontaktiert", "verloren"].includes(requestedStatus)) {
         patch.confirmedAt = null;
         patch.confirmedSlot = null;
       }
-      if (["abgeschlossen", "verloren"].includes(requestedStatus)) {
-        patch.closedAt = new Date();
-        patch.nextActionAt = null;
-      } else if (existing.closedAt) {
+      if (!isTerminalLeadStatus(requestedStatus) && existing.closedAt) {
         patch.closedAt = null;
       }
       if (!existing.assignedEmployeeId && !data.assignToMe) patch.assignedEmployeeId = user.id;
-    } else if (data.confirmedSlot && data.confirmedSlot !== existing.confirmedSlot) {
+    }
+    // A combined status + appointment update must retain both submitted fields.
+    if (data.confirmedSlot && data.confirmedSlot !== existing.confirmedSlot && !(requestedStatus && ["neu", "kontaktiert", "verloren"].includes(requestedStatus))) {
       patch.confirmedSlot = data.confirmedSlot;
-      if (existing.status === "termin_bestaetigt") patch.confirmedAt = new Date();
-      systemNotes.push(`Terminzeit aktualisiert: ${data.confirmedSlot}.`);
+      if (effectiveStatus === "termin_bestaetigt") patch.confirmedAt = now;
+      if (requestedStatus !== "termin_bestaetigt" || requestedStatus === existing.status) systemNotes.push(`Terminzeit aktualisiert: ${data.confirmedSlot}.`);
+    }
+    if (isTerminalLeadStatus(effectiveStatus)) {
+      patch.nextActionAt = null;
+      patch.closedAt = existing.closedAt ?? now;
     }
 
     await tx.update(leads).set(patch).where(eq(leads.id, id));
 
-    const effectiveStatus = requestedStatus ?? existing.status;
     const effectiveNextAction = Object.prototype.hasOwnProperty.call(patch, "nextActionAt")
       ? patch.nextActionAt ?? null
       : existing.nextActionAt;
     const taskOwner = existing.createdByEmployeeId ?? user.id;
 
-    if (data.nextActionAt !== undefined || ["abgeschlossen", "verloren"].includes(effectiveStatus)) {
-      const [followUp] = await tx.select({ id: tasks.id }).from(tasks).where(and(
-        eq(tasks.entityType, "lead"),
-        eq(tasks.entityId, id),
-        eq(tasks.type, "crm_follow_up"),
-        inArray(tasks.status, ["open", "in_progress"]),
-      )).orderBy(tasks.createdAt).limit(1);
-
-      if (effectiveNextAction && !["abgeschlossen", "verloren"].includes(effectiveStatus)) {
-        if (followUp) {
-          await tx.update(tasks).set({
-            assignedToEmployeeId: taskOwner,
-            title: `Lead nachfassen: ${existing.name}`,
-            priority: (patch.priority ?? existing.priority) === "hot" ? "critical" : (patch.priority ?? existing.priority) === "high" ? "high" : "normal",
-            status: "open",
-            dueAt: effectiveNextAction,
-            completedAt: null,
-            updatedAt: new Date(),
-          }).where(eq(tasks.id, followUp.id));
-        } else {
-          await tx.insert(tasks).values({
-            entityType: "lead",
-            entityId: id,
-            assignedToEmployeeId: taskOwner,
-            createdByEmployeeId: user.id,
-            type: "crm_follow_up",
-            title: `Lead nachfassen: ${existing.name}`,
-            priority: (patch.priority ?? existing.priority) === "hot" ? "critical" : (patch.priority ?? existing.priority) === "high" ? "high" : "normal",
-            status: "open",
-            dueAt: effectiveNextAction,
-          });
-        }
-      } else if (followUp) {
-        await tx.update(tasks).set({ status: "cancelled", completedAt: null, updatedAt: new Date() }).where(eq(tasks.id, followUp.id));
-      }
+    if (data.nextActionAt !== undefined || isTerminalLeadStatus(effectiveStatus) || (data.priority && effectiveNextAction)) {
+      await syncLeadFollowUp(tx, {
+        leadId: id,
+        actorId: user.id,
+        ownerId: taskOwner,
+        title: `Lead nachfassen: ${existing.name || existing.email || existing.phone || `Lead #${id}`}`,
+        priority: patch.priority ?? existing.priority,
+        dueAt: effectiveNextAction,
+        now,
+      });
     }
 
     if (Object.keys(patch).length > 1 || data.assignToMe) {
@@ -170,7 +151,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         {
           status: effectiveStatus,
           assignedEmployeeId: data.assignToMe ? user.id : patch.assignedEmployeeId ?? existing.assignedEmployeeId,
-          confirmedSlot: data.confirmedSlot ?? existing.confirmedSlot,
+          confirmedSlot: Object.prototype.hasOwnProperty.call(patch, "confirmedSlot") ? patch.confirmedSlot : existing.confirmedSlot,
           priority: patch.priority ?? existing.priority,
           contactOutcome: patch.contactOutcome ?? existing.contactOutcome,
           nextActionAt: effectiveNextAction,

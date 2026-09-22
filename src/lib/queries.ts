@@ -4,6 +4,7 @@ import { advisors, employees, leadNotes, leads, teamMessages, type Advisor } fro
 import { leadCallActivities, leadProductLinks, products, providers } from "@/db/enterprise-schema";
 import { SITE } from "@/lib/content";
 import { requireUser, type SessionUser } from "@/lib/auth";
+import { getLeadPageBounds, leadSearchPattern, normalizeLeadProductFilter } from "@/lib/lead-query-filters";
 
 /* ------------------------------------------------------------------ */
 /*  Advisors                                                           */
@@ -51,7 +52,7 @@ export type LeadRow = typeof leads.$inferSelect & {
   nextActionOverdue: boolean;
 };
 
-export async function listLeads(filter?: {
+export type LeadFilter = {
   status?: string;
   type?: string;
   priority?: string;
@@ -63,44 +64,56 @@ export async function listLeads(filter?: {
   page?: number;
   pageSize?: number;
   lookahead?: boolean;
-}, user?: SessionUser) {
-  const conditions = [leadAccessCondition(user ?? await requireUser())];
+};
+
+export type LeadPage = {
+  rows: LeadRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+/** Convert both local midnights separately so DST days span 23 or 25 hours. */
+function leadDueTodayCondition(): SQL {
+  return sql`${leads.nextActionAt} >= (date_trunc('day', now() at time zone 'Europe/Berlin') at time zone 'Europe/Berlin')
+    and ${leads.nextActionAt} < ((date_trunc('day', now() at time zone 'Europe/Berlin') + interval '1 day') at time zone 'Europe/Berlin')
+    and ${leads.status} not in ('abgeschlossen','verloren')`;
+}
+
+function leadFilterCondition(filter: LeadFilter | undefined, user: SessionUser): SQL {
+  const conditions = [leadAccessCondition(user)];
   if (filter?.status && (leads.status.enumValues as readonly string[]).includes(filter.status)) conditions.push(eq(leads.status, filter.status as typeof leads.status.enumValues[number]));
   if (filter?.type && (leads.type.enumValues as readonly string[]).includes(filter.type)) conditions.push(eq(leads.type, filter.type as typeof leads.type.enumValues[number]));
-  if (filter?.priority === "attention") conditions.push(sql`${leads.priority} in ('high','hot')`);
+  if (filter?.priority === "attention") conditions.push(sql`${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren')`);
   else if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
   if (filter?.next === "overdue") conditions.push(sql`${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren')`);
-  if (filter?.next === "today") conditions.push(sql`${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren')`);
+  if (filter?.next === "today") conditions.push(leadDueTodayCondition());
   if (filter?.next === "missing") conditions.push(sql`${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren')`);
-  const productRelation = filter?.productRelation && ["interest", "existing", "sold", "none"].includes(filter.productRelation)
-    ? filter.productRelation
-    : undefined;
-  if (filter?.productId && Number.isSafeInteger(filter.productId) && filter.productId > 0) {
+  const { productId, productRelation } = normalizeLeadProductFilter(filter?.productId, filter?.productRelation);
+  if (productId) {
     conditions.push(productRelation
-      ? sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId} and lpl.relation = ${productRelation})`
-      : sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${filter.productId})`);
+      ? sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${productId} and lpl.relation = ${productRelation})`
+      : sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.product_id = ${productId})`);
   } else if (productRelation === "none") {
-    conditions.push(sql`not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id})`);
+    conditions.push(sql`not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}) and ${leads.status} not in ('abgeschlossen','verloren')`);
   } else if (productRelation) {
     conditions.push(sql`exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id} and lpl.relation = ${productRelation})`);
   }
-  const q = filter?.q?.trim().slice(0, 120);
+  const q = leadSearchPattern(filter?.q);
   if (q) {
     conditions.push(or(
-      ilike(leads.name, `%${q}%`),
-      ilike(leads.email, `%${q}%`),
-      ilike(leads.phone, `%${q}%`),
-      ilike(leads.topic, `%${q}%`),
-      ilike(leads.region, `%${q}%`),
+      ilike(leads.name, q),
+      ilike(leads.email, q),
+      ilike(leads.phone, q),
+      ilike(leads.topic, q),
+      ilike(leads.region, q),
     )!);
   }
+  return and(...conditions)!;
+}
 
-  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
-  const requestedPageSize = Number.isSafeInteger(filter?.pageSize) && Number(filter?.pageSize) > 0 ? Number(filter?.pageSize) : 300;
-  const pageSize = Math.min(requestedPageSize, 300);
-  const queryLimit = Math.min(pageSize + (filter?.lookahead ? 1 : 0), 300);
-  const offset = (page - 1) * pageSize;
-
+async function selectLeadRows(database: Pick<typeof db, "select">, condition: SQL, sort: string | undefined, limit: number, offset = 0): Promise<LeadRow[]> {
   const selection = {
     lead: leads,
     advisorName: advisors.name,
@@ -112,18 +125,19 @@ export async function listLeads(filter?: {
     nextActionOverdue: sql<boolean>`coalesce(${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren'), false)`,
   };
 
-  const base = db
+  const base = database
     .select(selection)
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
     .leftJoin(employees, eq(leads.assignedEmployeeId, employees.id))
-    .where(conditions.length ? and(...conditions) : undefined);
+    .where(condition);
 
-  const rows = filter?.sort === "next"
-    ? await base.orderBy(sql`case when ${leads.nextActionAt} is null then 1 else 0 end`, asc(leads.nextActionAt), desc(leads.updatedAt), desc(leads.id)).limit(queryLimit).offset(offset)
-    : filter?.sort === "oldest"
-      ? await base.orderBy(asc(leads.createdAt), asc(leads.id)).limit(queryLimit).offset(offset)
-      : await base.orderBy(desc(leads.createdAt), desc(leads.id)).limit(queryLimit).offset(offset);
+  const ordering = sort === "next"
+    ? [sql`${leads.nextActionAt} asc nulls last`, desc(leads.updatedAt), desc(leads.id)]
+    : sort === "oldest"
+      ? [asc(leads.createdAt), asc(leads.id)]
+      : [desc(leads.createdAt), desc(leads.id)];
+  const rows = await base.orderBy(...ordering).limit(limit).offset(offset);
 
   return rows.map((r) => ({
     ...r.lead,
@@ -135,6 +149,28 @@ export async function listLeads(filter?: {
     soldProductNames: r.soldProductNames ?? [],
     nextActionOverdue: Boolean(r.nextActionOverdue),
   })) as LeadRow[];
+}
+
+/** Legacy array API; list screens should use listLeadsPage to reach every record. */
+export async function listLeads(filter?: LeadFilter, user?: SessionUser): Promise<LeadRow[]> {
+  const current = user ?? await requireUser();
+  const pageSize = Number.isSafeInteger(filter?.pageSize) && filter!.pageSize! > 0 ? Math.min(filter!.pageSize!, 300) : 300;
+  const page = Number.isSafeInteger(filter?.page) && filter!.page! > 0 ? Math.min(filter!.page!, 100000) : 1;
+  const queryLimit = Math.min(pageSize + (filter?.lookahead ? 1 : 0), 301);
+  return selectLeadRows(db, leadFilterCondition(filter, current), filter?.sort, queryLimit, (page - 1) * pageSize);
+}
+
+export async function listLeadsPage(filter?: LeadFilter, user?: SessionUser): Promise<LeadPage> {
+  const current = user ?? await requireUser();
+  const condition = leadFilterCondition(filter, current);
+  // A shared snapshot prevents concurrent edits from disagreeing with the count.
+  return db.transaction(async (tx) => {
+    const [count] = await tx.select({ total: sql<number>`count(*)::int` }).from(leads).where(condition);
+    const total = count?.total ?? 0;
+    const { page, pageSize, totalPages, offset } = getLeadPageBounds(total, filter?.page, filter?.pageSize);
+    const rows = total > 0 ? await selectLeadRows(tx, condition, filter?.sort, pageSize, offset) : [];
+    return { rows, total, page, pageSize, totalPages };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
 export async function getLead(id: number, user?: SessionUser) {
@@ -183,7 +219,7 @@ export async function getLeadCrmOverview(user: SessionUser) {
     productCount: sql<number>`count(*) filter (where exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}))::int`,
     noProductCount: sql<number>`count(*) filter (where not exists (select 1 from lead_product_links lpl where lpl.lead_id = ${leads.id}) and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
     missingNextCount: sql<number>`count(*) filter (where ${leads.nextActionAt} is null and ${leads.status} not in ('termin_bestaetigt','abgeschlossen','verloren'))::int`,
-    dueTodayCount: sql<number>`count(*) filter (where ${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+    dueTodayCount: sql<number>`count(*) filter (where ${leadDueTodayCondition()})::int`,
   }).from(leads).where(access);
   return {
     total: row?.total ?? 0,

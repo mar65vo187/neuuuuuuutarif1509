@@ -19,7 +19,9 @@ export function TypeBadge({ type }: { type: string }) {
 
 export function formatDate(d: Date | string | null | undefined) {
   if (!d) return "–";
-  return new Date(d).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const date = new Date(d);
+  if (!Number.isFinite(date.getTime())) return "–";
+  return date.toLocaleString("de-DE", { timeZone: "Europe/Berlin", day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {

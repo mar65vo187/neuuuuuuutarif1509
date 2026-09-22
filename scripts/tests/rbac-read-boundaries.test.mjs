@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { loadTs } from "./helpers/load-ts.mjs";
+
 const read = (path) => readFileSync(new URL("../../" + path, import.meta.url), "utf8");
 
 function assertBefore(source, first, second, message) {
@@ -12,13 +14,30 @@ function assertBefore(source, first, second, message) {
   assert.ok(firstIndex < secondIndex, message + " · authorization must run before data access");
 }
 
-test("lead workspaces enforce lead.edit before CRM reads", () => {
-  const list = read("src/app/portal/(app)/leads/page.tsx");
-  const detail = read("src/app/portal/(app)/leads/[id]/page.tsx");
-  const pipeline = read("src/app/portal/(app)/leads/pipeline/page.tsx");
-  assert.match(list, /if \(!canEdit\) redirect\("\/portal"\)/);
-  assertBefore(detail, 'if (!canEdit) redirect("/portal")', "getLead(id, user)", "lead detail");
-  assert.match(pipeline, /hasPermission\(user, PORTAL_PERMISSION\.LEAD_EDIT\)/);
+test("lead workspaces reject missing permission before reading CRM data", async () => {
+  const content = loadTs("src/lib/content.ts");
+  for (const path of ["leads/page.tsx", "leads/[id]/page.tsx", "leads/pipeline/page.tsx"]) {
+    let reads = 0;
+    const rejectRead = () => { reads++; throw new Error("Unauthorized data read"); };
+    const dependencies = {
+      "next/link": {}, "lucide-react": {}, "drizzle-orm": {},
+      "next/navigation": { redirect: url => { throw new Error(`Redirect: ${url}`); } },
+      "@/lib/auth": { getCurrentUser: async () => ({ id: 7, role: "berater" }) },
+      "@/lib/enterprise-access": {
+        PORTAL_PERMISSION: { LEAD_EDIT: "lead.edit", LEAD_ASSIGN: "lead.assign", ORDER_CREATE: "order.create" },
+        permissionSnapshot: async () => ({ "lead.edit": false, "lead.assign": true, "order.create": true }),
+      },
+      "@/lib/content": content,
+      "@/lib/queries": new Proxy({}, { get: () => rejectRead }),
+      "@/db": { db: { select: rejectRead } }, "@/db/schema": {},
+      "@/lib/portal-productivity": { listSavedViews: rejectRead },
+      "@/lib/lead-intelligence": {}, "@/lib/call-intelligence": {},
+      ...Object.fromEntries(["ui", "LeadBulkList", "SavedViewsBar", "LeadActions", "LeadProductManager", "LeadPipelineBoard"].map(name => [`@/components/portal/${name}`, {}])),
+    };
+    const Page = loadTs(`src/app/portal/(app)/${path}`, dependencies).default;
+    await assert.rejects(Page({ searchParams: Promise.resolve({}), params: Promise.resolve({ id: "42" }) }), /Redirect: \/portal$/);
+    assert.equal(reads, 0, `${path} must not access CRM data before permission checks`);
+  }
 });
 
 test("customer workspaces enforce read or edit permission before customer queries", () => {
