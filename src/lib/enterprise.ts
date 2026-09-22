@@ -25,6 +25,7 @@ import {
   products,
   providers,
   reconciliationIssues,
+  serviceCaseEvents,
   serviceCases,
   tasks,
   type Customer,
@@ -600,6 +601,18 @@ export async function getCustomer(id: number, user: SessionUser) {
 export async function getCustomer360(id: number, user: SessionUser) {
   const base = await getCustomer(id, user);
   if (!base) return null;
+  const serviceCapabilities = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.SERVICE_READ,
+    PORTAL_PERMISSION.SERVICE_EDIT,
+    PORTAL_PERMISSION.SERVICE_ASSIGN,
+  ] as const);
+  const canServiceAssign = serviceCapabilities[PORTAL_PERMISSION.SERVICE_ASSIGN] || user.role === "admin";
+  const canService = serviceCapabilities[PORTAL_PERMISSION.SERVICE_READ]
+    || serviceCapabilities[PORTAL_PERMISSION.SERVICE_EDIT]
+    || canServiceAssign;
+  const serviceAccess = canServiceAssign
+    ? eq(serviceCases.customerId, id)
+    : and(eq(serviceCases.customerId, id), eq(serviceCases.ownerEmployeeId, user.id));
 
   const [
     profileRows,
@@ -609,6 +622,8 @@ export async function getCustomer360(id: number, user: SessionUser) {
     linkedLeadNotes,
     linkedLeadCalls,
     customerOrderHistory,
+    customerServiceCases,
+    customerServiceEvents,
     categoryRows,
   ] = await Promise.all([
     db.select().from(customerCrmProfiles).where(eq(customerCrmProfiles.customerId, id)).limit(1),
@@ -686,6 +701,41 @@ export async function getCustomer360(id: number, user: SessionUser) {
       .where(and(eq(orders.customerId, id), orderAccess(user)))
       .orderBy(desc(orderStatusHistory.createdAt))
       .limit(120),
+    canService
+      ? db.select({
+          id: serviceCases.id,
+          caseNumber: serviceCases.caseNumber,
+          type: serviceCases.type,
+          status: serviceCases.status,
+          priority: serviceCases.priority,
+          subject: serviceCases.subject,
+          dueAt: serviceCases.dueAt,
+          lastActivityAt: serviceCases.lastActivityAt,
+          createdAt: serviceCases.createdAt,
+        }).from(serviceCases)
+          .where(serviceAccess)
+          .orderBy(desc(serviceCases.lastActivityAt))
+          .limit(100)
+      : Promise.resolve([]),
+    canService
+      ? db.select({
+          id: serviceCaseEvents.id,
+          serviceCaseId: serviceCaseEvents.serviceCaseId,
+          caseNumber: serviceCases.caseNumber,
+          subject: serviceCases.subject,
+          type: serviceCaseEvents.type,
+          fromValue: serviceCaseEvents.fromValue,
+          toValue: serviceCaseEvents.toValue,
+          note: serviceCaseEvents.note,
+          createdAt: serviceCaseEvents.createdAt,
+          actorName: employees.name,
+        }).from(serviceCaseEvents)
+          .innerJoin(serviceCases, eq(serviceCaseEvents.serviceCaseId, serviceCases.id))
+          .leftJoin(employees, eq(serviceCaseEvents.actorEmployeeId, employees.id))
+          .where(serviceAccess)
+          .orderBy(desc(serviceCaseEvents.createdAt))
+          .limit(160)
+      : Promise.resolve([]),
     db.selectDistinct({ category: products.category })
       .from(products)
       .where(eq(products.active, true))
@@ -695,7 +745,7 @@ export async function getCustomer360(id: number, user: SessionUser) {
   const profile = profileRows[0] ?? null;
   const timeline: Array<{
     key: string;
-    kind: "customer" | "activity" | "lead" | "lead_note" | "lead_call" | "order" | "order_status" | "task" | "referral" | "opportunity";
+    kind: "customer" | "activity" | "lead" | "lead_note" | "lead_call" | "order" | "order_status" | "task" | "referral" | "opportunity" | "service_case" | "service_event";
     title: string;
     detail: string;
     at: Date;
@@ -771,6 +821,43 @@ export async function getCustomer360(id: number, user: SessionUser) {
       at: history.createdAt,
       href: "/portal/auftraege/" + history.orderId,
       tone: ["rejected", "cancelled", "storno", "documents_missing"].includes(history.toStatus) ? "attention" : history.toStatus === "active" ? "good" : "normal",
+    });
+  }
+  for (const serviceCase of customerServiceCases) {
+    timeline.push({
+      key: "service-case-" + serviceCase.id,
+      kind: "service_case",
+      title: serviceCase.caseNumber + " · " + serviceCase.subject,
+      detail: [serviceCase.type, serviceCase.status, serviceCase.priority].filter(Boolean).join(" · "),
+      at: serviceCase.lastActivityAt,
+      href: "/portal/service/" + serviceCase.id,
+      tone: serviceCase.status === "resolved" || serviceCase.status === "closed"
+        ? "good"
+        : serviceCase.priority === "critical" || serviceCase.dueAt.getTime() < Date.now()
+          ? "attention"
+          : "normal",
+    });
+  }
+  for (const event of customerServiceEvents) {
+    timeline.push({
+      key: "service-event-" + event.id,
+      kind: "service_event",
+      title: event.caseNumber + " · " + ({
+        created: "Servicefall angelegt",
+        status_changed: "Servicestatus geändert",
+        priority_changed: "Servicepriorität geändert",
+        assigned: "Service-Zuständigkeit geändert",
+        resolution: "Servicelösung dokumentiert",
+        note: "Service-Notiz",
+      } as Record<string, string>)[event.type] ?? "Service-Aktivität",
+      detail: [
+        event.fromValue && event.toValue ? event.fromValue + " → " + event.toValue : event.toValue || event.fromValue,
+        event.note,
+        event.actorName,
+      ].filter(Boolean).join(" · "),
+      at: event.createdAt,
+      href: "/portal/service/" + event.serviceCaseId,
+      tone: event.type === "resolution" ? "good" : event.type === "priority_changed" && event.toValue === "critical" ? "attention" : "normal",
     });
   }
   for (const task of base.tasks) {
@@ -850,7 +937,8 @@ export async function getCustomer360(id: number, user: SessionUser) {
     activities,
     opportunities,
     linkedLeads,
-    timeline: timeline.slice(0, 150),
+    serviceCases: customerServiceCases,
+    timeline: timeline.slice(0, 180),
     intelligence,
     availableProducts: await db.select({
       id: products.id,
