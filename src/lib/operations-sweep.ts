@@ -209,6 +209,10 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
           providerStatusMissingHours: operationsPolicy.providerStatusMissingHours,
           activationStaleDays: operationsPolicy.activationStaleDays,
           documentsStaleHours: operationsPolicy.documentsStaleHours,
+          serviceCriticalHours: operationsPolicy.serviceCriticalHours,
+          serviceHighHours: operationsPolicy.serviceHighHours,
+          serviceNormalHours: operationsPolicy.serviceNormalHours,
+          serviceLowHours: operationsPolicy.serviceLowHours,
         },
       })],
     );
