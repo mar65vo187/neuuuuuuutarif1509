@@ -185,6 +185,76 @@ export async function getServiceCaseSummary(user: SessionUser, canAssign = false
   };
 }
 
+export async function getServiceControlTower(user: SessionUser, canAssign = false, days = 30) {
+  const boundedDays = Math.max(1, Math.min(Math.trunc(days), 365));
+  const access = serviceCaseReadAccess(user, canAssign);
+  const periodCondition = sql`${serviceCases.createdAt} >= now() - ${boundedDays}::int * interval '1 day'`;
+
+  const [slaRows, typeRows, workloadRows] = await Promise.all([
+    db.select({
+      created: sql<number>`count(*) filter (where ${periodCondition})::int`,
+      responded: sql<number>`count(*) filter (where ${periodCondition} and ${serviceCases.firstResponseAt} is not null)::int`,
+      metSla: sql<number>`count(*) filter (where ${periodCondition} and ${serviceCases.firstResponseAt} is not null and ${serviceCases.firstResponseAt} <= ${serviceCases.dueAt})::int`,
+      breached: sql<number>`count(*) filter (where ${periodCondition} and ((${serviceCases.firstResponseAt} is not null and ${serviceCases.firstResponseAt} > ${serviceCases.dueAt}) or (${serviceCases.firstResponseAt} is null and ${serviceCases.dueAt} < now())))::int`,
+      pendingWithinSla: sql<number>`count(*) filter (where ${periodCondition} and ${serviceCases.firstResponseAt} is null and ${serviceCases.dueAt} >= now())::int`,
+      resolved: sql<number>`count(*) filter (where ${serviceCases.resolvedAt} >= now() - ${boundedDays}::int * interval '1 day')::int`,
+      avgFirstResponseMinutes: sql<number | null>`avg(extract(epoch from (${serviceCases.firstResponseAt} - ${serviceCases.createdAt})) / 60.0) filter (where ${periodCondition} and ${serviceCases.firstResponseAt} is not null)::float8`,
+      avgResolutionHours: sql<number | null>`avg(extract(epoch from (${serviceCases.resolvedAt} - ${serviceCases.createdAt})) / 3600.0) filter (where ${serviceCases.resolvedAt} >= now() - ${boundedDays}::int * interval '1 day')::float8`,
+    }).from(serviceCases)
+      .innerJoin(customers, eq(serviceCases.customerId, customers.id))
+      .where(access),
+    db.select({
+      type: serviceCases.type,
+      active: sql<number>`count(*) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider'))::int`,
+      created: sql<number>`count(*) filter (where ${periodCondition})::int`,
+      resolved: sql<number>`count(*) filter (where ${serviceCases.resolvedAt} >= now() - ${boundedDays}::int * interval '1 day')::int`,
+    }).from(serviceCases)
+      .innerJoin(customers, eq(serviceCases.customerId, customers.id))
+      .where(access)
+      .groupBy(serviceCases.type)
+      .orderBy(serviceCases.type),
+    canAssign
+      ? db.select({
+          employeeId: employees.id,
+          name: employees.name,
+          active: sql<number>`count(*) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider'))::int`,
+          overdue: sql<number>`count(*) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider') and ${serviceCases.dueAt} < now())::int`,
+          critical: sql<number>`count(*) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider') and ${serviceCases.priority} = 'critical')::int`,
+          waitingProvider: sql<number>`count(*) filter (where ${serviceCases.status} = 'waiting_provider')::int`,
+          oldestDueAt: sql<Date | null>`min(${serviceCases.dueAt}) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider'))`,
+        }).from(serviceCases)
+          .innerJoin(employees, eq(serviceCases.ownerEmployeeId, employees.id))
+          .where(eq(employees.active, true))
+          .groupBy(employees.id, employees.name)
+          .orderBy(employees.name)
+      : Promise.resolve([]),
+  ]);
+
+  const sla = slaRows[0] ?? {
+    created: 0,
+    responded: 0,
+    metSla: 0,
+    breached: 0,
+    pendingWithinSla: 0,
+    resolved: 0,
+    avgFirstResponseMinutes: null,
+    avgResolutionHours: null,
+  };
+  const evaluated = sla.metSla + sla.breached;
+
+  return {
+    days: boundedDays,
+    sla: {
+      ...sla,
+      evaluated,
+      compliancePercent: evaluated > 0 ? Math.round((sla.metSla / evaluated) * 1000) / 10 : null,
+      responseCoveragePercent: sla.created > 0 ? Math.round((sla.responded / sla.created) * 1000) / 10 : null,
+    },
+    byType: typeRows,
+    workload: workloadRows,
+  };
+}
+
 export async function getServiceCase(id: number, user: SessionUser, canAssign = false) {
   const [row] = await db.select({
     serviceCase: serviceCases,
