@@ -284,7 +284,7 @@ export async function createServiceCase(
   const policy = await getOperationsPolicy();
   const now = new Date();
   const dueAt = serviceCaseDueAt(policy, input.priority, now);
-  const caseNumber = `SC-${now.getUTCFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+  const caseNumber = `SC-${now.getUTCFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase()}`;
 
   return db.transaction(async (tx) => {
     const [created] = await tx.insert(serviceCases).values({
@@ -405,8 +405,8 @@ export async function updateServiceCase(
   if (!ownerChanged && !statusChanged && !priorityChanged && !resolutionChanged && !reopened && !note) return current;
 
   const now = new Date();
-  const policy = priorityChanged ? await getOperationsPolicy() : null;
-  const nextDueAt = priorityChanged && policy ? serviceCaseDueAt(policy, nextPriority, now) : current.dueAt;
+  const policy = priorityChanged || reopened ? await getOperationsPolicy() : null;
+  const nextDueAt = (priorityChanged || reopened) && policy ? serviceCaseDueAt(policy, nextPriority, now) : current.dueAt;
   const firstResponseAt = current.firstResponseAt ?? (statusChanged || priorityChanged || resolutionChanged || note ? now : null);
 
   return db.transaction(async (tx) => {
@@ -418,7 +418,11 @@ export async function updateServiceCase(
       resolution: isClosing ? resolution : reopened ? null : (input.resolution?.trim() || current.resolution),
       firstResponseAt,
       resolvedAt: nextStatus === "resolved" || nextStatus === "closed" ? current.resolvedAt ?? now : reopened ? null : current.resolvedAt,
-      closedAt: nextStatus === "closed" ? current.closedAt ?? now : reopened ? null : current.closedAt,
+      closedAt: nextStatus === "closed"
+        ? current.closedAt ?? now
+        : reopened || (statusChanged && current.status === "closed")
+          ? null
+          : current.closedAt,
       lastActivityAt: now,
       updatedAt: now,
     };
@@ -463,7 +467,7 @@ export async function updateServiceCase(
           assignedToEmployeeId: nextOwner,
           priority: nextPriority,
           dueAt: nextDueAt,
-          status: "open",
+          status: nextStatus === "in_progress" ? "in_progress" : "open",
           completedAt: null,
           updatedAt: now,
         };
