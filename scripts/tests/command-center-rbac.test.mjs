@@ -43,7 +43,7 @@ test("dashboard renders only CRM surfaces the role can read", () => {
 test("dashboard recommendations never link to hidden domains", () => {
   const source = read("src/app/portal/(app)/page.tsx");
   assert.match(source, /canTaskManage && data\.metrics\.overdueTasks > 0/);
-  assert.match(source, /canLeadRead && data\.metrics\.untouchedLeads24h > 0/);
+  assert.match(source, /canLeadRead && data\.metrics\.untouchedLeadsSla > 0/);
   assert.match(source, /canCustomerRead && data\.metrics\.atRiskCustomers > 0/);
   assert.match(source, /canLeadRead && data\.metrics\.leadsMissingNextAction > 0/);
   assert.match(source, /canCustomerRead && data\.metrics\.dueCustomerReviews > 0/);
