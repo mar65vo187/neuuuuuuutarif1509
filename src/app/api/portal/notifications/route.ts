@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { notificationQueue } from "@/db/enterprise-schema";
@@ -46,7 +46,13 @@ export async function PATCH(request: NextRequest) {
         eq(notificationQueue.channel, "in_app"),
       );
       const selection = "all" in parsed.data
-        ? and(base, eq(notificationQueue.status, "pending"), isNull(notificationQueue.archivedAt))
+        ? and(
+            base,
+            eq(notificationQueue.status, "pending"),
+            isNull(notificationQueue.archivedAt),
+            lte(notificationQueue.scheduledAt, now),
+            or(isNull(notificationQueue.snoozedUntil), lte(notificationQueue.snoozedUntil, now)),
+          )
         : and(base, inArray(notificationQueue.id, parsed.data.ids));
 
       const patch: Partial<typeof notificationQueue.$inferInsert> = {};
