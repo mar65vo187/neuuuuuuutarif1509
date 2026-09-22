@@ -73,6 +73,8 @@ const requiredTables = [
   "portal_sessions",
   "portal_login_rate_limits",
   "operations_policy",
+  "service_cases",
+  "service_case_events",
 ];
 
 const pool = new Pool({
