@@ -33,6 +33,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     createdAt: row.createdAt.toISOString(),
   }));
   const intelligence = data.intelligence;
+  const activeServiceCases = data.serviceCases.filter((serviceCase) => ["open", "in_progress", "waiting_customer", "waiting_provider"].includes(serviceCase.status));
   const intelligenceTone = {
     critical: "border-red-200 bg-red-50 text-red-900",
     high: "border-amber-200 bg-amber-50 text-amber-900",
@@ -50,6 +51,8 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     task: "Aufgabe",
     referral: "Empfehlung",
     opportunity: "Opportunity",
+    service_case: "Servicefall",
+    service_event: "Serviceverlauf",
   };
   const opportunityRows = data.opportunities.map((row) => ({
     id: row.opportunity.id,
@@ -101,18 +104,28 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       </div>
     </section>
 
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Customer 360 Kennzahlen">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6" aria-label="Customer 360 Kennzahlen">
       {[
         ["Aufträge aktiv", intelligence.summary.activeOrders, FilePlus2],
         ["Offene Potenziale", intelligence.summary.openOpportunities, Target],
         ["Aktivitäten", intelligence.summary.activities, Activity],
         ["Empfehlungen", intelligence.summary.referrals, Network],
         ["Überfällige Tasks", intelligence.summary.overdueTasks, AlertTriangle],
+        ["Servicefälle", activeServiceCases.length, AlertTriangle],
       ].map(([label, value, Icon]) => {
         const IconComponent = Icon as typeof Activity;
         return <div key={String(label)} className="rounded-[18px] border border-line bg-white p-3.5"><div className="flex items-center justify-between gap-3"><p className="text-[10.5px] font-bold uppercase tracking-[0.11em] text-steel">{String(label)}</p><IconComponent className="h-4 w-4 text-electric-deep" /></div><p className="mt-2 text-[26px] font-extrabold">{Number(value)}</p></div>;
       })}
     </section>
+
+    {activeServiceCases.length > 0 && (
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-600" /><h2 className="text-[15px] font-extrabold">Aktive Servicefälle</h2></div><Link href="/portal/service" className="text-[11.5px] font-bold text-electric-deep hover:underline">Service öffnen</Link></div>
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {activeServiceCases.slice(0, 6).map((serviceCase) => <Link key={serviceCase.id} href={`/portal/service/${serviceCase.id}`} className="rounded-xl border border-line bg-paper p-3 transition hover:border-electric/30"><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-extrabold uppercase tracking-wider text-electric-deep">{serviceCase.caseNumber}</span><span className={"text-[10px] font-extrabold " + (serviceCase.priority === "critical" ? "text-red-700" : serviceCase.priority === "high" ? "text-amber-700" : "text-steel")}>{serviceCase.priority}</span></div><p className="mt-1 truncate text-[12.5px] font-extrabold">{serviceCase.subject}</p><p className="mt-1 text-[10.5px] text-steel">{serviceCase.status} · SLA {new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Berlin" }).format(serviceCase.dueAt)}</p></Link>)}
+        </div>
+      </Card>
+    )}
 
     {(intelligence.riskFlags.length > 0 || intelligence.coverage.crossSellSignals.length > 0) && (
       <section className="grid gap-4 xl:grid-cols-2">
