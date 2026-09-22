@@ -17,13 +17,70 @@ const B2B_POINTS = [
   "Keine automatische Entscheidung – Sie behalten die Freigabe",
 ] as const;
 
+type PriceMode = "single" | "promo";
+
+function parseMoney(value: string) {
+  const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function clampMonths(value: string, fallback: number, max = 120) {
+  const parsed = Math.round(Number(value));
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
+function formatCurrency(value: number) {
+  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
 export function DecisionCheck({ audience }: { audience: AudienceMode }) {
   const business = audience === "b2b";
+  const [priceMode, setPriceMode] = useState<PriceMode>("single");
   const [monthly, setMonthly] = useState("");
-  const annual = useMemo(() => {
-    const parsed = Number(monthly.replace(",", "."));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed * 12 : 0;
-  }, [monthly]);
+  const [duration, setDuration] = useState("24");
+  const [promoMonthly, setPromoMonthly] = useState("");
+  const [promoMonths, setPromoMonths] = useState("6");
+  const [regularMonthly, setRegularMonthly] = useState("");
+
+  const calculation = useMemo(() => {
+    const contractMonths = clampMonths(duration, 24);
+    const firstPhaseMonths = Math.min(clampMonths(promoMonths, 1, 120), contractMonths);
+
+    if (priceMode === "single") {
+      const monthlyPrice = parseMoney(monthly);
+      const total = monthlyPrice * contractMonths;
+      const firstYearMonths = Math.min(contractMonths, 12);
+      return {
+        total,
+        average: contractMonths > 0 ? total / contractMonths : 0,
+        firstYear: monthlyPrice * firstYearMonths,
+        contractMonths,
+        firstYearMonths,
+        valid: monthlyPrice > 0,
+      };
+    }
+
+    const promoPrice = parseMoney(promoMonthly);
+    const regularPrice = parseMoney(regularMonthly);
+    const regularMonths = Math.max(contractMonths - firstPhaseMonths, 0);
+    const total = promoPrice * firstPhaseMonths + regularPrice * regularMonths;
+
+    const firstYearMonths = Math.min(contractMonths, 12);
+    const promoMonthsInFirstYear = Math.min(firstPhaseMonths, firstYearMonths);
+    const regularMonthsInFirstYear = Math.max(firstYearMonths - promoMonthsInFirstYear, 0);
+    const firstYear = promoPrice * promoMonthsInFirstYear + regularPrice * regularMonthsInFirstYear;
+
+    return {
+      total,
+      average: contractMonths > 0 ? total / contractMonths : 0,
+      firstYear,
+      contractMonths,
+      firstYearMonths,
+      valid: promoPrice > 0 || regularPrice > 0,
+    };
+  }, [duration, monthly, priceMode, promoMonthly, promoMonths, regularMonthly]);
 
   const href = withAudience(business ? "/anfrage" : "/anfrage?situation=vergleich", audience);
 
@@ -80,32 +137,140 @@ export function DecisionCheck({ audience }: { audience: AudienceMode }) {
             </span>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-silver">Schneller Kosten-Check</p>
-              <h3 className="mt-1 text-[19px] font-extrabold">{business ? "Was kostet Ihr Vertrag im Jahr?" : "Was kostet dein Vertrag im Jahr?"}</h3>
+              <h3 className="mt-1 text-[19px] font-extrabold">
+                {business ? "Was kostet Ihr Vertrag wirklich?" : "Was kostet dein Vertrag wirklich?"}
+              </h3>
             </div>
           </div>
+
           <p className="mt-5 text-[13.5px] leading-relaxed text-silver">
-            {business ? "Geben Sie Ihre ungefähren monatlichen Vertragskosten ein." : "Gib deine ungefähren monatlichen Vertragskosten ein."} Wir zeigen nur die aktuelle Jahresbelastung – keine erfundene Ersparnis.
+            {business
+              ? "Tragen Sie Laufzeit und Preis ein. Auch Aktionspreise mit anschließend höherem Monatspreis werden korrekt berücksichtigt."
+              : "Trag Laufzeit und Preis ein. Auch Aktionspreise mit anschließend höherem Monatspreis werden korrekt berücksichtigt."}
           </p>
-          <label className="mt-6 block">
-            <span className="text-[12.5px] font-semibold text-platinum">Monatliche Kosten in €</span>
+
+          <div className="mt-6 grid grid-cols-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Preismodell auswählen">
+            <button
+              type="button"
+              aria-pressed={priceMode === "single"}
+              onClick={() => setPriceMode("single")}
+              className={`min-h-11 rounded-xl px-3 py-2 text-[12.5px] font-bold transition ${
+                priceMode === "single" ? "bg-white text-ink" : "text-silver hover:text-white"
+              }`}
+            >
+              Ein Preis
+            </button>
+            <button
+              type="button"
+              aria-pressed={priceMode === "promo"}
+              onClick={() => setPriceMode("promo")}
+              className={`min-h-11 rounded-xl px-3 py-2 text-[12.5px] font-bold transition ${
+                priceMode === "promo" ? "bg-white text-ink" : "text-silver hover:text-white"
+              }`}
+            >
+              Aktionspreis
+            </button>
+          </div>
+
+          <label className="mt-5 block">
+            <span className="text-[12.5px] font-semibold text-platinum">Vertragslaufzeit in Monaten</span>
             <input
-              inputMode="decimal"
-              value={monthly}
-              onChange={(event) => setMonthly(event.target.value.slice(0, 12))}
-              placeholder="z. B. 89,90"
+              type="number"
+              min={1}
+              max={120}
+              inputMode="numeric"
+              value={duration}
+              onChange={(event) => setDuration(event.target.value.slice(0, 3))}
               className="field-dark mt-2"
-              aria-label="Monatliche Vertragskosten"
+              aria-label="Vertragslaufzeit in Monaten"
             />
           </label>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-            <p className="text-[11.5px] text-silver">Aktuelle Jahresbelastung</p>
-            <p className="mt-1 text-[28px] font-extrabold tracking-tight">
-              {annual > 0 ? annual.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) : "–"}
-            </p>
-            <p className="mt-2 text-[11.5px] leading-relaxed text-silver">
-              Ob sich ein Wechsel oder eine Anpassung lohnt, hängt vom konkreten Vertrag und den verfügbaren Optionen ab.
+
+          {priceMode === "single" ? (
+            <label className="mt-4 block">
+              <span className="text-[12.5px] font-semibold text-platinum">Monatliche Kosten in €</span>
+              <input
+                inputMode="decimal"
+                value={monthly}
+                onChange={(event) => setMonthly(event.target.value.slice(0, 12))}
+                placeholder="z. B. 44,95"
+                className="field-dark mt-2"
+                aria-label="Monatliche Vertragskosten"
+              />
+            </label>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-[12.5px] font-semibold text-platinum">Aktionspreis / Monat</span>
+                <input
+                  inputMode="decimal"
+                  value={promoMonthly}
+                  onChange={(event) => setPromoMonthly(event.target.value.slice(0, 12))}
+                  placeholder="z. B. 19,99"
+                  className="field-dark mt-2"
+                  aria-label="Aktionspreis pro Monat"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[12.5px] font-semibold text-platinum">Aktionsdauer in Monaten</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  inputMode="numeric"
+                  value={promoMonths}
+                  onChange={(event) => setPromoMonths(event.target.value.slice(0, 3))}
+                  placeholder="z. B. 6"
+                  className="field-dark mt-2"
+                  aria-label="Dauer des Aktionspreises in Monaten"
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-[12.5px] font-semibold text-platinum">Preis danach / Monat</span>
+                <input
+                  inputMode="decimal"
+                  value={regularMonthly}
+                  onChange={(event) => setRegularMonthly(event.target.value.slice(0, 12))}
+                  placeholder="z. B. 44,95"
+                  className="field-dark mt-2"
+                  aria-label="Regulärer Monatspreis nach der Aktion"
+                />
+              </label>
+            </div>
+          )}
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4" aria-live="polite">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-[11.5px] text-silver">Gesamtkosten über {calculation.contractMonths} Monate</p>
+                <p className="mt-1 text-[28px] font-extrabold tracking-tight">
+                  {calculation.valid ? formatCurrency(calculation.total) : "–"}
+                </p>
+              </div>
+              {calculation.valid ? (
+                <div className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-right">
+                  <p className="text-[10.5px] text-silver">Ø pro Monat</p>
+                  <p className="mt-0.5 text-[14px] font-bold text-white">{formatCurrency(calculation.average)}</p>
+                </div>
+              ) : null}
+            </div>
+
+            {calculation.valid ? (
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <p className="text-[11.5px] text-silver">
+                  {calculation.firstYearMonths === 12
+                    ? "Kosten in den ersten 12 Monaten"
+                    : `Kosten bis Vertragsende (${calculation.firstYearMonths} Monate)`}
+                </p>
+                <p className="mt-1 text-[16px] font-bold text-platinum">{formatCurrency(calculation.firstYear)}</p>
+              </div>
+            ) : null}
+
+            <p className="mt-3 text-[11.5px] leading-relaxed text-silver">
+              Rechnerischer Kosten-Check ohne einmalige Anschlusskosten, Boni oder Zusatzoptionen. Für einen vollständigen Vergleich prüfen wir den konkreten Vertrag.
             </p>
           </div>
+
           <Link href={href} className="mt-5 inline-flex items-center gap-2 text-[13.5px] font-bold text-electric-soft hover:text-white">
             Vertrag persönlich prüfen lassen <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
