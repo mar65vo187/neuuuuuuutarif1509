@@ -395,11 +395,19 @@ export async function updateServiceCase(
     throw Object.assign(new Error("Für gelöste oder geschlossene Fälle muss eine Lösung dokumentiert werden."), { status: 422 });
   }
 
-  const now = new Date();
+  const note = input.note?.trim() ?? "";
+  const suppliedResolution = input.resolution?.trim() ?? "";
+  const ownerChanged = nextOwner !== current.ownerEmployeeId;
+  const statusChanged = nextStatus !== current.status;
   const priorityChanged = nextPriority !== current.priority;
+  const resolutionChanged = suppliedResolution !== "" && suppliedResolution !== (current.resolution ?? "");
+  const reopened = ["resolved", "closed"].includes(current.status) && ACTIVE_STATUSES.includes(nextStatus);
+  if (!ownerChanged && !statusChanged && !priorityChanged && !resolutionChanged && !reopened && !note) return current;
+
+  const now = new Date();
   const policy = priorityChanged ? await getOperationsPolicy() : null;
   const nextDueAt = priorityChanged && policy ? serviceCaseDueAt(policy, nextPriority, now) : current.dueAt;
-  const reopened = ["resolved", "closed"].includes(current.status) && ACTIVE_STATUSES.includes(nextStatus);
+  const firstResponseAt = current.firstResponseAt ?? (statusChanged || priorityChanged || resolutionChanged || note ? now : null);
 
   return db.transaction(async (tx) => {
     const patch = {
@@ -408,7 +416,7 @@ export async function updateServiceCase(
       ownerEmployeeId: nextOwner,
       dueAt: nextDueAt,
       resolution: isClosing ? resolution : reopened ? null : (input.resolution?.trim() || current.resolution),
-      firstResponseAt: current.firstResponseAt ?? now,
+      firstResponseAt,
       resolvedAt: nextStatus === "resolved" || nextStatus === "closed" ? current.resolvedAt ?? now : reopened ? null : current.resolvedAt,
       closedAt: nextStatus === "closed" ? current.closedAt ?? now : reopened ? null : current.closedAt,
       lastActivityAt: now,
@@ -418,27 +426,27 @@ export async function updateServiceCase(
     const [updated] = await tx.update(serviceCases).set(patch).where(eq(serviceCases.id, id)).returning();
 
     const events: Array<typeof serviceCaseEvents.$inferInsert> = [];
-    if (nextStatus !== current.status) events.push({
+    if (statusChanged) events.push({
       serviceCaseId: id, actorEmployeeId: user.id, type: "status_changed",
       fromValue: current.status, toValue: nextStatus, note: input.note?.trim() || null, createdAt: now,
     });
-    if (nextPriority !== current.priority) events.push({
+    if (priorityChanged) events.push({
       serviceCaseId: id, actorEmployeeId: user.id, type: "priority_changed",
       fromValue: current.priority, toValue: nextPriority, createdAt: now,
     });
-    if (nextOwner !== current.ownerEmployeeId) events.push({
+    if (ownerChanged) events.push({
       serviceCaseId: id, actorEmployeeId: user.id, type: "assigned",
       fromValue: current.ownerEmployeeId ? String(current.ownerEmployeeId) : null,
       toValue: nextOwner ? String(nextOwner) : null,
       createdAt: now,
     });
-    if (input.resolution?.trim() && input.resolution.trim() !== current.resolution) events.push({
+    if (resolutionChanged) events.push({
       serviceCaseId: id, actorEmployeeId: user.id, type: "resolution",
-      note: input.resolution.trim(), createdAt: now,
+      note: suppliedResolution, createdAt: now,
     });
-    if (input.note?.trim() && nextStatus === current.status) events.push({
+    if (note && !statusChanged) events.push({
       serviceCaseId: id, actorEmployeeId: user.id, type: "note",
-      note: input.note.trim(), createdAt: now,
+      note, createdAt: now,
     });
     if (events.length) await tx.insert(serviceCaseEvents).values(events);
 
@@ -465,7 +473,7 @@ export async function updateServiceCase(
       eq(tasks.type, "service_case"),
     ));
 
-    if (nextOwner && nextOwner !== current.ownerEmployeeId) {
+    if (nextOwner && ownerChanged) {
       await tx.insert(notificationQueue).values({
         employeeId: nextOwner,
         channel: "in_app",
