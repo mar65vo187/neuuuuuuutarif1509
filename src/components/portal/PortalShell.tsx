@@ -23,7 +23,7 @@ const NAV_SECTIONS = [
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.edit"] },
       { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo, anyPermission: ["task.manage"] },
-      { href: "/portal/inbox", label: "Benachrichtigungen", icon: Bell },
+      { href: "/portal/inbox", label: "Action Inbox", icon: Bell },
     ],
   },
   {
