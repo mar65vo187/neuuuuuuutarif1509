@@ -7,7 +7,7 @@ import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { writeAudit } from "@/lib/enterprise";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 
-const areaSchema = z.enum(["leads", "orders", "customers"]);
+const areaSchema = z.enum(["leads", "orders", "customers", "tasks"]);
 
 const saveSchema = z.object({
   area: areaSchema,
@@ -20,12 +20,14 @@ const deleteSchema = z.object({
   id: z.number().int().positive(),
 });
 
-function sanitizeFilters(area: "leads" | "orders" | "customers", filters: Record<string, string>) {
+function sanitizeFilters(area: "leads" | "orders" | "customers" | "tasks", filters: Record<string, string>) {
   const allowed = area === "leads"
     ? new Set(["status", "type", "priority", "next", "product", "relation", "q", "sort"])
     : area === "customers"
       ? new Set(["focus", "q"])
-      : new Set(["status", "q"]);
+      : area === "tasks"
+        ? new Set(["status", "priority", "due", "assignee", "entity", "q"])
+        : new Set(["status", "q"]);
   return Object.fromEntries(
     Object.entries(filters)
       .filter(([key, value]) => allowed.has(key) && value.trim())
