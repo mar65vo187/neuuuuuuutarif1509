@@ -1,11 +1,13 @@
 import { SITE } from "@/lib/content";
 
+const DEFAULT_BUSINESS_ADDRESS = "Karawankenstraße 1, 65187 Wiesbaden, Deutschland";
+
 export function publicBusinessAddress() {
-  return process.env.BUSINESS_ADDRESS?.trim() || `${SITE.hq}, Deutschland`;
+  return process.env.BUSINESS_ADDRESS?.trim() || DEFAULT_BUSINESS_ADDRESS;
 }
 
 export function hasProductionBusinessAddress() {
-  return Boolean(process.env.BUSINESS_ADDRESS?.trim());
+  return Boolean(process.env.BUSINESS_ADDRESS?.trim() || DEFAULT_BUSINESS_ADDRESS);
 }
 
 
