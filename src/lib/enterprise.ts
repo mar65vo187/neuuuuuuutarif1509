@@ -35,7 +35,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { getCustomerIntelligence } from "@/lib/customer-intelligence";
 import { percentage } from "@/lib/bi-metrics";
 import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
-import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { leadAssignableEmployeeCondition, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -163,7 +163,7 @@ export async function routeNewLead(tx: Tx, leadId: number, advisorId: number | n
 
   if (advisorId) {
     const [preferred] = await tx.select({ id: employees.id }).from(employees)
-      .where(and(eq(employees.active, true), eq(employees.advisorId, advisorId)))
+      .where(and(eq(employees.active, true), eq(employees.advisorId, advisorId), leadAssignableEmployeeCondition()))
       .limit(1);
     selectedEmployeeId = preferred?.id ?? null;
   }
@@ -177,7 +177,7 @@ export async function routeNewLead(tx: Tx, leadId: number, advisorId: number | n
         eq(leads.assignedEmployeeId, employees.id),
         inArray(leads.status, ["neu", "kontaktiert", "termin_bestaetigt", "in_beratung"]),
       ))
-      .where(and(eq(employees.active, true), eq(employees.role, "berater")))
+      .where(and(eq(employees.active, true), eq(employees.role, "berater"), leadAssignableEmployeeCondition()))
       .groupBy(employees.id)
       .orderBy(sql`count(${leads.id}) asc`, employees.id)
       .limit(1);
@@ -195,6 +195,12 @@ export async function routeNewLead(tx: Tx, leadId: number, advisorId: number | n
 
 export async function ensureCustomerForLead(leadId: number, user: SessionUser): Promise<Customer> {
   return db.transaction(async (tx) => {
+    const [lead] = await tx.select().from(leads)
+      .where(and(eq(leads.id, leadId), leadAccessCondition(user)))
+      .limit(1)
+      .for("update");
+    if (!lead) throw new Error("Lead nicht gefunden oder keine Berechtigung.");
+
     const [linked] = await tx
       .select({ customer: customers })
       .from(customerLeadLinks)
@@ -202,10 +208,6 @@ export async function ensureCustomerForLead(leadId: number, user: SessionUser): 
       .where(eq(customerLeadLinks.leadId, leadId))
       .limit(1);
     if (linked?.customer) return linked.customer;
-
-    const [lead] = await tx.select().from(leads).where(eq(leads.id, leadId)).limit(1).for("update");
-    if (!lead) throw new Error("Lead nicht gefunden.");
-    if (user.role !== "admin" && lead.assignedEmployeeId !== user.id) throw new Error("Keine Berechtigung für diesen Lead.");
 
     const normalizedName = lead.name.trim();
     const parts = normalizedName ? normalizedName.split(/\s+/) : [];
@@ -226,7 +228,7 @@ export async function ensureCustomerForLead(leadId: number, user: SessionUser): 
       phone: lead.phone || null,
       city: lead.region,
       preferredChannel: lead.preferredChannel,
-      ownerEmployeeId: lead.assignedEmployeeId ?? user.id,
+      ownerEmployeeId: lead.assignedEmployeeId ?? lead.createdByEmployeeId ?? user.id,
       createdFromLeadId: lead.id,
       metadata: {
         source: lead.source ?? "website",
