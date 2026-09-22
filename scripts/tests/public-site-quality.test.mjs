@@ -68,7 +68,8 @@ test("brand search essentials remain wired into metadata and homepage", () => {
   assert.match(siteLayout, /"@type": "WebSite"/);
   assert.match(siteLayout, /favicon\.svg/);
   assert.match(homepage, /<BrandIdentitySection audience=\{initialAudience\} \/>/);
-  assert.match(brand, /Was TarifWerk bündelt/);\n  assert.match(brand, /Ein Ansprechpartner für Alltag, Zuhause und Vermögen/);
+  assert.match(brand, /Was TarifWerk bündelt/);
+  assert.match(brand, /Ein Ansprechpartner für Alltag, Zuhause und Vermögen/);
 });
 
 test("paid campaign landing pages cannot dilute the organic index", () => {
