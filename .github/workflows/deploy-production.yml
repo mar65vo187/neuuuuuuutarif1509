@@ -17,8 +17,8 @@ jobs:
     environment: production
     env:
       NEXT_TELEMETRY_DISABLED: "1"
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_ORG_ID: team_uIPjzP0PdOcEbym0vOxYnXAu
+      VERCEL_PROJECT_ID: prj_olE8TFIiAUlJ8MAZH3gGzrhNCxIL
       PRODUCTION_URL: https://www.tarifwerk.eu
     steps:
       - name: Verify main branch
@@ -41,8 +41,8 @@ jobs:
       - name: Verify Vercel CI secrets
         shell: bash
         run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
-            echo "::error::VERCEL_TOKEN, VERCEL_ORG_ID und VERCEL_PROJECT_ID müssen als GitHub Actions Secrets gesetzt sein."
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "::error::VERCEL_TOKEN muss als GitHub Actions Secret gesetzt sein."
             exit 1
           fi
 
