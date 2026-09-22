@@ -51,7 +51,7 @@ function orderNumber() {
   return `TWO-${new Date().getFullYear()}-${suffix()}`;
 }
 
-function customerAccess(user: SessionUser) {
+export function customerAccess(user: SessionUser) {
   return user.role === "admin" ? sql`true` : eq(customers.ownerEmployeeId, user.id);
 }
 
