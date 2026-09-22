@@ -74,6 +74,7 @@ const importPatterns = [
 for (const absolute of absoluteFiles) {
   if (!SCANNABLE_EXTENSIONS.has(path.extname(absolute))) continue;
   const relative = path.relative(ROOT, absolute).split(path.sep).join("/");
+  if (relative === "next-env.d.ts") continue; // Next.js generates .next/types during build.
   const source = readFileSync(absolute, "utf8");
   for (const pattern of importPatterns) {
     pattern.lastIndex = 0;
