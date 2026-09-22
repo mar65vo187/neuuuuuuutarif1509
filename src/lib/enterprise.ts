@@ -840,14 +840,14 @@ export async function getCustomer360(id: number, user: SessionUser) {
     timeline.push({
       key: "service-event-" + event.id,
       kind: "service_event",
-      title: event.caseNumber + " · " + ({
+      title: event.caseNumber + " · " + (({
         created: "Servicefall angelegt",
         status_changed: "Servicestatus geändert",
         priority_changed: "Servicepriorität geändert",
         assigned: "Service-Zuständigkeit geändert",
         resolution: "Servicelösung dokumentiert",
         note: "Service-Notiz",
-      } as Record<string, string>)[event.type] ?? "Service-Aktivität",
+      } as Record<string, string>)[event.type] ?? "Service-Aktivität"),
       detail: [
         event.fromValue && event.toValue ? event.fromValue + " → " + event.toValue : event.toValue || event.fromValue,
         event.note,
