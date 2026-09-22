@@ -26,7 +26,18 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = schema.safeParse(await readJsonBody(request, 32 * 1024));
     if (!parsed.success) return NextResponse.json({ ok: false, error: "Ungültige Bulk-Aktion." }, { status: 422 });
-    const { entity, ids, action, value, employeeId } = parsed.data;
+    const { entity, action, value, employeeId } = parsed.data;
+    const ids = [...new Set(parsed.data.ids)];
+
+    const validActions: Record<typeof entity, Set<typeof action>> = {
+      lead: new Set(["status", "assign_to_me", "assign_employee"]),
+      order: new Set(["status"]),
+      task: new Set(["status"]),
+      customer: new Set(["customer_lifecycle", "customer_relationship", "customer_risk", "customer_review"]),
+    };
+    if (!validActions[entity].has(action)) {
+      return NextResponse.json({ ok: false, error: "Diese Bulk-Aktion ist für den Datensatztyp nicht zulässig." }, { status: 422 });
+    }
 
     if (entity === "lead") await requirePermission(user, action === "assign_employee" ? PORTAL_PERMISSION.LEAD_ASSIGN : PORTAL_PERMISSION.LEAD_EDIT);
     if (entity === "order") await requirePermission(user, PORTAL_PERMISSION.ORDER_EDIT);
