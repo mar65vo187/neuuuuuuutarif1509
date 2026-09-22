@@ -93,8 +93,8 @@ test("employee count and page use identical creator-or-assignee scope and filter
   const rowWhere = selects[1].sql.split('"employees"."id" where ')[1].split(" order by ")[0];
   assert.equal(rowWhere, countWhere);
   assert.match(countWhere, /"leads"\."created_by_employee_id" = \$1/);
-  assert.doesNotMatch(countWhere, /assigned_employee_id/);
-  assert.deepEqual(selects[0].params, [42, "neu", "high", 17, "interest", ...Array(5).fill("%Müller%")]);
+  assert.match(countWhere, /"leads"\."assigned_employee_id" = \$2/);
+  assert.deepEqual(selects[0].params, [42, 42, "neu", "high", 17, "interest", ...Array(5).fill("%Müller%")]);
   assert.deepEqual(selects[1].params.slice(0, -1), selects[0].params);
 });
 
