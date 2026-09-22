@@ -42,7 +42,7 @@ Stand: 16.09.2026. ✅ bezeichnet den konkret dokumentierten Prüfumfang, keine 
 | ❌ | Vollständiger A11y-Nachweis | Kein Screenreader-, Kontrast- oder vollständiger Tastaturtest in echten Viewports. |
 | ❌ | Core Web Vitals / Pixelvergleich | Keine LCP-/CLS-/INP-Messung, kein gerenderter Vergleich aller Viewports. |
 | ❌ | Livebetrieb und Domain | Next.js-Host, produktive Datenbank und Domainumschaltung nicht eingerichtet. GitHub Pages führt diesen Server nicht aus. |
-| ❌ | Rechtliche Vollständigkeit | Geschäftsadresse fehlt im Input; Pflichtangaben und Datenschutzprozesse benötigen Betreiberprüfung. |
+| ⚠️ | Rechtliche Prüfung | Impressum und Kontaktangaben sind vollständig eingepflegt; AGB sowie Datenschutz- und tatsächliche Verarbeitungsprozesse sollten vor produktivem Einsatz abschließend fachlich geprüft werden. |
 | ❌ | Unabhängige Claim-/Lastprüfung | Mitgelieferte Geschäftsaussagen, produktive Last und verteilte Rate-Limits nicht unabhängig nachgewiesen. |
 
 ## Integrationsergebnisse des Abschlussaudits
