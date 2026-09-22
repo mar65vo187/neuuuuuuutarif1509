@@ -3,13 +3,13 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
-import { customerCrmProfiles, customers, tasks } from "@/db/enterprise-schema";
+import { customerCrmProfiles, customers, orders, tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { customerAccess, updateOrder, writeAudit } from "@/lib/enterprise";
-import { getLeadAssignableEmployee, getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { getLeadAssignableEmployee, getOrderAssignableEmployee, getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 import { reassignLeadFollowUps } from "@/lib/lead-mutation";
 
 const schema = z.object({
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const validActions: Record<typeof entity, Set<typeof action>> = {
       lead: new Set(["status", "assign_to_me", "assign_employee"]),
-      order: new Set(["status"]),
+      order: new Set(["status", "assign_employee"]),
       task: new Set(["status", "assign_employee"]),
       customer: new Set(["customer_lifecycle", "customer_relationship", "customer_risk", "customer_review"]),
     };
@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
 
     if (entity === "lead") await requirePermission(user, action === "assign_employee" ? PORTAL_PERMISSION.LEAD_ASSIGN : PORTAL_PERMISSION.LEAD_EDIT);
     if (entity === "order") await requirePermission(user, PORTAL_PERMISSION.ORDER_EDIT);
+    if (entity === "order" && action === "assign_employee" && user.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "Nur Administratoren dürfen Aufträge gesammelt neu zuweisen." }, { status: 403 });
+    }
     if (entity === "task") await requirePermission(user, PORTAL_PERMISSION.TASK_MANAGE);
     if (entity === "task" && action === "assign_employee" && user.role !== "admin") {
       return NextResponse.json({ ok: false, error: "Nur Administratoren dürfen Aufgaben gesammelt neu zuweisen." }, { status: 403 });
@@ -49,10 +52,42 @@ export async function POST(request: NextRequest) {
     if (entity === "customer") await requirePermission(user, PORTAL_PERMISSION.CUSTOMER_EDIT);
 
     if (entity === "order") {
+      if (ids.length > 100) return NextResponse.json({ ok: false, error: "Maximal 100 Aufträge pro Bulk-Aktion." }, { status: 422 });
+
+      if (action === "assign_employee") {
+        if (!employeeId) return NextResponse.json({ ok: false, error: "Bitte einen Mitarbeiter für die Zuweisung auswählen." }, { status: 422 });
+        const target = await getOrderAssignableEmployee(employeeId);
+        if (!target) return NextResponse.json({ ok: false, error: "Mitarbeiter ist nicht aktiv oder hat keinen Zugriff auf Aufträge." }, { status: 422 });
+        const changed = await db.transaction(async (tx) => {
+          const now = new Date();
+          const rows = await tx.update(orders).set({
+            advisorEmployeeId: target.id,
+            updatedAt: now,
+          }).where(inArray(orders.id, ids)).returning({ id: orders.id });
+          const changedIds = rows.map((row) => row.id);
+          if (changedIds.length) {
+            await tx.update(tasks).set({
+              assignedToEmployeeId: target.id,
+              updatedAt: now,
+            }).where(and(
+              eq(tasks.entityType, "order"),
+              inArray(tasks.entityId, changedIds),
+              inArray(tasks.status, ["open", "in_progress"]),
+            ));
+          }
+          await writeAudit(tx, user.id, "order.bulk_assign_employee", "order", null, undefined, {
+            ids: changedIds,
+            advisorEmployeeId: target.id,
+            financialOwnershipChanged: false,
+          });
+          return changedIds.length;
+        });
+        return NextResponse.json({ ok: true, changed });
+      }
+
       if (action !== "status" || !value || !orderUpdateSchema.shape.status.safeParse(value).success) {
         return NextResponse.json({ ok: false, error: "Ungültiger Auftragsstatus." }, { status: 422 });
       }
-      if (ids.length > 100) return NextResponse.json({ ok: false, error: "Maximal 100 Aufträge pro Bulk-Aktion." }, { status: 422 });
       if (["cancelled", "storno"].includes(value)) await requirePermission(user, PORTAL_PERMISSION.ORDER_CANCEL);
 
       let changed = 0;
