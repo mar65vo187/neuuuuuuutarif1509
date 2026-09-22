@@ -1612,6 +1612,16 @@ export async function getFinanceStats(user: SessionUser) {
 }
 
 export async function getEnterpriseReport(user: SessionUser, days = 30) {
+  const reportPermissions = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.REPORT_SALES,
+    PORTAL_PERMISSION.REPORT_FINANCE,
+  ] as const);
+  if (!reportPermissions[PORTAL_PERMISSION.REPORT_SALES] && !reportPermissions[PORTAL_PERMISSION.REPORT_FINANCE]) {
+    const error = new Error("Keine Berechtigung für Reporting.");
+    Object.assign(error, { status: 403 });
+    throw error;
+  }
+
   const boundedDays = Math.max(1, Math.min(days, 365));
   const now = new Date();
   const periodMs = boundedDays * 24 * 60 * 60_000;
@@ -1632,6 +1642,10 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     leadRows,
     previousOrderRows,
     previousLeadRows,
+    activationEventRows,
+    previousActivationEventRows,
+    pipelineSnapshotRows,
+    leadPipelineSnapshotRows,
     missingExternalRows,
     staleLeadRows,
     reconciliationRows,
@@ -1665,8 +1679,10 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       averageHours: sql<number>`coalesce(avg(extract(epoch from (${orders.activatedAt} - ${orders.createdAt})) / 3600),0)::float`,
     }).from(orders).where(and(orderCondition, eq(orders.status, "active"))),
     db.select({
-      open: sql<number>`count(*) filter (where ${tasks.status}='open')::int`,
-      overdue: sql<number>`count(*) filter (where ${tasks.status}='open' and ${tasks.dueAt} < now())::int`,
+      open: sql<number>`count(*) filter (where ${tasks.status} in ('open','in_progress'))::int`,
+      overdue: sql<number>`count(*) filter (
+        where ${tasks.status} in ('open','in_progress') and ${tasks.dueAt} is not null and ${tasks.dueAt} < now()
+      )::int`,
     }).from(tasks).where(taskAccess(user)),
     db.select({
       total: sql<number>`count(*)::int`,
@@ -1681,6 +1697,48 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       total: sql<number>`count(*)::int`,
       completed: sql<number>`count(*) filter (where ${leads.status}='abgeschlossen')::int`,
     }).from(leads).where(previousLeadCondition),
+    db.select({
+      count: sql<number>`count(*)::int`,
+    }).from(orders).where(and(
+      orderScope,
+      gte(orders.activatedAt, from),
+      lte(orders.activatedAt, now),
+    )),
+    db.select({
+      count: sql<number>`count(*)::int`,
+    }).from(orders).where(and(
+      orderScope,
+      gte(orders.activatedAt, previousFrom),
+      lt(orders.activatedAt, from),
+    )),
+    db.select({
+      preparation: sql<number>`count(*) filter (where ${orders.status} in ('draft','documents_missing','ready_to_submit'))::int`,
+      submitted: sql<number>`count(*) filter (where ${orders.status} in ('submitted','provider_review'))::int`,
+      committed: sql<number>`count(*) filter (where ${orders.status} in ('accepted','activation_pending'))::int`,
+      blocked: sql<number>`count(*) filter (
+        where ${orders.status} not in ('active','rejected','cancelled','storno')
+          and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days')
+      )::int`,
+      providerWarnings: sql<number>`count(*) filter (
+        where ${orders.status} not in ('draft','active','rejected','cancelled','storno')
+          and (
+            (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
+            or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
+            or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
+            or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
+          )
+      )::int`,
+      openExpectedCommission: sql<string>`coalesce(sum(${orders.expectedCommission}) filter (
+        where ${orders.status} not in ('active','rejected','cancelled','storno')
+      ), 0)::text`,
+    }).from(orders).where(orderScope),
+    db.select({
+      open: sql<number>`count(*) filter (where ${leads.status} not in ('abgeschlossen','verloren'))::int`,
+      qualified: sql<number>`count(*) filter (where ${leads.status} in ('termin_bestaetigt','in_beratung'))::int`,
+      hot: sql<number>`count(*) filter (
+        where ${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren')
+      )::int`,
+    }).from(leads).where(leadScope),
     db.select({ count: sql<number>`count(*)::int` }).from(orders).where(and(
       orderScope,
       isNull(orders.externalOrderId),
@@ -1784,6 +1842,27 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
   const leadCompleted = leadRows[0]?.completed ?? 0;
   const previousOrders = previousOrderRows[0]?.total ?? 0;
   const previousLeads = previousLeadRows[0]?.total ?? 0;
+  const activationsInPeriod = activationEventRows[0]?.count ?? 0;
+  const previousActivations = previousActivationEventRows[0]?.count ?? 0;
+  const pipeline = pipelineSnapshotRows[0] ?? {
+    preparation: 0,
+    submitted: 0,
+    committed: 0,
+    blocked: 0,
+    providerWarnings: 0,
+    openExpectedCommission: "0",
+  };
+  const leadPipeline = leadPipelineSnapshotRows[0] ?? { open: 0, qualified: 0, hot: 0 };
+  const openOrderPipeline = pipeline.preparation + pipeline.submitted + pipeline.committed;
+  const activationThroughputPerDay = Math.round((activationsInPeriod / boundedDays) * 100) / 100;
+  const previousActivationThroughputPerDay = Math.round((previousActivations / boundedDays) * 100) / 100;
+  const runRateScenario30 = Math.round(activationThroughputPerDay * 30 * 10) / 10;
+  const backlogDays = activationThroughputPerDay > 0
+    ? Math.round((openOrderPipeline / activationThroughputPerDay) * 10) / 10
+    : null;
+  const committedCoveragePercent = runRateScenario30 > 0
+    ? Math.round((pipeline.committed / runRateScenario30) * 1000) / 10
+    : null;
 
   const change = (current: number, previous: number) => {
     if (previous === 0) return current === 0 ? 0 : 100;
@@ -1807,7 +1886,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     trends: {
       orders: change(total, previousOrders),
       leads: change(leadTotal, previousLeads),
-      activations: change(active, previousOrderRows[0]?.active ?? 0),
+      activations: change(activationsInPeriod, previousActivations),
       leadWins: change(leadCompleted, previousLeadRows[0]?.completed ?? 0),
     },
     dataQuality: {
@@ -1847,10 +1926,36 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     velocity: {
       leadsPerDay: Math.round((leadTotal / boundedDays) * 100) / 100,
       ordersPerDay: Math.round((total / boundedDays) * 100) / 100,
-      activationsPerDay: Math.round((active / boundedDays) * 100) / 100,
+      activationsPerDay: activationThroughputPerDay,
       previousLeadsPerDay: Math.round((previousLeads / boundedDays) * 100) / 100,
       previousOrdersPerDay: Math.round((previousOrders / boundedDays) * 100) / 100,
-      previousActivationsPerDay: Math.round(((previousOrderRows[0]?.active ?? 0) / boundedDays) * 100) / 100,
+      previousActivationsPerDay: previousActivationThroughputPerDay,
+    },
+    leadership: {
+      leadPipeline: {
+        open: leadPipeline.open,
+        qualified: leadPipeline.qualified,
+        hot: leadPipeline.hot,
+      },
+      orderPipeline: {
+        preparation: pipeline.preparation,
+        submitted: pipeline.submitted,
+        committed: pipeline.committed,
+        open: openOrderPipeline,
+        blocked: pipeline.blocked,
+        providerWarnings: pipeline.providerWarnings,
+        openExpectedCommission: isCompensationOwner(user) ? Number(pipeline.openExpectedCommission) : 0,
+      },
+      throughput: {
+        activationsInPeriod,
+        previousActivations,
+        activationsPerDay: activationThroughputPerDay,
+        previousActivationsPerDay: previousActivationThroughputPerDay,
+        runRateScenario30,
+        backlogDays,
+        committedCoveragePercent,
+      },
+      methodology: "30-Tage-Szenario = tatsächliche Aktivierungen im gewählten Zeitraum / Tage × 30. Keine Garantie oder ML-Prognose.",
     },
     attribution: {
       bySource: attributionSourceRows.map((row) => ({
