@@ -27,8 +27,9 @@ test("order workqueue search includes provider and product names and surfaces SL
   const enterprise = read("src/lib/enterprise.ts");
   const list = read("src/components/portal/OrderBulkList.tsx");
 
-  assert.match(enterprise, /ilike\(providers\.name/);
-  assert.match(enterprise, /ilike\(products\.name/);
+  assert.match(enterprise, /search\.replace\(\/\[\\\\%_\]\/g/);
+  assert.match(enterprise, /ilike\(providers\.name, searchPattern\)/);
+  assert.match(enterprise, /ilike\(products\.name, searchPattern\)/);
   assert.match(enterprise, /operationalAttention:/);
   assert.match(enterprise, /providerWarning:/);
   assert.match(list, /SLA prüfen/);
