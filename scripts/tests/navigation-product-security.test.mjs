@@ -33,4 +33,7 @@ test("product visuals cover the principal catalog wording used by sales", () => 
   for (const term of ["telekommunikation", "festnetz", "sim", "haftpflicht", "rechtsschutz", "heiztechnik", "baufinanzierung"]) {
     assert.ok(source.includes(`"${term}"`), `missing product visual term: ${term}`);
   }
+  assert.match(source, /if \(matched\) return matched/);
+  assert.match(source, /Persönliches Beratungsgespräch zu einem TarifWerk Produkt/);
+  assert.doesNotMatch(source, /\?\.visual \?\? null/);
 });

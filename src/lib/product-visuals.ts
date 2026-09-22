@@ -82,5 +82,12 @@ export function getProductVisual(...values: Array<string | null | undefined>): P
     };
   }
   const haystack = values.filter(Boolean).join(" ").toLocaleLowerCase("de-DE");
-  return RULES.find((rule) => rule.terms.some((term) => haystack.includes(term)))?.visual ?? null;
+  const matched = RULES.find((rule) => rule.terms.some((term) => haystack.includes(term)))?.visual;
+  if (matched) return matched;
+  const label = values.slice(1).filter(Boolean).join(" · ");
+  return {
+    src: "https://images.pexels.com/photos/7433848/pexels-photo-7433848.jpeg?auto=compress&cs=tinysrgb&w=1400",
+    alt: label ? `Beratung zu ${label}` : "Persönliches Beratungsgespräch zu einem TarifWerk Produkt",
+    position: "center",
+  };
 }
