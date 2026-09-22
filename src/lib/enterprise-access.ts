@@ -1,5 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { employees } from "@/db/schema";
 import { employeeRoleAssignments, permissions, roleDefinitions, rolePermissions } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 
@@ -116,6 +117,67 @@ export async function permissionKeys(user: SessionUser): Promise<Set<string>> {
         : "";
     if (code === "42P01") return new Set(LEGACY_ADVISOR_DEFAULTS);
     return new Set();
+  }
+}
+
+function taskAssignableCondition() {
+  return or(
+    eq(employees.role, "admin"),
+    sql`not exists (
+      select 1 from employee_role_assignments era
+      where era.employee_id = ${employees.id}
+    )`,
+    sql`exists (
+      select 1
+      from employee_role_assignments era
+      join role_permissions rp on rp.role_id = era.role_id
+      join permissions p on p.id = rp.permission_id
+      where era.employee_id = ${employees.id}
+        and p.key = ${PORTAL_PERMISSION.TASK_MANAGE}
+    )`,
+  )!;
+}
+
+export async function listTaskAssignableEmployees() {
+  try {
+    return await db.select({ id: employees.id, name: employees.name })
+      .from(employees)
+      .where(and(eq(employees.active, true), taskAssignableCondition()))
+      .orderBy(employees.name);
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : typeof error === "object" && error && "cause" in error && (error as { cause?: { code?: unknown } }).cause?.code
+        ? String((error as { cause?: { code?: unknown } }).cause?.code ?? "")
+        : "";
+    if (code !== "42P01") throw error;
+    return db.select({ id: employees.id, name: employees.name })
+      .from(employees)
+      .where(eq(employees.active, true))
+      .orderBy(employees.name);
+  }
+}
+
+export async function getTaskAssignableEmployee(employeeId: number) {
+  if (!Number.isSafeInteger(employeeId) || employeeId < 1) return null;
+  try {
+    const [row] = await db.select({ id: employees.id, name: employees.name })
+      .from(employees)
+      .where(and(eq(employees.id, employeeId), eq(employees.active, true), taskAssignableCondition()))
+      .limit(1);
+    return row ?? null;
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : typeof error === "object" && error && "cause" in error && (error as { cause?: { code?: unknown } }).cause?.code
+        ? String((error as { cause?: { code?: unknown } }).cause?.code ?? "")
+        : "";
+    if (code !== "42P01") throw error;
+    const [row] = await db.select({ id: employees.id, name: employees.name })
+      .from(employees)
+      .where(and(eq(employees.id, employeeId), eq(employees.active, true)))
+      .limit(1);
+    return row ?? null;
   }
 }
 
