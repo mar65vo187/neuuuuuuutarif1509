@@ -193,6 +193,47 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
       </Card>
     </section>
 
+    {user.role === "admin" && leadership.teamCapacity.length > 0 && (
+      <Card className="p-0 sm:p-0">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
+          <div>
+            <p className="eyebrow text-electric-deep">Kapazitätssteuerung</p>
+            <h2 className="mt-1 text-[17px] font-extrabold">Team-Arbeitsbestand ohne Ranking</h2>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-steel">Arbeitslast und Risikosignale pro Mitarbeiter. Sortierung bleibt neutral nach Namen; die Tabelle bewertet keine Leistung.</p>
+          </div>
+          <span className="rounded-full border border-line bg-paper px-3 py-1.5 text-[10.5px] font-bold text-steel">{leadership.teamCapacity.length} aktive Accounts</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[940px] text-left text-[12px]">
+            <thead>
+              <tr className="border-b border-line bg-paper/60 text-steel">
+                <th className="px-5 py-3 font-semibold sm:px-6">Mitarbeiter</th>
+                <th className="px-3 py-3 font-semibold">Offene Leads</th>
+                <th className="px-3 py-3 font-semibold">Offene Aufgaben</th>
+                <th className="px-3 py-3 font-semibold">Überfällig</th>
+                <th className="px-3 py-3 font-semibold">Aufträge in Arbeit</th>
+                <th className="px-3 py-3 font-semibold">Blockiert</th>
+                <th className="px-3 py-3 font-semibold">Aktivierungen {days}T</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leadership.teamCapacity.map((row) => (
+                <tr key={row.employeeId} className="border-b border-line last:border-0 hover:bg-paper/60">
+                  <td className="px-5 py-3.5 font-bold sm:px-6">{row.name}</td>
+                  <td className="px-3 py-3.5"><Link href={`/portal/leads?assignee=${row.employeeId}`} className="inline-flex min-h-9 items-center rounded-lg px-2 font-bold hover:bg-white hover:text-electric-deep">{row.openLeads}</Link></td>
+                  <td className="px-3 py-3.5"><Link href={`/portal/aufgaben?status=all&assignee=${row.employeeId}`} className="inline-flex min-h-9 items-center rounded-lg px-2 font-bold hover:bg-white hover:text-electric-deep">{row.openTasks}</Link></td>
+                  <td className={"px-3 py-3.5 font-extrabold " + (row.overdueTasks > 0 ? "text-red-700" : "text-emerald-700")}><Link href={`/portal/aufgaben?status=all&due=overdue&assignee=${row.employeeId}`} className="inline-flex min-h-9 items-center rounded-lg px-2 hover:bg-white">{row.overdueTasks}</Link></td>
+                  <td className="px-3 py-3.5"><Link href={`/portal/auftraege?advisor=${row.employeeId}`} className="inline-flex min-h-9 items-center rounded-lg px-2 font-bold hover:bg-white hover:text-electric-deep">{row.openOrders}</Link></td>
+                  <td className={"px-3 py-3.5 font-extrabold " + (row.blockedOrders > 0 ? "text-amber-700" : "text-emerald-700")}><Link href={`/portal/auftraege?advisor=${row.employeeId}&focus=attention`} className="inline-flex min-h-9 items-center rounded-lg px-2 hover:bg-white">{row.blockedOrders}</Link></td>
+                  <td className="px-3 py-3.5 font-extrabold">{row.activations}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    )}
+
     <section className="grid gap-4 xl:grid-cols-[1.45fr_0.75fr]" aria-label="BI Datenqualität und Run Rate">
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-3">
