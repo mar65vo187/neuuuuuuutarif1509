@@ -25,6 +25,7 @@ import {
   products,
   providers,
   reconciliationIssues,
+  serviceCases,
   tasks,
   type Customer,
 } from "@/db/enterprise-schema";
@@ -1434,7 +1435,7 @@ export async function listTasks(
     priority?: "low" | "normal" | "high" | "critical";
     due?: "overdue" | "today" | "upcoming" | "no_due";
     assigneeId?: number;
-    entityType?: "general" | "lead" | "customer" | "order";
+    entityType?: "general" | "lead" | "customer" | "order" | "service_case";
     search?: string;
   },
 ) {
@@ -1491,16 +1492,22 @@ export async function listTasks(
     PORTAL_PERMISSION.CUSTOMER_EDIT,
     PORTAL_PERMISSION.ORDER_READ,
     PORTAL_PERMISSION.ORDER_EDIT,
+    PORTAL_PERMISSION.SERVICE_READ,
+    PORTAL_PERMISSION.SERVICE_EDIT,
+    PORTAL_PERMISSION.SERVICE_ASSIGN,
   ] as const);
   const canLead = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
   const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+  const canServiceAssign = capabilities[PORTAL_PERMISSION.SERVICE_ASSIGN] || user.role === "admin";
+  const canService = capabilities[PORTAL_PERMISSION.SERVICE_READ] || capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || canServiceAssign;
 
   const leadIds = [...new Set(rows.filter((row) => row.task.entityType === "lead").map((row) => row.task.entityId))];
   const customerIds = [...new Set(rows.filter((row) => row.task.entityType === "customer").map((row) => row.task.entityId))];
   const orderIds = [...new Set(rows.filter((row) => row.task.entityType === "order").map((row) => row.task.entityId))];
+  const serviceCaseIds = [...new Set(rows.filter((row) => row.task.entityType === "service_case").map((row) => row.task.entityId))];
 
-  const [leadRows, customerRows, orderRows] = await Promise.all([
+  const [leadRows, customerRows, orderRows, serviceRows] = await Promise.all([
     canLead && leadIds.length
       ? db.select({
           id: leads.id,
@@ -1538,11 +1545,29 @@ export async function listTasks(
           .leftJoin(products, eq(orders.productId, products.id))
           .where(and(inArray(orders.id, orderIds), orderAccess(user)))
       : Promise.resolve([]),
+    canService && serviceCaseIds.length
+      ? db.select({
+          id: serviceCases.id,
+          caseNumber: serviceCases.caseNumber,
+          subject: serviceCases.subject,
+          status: serviceCases.status,
+          customerNumber: customers.customerNumber,
+          customerFirstName: customers.firstName,
+          customerLastName: customers.lastName,
+          customerCompanyName: customers.companyName,
+        }).from(serviceCases)
+          .innerJoin(customers, eq(serviceCases.customerId, customers.id))
+          .where(and(
+            inArray(serviceCases.id, serviceCaseIds),
+            canServiceAssign ? sql`true` : eq(serviceCases.ownerEmployeeId, user.id),
+          ))
+      : Promise.resolve([]),
   ]);
 
   const leadMap = new Map(leadRows.map((row) => [row.id, row]));
   const customerMap = new Map(customerRows.map((row) => [row.id, row]));
   const orderMap = new Map(orderRows.map((row) => [row.id, row]));
+  const serviceMap = new Map(serviceRows.map((row) => [row.id, row]));
 
   return rows.map((row) => {
     let entityTitle: string | null = null;
@@ -1570,6 +1595,14 @@ export async function listTasks(
         entityTitle = customerName || order.orderNumber;
         entitySubtitle = [order.orderNumber, order.providerName, order.productName].filter(Boolean).join(" · ");
         entityHref = `/portal/auftraege/${order.id}`;
+      }
+    } else if (row.task.entityType === "service_case") {
+      const serviceCase = serviceMap.get(row.task.entityId);
+      if (serviceCase) {
+        const customerName = serviceCase.customerCompanyName || [serviceCase.customerFirstName, serviceCase.customerLastName].filter(Boolean).join(" ");
+        entityTitle = `${serviceCase.caseNumber} · ${serviceCase.subject}`;
+        entitySubtitle = [customerName || serviceCase.customerNumber, serviceCase.status].filter(Boolean).join(" · ");
+        entityHref = `/portal/service/${serviceCase.id}`;
       }
     }
 
