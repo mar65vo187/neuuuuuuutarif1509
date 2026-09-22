@@ -34,6 +34,9 @@ test("finance page honors team commission access and aggregates only its resolve
   assert.match(source, /getCompensationRows\(user, scope\)/);
   assert.match(source, /compensationRows\.reduce\(\(sum, row\) => sum \+ row\.employeeExpected, 0\)/);
   assert.match(source, /Freigegebene Team-Sicht/);
+  assert.match(source, /scope !== "self"/);
+  assert.match(source, /Provisionen nach Mitarbeitenden/);
+  assert.match(source, /compensationRows\.map\(\(row\) =>/);
 });
 
 test("finance navigation is driven by commission visibility, not reporting alone", () => {
