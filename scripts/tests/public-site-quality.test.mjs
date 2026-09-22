@@ -42,9 +42,17 @@ test("TarifWerk brand identity is consistent across schema, imprint and readines
   assert.match(layout, /"@type": "PostalAddress"/);
   assert.match(layout, /streetAddress: businessAddress\.streetAddress/);
   assert.match(layout, /knowsAbout: SERVICES\.map/);
-  assert.match(imprint, /publicBusinessAddress\(\)/);
+  assert.match(imprint, /Marvin Noel Egenolf/);
+  assert.match(imprint, /TarifWerk/);
+  assert.match(imprint, /Karawankenstraße 1/);
+  assert.match(imprint, /65187 Wiesbaden/);
+  assert.match(imprint, /\+49 157 82301076/);
+  assert.match(imprint, /m\.egenolf@tarifwerk\.eu/);
+  assert.match(imprint, /Redaktionell verantwortlich/);
+  assert.match(imprint, /Verbraucherstreitbeilegung\/Universalschlichtungsstelle/);
+  assert.doesNotMatch(imprint, /Angaben gemäß § 5 DDG|Hinweis zur Tätigkeit|Verantwortlich für den Inhalt nach § 18 Abs\. 2 MStV/);
   assert.match(ready, /hasProductionBusinessAddress\(\)/);
-  assert.match(identity, /BUSINESS_ADDRESS/);
+  assert.match(identity, /BUSINESS_ADDRESS = "Karawankenstraße 1, 65187 Wiesbaden, Deutschland"/);
   assert.match(identity, /publicBusinessPostalAddress/);
 });
 
