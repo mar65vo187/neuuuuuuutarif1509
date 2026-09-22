@@ -71,6 +71,7 @@ test("task workspace and task entity enrichment respect granted rights", () => {
   assert.match(enterprise, /canLead && leadIds\.length/);
   assert.match(enterprise, /canCustomer && customerIds\.length/);
   assert.match(enterprise, /canOrder && orderIds\.length/);
+  assert.match(enterprise, /canService && serviceCaseIds\.length/);
   assert.match(enterprise, /entityHref/);
   assert.match(list, /task\.entityHref \|\| "\/portal\/aufgaben"/);
 });
@@ -82,6 +83,19 @@ test("global search never queries protected CRM domains without their permission
   assert.match(search, /canCustomer \? listCustomers\(user, q, 7\) : Promise\.resolve\(\[\]\)/);
   assert.match(search, /canOrder \? listOrders\(user, \{ search: q \}, 7\) : Promise\.resolve\(\[\]\)/);
   assert.match(search, /canTask \? db\.select/);
+  assert.match(search, /canService \? listServiceCases/);
+});
+
+test("service workspace and navigation are permission-gated before case reads", () => {
+  const page = read("src/app/portal/(app)/service/page.tsx");
+  const shell = read("src/components/portal/PortalShell.tsx");
+  const palette = read("src/components/portal/PortalCommandPalette.tsx");
+  assert.match(page, /PORTAL_PERMISSION\.SERVICE_READ/);
+  assert.match(page, /PORTAL_PERMISSION\.SERVICE_EDIT/);
+  assert.match(page, /PORTAL_PERMISSION\.SERVICE_ASSIGN/);
+  assertBefore(page, 'redirect("\/portal")', "listServiceCases(", "service list");
+  assert.match(shell, /href: "\/portal\/service".*anyPermission: \["service\.read", "service\.edit", "service\.assign"\]/);
+  assert.match(palette, /can\("service\.read", "service\.edit", "service\.assign"\)/);
 });
 
 test("reporting enforces sales or finance permission before enterprise report reads", () => {
