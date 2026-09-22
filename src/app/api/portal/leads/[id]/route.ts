@@ -153,7 +153,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         },
         {
           status: effectiveStatus,
-          assignedEmployeeId: data.assignToMe ? user.id : patch.assignedEmployeeId ?? existing.assignedEmployeeId,
+          assignedEmployeeId: effectiveAssignedEmployeeId,
           confirmedSlot: Object.prototype.hasOwnProperty.call(patch, "confirmedSlot") ? patch.confirmedSlot : existing.confirmedSlot,
           priority: patch.priority ?? existing.priority,
           contactOutcome: patch.contactOutcome ?? existing.contactOutcome,
@@ -169,12 +169,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       await tx.insert(leadNotes).values({ leadId: id, employeeId: user.id, kind: "note", body: data.note.trim() });
     }
     if (requestedStatus && requestedStatus !== existing.status) {
-      await emitEvent(tx, `lead.status.${requestedStatus}`, "lead", id, { assignedEmployeeId: data.assignToMe ? user.id : existing.assignedEmployeeId ?? user.id, previousStatus: existing.status, status: requestedStatus });
-      await runAutomationEvent(tx, `lead.status.${requestedStatus}`, "lead", id, { assignedEmployeeId: data.assignToMe ? user.id : existing.assignedEmployeeId ?? user.id, previousStatus: existing.status, status: requestedStatus }, user.id);
+      await emitEvent(tx, `lead.status.${requestedStatus}`, "lead", id, { assignedEmployeeId: effectiveAssignedEmployeeId, previousStatus: existing.status, status: requestedStatus });
+      await runAutomationEvent(tx, `lead.status.${requestedStatus}`, "lead", id, { assignedEmployeeId: effectiveAssignedEmployeeId, previousStatus: existing.status, status: requestedStatus }, user.id);
     }
     if (data.priority || data.contactOutcome || data.nextActionAt !== undefined || data.tags) {
       await emitEvent(tx, "lead.crm.updated", "lead", id, {
-        assignedEmployeeId: existing.createdByEmployeeId ?? existing.assignedEmployeeId ?? user.id,
+        assignedEmployeeId: effectiveAssignedEmployeeId,
         priority: patch.priority ?? existing.priority,
         contactOutcome: patch.contactOutcome ?? existing.contactOutcome,
         nextActionAt: effectiveNextAction?.toISOString?.() ?? null,
