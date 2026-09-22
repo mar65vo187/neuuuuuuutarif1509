@@ -1116,17 +1116,7 @@ export async function listOrders(
   }
 
   const search = filter?.search?.trim().slice(0, 200);
-  const searchPattern = search ? `%${search.replace(/[\\%_]/g, "\\  const search = filter?.search?.trim();
-  if (search) conditions.push(or(
-    ilike(orders.orderNumber, `%${search}%`),
-    ilike(orders.externalOrderId, `%${search}%`),
-    ilike(customers.customerNumber, `%${search}%`),
-    ilike(customers.firstName, `%${search}%`),
-    ilike(customers.lastName, `%${search}%`),
-    ilike(customers.companyName, `%${search}%`),
-    ilike(providers.name, `%${search}%`),
-    ilike(products.name, `%${search}%`),
-  )!);")}%` : undefined;
+  const searchPattern = search ? `%${search.replace(/[\\%_]/g, "\\$&")}%` : undefined;
   if (searchPattern) conditions.push(or(
     ilike(orders.orderNumber, searchPattern),
     ilike(orders.externalOrderId, searchPattern),
