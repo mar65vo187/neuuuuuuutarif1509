@@ -1967,7 +1967,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       documentsStaleHours: operationsPolicy.documentsStaleHours,
     },
     dataQuality: {
-      staleLeads72h: staleLeadRows[0]?.count ?? 0,
+      staleLeadsSla: staleLeadRows[0]?.count ?? 0,
       ordersMissingExternalId: missingExternalRows[0]?.count ?? 0,
       openReconciliation: reconciliationRows[0]?.count ?? 0,
       incompleteProducts: incompleteProductRows[0]?.count ?? 0,
