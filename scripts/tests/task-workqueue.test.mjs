@@ -28,7 +28,7 @@ test("task workqueue saved views retain the complete operational filter set", ()
   assert.match(page, /listSavedViews\(user, "tasks"\)/);
   assert.match(page, /area="tasks"/);
   assert.match(route, /area === "tasks"[\s\S]*new Set\(\["status", "priority", "due", "assignee", "entity", "q"\]\)/);
-  assert.match(bar, /"leads" \| "orders" \| "customers" \| "tasks"/);
+  assert.match(bar, /"leads" \| "orders" \| "customers" \| "tasks" \| "service"/);
 });
 
 test("task bulk reassignment is admin-only and audited", () => {
