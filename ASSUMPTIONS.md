@@ -26,7 +26,7 @@
 - Die bestehenden Formularendpoints existieren und bleiben maßgeblich. Ein mailto-Link beweist keinen Versand. Daher wird kein API-Fehler in eine Erfolgsmeldung umgedeutet und keine Schein-Zustellung eingebaut.
 - GitHub Pages kann diesen Server nicht ausführen. Das Paket erfordert einen Next.js-Host, PostgreSQL, Migration, sicheren Adminzugang und anschließend die Domainumschaltung. Diese Betriebsdaten und ein eingerichtetes Zielprojekt liegen nicht vor.
 - Das neue Paket behebt die zuvor gemeldete GitHub-Pages-404 nicht durch erneutes Hochladen auf Pages. Die konkrete Hostinganleitung steht in README.md.
-- Die bestehende vollständige Geschäftsadresse fehlt. Sie wurde nicht erfunden. Rechtstexte sind nicht unabhängig geprüft; insbesondere aktuelle Pflichtangaben, der bestehende Verweis auf die EU-Streitbeilegungsplattform und die Verarbeitung im Empfehlungsprogramm benötigen eine Betreiberprüfung.
+- Das Impressum enthält inzwischen die vom Betreiber bereitgestellte vollständige Geschäftsadresse Karawankenstraße 1, 65187 Wiesbaden sowie die aktuellen Kontaktangaben. Rechtstexte sind nicht unabhängig anwaltlich geprüft; insbesondere Datenschutzprozesse und die tatsächliche Durchführung des Empfehlungsprogramms müssen mit der realen Verarbeitung übereinstimmen.
 - Datenschutz-, Aufbewahrungs- und Löschprozesse sowie tatsächliche Prämienbedingungen müssen vom Betreiber festgelegt werden. Es ist keine Auszahlung oder automatische Rabattberechnung eingerichtet.
 
 ## Grenzen der Prüfung
