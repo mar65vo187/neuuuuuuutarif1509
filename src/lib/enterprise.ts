@@ -1869,6 +1869,78 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     return Math.round(((current - previous) / previous) * 1000) / 10;
   };
 
+  let teamCapacity: Array<{
+    employeeId: number;
+    name: string;
+    openLeads: number;
+    openTasks: number;
+    overdueTasks: number;
+    openOrders: number;
+    blockedOrders: number;
+    activations: number;
+  }> = [];
+
+  if (user.role === "admin") {
+    const [staff, leadLoad, taskLoad, orderLoad] = await Promise.all([
+      db.select({ id: employees.id, name: employees.name })
+        .from(employees)
+        .where(eq(employees.active, true))
+        .orderBy(employees.name),
+      db.select({
+        employeeId: leads.assignedEmployeeId,
+        openLeads: sql<number>`count(*) filter (
+          where ${leads.status} not in ('abgeschlossen','verloren')
+        )::int`,
+      }).from(leads)
+        .where(sql`${leads.assignedEmployeeId} is not null`)
+        .groupBy(leads.assignedEmployeeId),
+      db.select({
+        employeeId: tasks.assignedToEmployeeId,
+        openTasks: sql<number>`count(*) filter (
+          where ${tasks.status} in ('open','in_progress')
+        )::int`,
+        overdueTasks: sql<number>`count(*) filter (
+          where ${tasks.status} in ('open','in_progress')
+            and ${tasks.dueAt} is not null
+            and ${tasks.dueAt} < ${now}
+        )::int`,
+      }).from(tasks)
+        .where(sql`${tasks.assignedToEmployeeId} is not null`)
+        .groupBy(tasks.assignedToEmployeeId),
+      db.select({
+        employeeId: orders.advisorEmployeeId,
+        openOrders: sql<number>`count(*) filter (
+          where ${orders.status} not in ('active','rejected','cancelled','storno')
+        )::int`,
+        blockedOrders: sql<number>`count(*) filter (
+          where ${orders.status} not in ('active','rejected','cancelled','storno')
+            and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days')
+        )::int`,
+        activations: sql<number>`count(*) filter (
+          where ${orders.activatedAt} >= ${from} and ${orders.activatedAt} <= ${now}
+        )::int`,
+      }).from(orders)
+        .where(sql`${orders.advisorEmployeeId} is not null`)
+        .groupBy(orders.advisorEmployeeId),
+    ]);
+
+    teamCapacity = staff.map((person) => {
+      const lead = leadLoad.find((row) => row.employeeId === person.id);
+      const task = taskLoad.find((row) => row.employeeId === person.id);
+      const order = orderLoad.find((row) => row.employeeId === person.id);
+      return {
+        employeeId: person.id,
+        name: person.name,
+        openLeads: lead?.openLeads ?? 0,
+        openTasks: task?.openTasks ?? 0,
+        overdueTasks: task?.overdueTasks ?? 0,
+        openOrders: order?.openOrders ?? 0,
+        blockedOrders: order?.blockedOrders ?? 0,
+        activations: order?.activations ?? 0,
+      };
+    });
+  }
+
   return {
     days: boundedDays,
     totalOrders: total,
@@ -1956,6 +2028,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
         committedCoveragePercent,
       },
       methodology: "30-Tage-Szenario = tatsächliche Aktivierungen im gewählten Zeitraum / Tage × 30. Keine Garantie oder ML-Prognose.",
+      teamCapacity,
     },
     attribution: {
       bySource: attributionSourceRows.map((row) => ({
