@@ -24,7 +24,7 @@ export function ReferralRewardMatrix() {
           </table>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel"><strong className="text-ink">Wichtig:</strong> Maximalwerte sind keine automatische Anspruchszusage. Maßgeblich sind das vermittelte Geschäft, die geltenden Bedingungen sowie die Prüfung von Widerrufs- und Stornofristen.</div>
+        <div className="mt-5 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel"><strong className="text-ink">Wichtig:</strong> Maximalwerte sind keine automatische Anspruchszusage. Maßgeblich sind das vermittelte Geschäft, die geltenden Bedingungen sowie die Prüfung von Widerrufs- und Stornofristen. Die vollständigen Teilnahmebedingungen stehen in den <Link href="/agb#empfehlungsprogramm" className="font-semibold text-ink underline underline-offset-2">AGB (§ 8 Empfehlungsprogramm)</Link>.</div>
       </div>
     </section>
   );
