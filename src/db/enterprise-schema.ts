@@ -626,13 +626,26 @@ export const notificationQueue = pgTable("notification_queue", {
   id: serial("id").primaryKey(),
   employeeId: integer("employee_id").references(() => employees.id, { onDelete: "cascade" }),
   channel: text("channel").notNull().default("in_app"),
+  category: text("category").notNull().default("automation"),
+  priority: text("priority").notNull().default("normal"),
   subject: text("subject"),
   body: text("body").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  actionUrl: text("action_url"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
   status: text("status").notNull().default("pending"),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull().defaultNow(),
   sentAt: timestamp("sent_at", { withTimezone: true }),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  snoozedUntil: timestamp("snoozed_until", { withTimezone: true }),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("notification_pending_idx").on(table.status, table.scheduledAt)]);
+}, (table) => [
+  index("notification_pending_idx").on(table.status, table.scheduledAt),
+  index("notification_employee_inbox_idx").on(table.employeeId, table.archivedAt, table.status, table.scheduledAt),
+  index("notification_employee_snooze_idx").on(table.employeeId, table.snoozedUntil),
+]);
 
 export const webhookEndpoints = pgTable("webhook_endpoints", {
   id: serial("id").primaryKey(),

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   automationRules,
@@ -18,18 +18,96 @@ export async function listSavedViews(user: SessionUser, area: string) {
     .orderBy(desc(savedViews.isDefault), savedViews.name);
 }
 
-export async function listInAppNotifications(user: SessionUser, limit = 100) {
-  return db.select()
-    .from(notificationQueue)
-    .where(and(
-      eq(notificationQueue.employeeId, user.id),
-      eq(notificationQueue.channel, "in_app"),
-    ))
-    .orderBy(desc(notificationQueue.createdAt))
-    .limit(Math.max(1, Math.min(limit, 200)));
+export type NotificationInboxView = "active" | "unread" | "read" | "snoozed" | "archived";
+
+export async function listInAppNotifications(user: SessionUser, options: {
+  view?: NotificationInboxView;
+  priority?: "normal" | "high" | "critical" | "urgent";
+  q?: string;
+  page?: number;
+  pageSize?: number;
+} = {}) {
+  const now = new Date();
+  const view = options.view ?? "active";
+  const pageSize = Math.max(1, Math.min(options.pageSize ?? 25, 100));
+  const page = Math.max(1, Math.trunc(options.page ?? 1));
+  const q = options.q?.trim().slice(0, 120) || undefined;
+  const availableNow = or(isNull(notificationQueue.snoozedUntil), lte(notificationQueue.snoozedUntil, now));
+
+  const viewCondition = view === "unread"
+    ? and(isNull(notificationQueue.archivedAt), availableNow, eq(notificationQueue.status, "pending"))
+    : view === "read"
+      ? and(isNull(notificationQueue.archivedAt), availableNow, eq(notificationQueue.status, "read"))
+      : view === "snoozed"
+        ? and(isNull(notificationQueue.archivedAt), gt(notificationQueue.snoozedUntil, now))
+        : view === "archived"
+          ? isNotNull(notificationQueue.archivedAt)
+          : and(isNull(notificationQueue.archivedAt), availableNow);
+
+  const condition = and(
+    eq(notificationQueue.employeeId, user.id),
+    eq(notificationQueue.channel, "in_app"),
+    lte(notificationQueue.scheduledAt, now),
+    viewCondition,
+    options.priority === "urgent"
+      ? inArray(notificationQueue.priority, ["high", "critical"])
+      : options.priority
+        ? eq(notificationQueue.priority, options.priority)
+        : undefined,
+    q ? or(
+      ilike(notificationQueue.subject, `%${q}%`),
+      ilike(notificationQueue.body, `%${q}%`),
+      ilike(notificationQueue.category, `%${q}%`),
+    ) : undefined,
+  );
+
+  const baseStatsCondition = and(
+    eq(notificationQueue.employeeId, user.id),
+    eq(notificationQueue.channel, "in_app"),
+    lte(notificationQueue.scheduledAt, now),
+  );
+
+  const [rows, countRows, statsRows] = await Promise.all([
+    db.select()
+      .from(notificationQueue)
+      .where(condition)
+      .orderBy(
+        sql`case ${notificationQueue.priority} when 'critical' then 0 when 'high' then 1 else 2 end`,
+        desc(notificationQueue.createdAt),
+      )
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ count: sql<number>`count(*)::int` })
+      .from(notificationQueue)
+      .where(condition),
+    db.select({
+      active: sql<number>`count(*) filter (where ${notificationQueue.archivedAt} is null and (${notificationQueue.snoozedUntil} is null or ${notificationQueue.snoozedUntil} <= ${now}))::int`,
+      unread: sql<number>`count(*) filter (where ${notificationQueue.archivedAt} is null and ${notificationQueue.status} = 'pending' and (${notificationQueue.snoozedUntil} is null or ${notificationQueue.snoozedUntil} <= ${now}))::int`,
+      urgent: sql<number>`count(*) filter (where ${notificationQueue.archivedAt} is null and ${notificationQueue.priority} in ('high','critical') and (${notificationQueue.snoozedUntil} is null or ${notificationQueue.snoozedUntil} <= ${now}))::int`,
+      snoozed: sql<number>`count(*) filter (where ${notificationQueue.archivedAt} is null and ${notificationQueue.snoozedUntil} > ${now})::int`,
+      archived: sql<number>`count(*) filter (where ${notificationQueue.archivedAt} is not null)::int`,
+    }).from(notificationQueue).where(baseStatsCondition),
+  ]);
+
+  const total = countRows[0]?.count ?? 0;
+  return {
+    rows,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    stats: {
+      active: statsRows[0]?.active ?? 0,
+      unread: statsRows[0]?.unread ?? 0,
+      urgent: statsRows[0]?.urgent ?? 0,
+      snoozed: statsRows[0]?.snoozed ?? 0,
+      archived: statsRows[0]?.archived ?? 0,
+    },
+  };
 }
 
 export async function getUnreadNotificationCount(user: SessionUser) {
+  const now = new Date();
   const [row] = await db.select({
     count: sql<number>`count(*)::int`,
   }).from(notificationQueue)
@@ -37,6 +115,9 @@ export async function getUnreadNotificationCount(user: SessionUser) {
       eq(notificationQueue.employeeId, user.id),
       eq(notificationQueue.channel, "in_app"),
       eq(notificationQueue.status, "pending"),
+      isNull(notificationQueue.archivedAt),
+      lte(notificationQueue.scheduledAt, now),
+      or(isNull(notificationQueue.snoozedUntil), lte(notificationQueue.snoozedUntil, now)),
     ));
   return row?.count ?? 0;
 }
