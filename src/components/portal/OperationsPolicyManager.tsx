@@ -24,6 +24,7 @@ const LIMITS: Record<keyof OperationsPolicyValues, { min: number; max: number }>
 export function OperationsPolicyManager({ policy }: { policy: OperationsPolicySnapshot }) {
   const router = useRouter();
   const saving = useRef(false);
+  const [busy, setBusy] = useState(false);
   const [values, setValues] = useState<OperationsPolicyValues>(() => ({
     leadNextActionMissingHours: policy.leadNextActionMissingHours,
     leadNextActionHighHours: policy.leadNextActionHighHours,
@@ -41,6 +42,7 @@ export function OperationsPolicyManager({ policy }: { policy: OperationsPolicySn
     event.preventDefault();
     if (saving.current) return;
     saving.current = true;
+    setBusy(true);
     setState(null);
     try {
       const response = await fetch("/api/portal/admin/enterprise/operations-policy", {
@@ -57,6 +59,7 @@ export function OperationsPolicyManager({ policy }: { policy: OperationsPolicySn
       setState({ type: "error", text: error instanceof Error ? error.message : "SLA-Policy konnte nicht gespeichert werden." });
     } finally {
       saving.current = false;
+      setBusy(false);
     }
   }
 
@@ -104,8 +107,8 @@ export function OperationsPolicyManager({ policy }: { policy: OperationsPolicySn
         {state && <p role={state.type === "error" ? "alert" : "status"} className={"mt-4 rounded-xl border px-3 py-2 text-[12px] " + (state.type === "error" ? "border-red-300/30 bg-red-400/[0.08] text-red-200" : "border-emerald-300/30 bg-emerald-400/[0.08] text-emerald-200")}>{state.text}</p>}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-[10.5px] text-steel">{policy.updatedAt ? "Zuletzt geändert: " + new Date(policy.updatedAt).toLocaleString("de-DE") : "Standardwerte aktiv · noch keine protokollierte Änderung"}</p>
-          <button type="submit" disabled={saving.current} className="inline-flex h-10 items-center gap-2 rounded-full bg-electric px-4 text-[12px] font-extrabold text-white hover:bg-electric-deep disabled:opacity-50">
-            {saving.current ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Policy speichern
+          <button type="submit" disabled={busy} className="inline-flex h-10 items-center gap-2 rounded-full bg-electric px-4 text-[12px] font-extrabold text-white hover:bg-electric-deep disabled:opacity-50">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Policy speichern
           </button>
         </div>
       </form>
