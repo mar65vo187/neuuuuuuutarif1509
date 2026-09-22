@@ -22,6 +22,7 @@ const table = name => new Proxy({ tableName: name }, { get: (target, key) => key
 const leads = table("leads"), leadNotes = table("notes"), tasks = table("tasks"), leadCallActivities = table("calls");
 const orm = {
   and: (...items) => row => items.filter(Boolean).every(item => item(row)),
+  or: (...items) => row => items.filter(Boolean).some(item => item(row)),
   eq: (column, value) => row => row[column.key] === value,
   ne: (column, value) => row => row[column.key] !== value,
   inArray: (column, values) => row => values.includes(row[column.key]),
@@ -100,16 +101,32 @@ function harness(overrides = {}, taskRows = [], actor = { id: 7, role: "berater"
   } };
 }
 
-test("employees cannot mutate assigned leads belonging to another creator; admins can", async () => {
+test("employees can work own or explicitly assigned leads but never unrelated team leads", async () => {
   for (const kind of ["patch", "call"]) {
-    const h = harness({ createdByEmployeeId: 8 });
-    const response = await h.request(kind, kind === "patch" ? { note: "Unzulässig" } : { reachedPerson: "customer", reaction: "interested" });
-    assert.equal(response.status, 404);
-    assert.equal(h.writes(), 0);
+    const assigned = harness({ createdByEmployeeId: 8, assignedEmployeeId: 7 });
+    const allowed = await assigned.request(kind, kind === "patch" ? { note: "Zugewiesen" } : { reachedPerson: "customer", reaction: "interested" });
+    assert.equal(allowed.status, 200);
+
+    const unrelated = harness({ createdByEmployeeId: 8, assignedEmployeeId: 9 });
+    const denied = await unrelated.request(kind, kind === "patch" ? { note: "Unzulässig" } : { reachedPerson: "customer", reaction: "interested" });
+    assert.equal(denied.status, 404);
+    assert.equal(unrelated.writes(), 0);
   }
-  const admin = harness({ createdByEmployeeId: 8 }, [], { id: 1, role: "admin", name: "Admin" });
+  const admin = harness({ createdByEmployeeId: 8, assignedEmployeeId: 9 }, [], { id: 1, role: "admin", name: "Admin" });
   assert.equal((await admin.request("patch", { note: "Zulässig" })).status, 200);
   assert.equal(admin.state.notes[0].body, "Zulässig");
+});
+
+test("taking over a lead transfers its active CRM follow-up to the new assignee", async () => {
+  const due = tomorrow();
+  const h = harness(
+    { createdByEmployeeId: 7, assignedEmployeeId: 7, nextActionAt: due },
+    [{ id: 1, status: "open", assignedToEmployeeId: 7, dueAt: due }],
+    { id: 1, role: "admin", name: "Admin" },
+  );
+  assert.equal((await h.request("patch", { assignToMe: true })).status, 200);
+  assert.equal(h.state.leads[0].assignedEmployeeId, 1);
+  assert.equal(h.state.tasks[0].assignedToEmployeeId, 1);
 });
 
 test("closing a lead cancels every active follow-up but preserves history and unrelated tasks", async () => {
@@ -143,7 +160,7 @@ test("status, appointment and note save together and the audit records cleared s
   assert.equal(h.audit.at(-1)[6].confirmedSlot, null);
 });
 
-test("rescheduling consolidates duplicate reminders and preserves the lead creator as owner", async () => {
+test("rescheduling consolidates duplicate reminders and preserves the current lead assignee as owner", async () => {
   const h = harness({}, [{ id: 1, status: "open" }, { id: 2, status: "in_progress" }], { id: 1, role: "admin", name: "Admin" });
   const due = tomorrow().toISOString();
   assert.equal((await h.request("patch", { nextActionAt: due, priority: "hot" })).status, 200);
