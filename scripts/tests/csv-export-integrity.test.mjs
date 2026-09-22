@@ -64,7 +64,7 @@ test("paged CRM queries use deterministic ID tie-breakers", () => {
   assert.match(leads, /desc\(leads\.createdAt\), desc\(leads\.id\)/);
   assert.match(leads, /asc\(leads\.createdAt\), asc\(leads\.id\)/);
   assert.match(enterprise, /desc\(customers\.updatedAt\), desc\(customers\.id\)/);
-  assert.match(enterprise, /desc\(orders\.updatedAt\), desc\(orders\.id\)/);
+  assert.match(enterprise, /desc\(orders\.updatedAt\),\s*desc\(orders\.id\)/);
   assert.match(enterprise, /desc\(tasks\.createdAt\), desc\(tasks\.id\)/);
   assert.match(route, /desc\(commissionEvents\.createdAt\), desc\(commissionEvents\.id\)/);
 });
