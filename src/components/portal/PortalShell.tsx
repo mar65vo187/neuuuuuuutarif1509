@@ -48,7 +48,7 @@ const NAV_SECTIONS = [
   {
     label: "Steuerung",
     items: [
-      { href: "/portal/finanzen", label: "Provisionsübersicht", icon: WalletCards, anyPermission: ["commission.read.self", "commission.read.team", "commission.read.all", "report.finance"] },
+      { href: "/portal/finanzen", label: "Provisionsübersicht", icon: WalletCards, anyPermission: ["commission.read.self", "commission.read.team", "commission.read.all"] },
       { href: "/portal/reporting", label: "Auswertungen", icon: LineChart, anyPermission: ["report.sales", "report.finance"] },
     ],
   },
