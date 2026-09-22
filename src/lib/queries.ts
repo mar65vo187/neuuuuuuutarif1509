@@ -36,10 +36,13 @@ export async function getAdvisorBySlug(slug: string): Promise<Advisor | null> {
 /*  Leads (portal)                                                     */
 /* ------------------------------------------------------------------ */
 
-/** Admins see all leads; employees only see leads they created themselves. */
+/** Admins see all leads; employees see leads they created or were explicitly assigned. */
 export function leadAccessCondition(user: SessionUser): SQL {
   if (user.role === "admin") return sql`true`;
-  return eq(leads.createdByEmployeeId, user.id);
+  return or(
+    eq(leads.createdByEmployeeId, user.id),
+    eq(leads.assignedEmployeeId, user.id),
+  )!;
 }
 
 export type LeadRow = typeof leads.$inferSelect & {
