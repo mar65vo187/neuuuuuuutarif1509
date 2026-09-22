@@ -1,8 +1,9 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
-import { commissionEvents, employeeCompensationProfiles, loyaltyBonusLedger } from "@/db/enterprise-schema";
+import { commissionEvents, employeeCompensationProfiles, loyaltyBonusLedger, teamMembers, teams } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export { COMPENSATION_TIERS, TEAM_LEVELS, DEFAULT_PAYOUT_PERCENT, DEFAULT_RESERVE_PERCENT, DEFAULT_LOYALTY_YEARS } from "@/lib/compensation-model";
 import { COMPENSATION_TIERS, DEFAULT_PAYOUT_PERCENT, DEFAULT_RESERVE_PERCENT, DEFAULT_LOYALTY_YEARS } from "@/lib/compensation-model";
@@ -54,8 +55,47 @@ function addYears(date: Date, years: number) {
   return next;
 }
 
-export async function getCompensationRows(user: SessionUser): Promise<CompensationRow[]> {
+export type CompensationScope = "auto" | "self" | "team" | "all";
+
+export async function getCompensationRows(user: SessionUser, requestedScope: CompensationScope = "auto"): Promise<CompensationRow[]> {
   const owner = isCompensationOwner(user);
+  const capabilities = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.COMMISSION_READ_SELF,
+    PORTAL_PERMISSION.COMMISSION_READ_TEAM,
+    PORTAL_PERMISSION.COMMISSION_READ_ALL,
+  ] as const);
+  const scope = requestedScope === "auto" ? (owner ? "all" : "self") : requestedScope;
+  const canReadAll = owner || capabilities[PORTAL_PERMISSION.COMMISSION_READ_ALL];
+  const canReadTeam = canReadAll || capabilities[PORTAL_PERMISSION.COMMISSION_READ_TEAM];
+  const canReadSelf = canReadTeam || capabilities[PORTAL_PERMISSION.COMMISSION_READ_SELF];
+  if (
+    (scope === "all" && !canReadAll)
+    || (scope === "team" && !canReadTeam)
+    || (scope === "self" && !canReadSelf)
+  ) {
+    const error = new Error("Keine Berechtigung für diese Provisionssicht.");
+    Object.assign(error, { status: 403 });
+    throw error;
+  }
+
+  let visibleEmployeeIds: number[] | null = scope === "all" ? null : [user.id];
+  if (scope === "team") {
+    const teamRows = await db.select({ id: teams.id })
+      .from(teams)
+      .leftJoin(teamMembers, eq(teamMembers.teamId, teams.id))
+      .where(and(
+        eq(teams.active, true),
+        or(eq(teams.leadEmployeeId, user.id), eq(teamMembers.employeeId, user.id)),
+      ));
+    const teamIds = Array.from(new Set(teamRows.map((row) => row.id)));
+    if (teamIds.length) {
+      const members = await db.select({ employeeId: teamMembers.employeeId })
+        .from(teamMembers)
+        .where(inArray(teamMembers.teamId, teamIds));
+      visibleEmployeeIds = Array.from(new Set([user.id, ...members.map((row) => row.employeeId)]));
+    }
+  }
+
   const people = await db
     .select({
       employeeId: employees.id,
@@ -73,7 +113,9 @@ export async function getCompensationRows(user: SessionUser): Promise<Compensati
     })
     .from(employees)
     .leftJoin(employeeCompensationProfiles, eq(employeeCompensationProfiles.employeeId, employees.id))
-    .where(owner ? eq(employees.active, true) : and(eq(employees.active, true), eq(employees.id, user.id)))
+    .where(visibleEmployeeIds === null
+      ? eq(employees.active, true)
+      : and(eq(employees.active, true), inArray(employees.id, visibleEmployeeIds)))
     .orderBy(employees.name);
 
   if (!people.length) return [];
