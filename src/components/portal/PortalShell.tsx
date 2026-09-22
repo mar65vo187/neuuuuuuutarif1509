@@ -39,7 +39,7 @@ const NAV_SECTIONS = [
     label: "Team & Entwicklung",
     items: [
       { href: "/portal/betrieb", label: "Team & Betriebsqualität", icon: UsersRound },
-      { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy },
+      { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy, anyPermission: ["lead.edit"] },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Team-Chat", icon: MessageSquare },
       { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },

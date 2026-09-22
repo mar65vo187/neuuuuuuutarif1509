@@ -14,6 +14,7 @@ const NAV = [
   { href: "/berater", label: "Beratung" },
   { href: "/ueber-uns", label: "Über uns" },
   { href: "/karriere", label: "Karriere" },
+  { href: "/freund-werben", label: "Freund werben" },
   { href: "/faq", label: "So funktioniert es" },
 ];
 
@@ -87,7 +88,7 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
       }
     };
 
-    const desktop = window.matchMedia("(min-width: 1024px)");
+    const desktop = window.matchMedia("(min-width: 1280px)");
     const closeOnDesktop = () => {
       if (desktop.matches) setOpen(false);
     };
@@ -110,24 +111,24 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
         <div className={`transition-[background-color,border-color,backdrop-filter] duration-300 ease-premium ${scrolled || open ? "border-b border-white/8 bg-ink/80 backdrop-blur-xl" : "border-b border-transparent bg-transparent"}`}>
           <div className="container-x flex h-[72px] items-center justify-between">
             <Logo size={34} imageSrc="/assets/logo-symbol.jpg" />
-            <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
+            <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Hauptnavigation">
               {NAV.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                return <Link key={item.href} href={withAudience(item.href, audience)} aria-current={active ? "page" : undefined} className={`relative rounded-full px-4 py-2 text-[14.5px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
+                return <Link key={item.href} href={withAudience(item.href, audience)} aria-current={active ? "page" : undefined} className={`relative rounded-full px-3 py-2 text-[14px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
               })}
             </nav>
-            <div className="hidden items-center gap-3 lg:flex">
+            <div className="hidden items-center gap-3 xl:flex">
               <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Zielgruppe wählen">
                 <button type="button" onClick={() => switchAudience("b2c")} aria-pressed={audience === "b2c"} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</button>
                 <button type="button" onClick={() => switchAudience("b2b")} aria-pressed={audience === "b2b"} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</button>
               </div>
               <Button href={withAudience("/anfrage", audience)} size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
             </div>
-            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls="mobile-menu" aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/12 text-white xl:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Menü schließen" : "Menü öffnen"} ref={toggleRef} aria-controls="mobile-menu" aria-expanded={open}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           </div>
         </div>
       </header>
-      {open && <div key="mobile-menu" id="mobile-menu" ref={menuRef} onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) setOpen(false); }} className="menu-enter fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl lg:hidden">
+      {open && <div key="mobile-menu" id="mobile-menu" ref={menuRef} onClick={(event) => { if (event.target instanceof Element && event.target.closest("a")) setOpen(false); }} className="menu-enter fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl xl:hidden">
         <div className="container-x flex h-full flex-col overflow-y-auto pb-8 pt-[88px]">
           <nav className="flex shrink-0 flex-col" aria-label="Mobile Navigation">
             {NAV.map((item, index) => {

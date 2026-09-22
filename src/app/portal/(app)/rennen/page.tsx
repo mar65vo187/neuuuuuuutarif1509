@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import { PerformanceGameDashboard } from "@/components/portal/PerformanceGameDashboard";
 import { getCurrentUser } from "@/lib/auth";
 import { gameMonthDate, getEmployeeRace, getReferralTower } from "@/lib/gamification";
+import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeamChallengesPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Frennen");
+  if (!await hasPermission(user, PORTAL_PERMISSION.LEAD_EDIT)) redirect("/portal");
 
   const selectedDate = gameMonthDate((await searchParams).month);
   const [race, tower] = await Promise.all([getEmployeeRace(selectedDate), getReferralTower(selectedDate)]);
