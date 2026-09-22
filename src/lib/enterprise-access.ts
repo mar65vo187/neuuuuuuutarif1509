@@ -209,6 +209,10 @@ export function getTaskAssignableEmployee(employeeId: number) {
   return getAssignableEmployee(employeeId, PORTAL_PERMISSION.TASK_MANAGE);
 }
 
+export function leadAssignableEmployeeCondition() {
+  return assignableForPermissionCondition(PORTAL_PERMISSION.LEAD_EDIT);
+}
+
 export function listLeadAssignableEmployees() {
   return listAssignableEmployees(PORTAL_PERMISSION.LEAD_EDIT);
 }
