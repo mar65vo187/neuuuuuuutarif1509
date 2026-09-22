@@ -69,10 +69,10 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = aiProviderStatus();
-    if (!provider.gemini && !provider.openrouter) {
+    if (!provider.xkiro && !provider.gemini && !provider.openrouter) {
       return NextResponse.json({
         ok: false,
-        error: "Die echte KI ist im Server noch nicht aktiviert. Es fehlt ein Gemini- oder OpenRouter-API-Key.",
+        error: "Die echte KI ist im Server noch nicht aktiviert. Es fehlt ein Xkiro-, Gemini- oder OpenRouter-API-Key.",
         configurationRequired: true,
       }, { status: 503 });
     }
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       await recordUsage({
         employeeId: user.id,
         provider: provider.preferred,
-        model: process.env.TARIFWERK_AI_GEMINI_MODEL || process.env.TARIFWERK_AI_OPENROUTER_MODEL || "unknown",
+        model: process.env.TARIFWERK_AI_XKIRO_MODEL || process.env.TARIFWERK_AI_GEMINI_MODEL || process.env.TARIFWERK_AI_OPENROUTER_MODEL || "unknown",
         mode: parsed.data.mode,
         inputChars: parsed.data.question.length,
         outputChars: 0,

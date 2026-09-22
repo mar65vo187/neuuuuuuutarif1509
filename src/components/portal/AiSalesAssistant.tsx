@@ -7,7 +7,7 @@ type Mode = "coach" | "objection" | "message" | "product" | "pitch";
 
 type Answer = {
   text: string;
-  provider: "gemini" | "openrouter";
+  provider: "xkiro" | "gemini" | "openrouter";
   model: string;
   sources: string[];
   redactions: number;
@@ -71,7 +71,7 @@ export function AiSalesAssistant({
       }
       setAnswer({
         text: json.text,
-        provider: json.provider === "openrouter" ? "openrouter" : "gemini",
+        provider: json.provider === "xkiro" ? "xkiro" : json.provider === "openrouter" ? "openrouter" : "gemini",
         model: String(json.model ?? ""),
         sources: Array.isArray(json.sources) ? json.sources.map(String) : [],
         redactions: Number(json.redactions ?? 0),
