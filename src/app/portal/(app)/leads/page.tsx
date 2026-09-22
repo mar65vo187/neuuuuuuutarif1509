@@ -76,6 +76,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   };
 
   const savedFilters = Object.fromEntries(Object.entries(current).filter((entry): entry is [string, string] => Boolean(entry[1])));
+  const pipelineQuery = new URLSearchParams(savedFilters).toString();
 
   const number = new Intl.NumberFormat("de-DE");
   const nextLabels: Record<string, string> = { overdue: "Überfällig", today: "Heute fällig", missing: "Ohne Wiedervorlage" };
@@ -117,10 +118,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <p className="eyebrow text-electric-deep">Kundenbeziehungen entwickeln</p>
           <h1 className="mt-2 text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold tracking-tight">Dein Lead-Arbeitsplatz</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-steel">Kontakte im Blick. Nächste Schritte klar. Mehr Zeit für gute Beratung.</p>
-          <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-steel"><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />{user.role === "admin" ? "Administrator · alle Leads" : "Deine selbst angelegten Leads"} · {number.format(overview.total)} gesamt</p>
+          <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-steel"><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />{user.role === "admin" ? "Administrator · alle Leads" : "Eigene und dir zugewiesene Leads"} · {number.format(overview.total)} gesamt</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/portal/leads/pipeline" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink hover:border-electric/30"><LayoutDashboard aria-hidden="true" className="h-4 w-4" /> Pipeline</Link>
+          <Link href={`/portal/leads/pipeline${pipelineQuery ? `?${pipelineQuery}` : ""}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink hover:border-electric/30"><LayoutDashboard aria-hidden="true" className="h-4 w-4" /> Pipeline</Link>
           {canEdit && <Link href="/portal/leads/neu" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-electric px-4 text-sm font-bold text-white shadow-sm hover:bg-electric-deep"><Plus aria-hidden="true" className="h-4 w-4" /> Lead anlegen</Link>}
         </div>
       </header>
