@@ -139,7 +139,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       });
 
       const leadLabel = lead.name || lead.email || lead.phone || `Lead #${lead.id}`;
-      const taskOwner = lead.createdByEmployeeId ?? lead.assignedEmployeeId ?? user.id;
+      const taskOwner = lead.assignedEmployeeId ?? lead.createdByEmployeeId ?? user.id;
 
       if (shouldSchedule || stopAutoFollowUp) {
         await syncLeadFollowUp(tx, {
