@@ -1077,11 +1077,44 @@ export async function listCatalog() {
 
 export async function listOrders(
   user: SessionUser,
-  filter?: { status?: string; search?: string; page?: number; lookahead?: boolean },
+  filter?: {
+    status?: string;
+    search?: string;
+    page?: number;
+    lookahead?: boolean;
+    providerId?: number;
+    advisorEmployeeId?: number;
+    focus?: "attention" | "provider_warning" | "documents" | "activation" | "unassigned";
+  },
   limit = 150,
 ) {
   const conditions = [orderAccess(user)];
   if (filter?.status) conditions.push(eq(orders.status, filter.status));
+  if (filter?.providerId && Number.isSafeInteger(filter.providerId) && filter.providerId > 0) {
+    conditions.push(eq(orders.providerId, filter.providerId));
+  }
+  if (filter?.advisorEmployeeId && Number.isSafeInteger(filter.advisorEmployeeId) && filter.advisorEmployeeId > 0) {
+    conditions.push(eq(orders.advisorEmployeeId, filter.advisorEmployeeId));
+  }
+  if (filter?.focus === "attention") {
+    conditions.push(sql`${orders.status} not in ('active','rejected','cancelled','storno')
+      and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days')`);
+  } else if (filter?.focus === "provider_warning") {
+    conditions.push(sql`${orders.status} not in ('draft','active','rejected','cancelled','storno')
+      and (
+        (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
+        or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
+        or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
+        or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
+      )`);
+  } else if (filter?.focus === "documents") {
+    conditions.push(eq(orders.status, "documents_missing"));
+  } else if (filter?.focus === "activation") {
+    conditions.push(eq(orders.status, "activation_pending"));
+  } else if (filter?.focus === "unassigned") {
+    conditions.push(isNull(orders.advisorEmployeeId));
+  }
+
   const search = filter?.search?.trim();
   if (search) conditions.push(or(
     ilike(orders.orderNumber, `%${search}%`),
@@ -1090,6 +1123,8 @@ export async function listOrders(
     ilike(customers.firstName, `%${search}%`),
     ilike(customers.lastName, `%${search}%`),
     ilike(customers.companyName, `%${search}%`),
+    ilike(providers.name, `%${search}%`),
+    ilike(products.name, `%${search}%`),
   )!);
   const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
   const pageSize = Math.max(1, Math.min(limit, 300));
@@ -1102,13 +1137,32 @@ export async function listOrders(
     providerName: providers.name,
     productName: products.name,
     advisorName: employees.name,
+    operationalAttention: sql<boolean>`coalesce(
+      ${orders.status} not in ('active','rejected','cancelled','storno')
+      and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days'),
+      false
+    )`,
+    providerWarning: sql<boolean>`coalesce(
+      ${orders.status} not in ('draft','active','rejected','cancelled','storno')
+      and (
+        (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
+        or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
+        or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
+        or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
+      ),
+      false
+    )`,
   }).from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
     .innerJoin(providers, eq(orders.providerId, providers.id))
     .leftJoin(products, eq(orders.productId, products.id))
     .leftJoin(employees, eq(orders.advisorEmployeeId, employees.id))
     .where(and(...conditions))
-    .orderBy(desc(orders.updatedAt), desc(orders.id))
+    .orderBy(
+      sql`case when ${orders.status} not in ('active','rejected','cancelled','storno') and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days') then 0 else 1 end`,
+      desc(orders.updatedAt),
+      desc(orders.id),
+    )
     .limit(queryLimit)
     .offset(offset);
 }
