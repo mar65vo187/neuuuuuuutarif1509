@@ -9,7 +9,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { customerAccess, updateOrder, writeAudit } from "@/lib/enterprise";
-import { getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { getLeadAssignableEmployee, getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 const schema = z.object({
   entity: z.enum(["lead", "order", "task", "customer"]),
@@ -150,12 +150,11 @@ export async function POST(request: NextRequest) {
         }
         if (action === "assign_employee") {
           if (!employeeId) throw new Error("Bitte einen Mitarbeiter für die Zuweisung auswählen.");
-          const [target] = await tx.select({ id: employees.id }).from(employees)
-            .where(and(eq(employees.id, employeeId), eq(employees.active, true))).limit(1);
-          if (!target) throw new Error("Mitarbeiter nicht gefunden oder nicht aktiv.");
-          const rows = await tx.update(leads).set({ assignedEmployeeId: employeeId, updatedAt: new Date() })
+          const target = await getLeadAssignableEmployee(employeeId);
+          if (!target) throw new Error("Mitarbeiter ist nicht aktiv oder hat keinen Zugriff auf Leads.");
+          const rows = await tx.update(leads).set({ assignedEmployeeId: target.id, updatedAt: new Date() })
             .where(and(inArray(leads.id, ids), leadAccessCondition(user))).returning({ id: leads.id });
-          await writeAudit(tx, user.id, "lead.bulk_assign_employee", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: employeeId });
+          await writeAudit(tx, user.id, "lead.bulk_assign_employee", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: target.id });
           return rows.length;
         }
         const allowed = ["neu","kontaktiert","in_beratung","abgeschlossen","verloren"];
