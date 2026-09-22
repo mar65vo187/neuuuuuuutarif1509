@@ -20,6 +20,7 @@ test("lead assignee selection only exposes employees who can actually edit leads
   const bulk = read("src/app/api/portal/enterprise/bulk/route.ts");
 
   assert.match(access, /assignableForPermissionCondition\(permissionKey: PortalPermission\)/);
+  assert.match(access, /leadAssignableEmployeeCondition/);
   assert.match(access, /listAssignableEmployees\(PORTAL_PERMISSION\.LEAD_EDIT\)/);
   assert.match(access, /getAssignableEmployee\(employeeId, PORTAL_PERMISSION\.LEAD_EDIT\)/);
   assert.match(page, /listLeadAssignableEmployees\(\)/);
@@ -27,6 +28,29 @@ test("lead assignee selection only exposes employees who can actually edit leads
   assert.match(page, /name="assignee"/);
   assert.match(bulk, /getLeadAssignableEmployee\(employeeId\)/);
   assert.match(bulk, /keinen Zugriff auf Leads/);
+});
+
+test("automatic lead routing never selects employees who cannot edit leads", () => {
+  const enterprise = read("src/lib/enterprise.ts");
+
+  const start = enterprise.indexOf("export async function routeNewLead");
+  const end = enterprise.indexOf("export async function ensureCustomerForLead", start);
+  const routing = enterprise.slice(start, end);
+  assert.match(routing, /leadAssignableEmployeeCondition\(\)/);
+  assert.match(routing, /eq\(employees\.active, true\)/);
+  assert.match(routing, /eq\(employees\.role, "berater"\)/);
+});
+
+test("lead-to-customer conversion enforces the canonical creator-or-assignee scope first", () => {
+  const enterprise = read("src/lib/enterprise.ts");
+  const start = enterprise.indexOf("export async function ensureCustomerForLead");
+  const end = enterprise.indexOf("export async function createCustomer", start);
+  const conversion = enterprise.slice(start, end);
+
+  assert.match(conversion, /where\(and\(eq\(leads\.id, leadId\), leadAccessCondition\(user\)\)\)/);
+  assert.match(conversion, /Lead nicht gefunden oder keine Berechtigung/);
+  assert.match(conversion, /lead\.assignedEmployeeId \?\? lead\.createdByEmployeeId \?\? user\.id/);
+  assert.ok(conversion.indexOf("leadAccessCondition(user)") < conversion.indexOf("customerLeadLinks"));
 });
 
 test("lead saved views and pipeline preserve the ownership filter", () => {
