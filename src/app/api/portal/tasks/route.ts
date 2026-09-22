@@ -2,11 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { employees } from "@/db/schema";
 import { tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { getCustomer, getOrder, writeAudit } from "@/lib/enterprise";
-import { requirePermission } from "@/lib/enterprise-access";
+import { getTaskAssignableEmployee, requirePermission } from "@/lib/enterprise-access";
 import { getLead } from "@/lib/queries";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 
@@ -40,9 +39,8 @@ export async function POST(request: NextRequest) {
 
     let assignee = user.id;
     if (user.role === "admin" && input.assignedToEmployeeId) {
-      const [target] = await db.select({ id: employees.id }).from(employees)
-        .where(and(eq(employees.id, input.assignedToEmployeeId), eq(employees.active, true))).limit(1);
-      if (!target) return NextResponse.json({ ok: false, error: "Mitarbeiter nicht gefunden." }, { status: 404 });
+      const target = await getTaskAssignableEmployee(input.assignedToEmployeeId);
+      if (!target) return NextResponse.json({ ok: false, error: "Mitarbeiter ist nicht aktiv oder hat keinen Zugriff auf Aufgaben." }, { status: 422 });
       assignee = target.id;
     }
 
