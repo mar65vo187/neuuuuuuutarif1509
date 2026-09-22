@@ -29,6 +29,10 @@ export async function getOperationsPolicy(): Promise<OperationsPolicySnapshot> {
       providerStatusMissingHours: row.providerStatusMissingHours,
       activationStaleDays: row.activationStaleDays,
       documentsStaleHours: row.documentsStaleHours,
+      serviceCriticalHours: row.serviceCriticalHours,
+      serviceHighHours: row.serviceHighHours,
+      serviceNormalHours: row.serviceNormalHours,
+      serviceLowHours: row.serviceLowHours,
       updatedByEmployeeId: row.updatedByEmployeeId,
       updatedAt: row.updatedAt,
     };
