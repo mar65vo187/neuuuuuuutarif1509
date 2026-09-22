@@ -53,10 +53,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id < 1) notFound();
   const user = await getCurrentUser();
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/auftraege/${id}`)}`);
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT, PORTAL_PERMISSION.ORDER_CANCEL] as const);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT, PORTAL_PERMISSION.ORDER_CANCEL, PORTAL_PERMISSION.SERVICE_EDIT] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.ORDER_EDIT];
   const canRead = capabilities[PORTAL_PERMISSION.ORDER_READ] || canEdit;
   const canCancel = capabilities[PORTAL_PERMISSION.ORDER_CANCEL];
+  const canCreateServiceCase = capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || user.role === "admin";
   if (!canRead) redirect("/portal");
   const data = await getOrder(id, user);
   if (!data) notFound();
@@ -82,6 +83,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div><p className="eyebrow text-electric-deep">{data.order.orderNumber}</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">{customerName}</h1><p className="mt-1 text-[14px] text-steel">{data.providerName} · {data.productName || "Ohne Produkt"} · erstellt {formatDate(data.order.createdAt)}</p></div>
       <div className="flex flex-wrap gap-2">
         <Link href={`/portal/kunden/${data.customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[12.5px] font-bold hover:border-electric/30 hover:text-electric-deep"><ContactRound className="h-4 w-4" /> Kundenakte</Link>
+        {canCreateServiceCase && <Link href={`/portal/service/neu?customer=${data.customer.id}&order=${data.order.id}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-electric/25 bg-electric/[0.06] px-4 text-[12.5px] font-bold text-electric-deep hover:bg-electric/10"><AlertTriangle className="h-4 w-4" /> Servicefall</Link>}
       </div>
     </header>
 
