@@ -27,6 +27,7 @@ export type SafeAutomationAction =
       type: "notification";
       subject: string;
       body: string;
+      priority?: "normal" | "high" | "critical";
     };
 
 export type AutomationTemplate = {
@@ -168,6 +169,7 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
         type: "notification",
         subject: "Storno prüfen",
         body: "Ein Auftrag wurde auf Storno gesetzt. Ursache und nächste Schritte bitte zeitnah prüfen.",
+        priority: "critical",
       },
     ],
   },
