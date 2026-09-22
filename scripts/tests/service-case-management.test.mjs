@@ -42,7 +42,10 @@ test("service case mutations are same-origin, permissioned, scoped and audited",
   assert.match(updateRoute, /isSameOriginRequest/);
   assert.match(updateRoute, /PORTAL_PERMISSION\.SERVICE_EDIT/);
   assert.match(service, /eq\(customers\.ownerEmployeeId, user\.id\)/);
+  assert.match(service, /serviceCaseReadAccess/);
   assert.match(service, /eq\(serviceCases\.ownerEmployeeId, user\.id\)/);
+  assert.match(service, /eq\(customers\.ownerEmployeeId, user\.id\)/);
+  assert.match(service, /serviceCaseEditAccess/);
   assert.match(service, /getServiceAssignableEmployee/);
   assert.match(service, /"service_case\.created"/);
   assert.match(service, /"service_case\.updated"/);
@@ -59,6 +62,8 @@ test("service workflow creates one linked task and keeps external side effects h
   assert.match(service, /actionUrl: `\/portal\/service\/\$\{created\.id\}`/);
   assert.match(service, /Für gelöste oder geschlossene Fälle muss eine Lösung dokumentiert werden/);
   assert.match(service, /eq\(tasks\.entityType, "service_case"\)/);
+  assert.match(page, /canEditThisCase/);
+  assert.match(page, /item\.ownerEmployeeId === user\.id/);
   assert.match(page, /verändern keine Provision, keinen Vertragsstatus und versenden keine externe Nachricht automatisch/);
   assert.doesNotMatch(service, /sendEmail|sendWhatsapp|sendSMS|provider.*update|contract.*update/i);
 });
