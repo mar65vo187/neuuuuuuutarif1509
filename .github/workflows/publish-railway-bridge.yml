@@ -1,0 +1,62 @@
+name: Publish Railway Bridge Image
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-bridge-image
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set image reference
+        id: image
+        shell: bash
+        run: |
+          IMAGE="ttl.sh/tarifwerk-${GITHUB_SHA}:24h"
+          echo "ref=${IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "Publishing ${IMAGE}"
+
+      - name: Build runtime image
+        shell: bash
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: docker build --pull --tag "${IMAGE}" .
+
+      - name: Push bridge image
+        shell: bash
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: docker push "${IMAGE}"
+
+      - name: Verify anonymous pull
+        shell: bash
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: |
+          docker image rm "${IMAGE}" >/dev/null 2>&1 || true
+          docker pull "${IMAGE}"
+
+      - name: Summary
+        shell: bash
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: |
+          {
+            echo "## Railway bridge image"
+            echo ""
+            echo "- Image: \`${IMAGE}\`"
+            echo "- Source commit: \`${GITHUB_SHA}\`"
+            echo "- Anonymous pull: verified"
+          } >> "${GITHUB_STEP_SUMMARY}"
