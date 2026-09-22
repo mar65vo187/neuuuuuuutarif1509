@@ -135,6 +135,7 @@ export async function listServiceCases(
       orderExternalId: orders.externalOrderId,
       orderStatus: orders.status,
       ownerName: employees.name,
+      overdue: sql<boolean>`coalesce(${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider') and ${serviceCases.dueAt} < now(), false)`,
     })
       .from(serviceCases)
       .innerJoin(customers, eq(serviceCases.customerId, customers.id))
@@ -194,6 +195,7 @@ export async function getServiceCase(id: number, user: SessionUser, canAssign = 
     orderExternalId: orders.externalOrderId,
     orderStatus: orders.status,
     ownerName: employees.name,
+    overdue: sql<boolean>`coalesce(${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider') and ${serviceCases.dueAt} < now(), false)`,
   })
     .from(serviceCases)
     .innerJoin(customers, eq(serviceCases.customerId, customers.id))
