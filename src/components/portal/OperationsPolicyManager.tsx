@@ -19,6 +19,10 @@ const LIMITS: Record<keyof OperationsPolicyValues, { min: number; max: number }>
   providerStatusMissingHours: { min: 1, max: 720 },
   activationStaleDays: { min: 1, max: 90 },
   documentsStaleHours: { min: 1, max: 720 },
+  serviceCriticalHours: { min: 1, max: 168 },
+  serviceHighHours: { min: 1, max: 336 },
+  serviceNormalHours: { min: 1, max: 720 },
+  serviceLowHours: { min: 1, max: 1440 },
 };
 
 export function OperationsPolicyManager({ policy }: { policy: OperationsPolicySnapshot }) {
@@ -35,6 +39,10 @@ export function OperationsPolicyManager({ policy }: { policy: OperationsPolicySn
     providerStatusMissingHours: policy.providerStatusMissingHours,
     activationStaleDays: policy.activationStaleDays,
     documentsStaleHours: policy.documentsStaleHours,
+    serviceCriticalHours: policy.serviceCriticalHours,
+    serviceHighHours: policy.serviceHighHours,
+    serviceNormalHours: policy.serviceNormalHours,
+    serviceLowHours: policy.serviceLowHours,
   }));
   const [state, setState] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
