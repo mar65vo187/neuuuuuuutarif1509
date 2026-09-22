@@ -8,7 +8,10 @@ test("customer, order and task queries use gap-free bounded pagination", () => {
   const enterprise = read("../../src/lib/enterprise.ts");
   assert.match(enterprise, /filter\?: \{ focus\?: "review" \| "opportunity" \| "risk"; page\?: number; lookahead\?: boolean \}/);
   assert.match(enterprise, /filter\?: \{ status\?: string; search\?: string; page\?: number; lookahead\?: boolean \}/);
-  assert.match(enterprise, /priority\?: "low" \| "normal" \| "high" \| "critical"/);\n  assert.match(enterprise, /due\?: "overdue" \| "today" \| "upcoming" \| "no_due"/);\n  assert.match(enterprise, /assigneeId\?: number/);\n  assert.match(enterprise, /entityType\?: "general" \| "lead" \| "customer" \| "order"/);
+  assert.match(enterprise, /priority\?: "low" \| "normal" \| "high" \| "critical"/);
+  assert.match(enterprise, /due\?: "overdue" \| "today" \| "upcoming" \| "no_due"/);
+  assert.match(enterprise, /assigneeId\?: number/);
+  assert.match(enterprise, /entityType\?: "general" \| "lead" \| "customer" \| "order"/);
   assert.match(enterprise, /const offset = \(page - 1\) \* pageSize/g);
   const offsetMatches = enterprise.match(/const offset = \(page - 1\) \* pageSize/g) ?? [];
   assert.ok(offsetMatches.length >= 3);
