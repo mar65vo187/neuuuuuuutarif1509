@@ -1115,7 +1115,8 @@ export async function listOrders(
     conditions.push(isNull(orders.advisorEmployeeId));
   }
 
-  const search = filter?.search?.trim();
+  const search = filter?.search?.trim().slice(0, 200);
+  const searchPattern = search ? `%${search.replace(/[\\%_]/g, "\\  const search = filter?.search?.trim();
   if (search) conditions.push(or(
     ilike(orders.orderNumber, `%${search}%`),
     ilike(orders.externalOrderId, `%${search}%`),
@@ -1125,6 +1126,16 @@ export async function listOrders(
     ilike(customers.companyName, `%${search}%`),
     ilike(providers.name, `%${search}%`),
     ilike(products.name, `%${search}%`),
+  )!);")}%` : undefined;
+  if (searchPattern) conditions.push(or(
+    ilike(orders.orderNumber, searchPattern),
+    ilike(orders.externalOrderId, searchPattern),
+    ilike(customers.customerNumber, searchPattern),
+    ilike(customers.firstName, searchPattern),
+    ilike(customers.lastName, searchPattern),
+    ilike(customers.companyName, searchPattern),
+    ilike(providers.name, searchPattern),
+    ilike(products.name, searchPattern),
   )!);
   const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
   const pageSize = Math.max(1, Math.min(limit, 300));
