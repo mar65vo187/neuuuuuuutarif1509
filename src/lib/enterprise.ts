@@ -1349,10 +1349,46 @@ export async function updateOrder(id: number, input: {
 export async function listTasks(
   user: SessionUser,
   status = "open",
-  options?: { page?: number; pageSize?: number; lookahead?: boolean },
+  options?: {
+    page?: number;
+    pageSize?: number;
+    lookahead?: boolean;
+    priority?: "low" | "normal" | "high" | "critical";
+    due?: "overdue" | "today" | "upcoming" | "no_due";
+    assigneeId?: number;
+    entityType?: "general" | "lead" | "customer" | "order";
+    search?: string;
+  },
 ) {
   const conditions = [taskAccess(user)];
   if (status !== "all") conditions.push(eq(tasks.status, status));
+  if (options?.priority) conditions.push(eq(tasks.priority, options.priority));
+  if (options?.assigneeId && Number.isSafeInteger(options.assigneeId) && options.assigneeId > 0) {
+    conditions.push(eq(tasks.assignedToEmployeeId, options.assigneeId));
+  }
+  if (options?.entityType) conditions.push(eq(tasks.entityType, options.entityType));
+  const search = options?.search?.trim();
+  if (search) {
+    conditions.push(or(
+      ilike(tasks.title, `%${search}%`),
+      ilike(tasks.description, `%${search}%`),
+    )!);
+  }
+  if (options?.due === "overdue") {
+    conditions.push(sql`${tasks.dueAt} is not null
+      and ${tasks.dueAt} < now()
+      and ${tasks.status} in ('open','in_progress')`);
+  } else if (options?.due === "today") {
+    conditions.push(sql`${tasks.dueAt} >= (date_trunc('day', now() at time zone 'Europe/Berlin') at time zone 'Europe/Berlin')
+      and ${tasks.dueAt} < ((date_trunc('day', now() at time zone 'Europe/Berlin') + interval '1 day') at time zone 'Europe/Berlin')
+      and ${tasks.status} in ('open','in_progress')`);
+  } else if (options?.due === "upcoming") {
+    conditions.push(sql`${tasks.dueAt} >= ((date_trunc('day', now() at time zone 'Europe/Berlin') + interval '1 day') at time zone 'Europe/Berlin')
+      and ${tasks.status} in ('open','in_progress')`);
+  } else if (options?.due === "no_due") {
+    conditions.push(isNull(tasks.dueAt));
+  }
+
   const page = Number.isSafeInteger(options?.page) && Number(options?.page) > 0 ? Number(options?.page) : 1;
   const pageSize = Number.isSafeInteger(options?.pageSize) && Number(options?.pageSize) > 0
     ? Math.min(Number(options?.pageSize), 300)
@@ -1363,7 +1399,7 @@ export async function listTasks(
   const rows = await db.select({
     task: tasks,
     assigneeName: employees.name,
-    overdue: sql<boolean>`coalesce(${tasks.status} = 'open' and ${tasks.dueAt} is not null and ${tasks.dueAt} < now(), false)`,
+    overdue: sql<boolean>`coalesce(${tasks.status} in ('open','in_progress') and ${tasks.dueAt} is not null and ${tasks.dueAt} < now(), false)`,
   }).from(tasks)
     .leftJoin(employees, eq(tasks.assignedToEmployeeId, employees.id))
     .where(and(...conditions))
