@@ -18,7 +18,7 @@ export function SavedViewsBar({
   views,
   currentFilters,
 }: {
-  area: "leads" | "orders" | "customers";
+  area: "leads" | "orders" | "customers" | "tasks";
   basePath: string;
   views: View[];
   currentFilters: Record<string, string>;
@@ -29,9 +29,11 @@ export function SavedViewsBar({
   const [error, setError] = useState("");
   const namePlaceholder = area === "customers"
     ? "z. B. Reviews diese Woche"
-    : area === "orders"
-      ? "z. B. Provider-Prüfung"
-      : "z. B. Neue Energie-Leads";
+    : area === "tasks"
+      ? "z. B. Kritisch & überfällig"
+      : area === "orders"
+        ? "z. B. Provider-Prüfung"
+        : "z. B. Neue Energie-Leads";
 
   function href(filters: Record<string, unknown>) {
     const params = new URLSearchParams();

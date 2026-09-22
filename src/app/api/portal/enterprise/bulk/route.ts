@@ -9,7 +9,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { customerAccess, updateOrder, writeAudit } from "@/lib/enterprise";
-import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 const schema = z.object({
   entity: z.enum(["lead", "order", "task", "customer"]),
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const validActions: Record<typeof entity, Set<typeof action>> = {
       lead: new Set(["status", "assign_to_me", "assign_employee"]),
       order: new Set(["status"]),
-      task: new Set(["status"]),
+      task: new Set(["status", "assign_employee"]),
       customer: new Set(["customer_lifecycle", "customer_relationship", "customer_risk", "customer_review"]),
     };
     if (!validActions[entity].has(action)) {
@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
     if (entity === "lead") await requirePermission(user, action === "assign_employee" ? PORTAL_PERMISSION.LEAD_ASSIGN : PORTAL_PERMISSION.LEAD_EDIT);
     if (entity === "order") await requirePermission(user, PORTAL_PERMISSION.ORDER_EDIT);
     if (entity === "task") await requirePermission(user, PORTAL_PERMISSION.TASK_MANAGE);
+    if (entity === "task" && action === "assign_employee" && user.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "Nur Administratoren dürfen Aufgaben gesammelt neu zuweisen." }, { status: 403 });
+    }
     if (entity === "customer") await requirePermission(user, PORTAL_PERMISSION.CUSTOMER_EDIT);
 
     if (entity === "order") {
@@ -189,8 +192,23 @@ export async function POST(request: NextRequest) {
         await writeAudit(tx, user.id, "lead.bulk_status", "lead", null, undefined, { ids: changedIds, status: value });
         return rows.length;
       }
-      if (action !== "status" || !value || !["open","in_progress","completed","cancelled"].includes(value)) throw new Error("Ungültiger Aufgabenstatus.");
       const condition = user.role === "admin" ? inArray(tasks.id, ids) : and(inArray(tasks.id, ids), eq(tasks.assignedToEmployeeId, user.id));
+      if (action === "assign_employee") {
+        if (!employeeId) throw new Error("Bitte einen Mitarbeiter für die Zuweisung auswählen.");
+        const target = await getTaskAssignableEmployee(employeeId);
+        if (!target) throw new Error("Mitarbeiter ist nicht aktiv oder hat keinen Zugriff auf Aufgaben.");
+        const rows = await tx.update(tasks).set({
+          assignedToEmployeeId: target.id,
+          updatedAt: new Date(),
+        }).where(condition).returning({ id: tasks.id });
+        await writeAudit(tx, user.id, "task.bulk_assign_employee", "task", null, undefined, {
+          ids: rows.map((row) => row.id),
+          assignedToEmployeeId: target.id,
+        });
+        return rows.length;
+      }
+
+      if (action !== "status" || !value || !["open","in_progress","completed","cancelled"].includes(value)) throw new Error("Ungültiger Aufgabenstatus.");
       const rows = await tx.update(tasks).set({
         status: value,
         completedAt: value === "completed" ? new Date() : null,

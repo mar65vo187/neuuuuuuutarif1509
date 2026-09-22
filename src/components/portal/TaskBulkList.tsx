@@ -29,7 +29,7 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Abgebrochen" },
 ];
 
-export function TaskBulkList({ rows }: { rows: Row[] }) {
+export function TaskBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?: Array<{ id: number; name: string }> }) {
   const [selected, setSelected] = useState<number[]>([]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const allSelected = rows.length > 0 && selected.length === rows.length;
@@ -44,7 +44,7 @@ export function TaskBulkList({ rows }: { rows: Row[] }) {
         <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : rows.map((row) => row.id))} className="h-4 w-4 rounded border-line" aria-label="Alle Aufgaben auswählen" />
         <p className="text-[11.5px] font-semibold text-steel">Mehrfachauswahl</p>
       </div>
-      {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="task" selectedIds={selected} statusOptions={STATUS_OPTIONS} onCompleted={() => setSelected([])} /></div>}
+      {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><BulkToolbar entity="task" selectedIds={selected} statusOptions={STATUS_OPTIONS} assignees={assignees} onCompleted={() => setSelected([])} /></div>}
       <ul className="divide-y divide-line">
         {rows.map((task) => {
           const href = task.entityHref || "/portal/aufgaben";
