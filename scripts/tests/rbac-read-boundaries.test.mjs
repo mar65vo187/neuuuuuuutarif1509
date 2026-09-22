@@ -26,6 +26,7 @@ test("lead workspaces reject missing permission before reading CRM data", async 
       "@/lib/enterprise-access": {
         PORTAL_PERMISSION: { LEAD_EDIT: "lead.edit", LEAD_ASSIGN: "lead.assign", ORDER_CREATE: "order.create" },
         permissionSnapshot: async () => ({ "lead.edit": false, "lead.assign": true, "order.create": true }),
+        listLeadAssignableEmployees: rejectRead,
       },
       "@/lib/content": content,
       "@/lib/queries": new Proxy({}, { get: () => rejectRead }),

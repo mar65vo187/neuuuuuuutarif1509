@@ -36,10 +36,13 @@ export async function getAdvisorBySlug(slug: string): Promise<Advisor | null> {
 /*  Leads (portal)                                                     */
 /* ------------------------------------------------------------------ */
 
-/** Admins see all leads; employees only see leads they created themselves. */
+/** Admins see all leads; employees see leads they created or were explicitly assigned. */
 export function leadAccessCondition(user: SessionUser): SQL {
   if (user.role === "admin") return sql`true`;
-  return eq(leads.createdByEmployeeId, user.id);
+  return or(
+    eq(leads.createdByEmployeeId, user.id),
+    eq(leads.assignedEmployeeId, user.id),
+  )!;
 }
 
 export type LeadRow = typeof leads.$inferSelect & {
@@ -59,6 +62,7 @@ export type LeadFilter = {
   next?: string;
   productId?: number;
   productRelation?: string;
+  assignedEmployeeId?: number;
   q?: string;
   sort?: string;
   page?: number;
@@ -85,6 +89,7 @@ function leadFilterCondition(filter: LeadFilter | undefined, user: SessionUser):
   const conditions = [leadAccessCondition(user)];
   if (filter?.status && (leads.status.enumValues as readonly string[]).includes(filter.status)) conditions.push(eq(leads.status, filter.status as typeof leads.status.enumValues[number]));
   if (filter?.type && (leads.type.enumValues as readonly string[]).includes(filter.type)) conditions.push(eq(leads.type, filter.type as typeof leads.type.enumValues[number]));
+  if (filter?.assignedEmployeeId && Number.isSafeInteger(filter.assignedEmployeeId) && filter.assignedEmployeeId > 0) conditions.push(eq(leads.assignedEmployeeId, filter.assignedEmployeeId));
   if (filter?.priority === "attention") conditions.push(sql`${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren')`);
   else if (filter?.priority && ["low", "normal", "high", "hot"].includes(filter.priority)) conditions.push(eq(leads.priority, filter.priority));
   if (filter?.next === "overdue") conditions.push(sql`${leads.nextActionAt} is not null and ${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren')`);

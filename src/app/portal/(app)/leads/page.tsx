@@ -8,10 +8,7 @@ import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS, LEAD_TYPE_LABELS } from "@/lib/content";
 import { getLeadCrmOverview, listLeadProductOptions, listLeadsPage } from "@/lib/queries";
 import { listSavedViews } from "@/lib/portal-productivity";
-import { db } from "@/db";
-import { employees } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { listLeadAssignableEmployees, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -43,14 +40,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const productId = relation !== "none" && parsedProductId && Number.isSafeInteger(parsedProductId) && parsedProductId > 0 ? parsedProductId : undefined;
   const q = params.q?.trim().slice(0, 120) || undefined;
   const sort = params.sort && SORTS.has(params.sort) ? params.sort : "newest";
+  const requestedAssignee = params.assignee ? Number(params.assignee) : NaN;
+  const assigneeId = canAssign && Number.isSafeInteger(requestedAssignee) && requestedAssignee > 0 ? requestedAssignee : undefined;
 
   const requestedPage = Number(params.page ?? 1);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const [result, savedViews, assignees, overview, productOptions] = await Promise.all([
-    listLeadsPage({ status: s, type: t, priority, next, productId, productRelation: relation, q, sort, page, pageSize: 25 }, user),
+    listLeadsPage({ status: s, type: t, priority, next, productId, productRelation: relation, assignedEmployeeId: assigneeId, q, sort, page, pageSize: 25 }, user),
     listSavedViews(user, "leads"),
     canAssign
-      ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
+      ? listLeadAssignableEmployees()
       : Promise.resolve([]),
     getLeadCrmOverview(user),
     listLeadProductOptions(),
@@ -63,6 +62,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     next,
     product: productId ? String(productId) : undefined,
     relation,
+    assignee: assigneeId ? String(assigneeId) : undefined,
     q,
     sort: sort !== "newest" ? sort : undefined,
   };
@@ -76,11 +76,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   };
 
   const savedFilters = Object.fromEntries(Object.entries(current).filter((entry): entry is [string, string] => Boolean(entry[1])));
+  const pipelineQuery = new URLSearchParams(savedFilters).toString();
 
   const number = new Intl.NumberFormat("de-DE");
   const nextLabels: Record<string, string> = { overdue: "Überfällig", today: "Heute fällig", missing: "Ohne Wiedervorlage" };
   const relationLabels: Record<string, string> = { interest: "Interesse", existing: "Hat bereits", sold: "Über TarifWerk abgeschlossen", none: "Ohne Produktprofil" };
   const selectedProduct = productOptions.find((product) => product.id === productId);
+  const selectedAssignee = assignees.find((person) => person.id === assigneeId);
   const activeFilters = [
     s ? { key: "status", label: LEAD_STATUS_LABELS[s] } : null,
     t ? { key: "type", label: LEAD_TYPE_LABELS[t] } : null,
@@ -88,9 +90,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     next ? { key: "next", label: nextLabels[next] } : null,
     productId ? { key: "product", label: selectedProduct?.name ?? `Produkt #${productId}` } : null,
     relation ? { key: "relation", label: relationLabels[relation] } : null,
+    assigneeId ? { key: "assignee", label: `Zuständig: ${selectedAssignee?.name ?? `Mitarbeiter #${assigneeId}`}` } : null,
     q ? { key: "q", label: `Suche: ${q}` } : null,
   ].filter((filter): filter is { key: string; label: string } => filter !== null);
-  const hasAdvancedFilters = Boolean(t || priority || next || productId || relation);
+  const hasAdvancedFilters = Boolean(t || priority || next || productId || relation || assigneeId);
   const rangeStart = result.total ? (result.page - 1) * result.pageSize + 1 : 0;
   const rangeEnd = Math.min(result.page * result.pageSize, result.total);
   const pageNumbers = [...new Set([1, result.page - 1, result.page, result.page + 1, result.totalPages])]
@@ -115,10 +118,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <p className="eyebrow text-electric-deep">Kundenbeziehungen entwickeln</p>
           <h1 className="mt-2 text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold tracking-tight">Dein Lead-Arbeitsplatz</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-steel">Kontakte im Blick. Nächste Schritte klar. Mehr Zeit für gute Beratung.</p>
-          <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-steel"><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />{user.role === "admin" ? "Administrator · alle Leads" : "Deine selbst angelegten Leads"} · {number.format(overview.total)} gesamt</p>
+          <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-steel"><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />{user.role === "admin" ? "Administrator · alle Leads" : "Eigene und dir zugewiesene Leads"} · {number.format(overview.total)} gesamt</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/portal/leads/pipeline" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink hover:border-electric/30"><LayoutDashboard aria-hidden="true" className="h-4 w-4" /> Pipeline</Link>
+          <Link href={`/portal/leads/pipeline${pipelineQuery ? `?${pipelineQuery}` : ""}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink hover:border-electric/30"><LayoutDashboard aria-hidden="true" className="h-4 w-4" /> Pipeline</Link>
           {canEdit && <Link href="/portal/leads/neu" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-electric px-4 text-sm font-bold text-white shadow-sm hover:bg-electric-deep"><Plus aria-hidden="true" className="h-4 w-4" /> Lead anlegen</Link>}
         </div>
       </header>
@@ -155,6 +158,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
               <label className="space-y-1.5 text-xs font-bold text-ink">Lead-Art<select name="type" defaultValue={t ?? ""} className="field min-h-11 font-normal"><option value="">Alle Arten</option>{TYPES.map((key) => <option key={key} value={key}>{LEAD_TYPE_LABELS[key]}</option>)}</select></label>
               <label className="space-y-1.5 text-xs font-bold text-ink">Produkt<select name="product" defaultValue={productId ? String(productId) : ""} className="field min-h-11 font-normal"><option value="">Alle Produkte</option>{productId && !selectedProduct && <option value={productId}>Produkt #{productId}</option>}{productOptions.map((product) => <option key={product.id} value={product.id}>{product.category} · {product.providerName} · {product.name}</option>)}</select></label>
               <label className="space-y-1.5 text-xs font-bold text-ink">Produktbeziehung<select name="relation" defaultValue={relation ?? ""} className="field min-h-11 font-normal"><option value="">Jede Produktbeziehung</option>{Object.entries(relationLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+              {canAssign && <label className="space-y-1.5 text-xs font-bold text-ink">Zuständig<select name="assignee" defaultValue={assigneeId ? String(assigneeId) : ""} className="field min-h-11 font-normal"><option value="">Alle Zuständigen</option>{assignees.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label>}
             </div>
           </details>
           {activeFilters.length > 0 && <div className="flex flex-wrap items-center gap-2" aria-label="Aktive Filter"><span className="text-xs font-bold text-steel">Aktiv:</span>{activeFilters.map((filter) => <Link key={filter.key} href={link({ [filter.key]: undefined })} aria-label={`Filter entfernen: ${filter.label}`} className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-lg border border-electric/20 bg-electric/[0.06] px-3 text-xs font-bold text-electric-deep"><span className="truncate">{filter.label}</span><X aria-hidden="true" className="h-3.5 w-3.5 shrink-0" /></Link>)}<Link href="/portal/leads" className="inline-flex min-h-11 items-center px-2 text-xs font-bold text-steel underline underline-offset-4">Alle Filter zurücksetzen</Link></div>}

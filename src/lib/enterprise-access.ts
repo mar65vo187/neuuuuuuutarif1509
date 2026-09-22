@@ -120,29 +120,32 @@ export async function permissionKeys(user: SessionUser): Promise<Set<string>> {
   }
 }
 
-function taskAssignableCondition() {
+function assignableForPermissionCondition(permissionKey: PortalPermission) {
+  const legacyAllowed = LEGACY_ADVISOR_DEFAULTS.has(permissionKey);
   return or(
     eq(employees.role, "admin"),
-    sql`not exists (
-      select 1 from employee_role_assignments era
-      where era.employee_id = ${employees.id}
-    )`,
+    legacyAllowed
+      ? sql`not exists (
+          select 1 from employee_role_assignments era
+          where era.employee_id = ${employees.id}
+        )`
+      : sql`false`,
     sql`exists (
       select 1
       from employee_role_assignments era
       join role_permissions rp on rp.role_id = era.role_id
       join permissions p on p.id = rp.permission_id
       where era.employee_id = ${employees.id}
-        and p.key = ${PORTAL_PERMISSION.TASK_MANAGE}
+        and p.key = ${permissionKey}
     )`,
   )!;
 }
 
-export async function listTaskAssignableEmployees() {
+async function listAssignableEmployees(permissionKey: PortalPermission) {
   try {
     return await db.select({ id: employees.id, name: employees.name })
       .from(employees)
-      .where(and(eq(employees.active, true), taskAssignableCondition()))
+      .where(and(eq(employees.active, true), assignableForPermissionCondition(permissionKey)))
       .orderBy(employees.name);
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error
@@ -151,6 +154,12 @@ export async function listTaskAssignableEmployees() {
         ? String((error as { cause?: { code?: unknown } }).cause?.code ?? "")
         : "";
     if (code !== "42P01") throw error;
+    if (!LEGACY_ADVISOR_DEFAULTS.has(permissionKey)) {
+      return db.select({ id: employees.id, name: employees.name })
+        .from(employees)
+        .where(and(eq(employees.active, true), eq(employees.role, "admin")))
+        .orderBy(employees.name);
+    }
     return db.select({ id: employees.id, name: employees.name })
       .from(employees)
       .where(eq(employees.active, true))
@@ -158,12 +167,16 @@ export async function listTaskAssignableEmployees() {
   }
 }
 
-export async function getTaskAssignableEmployee(employeeId: number) {
+async function getAssignableEmployee(employeeId: number, permissionKey: PortalPermission) {
   if (!Number.isSafeInteger(employeeId) || employeeId < 1) return null;
   try {
     const [row] = await db.select({ id: employees.id, name: employees.name })
       .from(employees)
-      .where(and(eq(employees.id, employeeId), eq(employees.active, true), taskAssignableCondition()))
+      .where(and(
+        eq(employees.id, employeeId),
+        eq(employees.active, true),
+        assignableForPermissionCondition(permissionKey),
+      ))
       .limit(1);
     return row ?? null;
   } catch (error) {
@@ -173,12 +186,39 @@ export async function getTaskAssignableEmployee(employeeId: number) {
         ? String((error as { cause?: { code?: unknown } }).cause?.code ?? "")
         : "";
     if (code !== "42P01") throw error;
+    if (!LEGACY_ADVISOR_DEFAULTS.has(permissionKey)) {
+      const [row] = await db.select({ id: employees.id, name: employees.name })
+        .from(employees)
+        .where(and(eq(employees.id, employeeId), eq(employees.active, true), eq(employees.role, "admin")))
+        .limit(1);
+      return row ?? null;
+    }
     const [row] = await db.select({ id: employees.id, name: employees.name })
       .from(employees)
       .where(and(eq(employees.id, employeeId), eq(employees.active, true)))
       .limit(1);
     return row ?? null;
   }
+}
+
+export function listTaskAssignableEmployees() {
+  return listAssignableEmployees(PORTAL_PERMISSION.TASK_MANAGE);
+}
+
+export function getTaskAssignableEmployee(employeeId: number) {
+  return getAssignableEmployee(employeeId, PORTAL_PERMISSION.TASK_MANAGE);
+}
+
+export function leadAssignableEmployeeCondition() {
+  return assignableForPermissionCondition(PORTAL_PERMISSION.LEAD_EDIT);
+}
+
+export function listLeadAssignableEmployees() {
+  return listAssignableEmployees(PORTAL_PERMISSION.LEAD_EDIT);
+}
+
+export function getLeadAssignableEmployee(employeeId: number) {
+  return getAssignableEmployee(employeeId, PORTAL_PERMISSION.LEAD_EDIT);
 }
 
 export async function hasPermission(user: SessionUser, key: PortalPermission | string) {

@@ -22,7 +22,7 @@ const deleteSchema = z.object({
 
 function sanitizeFilters(area: "leads" | "orders" | "customers" | "tasks", filters: Record<string, string>) {
   const allowed = area === "leads"
-    ? new Set(["status", "type", "priority", "next", "product", "relation", "q", "sort"])
+    ? new Set(["status", "type", "priority", "next", "product", "relation", "assignee", "q", "sort"])
     : area === "customers"
       ? new Set(["focus", "q"])
       : area === "tasks"

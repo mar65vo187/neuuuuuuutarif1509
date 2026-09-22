@@ -5,7 +5,7 @@ import { auditEvents, commissionEvents, customerCrmProfiles, customerOpportuniti
 import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { leadAccessCondition } from "@/lib/queries";
-import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { listTaskAssignableEmployees, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -469,7 +469,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       }).from(orders).where(sql`${orders.advisorEmployeeId} is not null`).groupBy(orders.advisorEmployeeId),
     ]);
 
-    taskAssignees = staff.map(({ id, name }) => ({ id, name }));
+    taskAssignees = await listTaskAssignableEmployees();
     team = staff.map((person) => {
       const lead = leadLoad.find((row) => row.employeeId === person.id);
       const task = taskLoad.find((row) => row.employeeId === person.id);

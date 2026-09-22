@@ -8,6 +8,25 @@ export function isTerminalLeadStatus(status: string): boolean {
   return status === "abgeschlossen" || status === "verloren";
 }
 
+export async function reassignLeadFollowUps(
+  tx: LeadTransaction,
+  leadIds: number[],
+  ownerId: number,
+  now: Date,
+) {
+  const ids = [...new Set(leadIds.filter((id) => Number.isSafeInteger(id) && id > 0))];
+  if (!ids.length) return 0;
+  await tx.update(tasks).set({
+    assignedToEmployeeId: ownerId,
+    updatedAt: now,
+  }).where(and(
+    eq(tasks.entityType, "lead"),
+    eq(tasks.type, "crm_follow_up"),
+    inArray(tasks.entityId, ids),
+    inArray(tasks.status, ["open", "in_progress"]),
+  ));
+}
+
 /** The caller must hold the lead's row lock for the entire transaction. */
 export async function syncLeadFollowUp(tx: LeadTransaction, input: {
   leadId: number;
