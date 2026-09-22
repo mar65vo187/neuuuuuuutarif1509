@@ -1167,6 +1167,16 @@ export async function listOrders(
     .offset(offset);
 }
 
+export async function listOrderWorkqueueProviders(user: SessionUser) {
+  return db.selectDistinct({
+    id: providers.id,
+    name: providers.name,
+  }).from(orders)
+    .innerJoin(providers, eq(orders.providerId, providers.id))
+    .where(orderAccess(user))
+    .orderBy(providers.name);
+}
+
 export async function getOrder(id: number, user: SessionUser) {
   const [row] = await db.select({
     order: orders,
