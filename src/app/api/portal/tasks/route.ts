@@ -5,7 +5,8 @@ import { db } from "@/db";
 import { tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { getCustomer, getOrder, writeAudit } from "@/lib/enterprise";
-import { getTaskAssignableEmployee, requirePermission } from "@/lib/enterprise-access";
+import { getTaskAssignableEmployee, hasPermission, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { getServiceCase } from "@/lib/service-cases";
 import { getLead } from "@/lib/queries";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 
@@ -15,7 +16,7 @@ const schema = z.object({
   priority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
   dueAt: z.string().datetime().nullable().optional(),
   assignedToEmployeeId: z.number().int().positive().optional(),
-  entityType: z.enum(["general", "lead", "customer", "order"]).default("general"),
+  entityType: z.enum(["general", "lead", "customer", "order", "service_case"]).default("general"),
   entityId: z.number().int().nonnegative().default(0),
 });
 
@@ -36,6 +37,10 @@ export async function POST(request: NextRequest) {
     if (input.entityType === "lead" && !await getLead(entityId, user)) return NextResponse.json({ ok: false, error: "Lead nicht gefunden oder keine Berechtigung." }, { status: 404 });
     if (input.entityType === "customer" && !await getCustomer(entityId, user)) return NextResponse.json({ ok: false, error: "Kunde nicht gefunden oder keine Berechtigung." }, { status: 404 });
     if (input.entityType === "order" && !await getOrder(entityId, user)) return NextResponse.json({ ok: false, error: "Auftrag nicht gefunden oder keine Berechtigung." }, { status: 404 });
+    if (input.entityType === "service_case") {
+      const canAssignService = user.role === "admin" || await hasPermission(user, PORTAL_PERMISSION.SERVICE_ASSIGN);
+      if (!await getServiceCase(entityId, user, canAssignService)) return NextResponse.json({ ok: false, error: "Servicefall nicht gefunden oder keine Berechtigung." }, { status: 404 });
+    }
 
     let assignee = user.id;
     if (user.role === "admin" && input.assignedToEmployeeId) {
