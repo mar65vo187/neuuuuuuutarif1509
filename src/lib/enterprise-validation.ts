@@ -174,3 +174,24 @@ export const automationCreateSchema = z.object({
 export const automationUpdateSchema = z.object({
   active: z.boolean(),
 }).strict();
+
+
+export const operationsPolicyUpdateSchema = z.object({
+  leadNextActionMissingHours: z.coerce.number().int().min(1).max(720),
+  leadNextActionHighHours: z.coerce.number().int().min(1).max(2160),
+  customerReviewHighDays: z.coerce.number().int().min(1).max(365),
+  opportunityReviewHighDays: z.coerce.number().int().min(1).max(365),
+  orderStaleDays: z.coerce.number().int().min(1).max(90),
+  providerReferenceMissingHours: z.coerce.number().int().min(1).max(720),
+  providerStatusMissingHours: z.coerce.number().int().min(1).max(720),
+  activationStaleDays: z.coerce.number().int().min(1).max(90),
+  documentsStaleHours: z.coerce.number().int().min(1).max(720),
+}).strict().superRefine((value, ctx) => {
+  if (value.leadNextActionHighHours < value.leadNextActionMissingHours) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["leadNextActionHighHours"],
+      message: "Die Hoch-Prioritätsgrenze darf nicht vor der ersten Lead-Wiedervorlage liegen.",
+    });
+  }
+});
