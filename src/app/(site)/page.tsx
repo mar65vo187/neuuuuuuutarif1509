@@ -65,12 +65,12 @@ export default async function HomePage({ searchParams }: Props) {
       <BrandIdentitySection audience={initialAudience} />
       <SessionIntentCard audience={initialAudience} />
       <AudienceFocusSection audience={initialAudience} />
+      <AudienceEverydaySection audience={initialAudience} />
       <PremiumGuidance audience={initialAudience} />
       <DecisionCheck audience={initialAudience} />
       <TrustEngine audience={initialAudience} />
       <FinderTeaser audience={initialAudience} />
       <AudienceProcess audience={initialAudience} />
-      <AudienceEverydaySection audience={initialAudience} />
       <Founder audience={initialAudience} />
       <TopicTicker />
       <AudienceFaqSection audience={initialAudience} />
