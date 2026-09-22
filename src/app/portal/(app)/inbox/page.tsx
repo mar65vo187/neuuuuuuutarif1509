@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 type InboxSearchParams = Record<string, string | string[] | undefined>;
 
 const VIEWS = new Set<NotificationInboxView>(["active", "unread", "read", "snoozed", "archived"]);
-const PRIORITIES = new Set(["normal", "high", "critical"] as const);
+const PRIORITIES = new Set(["normal", "high", "critical", "urgent"] as const);
 
 const dateTime = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -50,8 +50,8 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   const raw = await searchParams;
   const params = Object.fromEntries(Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
   const view = params.view && VIEWS.has(params.view as NotificationInboxView) ? params.view as NotificationInboxView : "active";
-  const priority = params.priority && PRIORITIES.has(params.priority as "normal" | "high" | "critical")
-    ? params.priority as "normal" | "high" | "critical"
+  const priority = params.priority && PRIORITIES.has(params.priority as "normal" | "high" | "critical" | "urgent")
+    ? params.priority as "normal" | "high" | "critical" | "urgent"
     : undefined;
   const q = params.q?.trim().slice(0, 120) || undefined;
   const requestedPage = Number(params.page ?? 1);
@@ -111,7 +111,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
       <section aria-label="Inbox Kennzahlen" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Link href={link({ view: "unread", page: undefined })}><Card className="h-full transition hover:border-electric/30"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">Ungelesen</p><p className="mt-2 text-3xl font-extrabold text-ink">{result.stats.unread}</p><p className="mt-1 text-[11.5px] text-steel">jetzt sichtbar und offen</p></div><Bell className="h-5 w-5 text-electric-deep" aria-hidden="true" /></div></Card></Link>
-        <Link href={link({ priority: "critical", view: "active", page: undefined })}><Card className="h-full transition hover:border-red-300/60"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">Dringend</p><p className="mt-2 text-3xl font-extrabold text-ink">{result.stats.urgent}</p><p className="mt-1 text-[11.5px] text-steel">hoch oder kritisch</p></div><BellRing className="h-5 w-5 text-red-700" aria-hidden="true" /></div></Card></Link>
+        <Link href={link({ priority: "urgent", view: "active", page: undefined })}><Card className="h-full transition hover:border-red-300/60"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">Dringend</p><p className="mt-2 text-3xl font-extrabold text-ink">{result.stats.urgent}</p><p className="mt-1 text-[11.5px] text-steel">hoch oder kritisch</p></div><BellRing className="h-5 w-5 text-red-700" aria-hidden="true" /></div></Card></Link>
         <Link href={link({ view: "snoozed", priority: undefined, page: undefined })}><Card className="h-full transition hover:border-electric/30"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">Später</p><p className="mt-2 text-3xl font-extrabold text-ink">{result.stats.snoozed}</p><p className="mt-1 text-[11.5px] text-steel">automatisch wiedervorgelegt</p></div><Clock3 className="h-5 w-5 text-electric-deep" aria-hidden="true" /></div></Card></Link>
         <Link href={link({ view: "archived", priority: undefined, page: undefined })}><Card className="h-full transition hover:border-electric/30"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-steel">Archiv</p><p className="mt-2 text-3xl font-extrabold text-ink">{result.stats.archived}</p><p className="mt-1 text-[11.5px] text-steel">bewusst aus dem Fokus</p></div><Archive className="h-5 w-5 text-electric-deep" aria-hidden="true" /></div></Card></Link>
       </section>
@@ -138,6 +138,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
             Priorität
             <select name="priority" defaultValue={priority ?? ""} className="field h-11 font-normal">
               <option value="">Alle Prioritäten</option>
+              <option value="urgent">Hoch + kritisch</option>
               <option value="critical">Kritisch</option>
               <option value="high">Hoch</option>
               <option value="normal">Normal</option>
