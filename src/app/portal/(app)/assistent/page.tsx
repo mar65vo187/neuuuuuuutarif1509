@@ -141,7 +141,7 @@ export default async function WorkAssistantPage() {
       </header>
 
       <AiSalesAssistant
-        configured={aiStatus.gemini || aiStatus.openrouter}
+        configured={aiStatus.xkiro || aiStatus.gemini || aiStatus.openrouter}
         dailyLimit={aiStatus.dailyLimit}
         trainingIncluded={aiStatus.trainingIncluded}
       />
