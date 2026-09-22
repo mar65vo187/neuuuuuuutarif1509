@@ -6,11 +6,8 @@ import { TaskBulkList } from "@/components/portal/TaskBulkList";
 import { QuickTaskComposer } from "@/components/portal/QuickTaskComposer";
 import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/db";
-import { employees } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { listTasks } from "@/lib/enterprise";
-import { hasPermission, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { hasPermission, listTaskAssignableEmployees, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 import { listSavedViews } from "@/lib/portal-productivity";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +66,7 @@ export default async function TasksPage({
       search: q,
     }),
     user.role === "admin"
-      ? db.select({ id: employees.id, name: employees.name }).from(employees).where(eq(employees.active, true)).orderBy(employees.name)
+      ? listTaskAssignableEmployees()
       : Promise.resolve([{ id: user.id, name: user.name }]),
     listSavedViews(user, "tasks"),
   ]);
