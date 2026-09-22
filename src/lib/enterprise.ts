@@ -36,6 +36,8 @@ import { getCustomerIntelligence } from "@/lib/customer-intelligence";
 import { percentage } from "@/lib/bi-metrics";
 import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
 import { leadAssignableEmployeeCondition, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { getOperationsPolicy } from "@/lib/operations-policy";
+import { operationsPolicyCutoffs } from "@/lib/operations-policy-shared";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -1088,6 +1090,21 @@ export async function listOrders(
   },
   limit = 150,
 ) {
+  const operationsPolicy = await getOperationsPolicy();
+  const policyCutoffs = operationsPolicyCutoffs(operationsPolicy);
+  const attentionCondition = sql`${orders.status} not in ('active','rejected','cancelled','storno')
+    and (
+      (${orders.status} = 'documents_missing' and ${orders.updatedAt} < ${policyCutoffs.documentsStaleAt})
+      or ${orders.updatedAt} < ${policyCutoffs.orderStaleAt}
+    )`;
+  const providerWarningCondition = sql`${orders.status} not in ('draft','active','rejected','cancelled','storno')
+    and (
+      (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < ${policyCutoffs.providerReferenceMissingAt})
+      or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < ${policyCutoffs.providerStatusMissingAt})
+      or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < ${policyCutoffs.activationStaleAt})
+      or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < ${policyCutoffs.documentsStaleAt})
+    )`;
+
   const conditions = [orderAccess(user)];
   if (filter?.status) conditions.push(eq(orders.status, filter.status));
   if (filter?.providerId && Number.isSafeInteger(filter.providerId) && filter.providerId > 0) {
@@ -1097,16 +1114,9 @@ export async function listOrders(
     conditions.push(eq(orders.advisorEmployeeId, filter.advisorEmployeeId));
   }
   if (filter?.focus === "attention") {
-    conditions.push(sql`${orders.status} not in ('active','rejected','cancelled','storno')
-      and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days')`);
+    conditions.push(attentionCondition);
   } else if (filter?.focus === "provider_warning") {
-    conditions.push(sql`${orders.status} not in ('draft','active','rejected','cancelled','storno')
-      and (
-        (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
-        or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
-        or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
-        or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
-      )`);
+    conditions.push(providerWarningCondition);
   } else if (filter?.focus === "documents") {
     conditions.push(eq(orders.status, "documents_missing"));
   } else if (filter?.focus === "activation") {
@@ -1138,21 +1148,8 @@ export async function listOrders(
     providerName: providers.name,
     productName: products.name,
     advisorName: employees.name,
-    operationalAttention: sql<boolean>`coalesce(
-      ${orders.status} not in ('active','rejected','cancelled','storno')
-      and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days'),
-      false
-    )`,
-    providerWarning: sql<boolean>`coalesce(
-      ${orders.status} not in ('draft','active','rejected','cancelled','storno')
-      and (
-        (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
-        or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
-        or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
-        or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
-      ),
-      false
-    )`,
+    operationalAttention: sql<boolean>`coalesce(${attentionCondition}, false)`,
+    providerWarning: sql<boolean>`coalesce(${providerWarningCondition}, false)`,
   }).from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
     .innerJoin(providers, eq(orders.providerId, providers.id))
@@ -1160,7 +1157,7 @@ export async function listOrders(
     .leftJoin(employees, eq(orders.advisorEmployeeId, employees.id))
     .where(and(...conditions))
     .orderBy(
-      sql`case when ${orders.status} not in ('active','rejected','cancelled','storno') and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days') then 0 else 1 end`,
+      sql`case when ${attentionCondition} then 0 else 1 end`,
       desc(orders.updatedAt),
       desc(orders.id),
     )
@@ -1624,6 +1621,20 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
 
   const boundedDays = Math.max(1, Math.min(days, 365));
   const now = new Date();
+  const operationsPolicy = await getOperationsPolicy();
+  const policyCutoffs = operationsPolicyCutoffs(operationsPolicy, now);
+  const reportAttentionCondition = sql`${orders.status} not in ('active','rejected','cancelled','storno')
+    and (
+      (${orders.status} = 'documents_missing' and ${orders.updatedAt} < ${policyCutoffs.documentsStaleAt})
+      or ${orders.updatedAt} < ${policyCutoffs.orderStaleAt}
+    )`;
+  const reportProviderWarningCondition = sql`${orders.status} not in ('draft','active','rejected','cancelled','storno')
+    and (
+      (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < ${policyCutoffs.providerReferenceMissingAt})
+      or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < ${policyCutoffs.providerStatusMissingAt})
+      or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < ${policyCutoffs.activationStaleAt})
+      or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < ${policyCutoffs.documentsStaleAt})
+    )`;
   const periodMs = boundedDays * 24 * 60 * 60_000;
   const from = new Date(now.getTime() - periodMs);
   const previousFrom = new Date(from.getTime() - periodMs);
@@ -1715,19 +1726,8 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       preparation: sql<number>`count(*) filter (where ${orders.status} in ('draft','documents_missing','ready_to_submit'))::int`,
       submitted: sql<number>`count(*) filter (where ${orders.status} in ('submitted','provider_review'))::int`,
       committed: sql<number>`count(*) filter (where ${orders.status} in ('accepted','activation_pending'))::int`,
-      blocked: sql<number>`count(*) filter (
-        where ${orders.status} not in ('active','rejected','cancelled','storno')
-          and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days')
-      )::int`,
-      providerWarnings: sql<number>`count(*) filter (
-        where ${orders.status} not in ('draft','active','rejected','cancelled','storno')
-          and (
-            (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
-            or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
-            or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
-            or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
-          )
-      )::int`,
+      blocked: sql<number>`count(*) filter (where ${reportAttentionCondition})::int`,
+      providerWarnings: sql<number>`count(*) filter (where ${reportProviderWarningCondition})::int`,
       openExpectedCommission: sql<string>`coalesce(sum(${orders.expectedCommission}) filter (
         where ${orders.status} not in ('active','rejected','cancelled','storno')
       ), 0)::text`,
@@ -1747,7 +1747,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
     db.select({ count: sql<number>`count(*)::int` }).from(leads).where(and(
       leadScope,
       inArray(leads.status, ["neu", "kontaktiert"]),
-      lte(leads.createdAt, new Date(now.getTime() - 72 * 60 * 60_000)),
+      lte(leads.createdAt, policyCutoffs.leadHighAt),
     )),
     user.role === "admin"
       ? db.select({ count: sql<number>`count(*)::int` }).from(reconciliationIssues).where(eq(reconciliationIssues.status, "open"))
@@ -1912,10 +1912,7 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
         openOrders: sql<number>`count(*) filter (
           where ${orders.status} not in ('active','rejected','cancelled','storno')
         )::int`,
-        blockedOrders: sql<number>`count(*) filter (
-          where ${orders.status} not in ('active','rejected','cancelled','storno')
-            and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < now() - interval '7 days')
-        )::int`,
+        blockedOrders: sql<number>`count(*) filter (where ${reportAttentionCondition})::int`,
         activations: sql<number>`count(*) filter (
           where ${orders.activatedAt} >= ${from} and ${orders.activatedAt} <= ${now}
         )::int`,
@@ -1960,6 +1957,14 @@ export async function getEnterpriseReport(user: SessionUser, days = 30) {
       leads: change(leadTotal, previousLeads),
       activations: change(activationsInPeriod, previousActivations),
       leadWins: change(leadCompleted, previousLeadRows[0]?.completed ?? 0),
+    },
+    operationsPolicy: {
+      leadNextActionHighHours: operationsPolicy.leadNextActionHighHours,
+      orderStaleDays: operationsPolicy.orderStaleDays,
+      providerReferenceMissingHours: operationsPolicy.providerReferenceMissingHours,
+      providerStatusMissingHours: operationsPolicy.providerStatusMissingHours,
+      activationStaleDays: operationsPolicy.activationStaleDays,
+      documentsStaleHours: operationsPolicy.documentsStaleHours,
     },
     dataQuality: {
       staleLeads72h: staleLeadRows[0]?.count ?? 0,
