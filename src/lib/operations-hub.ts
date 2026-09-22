@@ -112,6 +112,18 @@ export async function getOperationsHubData(user: SessionUser) {
       .limit(300),
   ]);
 
+  const visibleTeamIds = new Set(
+    (admin
+      ? teamRows
+      : teamRows.filter((team) =>
+          team.leadEmployeeId === user.id
+          || memberRows.some((member) => member.teamId === team.id && member.employeeId === user.id),
+        )
+    ).map((team) => team.id),
+  );
+  const visibleTeamRows = teamRows.filter((team) => visibleTeamIds.has(team.id));
+  const visibleMemberRows = memberRows.filter((member) => visibleTeamIds.has(member.teamId));
+
   const documentHistoryRows = admin
     ? await db.select({
         id: internalDocuments.id,
@@ -145,7 +157,7 @@ export async function getOperationsHubData(user: SessionUser) {
     if (campaign.audience.startsWith("employee:")) return Number(campaign.audience.slice("employee:".length)) === user.id;
     if (campaign.audience.startsWith("team:")) {
       const teamId = Number(campaign.audience.slice("team:".length));
-      return memberRows.some((member) => member.teamId === teamId && member.employeeId === user.id);
+      return visibleTeamIds.has(teamId);
     }
     return false;
   });
@@ -168,13 +180,15 @@ export async function getOperationsHubData(user: SessionUser) {
     }
     if (audience.startsWith("team:")) {
       const teamId = Number(audience.slice("team:".length));
-      return teamRows.find((team) => team.id === teamId)?.name ?? "Team";
+      return visibleTeamRows.find((team) => team.id === teamId)?.name ?? "Team";
     }
     return "Zielgruppe";
   }
 
-  const employeeRowsForAudience = await db.select({ id: employees.id, name: employees.name })
-    .from(employees).where(eq(employees.active, true)).orderBy(employees.name);
+  const employeeRowsForAudience = admin
+    ? await db.select({ id: employees.id, name: employees.name })
+        .from(employees).where(eq(employees.active, true)).orderBy(employees.name)
+    : [{ id: user.id, name: user.name }];
 
   const incentiveProgress = await Promise.all(visibleIncentives.map(async (campaign) => {
     const starts = campaign.startsAt;
@@ -308,7 +322,7 @@ export async function getOperationsHubData(user: SessionUser) {
   return {
     owner,
     admin,
-    teams: teamRows.map((team) => ({ ...team, members: memberRows.filter((member) => member.teamId === team.id) })),
+    teams: visibleTeamRows.map((team) => ({ ...team, members: visibleMemberRows.filter((member) => member.teamId === team.id) })),
     incentives: visibleIncentives.map((campaign) => ({
       ...campaign,
       audienceLabel: audienceLabel(campaign.audience),
