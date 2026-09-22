@@ -9,7 +9,7 @@ import {
 
 type Result = {
   id: string;
-  kind: "lead" | "customer" | "order" | "task" | "employee";
+  kind: "lead" | "customer" | "order" | "task" | "service_case" | "employee";
   title: string;
   subtitle: string;
   href: string;
@@ -20,6 +20,7 @@ const KIND_LABEL: Record<Result["kind"], string> = {
   customer: "Kunde",
   order: "Auftrag",
   task: "Aufgabe",
+  service_case: "Servicefall",
   employee: "Mitarbeiter",
 };
 
