@@ -221,6 +221,14 @@ export function getLeadAssignableEmployee(employeeId: number) {
   return getAssignableEmployee(employeeId, PORTAL_PERMISSION.LEAD_EDIT);
 }
 
+export function listOrderAssignableEmployees() {
+  return listAssignableEmployees(PORTAL_PERMISSION.ORDER_EDIT);
+}
+
+export function getOrderAssignableEmployee(employeeId: number) {
+  return getAssignableEmployee(employeeId, PORTAL_PERMISSION.ORDER_EDIT);
+}
+
 export async function hasPermission(user: SessionUser, key: PortalPermission | string) {
   const keys = await permissionKeys(user);
   return keys.has("*") || keys.has(key);

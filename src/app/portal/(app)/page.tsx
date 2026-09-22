@@ -494,10 +494,10 @@ export default async function PortalDashboard() {
               {[
                 ["Unzugewiesene Leads", data.integrity.unassignedOpenLeads, "/portal/leads", UserRoundX],
                 ["Kunden ohne Owner", data.integrity.unownedCustomers, "/portal/kunden", ContactRound],
-                ["Aufträge ohne Owner", data.integrity.unassignedOpenOrders, "/portal/auftraege", BriefcaseBusiness],
+                ["Aufträge ohne Owner", data.integrity.unassignedOpenOrders, "/portal/auftraege?focus=unassigned", BriefcaseBusiness],
                 ["Aufgaben ohne Owner", data.integrity.unassignedOpenTasks, "/portal/aufgaben", ListTodo],
                 ["Überfällige Lead-Aktionen", data.integrity.overdueLeadActions, "/portal/leads?next=overdue&sort=next", AlertTriangle],
-                ["Stagnierende Aufträge >7T", data.integrity.staleOrders, "/portal/auftraege", Clock3],
+                ["Stagnierende Aufträge >7T", data.integrity.staleOrders, "/portal/auftraege?focus=attention", Clock3],
               ].map(([label, value, href, Icon]) => {
                 const count = Number(value);
                 const IconComponent = Icon as typeof AlertTriangle;
@@ -534,7 +534,7 @@ export default async function PortalDashboard() {
                     <td className={"px-4 py-3.5 font-extrabold " + (row.leadsWithoutProduct > 0 ? "text-amber-300" : "text-emerald-300")}>{row.leadsWithoutProduct}</td>
                     <td className="px-4 py-3.5 font-semibold"><Link href={`/portal/aufgaben?status=open&assignee=${row.employeeId}`} className="inline-flex min-h-10 items-center rounded-lg px-2 hover:bg-paper hover:text-electric-deep" aria-label={`Aufgaben von ${row.name} öffnen`}>{row.openTasks}</Link></td>
                     <td className={"px-4 py-3.5 font-extrabold " + (row.overdueTasks > 0 ? "text-red-700" : "text-emerald-700")}><Link href={`/portal/aufgaben?status=all&due=overdue&assignee=${row.employeeId}`} className="inline-flex min-h-10 items-center rounded-lg px-2 hover:bg-paper" aria-label={`Überfällige Aufgaben von ${row.name} öffnen`}>{row.overdueTasks}</Link></td>
-                    <td className="px-4 py-3.5 font-semibold">{row.activeOrders}</td>
+                    <td className="px-4 py-3.5 font-semibold"><Link href={`/portal/auftraege?advisor=${row.employeeId}`} className="inline-flex min-h-10 items-center rounded-lg px-2 hover:bg-paper hover:text-electric-deep" aria-label={`Aufträge von ${row.name} öffnen`}>{row.activeOrders}</Link></td>
                     <td className="px-4 py-3.5 font-semibold">{row.wins30}</td>
                   </tr>
                 ))}

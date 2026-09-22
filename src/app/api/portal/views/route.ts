@@ -27,7 +27,7 @@ function sanitizeFilters(area: "leads" | "orders" | "customers" | "tasks", filte
       ? new Set(["focus", "q"])
       : area === "tasks"
         ? new Set(["status", "priority", "due", "assignee", "entity", "q"])
-        : new Set(["status", "q"]);
+        : new Set(["status", "provider", "advisor", "focus", "q"]);
   return Object.fromEntries(
     Object.entries(filters)
       .filter(([key, value]) => allowed.has(key) && value.trim())

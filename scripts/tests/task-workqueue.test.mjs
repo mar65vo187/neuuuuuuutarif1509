@@ -48,8 +48,8 @@ test("task bulk reassignment is admin-only and audited", () => {
   assert.match(access, /getAssignableEmployee\(employeeId, PORTAL_PERMISSION\.TASK_MANAGE\)/);
   assert.match(access, /listTaskAssignableEmployees/);
   assert.match(access, /getTaskAssignableEmployee/);
-  assert.match(toolbar, /entity === "lead" \|\| entity === "task"/);
-  assert.match(toolbar, /entity === "task" \? "Neu zuweisen" : "Zuweisen"/);
+  assert.match(toolbar, /entity === "lead" \|\| entity === "task" \|\| entity === "order"/);
+  assert.match(toolbar, /entity === "lead" \? "Zuweisen" : "Neu zuweisen"/);
   assert.match(list, /assignees=\{assignees\}/);
 });
 

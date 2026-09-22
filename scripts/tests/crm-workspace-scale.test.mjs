@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 test("customer, order and task queries use gap-free bounded pagination", () => {
   const enterprise = read("../../src/lib/enterprise.ts");
   assert.match(enterprise, /filter\?: \{ focus\?: "review" \| "opportunity" \| "risk"; page\?: number; lookahead\?: boolean \}/);
-  assert.match(enterprise, /filter\?: \{ status\?: string; search\?: string; page\?: number; lookahead\?: boolean \}/);
+  assert.match(enterprise, /export async function listOrders\([\s\S]*page\?: number;[\s\S]*lookahead\?: boolean;[\s\S]*providerId\?: number;[\s\S]*advisorEmployeeId\?: number;/);
   assert.match(enterprise, /priority\?: "low" \| "normal" \| "high" \| "critical"/);
   assert.match(enterprise, /due\?: "overdue" \| "today" \| "upcoming" \| "no_due"/);
   assert.match(enterprise, /assigneeId\?: number/);
@@ -30,8 +30,9 @@ test("customer workspace paginates while preserving search and focus", () => {
 test("order workspace paginates while preserving search and status", () => {
   const page = read("../../src/app/portal/(app)/auftraege/page.tsx");
   assert.match(page, /pageSize = 50/);
-  assert.match(page, /listOrders\(user, \{ status: validStatus, search: q, page, lookahead: true \}, pageSize\)/);
-  assert.match(page, /params\.set\("status", validStatus\)/);
+  assert.match(page, /listOrders\(user, \{[\s\S]*status: validStatus,[\s\S]*search: q,[\s\S]*page,[\s\S]*lookahead: true,[\s\S]*providerId,[\s\S]*advisorEmployeeId,[\s\S]*focus,[\s\S]*\}, pageSize\)/);
+  assert.match(page, /const current: Record<string, string \| undefined> = \{[\s\S]*status: validStatus,[\s\S]*q,/);
+  assert.match(page, /href\(\{ page: String\(page \+ 1\) \}\)/);
   assert.match(page, /aria-label="Auftrags-Seiten"/);
 });
 
