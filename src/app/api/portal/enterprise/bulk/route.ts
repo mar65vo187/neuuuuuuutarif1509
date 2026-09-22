@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { employees, leads } from "@/db/schema";
+import { leads } from "@/db/schema";
 import { customerCrmProfiles, customers, tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
@@ -10,6 +10,7 @@ import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { customerAccess, updateOrder, writeAudit } from "@/lib/enterprise";
 import { getLeadAssignableEmployee, getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { reassignLeadFollowUps } from "@/lib/lead-mutation";
 
 const schema = z.object({
   entity: z.enum(["lead", "order", "task", "customer"]),
@@ -143,18 +144,24 @@ export async function POST(request: NextRequest) {
 
       if (entity === "lead") {
         if (action === "assign_to_me") {
-          const rows = await tx.update(leads).set({ assignedEmployeeId: user.id, updatedAt: new Date() })
+          const now = new Date();
+          const rows = await tx.update(leads).set({ assignedEmployeeId: user.id, updatedAt: now })
             .where(and(inArray(leads.id, ids), leadAccessCondition(user))).returning({ id: leads.id });
-          await writeAudit(tx, user.id, "lead.bulk_assign", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: user.id });
+          const changedIds = rows.map((row) => row.id);
+          await reassignLeadFollowUps(tx, changedIds, user.id, now);
+          await writeAudit(tx, user.id, "lead.bulk_assign", "lead", null, undefined, { ids: changedIds, assignedEmployeeId: user.id });
           return rows.length;
         }
         if (action === "assign_employee") {
           if (!employeeId) throw new Error("Bitte einen Mitarbeiter für die Zuweisung auswählen.");
           const target = await getLeadAssignableEmployee(employeeId);
           if (!target) throw new Error("Mitarbeiter ist nicht aktiv oder hat keinen Zugriff auf Leads.");
-          const rows = await tx.update(leads).set({ assignedEmployeeId: target.id, updatedAt: new Date() })
+          const now = new Date();
+          const rows = await tx.update(leads).set({ assignedEmployeeId: target.id, updatedAt: now })
             .where(and(inArray(leads.id, ids), leadAccessCondition(user))).returning({ id: leads.id });
-          await writeAudit(tx, user.id, "lead.bulk_assign_employee", "lead", null, undefined, { ids: rows.map((r) => r.id), assignedEmployeeId: target.id });
+          const changedIds = rows.map((row) => row.id);
+          await reassignLeadFollowUps(tx, changedIds, target.id, now);
+          await writeAudit(tx, user.id, "lead.bulk_assign_employee", "lead", null, undefined, { ids: changedIds, assignedEmployeeId: target.id });
           return rows.length;
         }
         const allowed = ["neu","kontaktiert","in_beratung","abgeschlossen","verloren"];
