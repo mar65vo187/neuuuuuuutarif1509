@@ -17,11 +17,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id < 1) notFound();
   const user = await getCurrentUser();
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/kunden/${id}`)}`);
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE, PORTAL_PERMISSION.SERVICE_EDIT] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canRead = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || canEdit;
   if (!canRead) redirect("/portal");
   const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
+  const canCreateServiceCase = capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || user.role === "admin";
   const data = await getCustomer360(id, user);
   if (!data) notFound();
   const { customer } = data;
@@ -71,6 +72,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         {customer.phone && <a href={`tel:${customer.phone}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> Telefon</a>}
         {customer.email && <a href={`mailto:${customer.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
         {canCreateOrder && <Link href={`/portal/auftraege/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>}
+        {canCreateServiceCase && <Link href={`/portal/service/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-electric/25 bg-electric/[0.06] px-4 text-[13.5px] font-semibold text-electric-deep hover:bg-electric/10"><AlertTriangle className="h-4 w-4" /> Servicefall</Link>}
       </div>
     </header>
 
