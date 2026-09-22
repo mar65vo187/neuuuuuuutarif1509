@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getEnterpriseReport } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
 import { BI_METRICS, BI_METRIC_BY_KEY } from "@/lib/bi-metrics";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,12 @@ function trend(value: number) {
 export default async function ReportingPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Freporting");
+  const reportPermissions = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.REPORT_SALES,
+    PORTAL_PERMISSION.REPORT_FINANCE,
+  ] as const);
+  const canReport = reportPermissions[PORTAL_PERMISSION.REPORT_SALES] || reportPermissions[PORTAL_PERMISSION.REPORT_FINANCE];
+  if (!canReport) redirect("/portal");
 
   const { days: raw } = await searchParams;
   const days = [7, 30, 90, 365].includes(Number(raw)) ? Number(raw) : 30;
@@ -57,7 +64,7 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
 
   const quality = [
     { label: "Leads >72h offen", value: report.dataQuality.staleLeads72h, href: "/portal/leads", Icon: UserRoundSearch, critical: report.dataQuality.staleLeads72h > 0 },
-    { label: "Aufträge ohne Provider-ID", value: report.dataQuality.ordersMissingExternalId, href: "/portal/auftraege", Icon: ReceiptText, critical: report.dataQuality.ordersMissingExternalId > 0 },
+    { label: "Aufträge ohne Provider-ID", value: report.dataQuality.ordersMissingExternalId, href: "/portal/auftraege?focus=provider_warning", Icon: ReceiptText, critical: report.dataQuality.ordersMissingExternalId > 0 },
     { label: "Provider-Abweichungen", value: report.dataQuality.openReconciliation, href: "/portal/betrieb", Icon: ReceiptText, critical: report.dataQuality.openReconciliation > 0 },
     { label: "Unvollständige Produkte", value: report.dataQuality.incompleteProducts, href: "/portal/produkte", Icon: AlertTriangle, critical: report.dataQuality.incompleteProducts > 0 },
     { label: "Schulungen laufen ≤30T ab", value: report.dataQuality.expiringTrainings30d, href: "/portal/betrieb", Icon: GraduationCap, critical: report.dataQuality.expiringTrainings30d > 0 },
@@ -65,7 +72,7 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
   const coverage = [
     { key: "next_action_coverage", value: report.qualityCoverage.nextAction, href: "/portal/leads?next=missing", Icon: TrendingUp },
     { key: "product_context_coverage", value: report.qualityCoverage.productContext, href: "/portal/leads?relation=none", Icon: FileCheck2 },
-    { key: "provider_reference_coverage", value: report.qualityCoverage.providerReference, href: "/portal/auftraege", Icon: ReceiptText },
+    { key: "provider_reference_coverage", value: report.qualityCoverage.providerReference, href: "/portal/auftraege?focus=provider_warning", Icon: ReceiptText },
     { key: "customer_owner_coverage", value: report.qualityCoverage.customerOwner, href: "/portal/kunden", Icon: UserRoundSearch },
     { key: "task_on_time_coverage", value: report.qualityCoverage.taskOnTime, href: "/portal/aufgaben", Icon: ListTodo },
   ].map((row) => ({ ...row, definition: BI_METRIC_BY_KEY[row.key] }));
@@ -75,6 +82,15 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
     { label: "Aufträge / Tag", current: report.velocity.ordersPerDay, previous: report.velocity.previousOrdersPerDay, Icon: FileCheck2 },
     { label: "Aktivierungen / Tag", current: report.velocity.activationsPerDay, previous: report.velocity.previousActivationsPerDay, Icon: TrendingUp },
   ];
+
+  const leadership = report.leadership;
+  const pipelineStages = [
+    { label: "Vorbereitung", value: leadership.orderPipeline.preparation, href: "/portal/auftraege?status=draft", hint: "Entwurf · Unterlagen · einreichbereit" },
+    { label: "Beim Provider", value: leadership.orderPipeline.submitted, href: "/portal/auftraege?status=submitted", hint: "Eingereicht · Provider-Prüfung" },
+    { label: "Commit-nah", value: leadership.orderPipeline.committed, href: "/portal/auftraege?focus=activation", hint: "Angenommen · Aktivierung offen" },
+  ];
+  const scenarioMetric = BI_METRIC_BY_KEY.activation_run_rate_scenario_30d;
+  const backlogMetric = BI_METRIC_BY_KEY.pipeline_backlog_days;
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-end justify-between gap-4">
@@ -102,6 +118,79 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
         <p className="mt-3 text-[28px] font-extrabold tracking-tight">{value}</p>
         <p className="mt-1 text-[11.5px] text-steel">{hint}</p>
       </Card>)}
+    </section>
+
+    <section aria-labelledby="leadership-forecast-title">
+      <Card>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow text-electric-deep">Forecast & Führungssteuerung</p>
+            <h2 id="leadership-forecast-title" className="mt-1 text-[18px] font-extrabold">Pipeline, Tempo und operative Reichweite</h2>
+            <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-steel">Aktueller Bestand trifft auf echte Aktivierungsereignisse. Das 30-Tage-Szenario schreibt nur das gemessene Tempo fort – ohne erfundene Abschlusswahrscheinlichkeiten.</p>
+          </div>
+          <span className="rounded-full border border-electric/20 bg-electric/[0.06] px-3 py-1.5 text-[10.5px] font-extrabold text-electric-deep">deterministisches Szenario</span>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Offene Auftrags-Pipeline</p>
+            <p className="mt-2 text-[28px] font-extrabold">{leadership.orderPipeline.open}</p>
+            <p className="mt-1 text-[10.5px] text-steel">alle nicht-terminalen operativen Stufen</p>
+          </div>
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Aktivierungen / Tag</p>
+            <p className="mt-2 text-[28px] font-extrabold">{leadership.throughput.activationsPerDay.toLocaleString("de-DE", { maximumFractionDigits: 2 })}</p>
+            <p className="mt-1 text-[10.5px] text-steel">{leadership.throughput.activationsInPeriod} echte Aktivierungen in {days} Tagen</p>
+          </div>
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">30-Tage-Tempo-Szenario</p>
+            <p className="mt-2 text-[28px] font-extrabold">{leadership.throughput.runRateScenario30.toLocaleString("de-DE", { maximumFractionDigits: 1 })}</p>
+            <p className="mt-1 text-[10.5px] text-steel">{scenarioMetric.description}</p>
+          </div>
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Pipeline-Reichweite</p>
+            <p className="mt-2 text-[28px] font-extrabold">{leadership.throughput.backlogDays === null ? "–" : leadership.throughput.backlogDays.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " T"}</p>
+            <p className="mt-1 text-[10.5px] text-steel">{leadership.throughput.backlogDays === null ? "Noch keine Aktivierungs-Run-Rate im Zeitraum" : backlogMetric.description}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1.35fr_0.85fr]">
+          <div className="rounded-2xl border border-line p-4">
+            <div className="flex items-center justify-between gap-3"><h3 className="text-[14px] font-extrabold">Aktuelle Auftrags-Pipeline</h3><span className="text-[10.5px] font-semibold text-steel">{leadership.orderPipeline.open} offen</span></div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {pipelineStages.map((stage) => <Link key={stage.label} href={stage.href} className="rounded-xl border border-line bg-paper/55 p-3 transition hover:border-electric/30 hover:bg-electric/[0.03]">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-steel">{stage.label}</p>
+                <p className="mt-1 text-[22px] font-extrabold">{stage.value}</p>
+                <p className="mt-1 text-[10px] leading-relaxed text-steel">{stage.hint}</p>
+              </Link>)}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href="/portal/auftraege?focus=attention" className={"rounded-full border px-3 py-1.5 text-[10.5px] font-bold " + (leadership.orderPipeline.blocked > 0 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-line bg-white text-steel")}>{leadership.orderPipeline.blocked} blockiert / SLA</Link>
+              <Link href="/portal/auftraege?focus=provider_warning" className={"rounded-full border px-3 py-1.5 text-[10.5px] font-bold " + (leadership.orderPipeline.providerWarnings > 0 ? "border-red-200 bg-red-50 text-red-700" : "border-line bg-white text-steel")}>{leadership.orderPipeline.providerWarnings} Providerwarnungen</Link>
+              {owner && <span className="rounded-full border border-line bg-white px-3 py-1.5 text-[10.5px] font-bold text-steel">Offene Pipeline-Provision {money(leadership.orderPipeline.openExpectedCommission)}</span>}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-line p-4">
+            <h3 className="text-[14px] font-extrabold">Lead-Vorlauf</h3>
+            <p className="mt-1 text-[10.5px] leading-relaxed text-steel">Aktueller sichtbarer Bestand vor der Auftragsanlage.</p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[["Offen", leadership.leadPipeline.open], ["Qualifiziert", leadership.leadPipeline.qualified], ["Hot / hoch", leadership.leadPipeline.hot]].map(([label, value]) => <div key={String(label)} className="rounded-xl bg-paper/70 p-3 text-center"><p className="text-[20px] font-extrabold">{Number(value)}</p><p className="mt-1 text-[9.5px] font-bold uppercase tracking-wider text-steel">{String(label)}</p></div>)}
+            </div>
+            <div className="mt-3 rounded-xl border border-line bg-paper/45 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-steel">Commit-Coverage</p>
+              <p className="mt-1 text-[18px] font-extrabold">{leadership.throughput.committedCoveragePercent === null ? "–" : leadership.throughput.committedCoveragePercent.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " %"}</p>
+              <p className="mt-1 text-[10px] leading-relaxed text-steel">Commit-nahe Aufträge relativ zum mechanischen 30-Tage-Tempo-Szenario. Werte über 100 % bedeuten mehr commit-nahe Aufträge als das aktuelle Tempo in 30 Tagen abbildet.</p>
+            </div>
+          </div>
+        </div>
+
+        <details className="mt-4 rounded-xl border border-line bg-paper/40 p-3">
+          <summary className="cursor-pointer text-[11px] font-extrabold">Methodik & Grenzen anzeigen</summary>
+          <p className="mt-2 text-[10.5px] leading-relaxed text-steel">{leadership.methodology}</p>
+          <p className="mt-1 text-[10.5px] leading-relaxed text-steel">Aktivierungen werden über <code>orders.activated_at</code> gezählt. Pipeline-Stufen sind aktuelle Status-Snapshots. Das Szenario berücksichtigt keine zukünftigen Leads, Provider-Laufzeiten oder individuelle Abschlusswahrscheinlichkeiten.</p>
+        </details>
+      </Card>
     </section>
 
     <section className="grid gap-4 xl:grid-cols-[1.45fr_0.75fr]" aria-label="BI Datenqualität und Run Rate">
