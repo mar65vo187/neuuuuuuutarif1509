@@ -136,8 +136,7 @@ export default async function ServiceCasesPage({ searchParams }: { searchParams:
         <div className="grid min-h-72 place-items-center rounded-3xl border border-line bg-white px-6 text-center"><div><Headphones className="mx-auto h-9 w-9 text-electric-deep" /><p className="mt-3 text-[15px] font-extrabold">Keine Fälle in dieser Ansicht.</p><p className="mt-1 max-w-md text-[12.5px] text-steel">Filter ändern oder einen neuen Servicefall aus der Kundenakte heraus anlegen.</p></div></div>
       ) : (
         <div className="space-y-3">
-          {result.rows.map(({ serviceCase: item, customerNumber, customerName, orderExternalId, ownerName }) => {
-            const overdue = activeStatuses.has(item.status) && item.dueAt.getTime() < Date.now();
+          {result.rows.map(({ serviceCase: item, customerNumber, customerName, orderExternalId, ownerName, overdue }) => {
             return <Link key={item.id} href={`/portal/service/${item.id}`} className={"block rounded-[22px] border bg-white p-4 transition hover:-translate-y-0.5 hover:border-electric/30 hover:shadow-soft sm:p-5 " + (overdue ? "border-red-200/80" : item.priority === "critical" ? "border-amber-200/80" : "border-line")}>
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_170px_170px] lg:items-center">
                 <div className="min-w-0">
