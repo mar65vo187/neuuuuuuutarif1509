@@ -15,6 +15,11 @@ test("BI catalog defines canonical formulas, sources and scopes", () => {
     "provider_reference_coverage",
     "customer_owner_coverage",
     "task_on_time_coverage",
+    "activation_throughput",
+    "open_order_pipeline",
+    "committed_activation_pipeline",
+    "pipeline_backlog_days",
+    "activation_run_rate_scenario_30d",
   ]) {
     assert.match(bi, new RegExp('key: "' + key + '"'));
   }
@@ -41,6 +46,38 @@ test("BI run rate is explicitly historical and not presented as a forecast", () 
   assert.match(enterprise, /previousLeadsPerDay/);
   assert.match(page, /Run Rate · keine Prognose/);
   assert.match(page, /Keine Zukunftsvorhersage/);
+});
+
+test("leadership scenario uses real activation events and no hidden probability weighting", () => {
+  const enterprise = read("src/lib/enterprise.ts");
+  const page = read("src/app/portal/(app)/reporting/page.tsx");
+
+  assert.match(enterprise, /gte\(orders\.activatedAt, from\)/);
+  assert.match(enterprise, /gte\(orders\.activatedAt, previousFrom\)/);
+  assert.match(enterprise, /runRateScenario30 = Math\.round\(activationThroughputPerDay \* 30 \* 10\) \/ 10/);
+  assert.match(enterprise, /backlogDays = activationThroughputPerDay > 0/);
+  assert.match(enterprise, /methodology: "30-Tage-Szenario = tatsächliche Aktivierungen/);
+  assert.match(page, /deterministisches Szenario/);
+  assert.match(enterprise, /Keine Garantie oder ML-Prognose/);
+  assert.match(page, /Methodik & Grenzen anzeigen/);
+  assert.doesNotMatch(enterprise, /winProbability|closeProbability|predictedProbability/);
+});
+
+test("reporting task workload uses the same open plus in-progress definition as operations", () => {
+  const enterprise = read("src/lib/enterprise.ts");
+  assert.match(enterprise, /count\(\*\) filter \(where \$\{tasks\.status\} in \('open','in_progress'\)\)::int/);
+  assert.match(enterprise, /where \$\{tasks\.status\} in \('open','in_progress'\) and \$\{tasks\.dueAt\} is not null/);
+});
+
+test("leadership capacity is neutral, actionable and not performance-ranked", () => {
+  const enterprise = read("src/lib/enterprise.ts");
+  const page = read("src/app/portal/(app)/reporting/page.tsx");
+
+  assert.match(enterprise, /teamCapacity = staff\.map/);
+  assert.match(page, /Team-Arbeitsbestand ohne Ranking/);
+  assert.match(page, /Sortierung bleibt neutral nach Namen/);
+  assert.match(page, /\/portal\/auftraege\?advisor=\$\{row\.employeeId\}&focus=attention/);
+  assert.doesNotMatch(enterprise, /teamCapacity = .*\.sort/s);
 });
 
 test("reporting exposes metric lineage to users", () => {

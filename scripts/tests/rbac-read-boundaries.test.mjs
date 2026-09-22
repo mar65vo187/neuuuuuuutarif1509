@@ -84,6 +84,18 @@ test("global search never queries protected CRM domains without their permission
   assert.match(search, /canTask \? db\.select/);
 });
 
+test("reporting enforces sales or finance permission before enterprise report reads", () => {
+  const page = read("src/app/portal/(app)/reporting/page.tsx");
+  const enterprise = read("src/lib/enterprise.ts");
+
+  assert.match(page, /PORTAL_PERMISSION\.REPORT_SALES/);
+  assert.match(page, /PORTAL_PERMISSION\.REPORT_FINANCE/);
+  assert.match(page, /if \(!canReport\) redirect\("\/portal"\)/);
+  assertBefore(page, 'if (!canReport) redirect("/portal")', "getEnterpriseReport(user, days)", "reporting page");
+  assert.match(enterprise, /Keine Berechtigung für Reporting/);
+  assertBefore(enterprise, "reportPermissions = await permissionSnapshot", "const boundedDays", "enterprise reporting");
+});
+
 test("audit compliance workspace is permissioned, filterable and paginated", () => {
   const page = read("src/app/portal/(app)/audit/page.tsx");
   const enterprise = read("src/lib/enterprise.ts");
