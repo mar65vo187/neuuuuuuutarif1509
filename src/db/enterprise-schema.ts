@@ -799,6 +799,21 @@ export const loginEvents = pgTable("login_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("login_events_employee_idx").on(table.employeeId, table.createdAt)]);
 
+export const operationsPolicy = pgTable("operations_policy", {
+  policyKey: text("policy_key").primaryKey().default("default"),
+  leadNextActionMissingHours: integer("lead_next_action_missing_hours").notNull().default(24),
+  leadNextActionHighHours: integer("lead_next_action_high_hours").notNull().default(72),
+  customerReviewHighDays: integer("customer_review_high_days").notNull().default(14),
+  opportunityReviewHighDays: integer("opportunity_review_high_days").notNull().default(14),
+  orderStaleDays: integer("order_stale_days").notNull().default(7),
+  providerReferenceMissingHours: integer("provider_reference_missing_hours").notNull().default(24),
+  providerStatusMissingHours: integer("provider_status_missing_hours").notNull().default(48),
+  activationStaleDays: integer("activation_stale_days").notNull().default(7),
+  documentsStaleHours: integer("documents_stale_hours").notNull().default(48),
+  updatedByEmployeeId: integer("updated_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Customer = typeof customers.$inferSelect;
 export type CustomerReferral = typeof customerReferrals.$inferSelect;
 export type CustomerCrmProfile = typeof customerCrmProfiles.$inferSelect;
@@ -810,3 +825,4 @@ export type Order = typeof orders.$inferSelect;
 export type CommissionEvent = typeof commissionEvents.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type LeadCallActivity = typeof leadCallActivities.$inferSelect;
+export type OperationsPolicyRow = typeof operationsPolicy.$inferSelect;
