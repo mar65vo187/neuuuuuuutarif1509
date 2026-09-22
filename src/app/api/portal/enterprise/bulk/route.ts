@@ -9,7 +9,7 @@ import { leadAccessCondition } from "@/lib/queries";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { customerAccess, updateOrder, writeAudit } from "@/lib/enterprise";
-import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { getTaskAssignableEmployee, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 const schema = z.object({
   entity: z.enum(["lead", "order", "task", "customer"]),
@@ -195,9 +195,8 @@ export async function POST(request: NextRequest) {
       const condition = user.role === "admin" ? inArray(tasks.id, ids) : and(inArray(tasks.id, ids), eq(tasks.assignedToEmployeeId, user.id));
       if (action === "assign_employee") {
         if (!employeeId) throw new Error("Bitte einen Mitarbeiter für die Zuweisung auswählen.");
-        const [target] = await tx.select({ id: employees.id }).from(employees)
-          .where(and(eq(employees.id, employeeId), eq(employees.active, true))).limit(1);
-        if (!target) throw new Error("Mitarbeiter nicht gefunden oder nicht aktiv.");
+        const target = await getTaskAssignableEmployee(employeeId);
+        if (!target) throw new Error("Mitarbeiter ist nicht aktiv oder hat keinen Zugriff auf Aufgaben.");
         const rows = await tx.update(tasks).set({
           assignedToEmployeeId: target.id,
           updatedAt: new Date(),
