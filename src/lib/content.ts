@@ -316,19 +316,38 @@ export const SERVICES: Service[] = [
 ];
 
 export const SERVICE_IMAGES: Partial<Record<ServiceKey, { src: string; alt: string }>> = {
-  "versicherungen": { "src": "/assets/architecture.webp", "alt": "Illustratives Wohnhaus als Symbol für Absicherung und Schutz" },
-  "solar": {
-    "src": "/assets/energy.webp",
-    "alt": "Illustratives Wohnhaus mit Photovoltaikanlage und Wärmepumpe"
+  internet: {
+    src: "https://images.pexels.com/photos/28348054/pexels-photo-28348054.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Moderner WLAN-Router als Symbol für Internet, Mobilfunk und vernetztes Zuhause",
   },
-  "edelmetalle": {
-    "src": "/assets/metals.webp",
-    "alt": "Illustratives Motiv mit Gold- und Silberbarren"
+  energie: {
+    src: "https://images.pexels.com/photos/13785838/pexels-photo-13785838.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Digitaler Stromzähler als Symbol für Stromverbrauch und Energiekosten",
   },
-  "immobilien": {
-    "src": "/assets/architecture.webp",
-    "alt": "Illustratives Motiv eines modernen Wohnhauses"
-  }
+  versicherungen: {
+    src: "https://images.pexels.com/photos/7433848/pexels-photo-7433848.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Persönliches Beratungsgespräch mit Unterlagen als Symbol für Versicherungsberatung",
+  },
+  sicherheit: {
+    src: "https://images.pexels.com/photos/27662922/pexels-photo-27662922.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Moderne Smart-Home-Sicherheitskamera und Sensoren",
+  },
+  klima: {
+    src: "https://images.pexels.com/photos/7587368/pexels-photo-7587368.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Moderne Klimaanlage in einem hellen Wohnraum",
+  },
+  solar: {
+    src: "https://images.pexels.com/photos/16427010/pexels-photo-16427010.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Wohnhäuser mit Photovoltaikanlagen unter blauem Himmel",
+  },
+  edelmetalle: {
+    src: "/assets/metals.webp",
+    alt: "Illustratives Motiv mit Gold- und Silberbarren",
+  },
+  immobilien: {
+    src: "https://images.pexels.com/photos/8134821/pexels-photo-8134821.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    alt: "Modernes Wohnhaus als Symbol für Immobilien und Eigentum",
+  },
 };
 
 export const FEATURED_SERVICES = SERVICES.filter((s) => s.featured);

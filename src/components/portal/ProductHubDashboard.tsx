@@ -5,9 +5,11 @@ import {
   FileSpreadsheet, GraduationCap, Loader2, Megaphone, PackageSearch, PiggyBank, Plus, Search,
   ShieldCheck, Sparkles, Upload, UsersRound,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getProductVisual } from "@/lib/product-visuals";
 
 type MarketingChannel = { channel: string; status: "allowed" | "conditional" | "blocked"; note?: string };
 type Product = {
@@ -114,6 +116,20 @@ const statusLabel: Record<string,string> = {
 const channelLabel: Record<MarketingChannel["status"], string> = {
   allowed: "Erlaubt", conditional: "Mit Bedingungen", blocked: "Nicht erlaubt",
 };
+
+function productKnowledgeScore(product: Product) {
+  const checks = [
+    product.description.trim().length >= 40,
+    product.shortPitch.trim().length >= 20,
+    product.salesArguments.length >= 2,
+    product.objections.length >= 1,
+    product.checklist.length >= 1,
+    product.marketingChannels.length >= 1,
+    product.completionProcess.trim().length >= 20,
+    Boolean(product.supportContact || product.submissionUrl),
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
 
 async function post(url: string, body: unknown, method: "POST" | "PATCH" = "POST") {
   const response = await fetch(url, {
@@ -255,6 +271,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   }
 
   const activeProducts = data.products.filter((product) => ["active", "new", "test"].includes(product.lifecycleStatus)).length;
+  const completeProductData = data.products.filter((product) => productKnowledgeScore(product) >= 75).length;
   const selectedProduct = data.products.find((product) => product.id === selectedProductId) ?? data.products[0];
   const selectedProvider = data.providers.find((item) => item.id === selectedProviderId) ?? data.providers[0];
   const compareProducts = compareIds.map((id) => data.products.find((product) => product.id === id)).filter((product): product is Product => Boolean(product));
@@ -274,11 +291,12 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   return <div className="space-y-6">
     {(error || success) && <div role={error ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-[13.5px] ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>{error ?? success}</div>}
 
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {[
         { label: "Aktive Produkte", value: String(activeProducts), Icon: PackageSearch },
         { label: "Partner", value: String(data.providers.filter((item) => item.active).length), Icon: Building2 },
         { label: "Geschäftsbereiche", value: String(categories.length), Icon: BriefcaseBusiness },
+        { label: "Produktdaten komplett", value: `${completeProductData}/${data.products.length}`, Icon: BookOpenCheck },
         { label: data.owner ? "Owner Benefit-Pool" : "Ihre aktuelle Stufe", value: data.owner ? money(data.ownerData?.poolBalance ?? 0) : `${data.payoutPercent} %`, Icon: data.owner ? PiggyBank : BadgeEuro },
       ].map(({ label, value, Icon }) => <div key={label} className="rounded-[22px] border border-line bg-white p-5">
         <div className="flex items-center justify-between"><p className="text-[12.5px] font-semibold text-steel">{label}</p><Icon className="h-4.5 w-4.5 text-electric-deep" /></div>
@@ -322,44 +340,96 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
     </section>}
 
     <section className="grid gap-4 xl:grid-cols-2">
-      {filtered.map((product) => <article key={product.id} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div><div className="flex flex-wrap gap-2"><span className="chip border-line bg-paper">{product.category}</span><span className="chip border-line bg-white">{statusLabel[product.lifecycleStatus] ?? product.lifecycleStatus}</span>{product.trainingRequired && <span className="chip border-amber-200 bg-amber-50 text-amber-800"><GraduationCap className="h-3 w-3" /> Schulung erforderlich</span>}</div><h3 className="mt-3 text-[19px] font-extrabold">{product.name}</h3><p className="mt-1 text-[13px] text-steel">{product.providerName}{product.sku ? ` · ${product.sku}` : ""} · {product.audience === "both" ? "Privat & Business" : product.audience === "business" ? "Business" : "Privat"}</p></div>
-          {product.highlight && <span className="rounded-full bg-electric/10 px-3 py-1 text-[11.5px] font-bold text-electric-deep">{product.highlight}</span>}
-        </div>
-        {product.description && <p className="mt-4 text-[13.5px] leading-relaxed text-steel">{product.description}</p>}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">Region</p><p className="mt-1 text-[13.5px] font-bold">{product.region}</p></div>
-          <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">{data.owner ? "Provider-Provision" : "Ihr Provisionswert"}</p><p className="mt-1 text-[16px] font-extrabold">{data.owner ? money(product.ownerGrossCommission ?? 0) : product.employeeCommissionEstimate !== null ? money(product.employeeCommissionEstimate) : "–"}</p>{data.owner && <p className="mt-1 text-[11px] text-steel">davon 15 % interner Benefit-/Growth-Pool: {money(product.ownerPoolAmount ?? 0)}</p>}</div>
-        </div>
-        {product.marketingChannels.length > 0 && <div className="mt-4"><p className="text-[12px] font-bold uppercase tracking-[0.1em] text-steel">Vermarktung</p><div className="mt-2 flex flex-wrap gap-2">{product.marketingChannels.map((channel, index) => <span key={channel.channel + index} title={channel.note} className={`chip ${channel.status === "allowed" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : channel.status === "conditional" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-red-200 bg-red-50 text-red-700"}`}>{channel.channel} · {channelLabel[channel.status]}</span>)}</div></div>}
-        {["active", "new", "test", "phasing_out"].includes(product.lifecycleStatus) && <div className="mt-4"><Link href={`/portal/auftraege/neu?product=${product.id}`} className="inline-flex h-10 items-center justify-center rounded-full bg-ink px-4 text-[12.5px] font-semibold text-white hover:bg-electric">Auftrag mit diesem Produkt starten</Link></div>}
-        <details className="mt-5 border-t border-line pt-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-[13.5px] font-bold">Produktwissen öffnen <ChevronDown className="h-4 w-4" /></summary>
-          <div className="mt-4 grid gap-5 text-[13px] lg:grid-cols-2">
-            <div><p className="font-bold">Verkaufsargumente</p>{product.salesArguments.length ? <ul className="mt-2 space-y-1.5 text-steel">{product.salesArguments.map((item) => <li key={item}>• {item}</li>)}</ul> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
-            <div><p className="font-bold">Benötigte Unterlagen</p>{product.requiredDocuments.length ? <ul className="mt-2 space-y-1.5 text-steel">{product.requiredDocuments.map((item) => <li key={item}>• {item}</li>)}</ul> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
-            <div><p className="font-bold">Typische Einwände</p>{product.objections.length ? <div className="mt-2 space-y-2">{product.objections.map((item) => <div key={item.objection} className="rounded-xl bg-paper p-3"><p className="font-semibold">{item.objection}</p><p className="mt-1 text-steel">{item.answer}</p></div>)}</div> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
-            <div><p className="font-bold">Abschluss-Checkliste</p>{product.checklist.length ? <ol className="mt-2 space-y-1.5 text-steel">{product.checklist.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
-            <div><p className="font-bold">Abschlussweg</p><p className="mt-2 whitespace-pre-line leading-relaxed text-steel">{product.completionProcess || "Noch nicht hinterlegt."}</p>{product.submissionUrl && <a href={product.submissionUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-semibold text-electric-deep hover:underline">Partnerportal öffnen</a>}</div>
-          </div>
-          {(product.shortPitch || product.phonePitch || product.d2dPitch || product.b2bPitch || product.whatsappTemplate || product.emailTemplate || product.socialIdeas.length > 0) && <div className="mt-5 rounded-2xl border border-electric/15 bg-electric/[0.035] p-4">
-            <p className="font-bold">Marketing- & Gesprächs-Kit</p>
-            <div className="mt-3 grid gap-4 lg:grid-cols-2">
-              {[
-                { label: "Kurzpitch", content: product.shortPitch },
-                { label: "Telefonpitch", content: product.phonePitch },
-                { label: "D2D-Pitch", content: product.d2dPitch },
-                { label: "B2B-Pitch", content: product.b2bPitch },
-                { label: "WhatsApp-Vorlage", content: product.whatsappTemplate },
-                { label: "E-Mail-Vorlage", content: product.emailTemplate },
-              ].filter((item) => item.content).map((item) => <div key={item.label}><p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-electric-deep">{item.label}</p><p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-steel">{item.content}</p></div>)}
-              {product.socialIdeas.length > 0 && <div><p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-electric-deep">Social-Ideen</p><ul className="mt-1 space-y-1 text-[12.5px] text-steel">{product.socialIdeas.map((idea) => <li key={idea}>• {idea}</li>)}</ul></div>}
+      {filtered.map((product) => {
+        const visual = getProductVisual(product.category, product.name, product.providerName);
+        const knowledgeScore = productKnowledgeScore(product);
+        const allowedChannels = product.marketingChannels.filter((channel) => channel.status === "allowed").length;
+        return <article key={product.id} className="overflow-hidden rounded-[24px] border border-line bg-white shadow-[0_18px_46px_rgba(16,24,40,0.055)]">
+          {visual && <div className="relative h-44 overflow-hidden bg-ink">
+            <Image
+              src={visual.src}
+              alt={visual.alt}
+              fill
+              sizes="(max-width: 1280px) 100vw, 50vw"
+              className="object-cover transition-transform duration-700 ease-premium hover:scale-[1.025]"
+              style={{ objectPosition: visual.position }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent" />
+            <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-white/20 bg-ink/45 px-2.5 py-1 text-[10.5px] font-bold text-white backdrop-blur">{product.category}</span>
+                <span className="rounded-full border border-white/20 bg-ink/45 px-2.5 py-1 text-[10.5px] font-bold text-white backdrop-blur">{statusLabel[product.lifecycleStatus] ?? product.lifecycleStatus}</span>
+              </div>
+              <span className="rounded-full border border-white/20 bg-white/90 px-2.5 py-1 text-[10.5px] font-extrabold text-ink">{knowledgeScore}% Datenstand</span>
+            </div>
+            <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-electric-soft">{product.providerName}</p>
+              <h3 className="mt-1 text-[20px] font-extrabold leading-tight">{product.name}</h3>
             </div>
           </div>}
-          {product.marketingConditions && <div className="mt-4 rounded-2xl border border-line bg-paper p-4"><p className="font-bold">Vermarktungsbedingungen</p><p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-steel">{product.marketingConditions}</p></div>}
-        </details>
-      </article>)}
+          <div className="p-5 sm:p-6">
+            {!visual && <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><div className="flex flex-wrap gap-2"><span className="chip border-line bg-paper">{product.category}</span><span className="chip border-line bg-white">{statusLabel[product.lifecycleStatus] ?? product.lifecycleStatus}</span></div><h3 className="mt-3 text-[19px] font-extrabold">{product.name}</h3><p className="mt-1 text-[13px] text-steel">{product.providerName}</p></div>
+              <span className="rounded-full bg-paper px-3 py-1 text-[11px] font-bold text-steel">{knowledgeScore}% Datenstand</span>
+            </div>}
+            <div className="flex flex-wrap items-center gap-2">
+              {product.trainingRequired && <span className="chip border-amber-200 bg-amber-50 text-amber-800"><GraduationCap className="h-3 w-3" /> Schulung erforderlich</span>}
+              <span className="chip border-line bg-paper text-steel">{product.audience === "both" ? "Privat & Business" : product.audience === "business" ? "Business" : "Privat"}</span>
+              {product.sku && <span className="chip border-line bg-white text-steel">SKU {product.sku}</span>}
+              {product.highlight && <span className="chip border-electric/20 bg-electric/[0.07] text-electric-deep">{product.highlight}</span>}
+            </div>
+            {product.description && <p className="mt-4 text-[13.5px] leading-relaxed text-steel">{product.description}</p>}
+
+            <div className="mt-4 rounded-2xl border border-line bg-paper/70 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11.5px] font-bold uppercase tracking-[0.11em] text-steel">Vertriebsdaten</p>
+                <p className="text-[12px] font-extrabold text-ink">{knowledgeScore}%</p>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/8"><div className="h-full rounded-full bg-electric transition-all" style={{ width: `${knowledgeScore}%` }} /></div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div><p className="text-[15px] font-extrabold">{allowedChannels}</p><p className="text-[10.5px] text-steel">freie Kanäle</p></div>
+                <div><p className="text-[15px] font-extrabold">{product.requiredDocuments.length}</p><p className="text-[10.5px] text-steel">Unterlagen</p></div>
+                <div><p className="text-[15px] font-extrabold">{product.salesArguments.length}</p><p className="text-[10.5px] text-steel">Argumente</p></div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">Region</p><p className="mt-1 text-[13.5px] font-bold">{product.region}</p></div>
+              <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">{data.owner ? "Provider-Provision" : "Ihr Provisionswert"}</p><p className="mt-1 text-[16px] font-extrabold">{data.owner ? money(product.ownerGrossCommission ?? 0) : product.employeeCommissionEstimate !== null ? money(product.employeeCommissionEstimate) : "–"}</p>{data.owner && <p className="mt-1 text-[11px] text-steel">davon 15 % interner Benefit-/Growth-Pool: {money(product.ownerPoolAmount ?? 0)}</p>}</div>
+            </div>
+            {product.marketingChannels.length > 0 && <div className="mt-4"><p className="text-[12px] font-bold uppercase tracking-[0.1em] text-steel">Vermarktung</p><div className="mt-2 flex flex-wrap gap-2">{product.marketingChannels.map((channel, index) => <span key={channel.channel + index} title={channel.note} className={`chip ${channel.status === "allowed" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : channel.status === "conditional" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-red-200 bg-red-50 text-red-700"}`}>{channel.channel} · {channelLabel[channel.status]}</span>)}</div></div>}
+            {["active", "new", "test", "phasing_out"].includes(product.lifecycleStatus) && <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={`/portal/auftraege/neu?product=${product.id}`} className="inline-flex h-10 items-center justify-center rounded-full bg-ink px-4 text-[12.5px] font-semibold text-white hover:bg-electric">Auftrag starten</Link>
+              <button type="button" onClick={() => setSelectedProductId(product.id)} className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white px-4 text-[12.5px] font-semibold text-ink hover:border-electric/30 hover:text-electric-deep">Produkt fokussieren</button>
+            </div>}
+            <details className="mt-5 border-t border-line pt-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-[13.5px] font-bold">Produktwissen öffnen <ChevronDown className="h-4 w-4" /></summary>
+              <div className="mt-4 grid gap-5 text-[13px] lg:grid-cols-2">
+                <div><p className="font-bold">Verkaufsargumente</p>{product.salesArguments.length ? <ul className="mt-2 space-y-1.5 text-steel">{product.salesArguments.map((item) => <li key={item}>• {item}</li>)}</ul> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
+                <div><p className="font-bold">Benötigte Unterlagen</p>{product.requiredDocuments.length ? <ul className="mt-2 space-y-1.5 text-steel">{product.requiredDocuments.map((item) => <li key={item}>• {item}</li>)}</ul> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
+                <div><p className="font-bold">Typische Einwände</p>{product.objections.length ? <div className="mt-2 space-y-2">{product.objections.map((item) => <div key={item.objection} className="rounded-xl bg-paper p-3"><p className="font-semibold">{item.objection}</p><p className="mt-1 text-steel">{item.answer}</p></div>)}</div> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
+                <div><p className="font-bold">Abschluss-Checkliste</p>{product.checklist.length ? <ol className="mt-2 space-y-1.5 text-steel">{product.checklist.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol> : <p className="mt-2 text-steel">Noch nicht hinterlegt.</p>}</div>
+                <div><p className="font-bold">Abschlussweg</p><p className="mt-2 whitespace-pre-line leading-relaxed text-steel">{product.completionProcess || "Noch nicht hinterlegt."}</p>{product.submissionUrl && <a href={product.submissionUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-semibold text-electric-deep hover:underline">Partnerportal öffnen</a>}</div>
+              </div>
+              {(product.shortPitch || product.phonePitch || product.d2dPitch || product.b2bPitch || product.whatsappTemplate || product.emailTemplate || product.socialIdeas.length > 0) && <div className="mt-5 rounded-2xl border border-electric/15 bg-electric/[0.035] p-4">
+                <p className="font-bold">Marketing- & Gesprächs-Kit</p>
+                <div className="mt-3 grid gap-4 lg:grid-cols-2">
+                  {[
+                    { label: "Kurzpitch", content: product.shortPitch },
+                    { label: "Telefonpitch", content: product.phonePitch },
+                    { label: "D2D-Pitch", content: product.d2dPitch },
+                    { label: "B2B-Pitch", content: product.b2bPitch },
+                    { label: "WhatsApp-Vorlage", content: product.whatsappTemplate },
+                    { label: "E-Mail-Vorlage", content: product.emailTemplate },
+                  ].filter((item) => item.content).map((item) => <div key={item.label}><p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-electric-deep">{item.label}</p><p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-steel">{item.content}</p></div>)}
+                  {product.socialIdeas.length > 0 && <div><p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-electric-deep">Social-Ideen</p><ul className="mt-1 space-y-1 text-[12.5px] text-steel">{product.socialIdeas.map((idea) => <li key={idea}>• {idea}</li>)}</ul></div>}
+                </div>
+              </div>}
+              {product.marketingConditions && <div className="mt-4 rounded-2xl border border-line bg-paper p-4"><p className="font-bold">Vermarktungsbedingungen</p><p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-steel">{product.marketingConditions}</p></div>}
+            </details>
+          </div>
+        </article>;
+      })}
       {filtered.length === 0 && <div className="xl:col-span-2 rounded-[22px] border border-dashed border-line bg-white p-8 text-center text-[14px] text-steel">Keine passenden Produkte gefunden.</div>}
     </section>
 

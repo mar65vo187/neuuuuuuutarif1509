@@ -110,19 +110,28 @@ export function AudienceEverydaySection({ audience }: { audience: AudienceMode }
           <p className="max-w-md text-[14.5px] leading-relaxed text-steel">{copy.text}</p>
         </Reveal>
         <Stagger className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {remainingServices.map((service) => (
-            <Item key={service.key}>
-              <Link href={withAudience(`/leistungen/${service.slug}`, audience)} className="card-hover group flex h-full min-h-[178px] flex-col justify-between rounded-2xl border border-line bg-white p-5">
-                <div>
-                  <h3 className="text-[17px] font-bold text-ink">{service.name}</h3>
-                  <p className="mt-2 text-[13.5px] leading-relaxed text-steel">{serviceCopy[service.key] ?? service.short}</p>
-                </div>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-electric-deep">
-                  {copy.cardCta} <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-              </Link>
-            </Item>
-          ))}
+          {remainingServices.map((service) => {
+            const image = SERVICE_IMAGES[service.key];
+            return (
+              <Item key={service.key}>
+                <Link href={withAudience(`/leistungen/${service.slug}`, audience)} className="card-hover group flex h-full min-h-[250px] flex-col overflow-hidden rounded-2xl border border-line bg-white">
+                  {image && <div className="relative h-28 overflow-hidden bg-ink">
+                    <Image src={image.src} alt={image.alt} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw" className="object-cover transition-transform duration-700 ease-premium group-hover:scale-[1.04]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/45 to-transparent" />
+                  </div>}
+                  <div className="flex flex-1 flex-col p-5">
+                    <div>
+                      <h3 className="text-[17px] font-bold text-ink">{service.name}</h3>
+                      <p className="mt-2 text-[13px] leading-relaxed text-steel">{serviceCopy[service.key] ?? service.short}</p>
+                    </div>
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-electric-deep">
+                      {copy.cardCta} <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              </Item>
+            );
+          })}
         </Stagger>
       </div>
     </section>
