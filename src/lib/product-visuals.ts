@@ -6,7 +6,7 @@ export type ProductVisual = {
 
 const RULES: Array<{ terms: string[]; visual: ProductVisual }> = [
   {
-    terms: ["internet", "mobilfunk", "glasfaser", "telekom", "dsl", "router", "tv"],
+    terms: ["internet", "mobilfunk", "glasfaser", "telekom", "telekommunikation", "festnetz", "sim", "kabel", "dsl", "router", "tv"],
     visual: {
       src: "https://images.pexels.com/photos/28348054/pexels-photo-28348054.jpeg?auto=compress&cs=tinysrgb&w=1400",
       alt: "Moderner WLAN-Router als Symbol für Konnektivität und Telekommunikation",
@@ -22,7 +22,7 @@ const RULES: Array<{ terms: string[]; visual: ProductVisual }> = [
     },
   },
   {
-    terms: ["versicherung", "vorsorge", "absicherung"],
+    terms: ["versicherung", "vorsorge", "absicherung", "haftpflicht", "hausrat", "rechtsschutz", "krankenversicherung"],
     visual: {
       src: "https://images.pexels.com/photos/7433848/pexels-photo-7433848.jpeg?auto=compress&cs=tinysrgb&w=1400",
       alt: "Professionelles Beratungsgespräch mit Vertragsunterlagen",
@@ -46,7 +46,7 @@ const RULES: Array<{ terms: string[]; visual: ProductVisual }> = [
     },
   },
   {
-    terms: ["solar", "photovoltaik", "pv", "wärmepumpe", "waermepumpe"],
+    terms: ["solar", "photovoltaik", "pv", "wärmepumpe", "waermepumpe", "heizung", "heiztechnik"],
     visual: {
       src: "https://images.pexels.com/photos/16427010/pexels-photo-16427010.jpeg?auto=compress&cs=tinysrgb&w=1400",
       alt: "Wohnhäuser mit Photovoltaikanlagen als Symbol für Solar und Wärmelösungen",
@@ -62,7 +62,7 @@ const RULES: Array<{ terms: string[]; visual: ProductVisual }> = [
     },
   },
   {
-    terms: ["immobilie", "immobilien", "eigenheim", "wohnung", "haus"],
+    terms: ["immobilie", "immobilien", "eigenheim", "wohnung", "haus", "baufinanzierung", "finanzierung", "kredit"],
     visual: {
       src: "https://images.pexels.com/photos/8134821/pexels-photo-8134821.jpeg?auto=compress&cs=tinysrgb&w=1400",
       alt: "Modernes Wohnhaus als Symbol für Immobilienprodukte",
