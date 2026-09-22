@@ -6,6 +6,8 @@ import type { SessionUser } from "@/lib/auth";
 import { isCompensationOwner } from "@/lib/compensation";
 import { leadAccessCondition } from "@/lib/queries";
 import { listTaskAssignableEmployees, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { getOperationsPolicy } from "@/lib/operations-policy";
+import { operationsPolicyCutoffs } from "@/lib/operations-policy-shared";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -65,7 +67,7 @@ export type CommandCenterData = {
   metrics: {
     openLeads: number;
     newLeads24h: number;
-    untouchedLeads24h: number;
+    untouchedLeadsSla: number;
     dueTasks24h: number;
     overdueTasks: number;
     activeOrders: number;
@@ -88,6 +90,15 @@ export type CommandCenterData = {
   team: TeamPulseRow[];
   taskAssignees: Array<{ id: number; name: string }>;
   momentum: MomentumData;
+  operationsPolicy: {
+    leadNextActionMissingHours: number;
+    leadNextActionHighHours: number;
+    orderStaleDays: number;
+    providerReferenceMissingHours: number;
+    providerStatusMissingHours: number;
+    activationStaleDays: number;
+    documentsStaleHours: number;
+  };
   finance: null | {
     confirmed: number;
     paid: number;
@@ -109,18 +120,33 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
   const now = new Date();
   const ago24 = new Date(now.getTime() - DAY);
   const next24 = new Date(now.getTime() + DAY);
-  const ago7d = new Date(now.getTime() - 7 * DAY);
   const ago14d = new Date(now.getTime() - 14 * DAY);
   const ago30d = new Date(now.getTime() - 30 * DAY);
 
-  const capabilities = await permissionSnapshot(user, [
-    PORTAL_PERMISSION.LEAD_EDIT,
-    PORTAL_PERMISSION.CUSTOMER_READ,
-    PORTAL_PERMISSION.CUSTOMER_EDIT,
-    PORTAL_PERMISSION.ORDER_READ,
-    PORTAL_PERMISSION.ORDER_EDIT,
-    PORTAL_PERMISSION.TASK_MANAGE,
-  ] as const);
+  const [operationsPolicy, capabilities] = await Promise.all([
+    getOperationsPolicy(),
+    permissionSnapshot(user, [
+      PORTAL_PERMISSION.LEAD_EDIT,
+      PORTAL_PERMISSION.CUSTOMER_READ,
+      PORTAL_PERMISSION.CUSTOMER_EDIT,
+      PORTAL_PERMISSION.ORDER_READ,
+      PORTAL_PERMISSION.ORDER_EDIT,
+      PORTAL_PERMISSION.TASK_MANAGE,
+    ] as const),
+  ]);
+  const policyCutoffs = operationsPolicyCutoffs(operationsPolicy, now);
+  const orderAttentionCondition = sql`${orders.status} not in ('active','rejected','cancelled','storno')
+    and (
+      (${orders.status} = 'documents_missing' and ${orders.updatedAt} < ${policyCutoffs.documentsStaleAt})
+      or ${orders.updatedAt} < ${policyCutoffs.orderStaleAt}
+    )`;
+  const providerWarningCondition = sql`${orders.status} not in ('draft','active','rejected','cancelled','storno')
+    and (
+      (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < ${policyCutoffs.providerReferenceMissingAt})
+      or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < ${policyCutoffs.providerStatusMissingAt})
+      or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < ${policyCutoffs.activationStaleAt})
+      or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < ${policyCutoffs.documentsStaleAt})
+    )`;
   const canLead = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
   const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
@@ -149,7 +175,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     db.select({
       open: sql<number>`count(*) filter (where ${leads.status} in ('neu','kontaktiert','termin_bestaetigt','in_beratung'))::int`,
       new24: sql<number>`count(*) filter (where ${leads.createdAt} >= ${ago24})::int`,
-      untouched24: sql<number>`count(*) filter (where ${leads.status} = 'neu' and ${leads.createdAt} < ${ago24})::int`,
+      untouchedSla: sql<number>`count(*) filter (where ${leads.status} = 'neu' and ${leads.createdAt} < ${policyCutoffs.leadMissingAt})::int`,
       wins30: sql<number>`count(*) filter (where ${leads.status} = 'abgeschlossen' and ${leads.updatedAt} >= ${ago30d})::int`,
       hotLeads: sql<number>`count(*) filter (where ${leads.priority} in ('high','hot') and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
       dueToday: sql<number>`count(*) filter (where ${leads.nextActionAt} >= date_trunc('day', now()) and ${leads.nextActionAt} < date_trunc('day', now()) + interval '1 day' and ${leads.status} not in ('abgeschlossen','verloren'))::int`,
@@ -162,16 +188,8 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     }).from(tasks).where(taskCondition),
     db.select({
       active: sql<number>`count(*) filter (where ${orders.status} = 'active')::int`,
-      attention: sql<number>`count(*) filter (where ${orders.status} not in ('active','rejected','cancelled','storno') and (${orders.status} = 'documents_missing' or ${orders.updatedAt} < ${ago7d}))::int`,
-      providerWarnings: sql<number>`count(*) filter (
-        where ${orders.status} not in ('draft','active','rejected','cancelled','storno')
-          and (
-            (${orders.externalOrderId} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '1 day')
-            or (${orders.providerStatus} is null and ${orders.submittedAt} is not null and ${orders.submittedAt} < now() - interval '2 days')
-            or (${orders.status} = 'activation_pending' and ${orders.updatedAt} < now() - interval '7 days')
-            or (${orders.status} = 'documents_missing' and ${orders.updatedAt} < now() - interval '2 days')
-          )
-      )::int`,
+      attention: sql<number>`count(*) filter (where ${orderAttentionCondition})::int`,
+      providerWarnings: sql<number>`count(*) filter (where ${providerWarningCondition})::int`,
     }).from(orders).where(orderCondition),
     db.select({
       count: sql<number>`count(*)::int`,
@@ -349,14 +367,14 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
   }
 
   for (const lead of attentionLeads) {
-    const age = now.getTime() - lead.createdAt.getTime();
-    if (lead.status !== "neu" || age < DAY) continue;
+    if (lead.status !== "neu" || lead.createdAt.getTime() >= policyCutoffs.leadMissingAt.getTime()) continue;
+    const critical = lead.createdAt.getTime() < policyCutoffs.leadHighAt.getTime();
     focus.push({
       key: `lead-${lead.id}`,
       kind: "lead",
-      priority: age >= 3 * DAY ? "critical" : "high",
+      priority: critical ? "critical" : "high",
       title: lead.name || `Lead #${lead.id}`,
-      subtitle: `${lead.topic ?? "Anfrage"} · seit mehr als ${age >= 3 * DAY ? "72" : "24"} Stunden neu`,
+      subtitle: `${lead.topic ?? "Anfrage"} · seit mehr als ${critical ? operationsPolicy.leadNextActionHighHours : operationsPolicy.leadNextActionMissingHours} Stunden neu`,
       href: `/portal/leads/${lead.id}`,
       entityType: "lead",
       entityId: lead.id,
@@ -365,32 +383,35 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
   }
 
   for (const order of attentionOrders) {
-    const stale = order.updatedAt.getTime() < ago7d.getTime();
-    const missingExternalReference = !order.externalOrderId && Boolean(order.submittedAt) && order.submittedAt!.getTime() < now.getTime() - DAY;
-    const missingProviderStatus = !order.providerStatus && Boolean(order.submittedAt) && order.submittedAt!.getTime() < now.getTime() - 2 * DAY;
-    const activationStalled = order.status === "activation_pending" && stale;
-    const documentsStalled = order.status === "documents_missing" && order.updatedAt.getTime() < now.getTime() - 2 * DAY;
+    const stale = order.updatedAt.getTime() < policyCutoffs.orderStaleAt.getTime();
+    const missingExternalReference = !order.externalOrderId
+      && Boolean(order.submittedAt)
+      && order.submittedAt!.getTime() < policyCutoffs.providerReferenceMissingAt.getTime();
+    const missingProviderStatus = !order.providerStatus
+      && Boolean(order.submittedAt)
+      && order.submittedAt!.getTime() < policyCutoffs.providerStatusMissingAt.getTime();
+    const activationStalled = order.status === "activation_pending"
+      && order.updatedAt.getTime() < policyCutoffs.activationStaleAt.getTime();
+    const documentsStalled = order.status === "documents_missing"
+      && order.updatedAt.getTime() < policyCutoffs.documentsStaleAt.getTime();
 
     let subtitle = "";
     let priority: FocusItem["priority"] = "normal";
     if (documentsStalled) {
-      subtitle = order.providerName + " · fehlende Unterlagen seit mehr als 2 Tagen";
+      subtitle = order.providerName + ` · fehlende Unterlagen seit mehr als ${operationsPolicy.documentsStaleHours} Stunden`;
       priority = "critical";
     } else if (activationStalled) {
-      subtitle = order.providerName + " · Aktivierung seit mehr als 7 Tagen ohne Bewegung";
+      subtitle = order.providerName + ` · Aktivierung seit mehr als ${operationsPolicy.activationStaleDays} Tagen ohne Bewegung`;
       priority = "high";
     } else if (missingProviderStatus) {
-      subtitle = order.providerName + " · nach Einreichung fehlt ein Provider-Status";
+      subtitle = order.providerName + ` · Provider-Status fehlt seit mehr als ${operationsPolicy.providerStatusMissingHours} Stunden nach Einreichung`;
       priority = "high";
     } else if (missingExternalReference) {
-      subtitle = order.providerName + " · nach Einreichung fehlt die Provider-Referenz";
+      subtitle = order.providerName + ` · Provider-Referenz fehlt seit mehr als ${operationsPolicy.providerReferenceMissingHours} Stunden nach Einreichung`;
       priority = "high";
     } else if (stale) {
-      subtitle = order.providerName + " · seit mehr als 7 Tagen ohne Aktualisierung";
+      subtitle = order.providerName + ` · seit mehr als ${operationsPolicy.orderStaleDays} Tagen ohne Aktualisierung`;
       priority = "normal";
-    } else if (order.status === "documents_missing") {
-      subtitle = order.providerName + " · Unterlagen fehlen";
-      priority = "high";
     } else {
       continue;
     }
@@ -501,7 +522,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
       }).from(customers),
       db.select({
         unassigned: sql<number>`count(*) filter (where ${orders.advisorEmployeeId} is null and ${orders.status} not in ('active','rejected','cancelled','storno'))::int`,
-        stale: sql<number>`count(*) filter (where ${orders.updatedAt} < ${ago7d} and ${orders.status} not in ('active','rejected','cancelled','storno'))::int`,
+        stale: sql<number>`count(*) filter (where ${orderAttentionCondition})::int`,
       }).from(orders),
       db.select({
         unassigned: sql<number>`count(*) filter (where ${tasks.assignedToEmployeeId} is null and ${tasks.status} in ('open','in_progress'))::int`,
@@ -537,7 +558,7 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     metrics: {
       openLeads: leadMetricsRows[0]?.open ?? 0,
       newLeads24h: leadMetricsRows[0]?.new24 ?? 0,
-      untouchedLeads24h: leadMetricsRows[0]?.untouched24 ?? 0,
+      untouchedLeadsSla: leadMetricsRows[0]?.untouchedSla ?? 0,
       dueTasks24h: taskMetricsRows[0]?.due24 ?? 0,
       overdueTasks: taskMetricsRows[0]?.overdue ?? 0,
       activeOrders: orderMetricsRows[0]?.active ?? 0,
@@ -560,6 +581,15 @@ export async function getCommandCenterData(user: SessionUser): Promise<CommandCe
     team,
     taskAssignees,
     momentum,
+    operationsPolicy: {
+      leadNextActionMissingHours: operationsPolicy.leadNextActionMissingHours,
+      leadNextActionHighHours: operationsPolicy.leadNextActionHighHours,
+      orderStaleDays: operationsPolicy.orderStaleDays,
+      providerReferenceMissingHours: operationsPolicy.providerReferenceMissingHours,
+      providerStatusMissingHours: operationsPolicy.providerStatusMissingHours,
+      activationStaleDays: operationsPolicy.activationStaleDays,
+      documentsStaleHours: operationsPolicy.documentsStaleHours,
+    },
     finance,
     integrity,
   };

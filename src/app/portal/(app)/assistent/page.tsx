@@ -51,14 +51,14 @@ export default async function WorkAssistantPage() {
       count: m.overdueTasks,
       Icon: Clock3,
     },
-    m.untouchedLeads24h > 0 && {
+    m.untouchedLeadsSla > 0 && {
       key: "untouched-leads",
       priority: "critical",
       title: "Neue Leads ohne zeitnahe Bearbeitung",
-      why: "Neue Anfragen verlieren mit jedem Tag an Aktualität. Diese Leads sind seit mehr als 24 Stunden noch im Status „Neu“.",
+      why: `Neue Anfragen verlieren mit der Zeit an Aktualität. Diese Leads sind seit mehr als ${data.operationsPolicy.leadNextActionMissingHours} Stunden noch im Status „Neu“.`,
       action: "Neue Leads prüfen",
       href: "/portal/leads?status=neu&sort=oldest",
-      count: m.untouchedLeads24h,
+      count: m.untouchedLeadsSla,
       Icon: AlertTriangle,
     },
     m.dueLeadFollowUpsToday > 0 && {

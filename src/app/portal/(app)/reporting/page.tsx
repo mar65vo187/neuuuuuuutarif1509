@@ -63,7 +63,7 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
   ];
 
   const quality = [
-    { label: "Leads >72h offen", value: report.dataQuality.staleLeads72h, href: "/portal/leads", Icon: UserRoundSearch, critical: report.dataQuality.staleLeads72h > 0 },
+    { label: `Leads >${report.operationsPolicy.leadNextActionHighHours}h offen`, value: report.dataQuality.staleLeadsSla, href: "/portal/leads", Icon: UserRoundSearch, critical: report.dataQuality.staleLeadsSla > 0 },
     { label: "Aufträge ohne Provider-ID", value: report.dataQuality.ordersMissingExternalId, href: "/portal/auftraege?focus=provider_warning", Icon: ReceiptText, critical: report.dataQuality.ordersMissingExternalId > 0 },
     { label: "Provider-Abweichungen", value: report.dataQuality.openReconciliation, href: "/portal/betrieb", Icon: ReceiptText, critical: report.dataQuality.openReconciliation > 0 },
     { label: "Unvollständige Produkte", value: report.dataQuality.incompleteProducts, href: "/portal/produkte", Icon: AlertTriangle, critical: report.dataQuality.incompleteProducts > 0 },

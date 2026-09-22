@@ -13,7 +13,8 @@ test("order workqueue exposes provider, advisor and operational focus filters", 
   assert.match(enterprise, /focus\?: "attention" \| "provider_warning" \| "documents" \| "activation" \| "unassigned"/);
   assert.match(enterprise, /eq\(orders\.providerId, filter\.providerId\)/);
   assert.match(enterprise, /eq\(orders\.advisorEmployeeId, filter\.advisorEmployeeId\)/);
-  assert.match(enterprise, /orders\.updatedAt} < now\(\) - interval '7 days'/);
+  assert.match(enterprise, /policyCutoffs\.orderStaleAt/);
+  assert.match(enterprise, /policyCutoffs\.documentsStaleAt/);
   assert.match(enterprise, /orders\.externalOrderId} is null/);
   assert.match(enterprise, /orders\.providerStatus} is null/);
   assert.match(page, /Auftragssteuerung · Operations/);

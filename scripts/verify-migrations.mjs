@@ -72,6 +72,7 @@ const requiredTables = [
   "marketing_campaign_spend",
   "portal_sessions",
   "portal_login_rate_limits",
+  "operations_policy",
 ];
 
 const pool = new Pool({

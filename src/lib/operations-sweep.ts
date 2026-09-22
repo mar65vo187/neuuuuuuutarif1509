@@ -1,4 +1,5 @@
 import { pool } from "@/db";
+import { getOperationsPolicy } from "@/lib/operations-policy";
 
 export type OperationsSweepResult = {
   skipped: boolean;
@@ -10,6 +11,7 @@ export type OperationsSweepResult = {
 };
 
 export async function runOperationsSweep(): Promise<OperationsSweepResult> {
+  const operationsPolicy = await getOperationsPolicy();
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -28,14 +30,14 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
         'lead', l.id, l.assigned_employee_id, null,
         'lead_next_action_missing',
         'Nächsten Schritt im Lead festlegen',
-        'Automatischer Qualitäts-Wächter: Der offene Lead hat seit mindestens 24 Stunden keinen dokumentierten nächsten Schritt.',
-        CASE WHEN l.created_at < now() - interval '72 hours' THEN 'high' ELSE 'normal' END,
+        'Automatischer Qualitäts-Wächter: Der offene Lead hat seit mindestens ' || $2::int || ' Stunden keinen dokumentierten nächsten Schritt.',
+        CASE WHEN l.created_at < now() - $1::int * interval '1 hour' THEN 'high' ELSE 'normal' END,
         'open', now(), now(), now()
       FROM leads l
       WHERE l.assigned_employee_id IS NOT NULL
         AND l.status NOT IN ('termin_bestaetigt','abgeschlossen','verloren')
         AND l.next_action_at IS NULL
-        AND l.created_at < now() - interval '24 hours'
+        AND l.created_at < now() - $2::int * interval '1 hour'
         AND NOT EXISTS (
           SELECT 1 FROM tasks t
           WHERE t.entity_type = 'lead'
@@ -46,7 +48,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       ORDER BY l.created_at ASC
       LIMIT 500
       RETURNING id
-    `);
+    `, [operationsPolicy.leadNextActionHighHours, operationsPolicy.leadNextActionMissingHours]);
 
     const reviews = await client.query<{ id: number }>(`
       INSERT INTO tasks (
@@ -58,7 +60,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
         'customer_review_due',
         'Fälligen Bestandscheck durchführen',
         'Automatischer Qualitäts-Wächter: Der in Customer 360 geplante Bestandscheck ist fällig.',
-        CASE WHEN ccp.next_review_at < now() - interval '14 days' THEN 'high' ELSE 'normal' END,
+        CASE WHEN ccp.next_review_at < now() - $1::int * interval '1 day' THEN 'high' ELSE 'normal' END,
         'open', now(), now(), now()
       FROM customer_crm_profiles ccp
       INNER JOIN customers c ON c.id = ccp.customer_id
@@ -76,7 +78,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       ORDER BY ccp.next_review_at ASC
       LIMIT 500
       RETURNING id
-    `);
+    `, [operationsPolicy.customerReviewHighDays]);
 
     const staleOrders = await client.query<{ id: number }>(`
       INSERT INTO tasks (
@@ -91,15 +93,18 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
           ELSE 'Auftrag ohne Aktualisierung prüfen'
         END,
         CASE WHEN o.status = 'documents_missing'
-          THEN 'Automatischer Qualitäts-Wächter: Der Auftrag wartet auf Unterlagen und hat keine offene Nachfassaufgabe.'
-          ELSE 'Automatischer Qualitäts-Wächter: Der offene Auftrag wurde seit mehr als 7 Tagen nicht aktualisiert.'
+          THEN 'Automatischer Qualitäts-Wächter: Der Auftrag wartet auf Unterlagen oder ist über die allgemeine Auftrags-SLA hinaus ohne Bewegung.'
+          ELSE 'Automatischer Qualitäts-Wächter: Der offene Auftrag wurde seit mehr als ' || $2::int || ' Tagen nicht aktualisiert.'
         END,
         CASE WHEN o.status = 'documents_missing' THEN 'high' ELSE 'normal' END,
         'open', now(), now(), now()
       FROM orders o
       WHERE o.advisor_employee_id IS NOT NULL
         AND o.status NOT IN ('active','rejected','cancelled','storno')
-        AND (o.status = 'documents_missing' OR o.updated_at < now() - interval '7 days')
+        AND (
+          (o.status = 'documents_missing' AND o.updated_at < now() - $1::int * interval '1 hour')
+          OR o.updated_at < now() - $2::int * interval '1 day'
+        )
         AND NOT EXISTS (
           SELECT 1 FROM tasks t
           WHERE t.entity_type = 'order'
@@ -110,7 +115,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       ORDER BY o.updated_at ASC
       LIMIT 500
       RETURNING id
-    `);
+    `, [operationsPolicy.documentsStaleHours, operationsPolicy.orderStaleDays]);
 
     const opportunities = await client.query<{ id: number }>(`
       WITH due AS (
@@ -137,7 +142,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
         'opportunity_review',
         'Fälliges Kundenpotenzial prüfen',
         'Automatischer Qualitäts-Wächter: ' || d.opportunity_count || ' offene Opportunity/Opportunities haben einen fälligen Prüftermin.',
-        CASE WHEN d.due_at < now() - interval '14 days' THEN 'high' ELSE 'normal' END,
+        CASE WHEN d.due_at < now() - $1::int * interval '1 day' THEN 'high' ELSE 'normal' END,
         'open', now(), now(), now()
       FROM due d
       WHERE NOT EXISTS (
@@ -150,7 +155,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       ORDER BY d.due_at ASC
       LIMIT 500
       RETURNING id
-    `);
+    `, [operationsPolicy.opportunityReviewHighDays]);
 
     const riskCustomers = await client.query<{ id: number }>(`
       INSERT INTO tasks (
@@ -192,7 +197,20 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
 
     await client.query(
       "insert into audit_events (actor_employee_id, action, entity_type, entity_id, new_values, created_at) values (null, 'operations.sweep', 'system', null, $1::jsonb, now())",
-      [JSON.stringify(result)],
+      [JSON.stringify({
+        ...result,
+        operationsPolicy: {
+          leadNextActionMissingHours: operationsPolicy.leadNextActionMissingHours,
+          leadNextActionHighHours: operationsPolicy.leadNextActionHighHours,
+          customerReviewHighDays: operationsPolicy.customerReviewHighDays,
+          opportunityReviewHighDays: operationsPolicy.opportunityReviewHighDays,
+          orderStaleDays: operationsPolicy.orderStaleDays,
+          providerReferenceMissingHours: operationsPolicy.providerReferenceMissingHours,
+          providerStatusMissingHours: operationsPolicy.providerStatusMissingHours,
+          activationStaleDays: operationsPolicy.activationStaleDays,
+          documentsStaleHours: operationsPolicy.documentsStaleHours,
+        },
+      })],
     );
     await client.query("COMMIT");
     return result;
