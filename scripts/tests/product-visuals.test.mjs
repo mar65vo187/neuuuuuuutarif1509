@@ -59,3 +59,13 @@ test("product-specific image overrides are persisted and validated", () => {
   assert.match(api, /imageUrl: parsed\.data\.imageUrl/);
   assert.match(migration, /ADD COLUMN IF NOT EXISTS image_url text/);
 });
+
+test("custom product images flow through lead and order option queries", () => {
+  const queries = readFileSync("src/lib/queries.ts", "utf8");
+  const enterprise = readFileSync("src/lib/enterprise.ts", "utf8");
+  const orderPage = readFileSync("src/app/portal/(app)/auftraege/neu/page.tsx", "utf8");
+
+  assert.match(queries, /imageUrl: productCatalogProfiles\.imageUrl/);
+  assert.match(enterprise, /imageUrl: productCatalogProfiles\.imageUrl/);
+  assert.match(orderPage, /imageUrl: product\.imageUrl/);
+});

@@ -11,6 +11,7 @@ type ProductOption = {
   name: string;
   category: string;
   providerName: string;
+  imageUrl: string | null;
 };
 
 type ProductLink = {
@@ -20,6 +21,7 @@ type ProductLink = {
   productName: string;
   category: string;
   providerName: string;
+  imageUrl: string | null;
 };
 
 const RELATIONS = [
@@ -85,7 +87,7 @@ export function LeadProductManager({
 
   const selectedKey = productId ? `${productId}:${relation}` : "";
   const selectedProduct = products.find((product) => String(product.id) === productId) ?? null;
-  const selectedVisual = selectedProduct ? getProductVisual(selectedProduct.category, selectedProduct.name, selectedProduct.providerName) : null;
+  const selectedVisual = selectedProduct ? getProductVisual(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name, selectedProduct.providerName) : null;
 
   return (
     <div className="space-y-5">
@@ -170,7 +172,7 @@ export function LeadProductManager({
                 {group.items.map((item) => (
                   <li key={`${item.productId}:${item.relation}`} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${RELATION_STYLES[item.relation] ?? "border-line bg-paper"}`}>
                     {(() => {
-                      const visual = getProductVisual(item.category, item.productName, item.providerName);
+                      const visual = getProductVisual(item.imageUrl, item.category, item.productName, item.providerName);
                       return visual ? <span className="relative h-10 w-12 shrink-0 overflow-hidden rounded-lg bg-ink"><Image src={visual.src} alt="" fill sizes="48px" className="object-cover" style={{ objectPosition: visual.position }} /></span> : null;
                     })()}
                     <div className="min-w-0 flex-1">

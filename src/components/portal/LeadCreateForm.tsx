@@ -13,6 +13,7 @@ type ProductOption = {
   name: string;
   category: string;
   providerName: string;
+  imageUrl: string | null;
 };
 
 const TOPIC_OPTIONS = [...new Set(SERVICES.map((service) => service.name))];
@@ -232,7 +233,7 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
                       className="h-4 w-4 shrink-0 rounded border-line"
                     />
                     {(() => {
-                      const visual = getProductVisual(product.category, product.name, product.providerName);
+                      const visual = getProductVisual(product.imageUrl, product.category, product.name, product.providerName);
                       return visual ? <span className="relative h-11 w-14 shrink-0 overflow-hidden rounded-lg bg-ink"><Image src={visual.src} alt="" fill sizes="56px" className="object-cover" style={{ objectPosition: visual.position }} /></span> : null;
                     })()}
                     <span className="min-w-0">

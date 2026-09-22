@@ -1173,7 +1173,13 @@ export async function updateCustomerOpportunity(customerId: number, opportunityI
 export async function listCatalog() {
   const [providerRows, productRows] = await Promise.all([
     db.select().from(providers).where(eq(providers.active, true)).orderBy(providers.name),
-    db.select().from(products).where(eq(products.active, true)).orderBy(products.name),
+    db.select({
+      ...getTableColumns(products),
+      imageUrl: productCatalogProfiles.imageUrl,
+    }).from(products)
+      .leftJoin(productCatalogProfiles, eq(productCatalogProfiles.productId, products.id))
+      .where(eq(products.active, true))
+      .orderBy(products.name),
   ]);
   return { providers: providerRows, products: productRows };
 }

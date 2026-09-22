@@ -9,7 +9,7 @@ import { getProductVisual } from "@/lib/product-visuals";
 type CustomerOption = { id: number; label: string; customerNumber: string };
 type LeadOption = { id: number; label: string };
 type ProviderOption = { id: number; name: string; category: string };
-type ProductOption = { id: number; providerId: number; name: string; category: string; expectedCommission: string | null };
+type ProductOption = { id: number; providerId: number; name: string; category: string; imageUrl: string | null; expectedCommission: string | null };
 
 export function OrderCreateForm({
   customers,
@@ -39,7 +39,7 @@ export function OrderCreateForm({
   const [productId, setProductId] = useState<number>(initialProductId ?? 0);
   const availableProducts = useMemo(() => products.filter((product) => product.providerId === providerId), [products, providerId]);
   const selectedProduct = products.find((product) => product.id === productId) ?? null;
-  const selectedVisual = selectedProduct ? getProductVisual(selectedProduct.category, selectedProduct.name) : null;
+  const selectedVisual = selectedProduct ? getProductVisual(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name) : null;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

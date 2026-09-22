@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { advisors, employees, leadNotes, leads, teamMessages, type Advisor } from "@/db/schema";
-import { leadCallActivities, leadProductLinks, products, providers } from "@/db/enterprise-schema";
+import { leadCallActivities, leadProductLinks, productCatalogProfiles, products, providers } from "@/db/enterprise-schema";
 import { SITE } from "@/lib/content";
 import { requireUser, type SessionUser } from "@/lib/auth";
 import { getLeadPageBounds, leadSearchPattern, normalizeLeadProductFilter } from "@/lib/lead-query-filters";
@@ -248,8 +248,10 @@ export async function listLeadProductOptions() {
     name: products.name,
     category: products.category,
     providerName: providers.name,
+    imageUrl: productCatalogProfiles.imageUrl,
   }).from(products)
     .innerJoin(providers, eq(products.providerId, providers.id))
+    .leftJoin(productCatalogProfiles, eq(productCatalogProfiles.productId, products.id))
     .where(and(eq(products.active, true), eq(providers.active, true)))
     .orderBy(products.category, providers.name, products.name)
     .limit(500);
@@ -265,9 +267,11 @@ export async function getLeadProductLinks(leadId: number, user?: SessionUser) {
     productName: products.name,
     category: products.category,
     providerName: providers.name,
+    imageUrl: productCatalogProfiles.imageUrl,
   }).from(leadProductLinks)
     .innerJoin(products, eq(leadProductLinks.productId, products.id))
     .innerJoin(providers, eq(products.providerId, providers.id))
+    .leftJoin(productCatalogProfiles, eq(productCatalogProfiles.productId, products.id))
     .where(eq(leadProductLinks.leadId, leadId))
     .orderBy(leadProductLinks.relation, products.category, providers.name, products.name);
 }
