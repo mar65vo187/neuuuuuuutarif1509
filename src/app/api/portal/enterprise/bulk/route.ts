@@ -3,18 +3,18 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { employees, leads } from "@/db/schema";
-import { tasks } from "@/db/enterprise-schema";
+import { customerCrmProfiles, customers, tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { orderUpdateSchema } from "@/lib/enterprise-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
-import { updateOrder, writeAudit } from "@/lib/enterprise";
+import { customerAccess, updateOrder, writeAudit } from "@/lib/enterprise";
 import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 
 const schema = z.object({
-  entity: z.enum(["lead", "order", "task"]),
+  entity: z.enum(["lead", "order", "task", "customer"]),
   ids: z.array(z.number().int().positive()).min(1).max(500),
-  action: z.enum(["status", "assign_to_me", "assign_employee"]),
+  action: z.enum(["status", "assign_to_me", "assign_employee", "customer_lifecycle", "customer_relationship", "customer_risk", "customer_review"]),
   value: z.string().trim().max(120).optional(),
   employeeId: z.number().int().positive().optional(),
 });
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     if (entity === "lead") await requirePermission(user, action === "assign_employee" ? PORTAL_PERMISSION.LEAD_ASSIGN : PORTAL_PERMISSION.LEAD_EDIT);
     if (entity === "order") await requirePermission(user, PORTAL_PERMISSION.ORDER_EDIT);
     if (entity === "task") await requirePermission(user, PORTAL_PERMISSION.TASK_MANAGE);
+    if (entity === "customer") await requirePermission(user, PORTAL_PERMISSION.CUSTOMER_EDIT);
 
     if (entity === "order") {
       if (action !== "status" || !value || !orderUpdateSchema.shape.status.safeParse(value).success) {
@@ -58,6 +59,74 @@ export async function POST(request: NextRequest) {
     }
 
     const changed = await db.transaction(async (tx) => {
+      if (entity === "customer") {
+        if (ids.length > 100) throw new Error("Maximal 100 Kunden pro Bulk-Aktion.");
+
+        const accessibleRows = await tx.select({ id: customers.id })
+          .from(customers)
+          .where(and(inArray(customers.id, ids), customerAccess(user)))
+          .for("update");
+        const accessibleIds = accessibleRows.map((row) => row.id);
+        if (!accessibleIds.length) return 0;
+
+        const now = new Date();
+        const profilePatch: {
+          lifecycleStage?: string;
+          relationshipStatus?: string;
+          riskLevel?: string;
+          nextReviewAt?: Date | null;
+          updatedByEmployeeId: number;
+          updatedAt: Date;
+        } = {
+          updatedByEmployeeId: user.id,
+          updatedAt: now,
+        };
+        let field = "";
+        let auditedValue: string | null = value ?? null;
+
+        if (action === "customer_lifecycle") {
+          if (!value || !["prospect", "active", "retention", "dormant", "closed"].includes(value)) throw new Error("Ungültiger Lifecycle.");
+          profilePatch.lifecycleStage = value;
+          field = "lifecycleStage";
+        } else if (action === "customer_relationship") {
+          if (!value || !["new", "developing", "established", "at_risk", "inactive"].includes(value)) throw new Error("Ungültiger Beziehungsstatus.");
+          profilePatch.relationshipStatus = value;
+          field = "relationshipStatus";
+        } else if (action === "customer_risk") {
+          if (!value || !["low", "normal", "high", "critical"].includes(value)) throw new Error("Ungültige Risikostufe.");
+          profilePatch.riskLevel = value;
+          field = "riskLevel";
+        } else if (action === "customer_review") {
+          field = "nextReviewAt";
+          if (value === "clear") {
+            profilePatch.nextReviewAt = null;
+            auditedValue = null;
+          } else {
+            const days = Number(value);
+            if (!Number.isInteger(days) || ![7, 30, 90, 180].includes(days)) throw new Error("Ungültiger Review-Zeitraum.");
+            profilePatch.nextReviewAt = new Date(now.getTime() + days * 24 * 60 * 60_000);
+            auditedValue = profilePatch.nextReviewAt.toISOString();
+          }
+        } else {
+          throw new Error("Ungültige Kundenaktion.");
+        }
+
+        await tx.insert(customerCrmProfiles)
+          .values(accessibleIds.map((customerId) => ({ customerId, ...profilePatch })))
+          .onConflictDoUpdate({
+            target: customerCrmProfiles.customerId,
+            set: profilePatch,
+          });
+        await tx.update(customers).set({ updatedAt: now }).where(inArray(customers.id, accessibleIds));
+        await writeAudit(tx, user.id, "customer.bulk_profile", "customer", null, undefined, {
+          ids: accessibleIds,
+          field,
+          value: auditedValue,
+          changed: accessibleIds.length,
+        });
+        return accessibleIds.length;
+      }
+
       if (entity === "lead") {
         if (action === "assign_to_me") {
           const rows = await tx.update(leads).set({ assignedEmployeeId: user.id, updatedAt: new Date() })
