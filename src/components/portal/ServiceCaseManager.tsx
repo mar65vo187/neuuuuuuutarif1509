@@ -55,7 +55,8 @@ export function ServiceCaseManager({
       const json = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Servicefall konnte nicht gespeichert werden.");
       setState({ type: "success", text: "Servicefall aktualisiert und im Audit protokolliert." });
-      (event.currentTarget.elements.namedItem("note") as HTMLTextAreaElement | null)?.setAttribute("value", "");
+      const noteField = event.currentTarget.elements.namedItem("note") as HTMLTextAreaElement | null;
+      if (noteField) noteField.value = "";
       router.refresh();
     } catch (cause) {
       setState({ type: "error", text: cause instanceof Error ? cause.message : "Servicefall konnte nicht gespeichert werden." });
