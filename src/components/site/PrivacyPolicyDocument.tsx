@@ -9,7 +9,7 @@ type PrivacyPolicyDocumentProps = {
 };
 
 function withoutDuplicateDocumentTitle(html: string) {
-  return html.replace(/^\s*<h1>.*?<\/h1>\s*/s, "");
+  return html.replace(/^\s*<h1>[\s\S]*?<\/h1>\s*/, "");
 }
 
 export function PrivacyPolicyDocument({
