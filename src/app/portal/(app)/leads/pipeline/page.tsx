@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { listLeadsPage } from "@/lib/queries";
 import { getLeadIntelligence } from "@/lib/lead-intelligence";
 import { LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS, LEAD_TYPE_LABELS } from "@/lib/content";
-import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { listLeadAssignableEmployees, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 import { LeadPipelineBoard } from "@/components/portal/LeadPipelineBoard";
 
 export const dynamic = "force-dynamic";
@@ -37,10 +37,16 @@ export default async function LeadPipelinePage({ searchParams }: { searchParams:
   const requestedPageSize = Number(value("pageSize"));
   const pageSize = [25, 50, 100].includes(requestedPageSize) ? requestedPageSize : 50;
 
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT] as const);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.LEAD_ASSIGN] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
+  const canAssign = capabilities[PORTAL_PERMISSION.LEAD_ASSIGN];
   if (!canEdit) redirect("/portal");
-  const result = await listLeadsPage({ status, type, priority, next, productId, productRelation: relation, q, sort, page: requestedPage, pageSize }, user);
+  const requestedAssignee = Number(value("assignee"));
+  const assigneeId = canAssign && Number.isSafeInteger(requestedAssignee) && requestedAssignee > 0 ? requestedAssignee : undefined;
+  const [result, assignees] = await Promise.all([
+    listLeadsPage({ status, type, priority, next, productId, productRelation: relation, assignedEmployeeId: assigneeId, q, sort, page: requestedPage, pageSize }, user),
+    canAssign ? listLeadAssignableEmployees() : Promise.resolve([]),
+  ]);
   const current: Record<string, string | undefined> = {
     status,
     type,
@@ -48,6 +54,7 @@ export default async function LeadPipelinePage({ searchParams }: { searchParams:
     next,
     product: productId ? String(productId) : undefined,
     relation,
+    assignee: assigneeId ? String(assigneeId) : undefined,
     q,
     sort,
     pageSize: String(result.pageSize),
@@ -90,7 +97,7 @@ export default async function LeadPipelinePage({ searchParams }: { searchParams:
   const last = Math.min(result.page * result.pageSize, result.total);
   const pageStart = Math.max(1, Math.min(result.page - 2, result.totalPages - 4));
   const pages = Array.from({ length: Math.min(5, result.totalPages) }, (_, index) => pageStart + index);
-  const filtered = Boolean(status || type || priority || next || productId || relation || q);
+  const filtered = Boolean(status || type || priority || next || productId || relation || assigneeId || q);
   const number = (count: number) => count.toLocaleString("de-DE");
 
   return (
@@ -111,7 +118,7 @@ export default async function LeadPipelinePage({ searchParams }: { searchParams:
       <section aria-labelledby="pipeline-filter-title" className="rounded-2xl border border-slate-700 bg-slate-900 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="pipeline-filter-title" className="flex items-center gap-2 text-base font-bold text-slate-100"><SlidersHorizontal aria-hidden="true" className="h-4 w-4" /> Leads finden</h2>
-          <p className="text-sm text-slate-300">{user.role === "admin" ? "Sichtbarkeit: alle Leads" : "Sichtbarkeit: deine selbst angelegten Leads"}</p>
+          <p className="text-sm text-slate-300">{user.role === "admin" ? "Sichtbarkeit: alle Leads" : "Sichtbarkeit: eigene + zugewiesene Leads"}</p>
         </div>
         <form key={new URLSearchParams(Object.entries(current).filter((entry): entry is [string, string] => Boolean(entry[1]))).toString()} action="/portal/leads/pipeline" method="get" className="mt-4 grid items-end gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Object.entries({ status, type, product: productId ? String(productId) : undefined, relation }).map(([key, item]) => item ? <input key={key} type="hidden" name={key} value={item} /> : null)}
@@ -133,6 +140,12 @@ export default async function LeadPipelinePage({ searchParams }: { searchParams:
               {Object.entries(LEAD_PRIORITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           </label>
+          {canAssign && <label className="block text-sm font-semibold text-slate-200">Zuständig
+            <select name="assignee" defaultValue={assigneeId ? String(assigneeId) : ""} className={FIELD}>
+              <option value="">Alle Zuständigen</option>
+              {assignees.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
+            </select>
+          </label>}
           <label className="block text-sm font-semibold text-slate-200">Sortierung
             <select name="sort" defaultValue={sort} className={FIELD}>
               <option value="next">Nächste Aktion zuerst</option>
