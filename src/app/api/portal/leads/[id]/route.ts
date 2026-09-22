@@ -9,7 +9,7 @@ import { leadUpdateSchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
-import { isTerminalLeadStatus, syncLeadFollowUp } from "@/lib/lead-mutation";
+import { isTerminalLeadStatus, reassignLeadFollowUps, syncLeadFollowUp } from "@/lib/lead-mutation";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +65,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       patch.assignedEmployeeId = user.id;
       systemNotes.push(`${user.name} hat die Anfrage übernommen.`);
     }
+    const assignmentChanged = patch.assignedEmployeeId !== undefined && patch.assignedEmployeeId !== existing.assignedEmployeeId;
 
     if (data.priority && data.priority !== existing.priority) {
       patch.priority = data.priority;
@@ -123,7 +124,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const effectiveNextAction = Object.prototype.hasOwnProperty.call(patch, "nextActionAt")
       ? patch.nextActionAt ?? null
       : existing.nextActionAt;
-    const taskOwner = existing.createdByEmployeeId ?? user.id;
+    const effectiveAssignedEmployeeId = patch.assignedEmployeeId ?? existing.assignedEmployeeId ?? existing.createdByEmployeeId ?? user.id;
+    const taskOwner = effectiveAssignedEmployeeId;
+    if (assignmentChanged) await reassignLeadFollowUps(tx, [id], taskOwner, now);
 
     if (data.nextActionAt !== undefined || isTerminalLeadStatus(effectiveStatus) || (data.priority && effectiveNextAction)) {
       await syncLeadFollowUp(tx, {
