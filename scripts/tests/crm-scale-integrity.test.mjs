@@ -1,42 +1,72 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import * as icons from "lucide-react";
+import * as zod from "zod";
+import { loadTs } from "./helpers/load-ts.mjs";
 
-const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
+const Link = ({ children, ...props }) => {
+  delete props.scroll;
+  return createElement("a", props, children);
+};
+const content = loadTs("src/lib/content.ts");
+const ui = loadTs("src/components/portal/ui.tsx", { "@/lib/content": content });
+const { LeadPipelineBoard } = loadTs("src/components/portal/LeadPipelineBoard.tsx", {
+  "next/link": { default: Link }, "next/navigation": { useRouter: () => ({}) },
+  "lucide-react": icons, "@/components/portal/ui": ui, "@/lib/content": content,
+});
+const row = {
+  id: 42, name: "Testlead", status: "neu", priority: "normal", contactOutcome: "open",
+  nextActionAt: null, nextActionOverdue: false, confirmedSlot: null, phone: "+49123456",
+  email: "test@example.test", audience: "b2c", createdByName: "Ersteller", assignedName: "Berater",
+  existingProductNames: [], interestProductNames: [], soldProductNames: [],
+  intelligence: { label: "Nächster Schritt", detail: "Kontakt aufnehmen", tone: "normal" },
+};
+const board = canEdit => renderToStaticMarkup(createElement(LeadPipelineBoard, {
+  rows: [row, { ...row, id: 43, status: "termin_bestaetigt" }], canEdit, activeStatus: "",
+  stageLinks: [{ key: "", label: "Alle Stufen", href: "/portal/leads/pipeline" }],
+}));
 
-test("lead list uses bounded server-side pagination instead of a fixed 300-row workspace", () => {
-  const queries = read("../../src/lib/queries.ts");
-  const page = read("../../src/app/portal/(app)/leads/page.tsx");
-  assert.match(queries, /pageSize\?: number/);
-  assert.match(queries, /const queryLimit = Math\.min\(pageSize \+ \(filter\?\.lookahead \? 1 : 0\), 300\)/);
-  assert.match(queries, /const offset = \(page - 1\) \* pageSize/);
-  assert.match(queries, /\.limit\(queryLimit\)\.offset\(offset\)/);
-  assert.match(page, /pageSize, lookahead: true/);
-  assert.match(page, /aria-label="Lead-Seiten"/);
-  assert.match(page, /Seite \{page\}/);
+// Pagination and callback invariants run against executable query/route modules
+// in lead-query-filters.test.mjs and lead-mutation.test.mjs.
+test("pipeline requires explicit call entry and preserves telephone and email actions", () => {
+  const html = board(true);
+  assert.match(html, /href="\/portal\/leads\/42#bearbeiten"[^>]*>.*?Anruf erfassen/);
+  assert.match(html, /href="tel:\+49123456"/);
+  assert.match(html, /href="mailto:test@example.test"/);
+  assert.match(html, /<button[^>]*>.*?Beratung starten/);
+  assert.doesNotMatch(html, /<button[^>]*>[^<]*Angerufen<\/button>/);
+  const { leadUpdateSchema } = loadTs("src/lib/validation.ts", { zod });
+  assert.equal(leadUpdateSchema.safeParse({ contactOutcome: "attempted" }).success, true);
+  assert.equal(leadUpdateSchema.safeParse({ contactOutcome: "invented" }).success, false);
 });
 
-test("quick called action no longer claims that the lead was reached", () => {
-  const pipeline = read("../../src/components/portal/LeadPipelineBoard.tsx");
-  assert.match(pipeline, /status: "kontaktiert", contactOutcome: "attempted"/);
-  assert.doesNotMatch(pipeline, /status: "kontaktiert", contactOutcome: "reached"/);
-  const content = read("../../src/lib/content.ts");
-  const validation = read("../../src/lib/validation.ts");
-  assert.match(content, /attempted: "Angerufen · Ergebnis offen"/);
-  assert.match(validation, /"open", "attempted", "reached"/);
+test("read-only pipeline keeps lead access but omits call and consultation mutations", () => {
+  const html = board(false);
+  assert.match(html, /Nur Lesezugriff/);
+  assert.match(html, /href="\/portal\/leads\/42"/);
+  assert.doesNotMatch(html, /Anruf erfassen|Beratung starten|Abschluss prüfen/);
 });
 
-test("closed leads cannot create or keep automatic callback tasks", () => {
-  const calls = read("../../src/app/api/portal/leads/[id]/calls/route.ts");
-  assert.match(calls, /const closedLead = \["abgeschlossen", "verloren"\]\.includes\(lead\.status\)/);
-  assert.match(calls, /const shouldSchedule = !closedLead &&/);
-  assert.match(calls, /const stopAutoFollowUp = closedLead \|\|/);
-});
-
-test("mobile portal navigation exposes labeled destinations", () => {
-  const shell = read("../../src/components/portal/PortalShell.tsx");
-  assert.match(shell, /mobileNavOpen/);
-  assert.match(shell, />Menü<\/span>/);
-  assert.match(shell, /Bereich direkt öffnen/);
-  assert.match(shell, /onClick=\{\(\) => setMobileNavOpen\(false\)\}/);
+test("mobile navigation renders labelled accessible destinations according to permissions", () => {
+  const { PortalShell } = loadTs("src/components/portal/PortalShell.tsx", {
+    "next/link": { default: Link }, "next/navigation": { usePathname: () => "/portal/leads" },
+    "lucide-react": icons, "@/components/ui/Logo": { Logo: () => null },
+    "@/components/portal/PortalHelpPanel": { PortalHelpPanel: () => null },
+    "@/components/portal/PortalCommandPalette": { PortalCommandPalette: () => null },
+    "@/lib/portal-help": { getPortalHelp: () => ({ title: "Leads", purpose: "Arbeit planen" }) },
+  });
+  const html = renderToStaticMarkup(createElement(PortalShell, {
+    user: { id: 7, name: "Testberater", role: "berater" }, permissions: ["lead.edit"],
+    openCount: 0, notificationCount: 0,
+  }, "Arbeitsbereich"));
+  const dialog = html.match(/<dialog[\s\S]*?<\/dialog>/)?.[0];
+  assert.ok(dialog);
+  assert.match(dialog, /aria-labelledby="portal-navigation-title"/);
+  assert.match(dialog, /id="portal-navigation-title"/);
+  assert.match(dialog, /aria-label="Navigation schließen"/);
+  assert.match(dialog, /href="\/portal\/leads"/);
+  assert.match(dialog, /Leads &amp; Termine/);
+  assert.doesNotMatch(dialog, /href="\/portal\/(?:audit|kunden|auftraege|aufgaben|system)"/);
 });

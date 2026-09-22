@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
-import { leadCallActivities, tasks } from "@/db/enterprise-schema";
+import { leadCallActivities } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
 import { leadCallActivitySchema } from "@/lib/validation";
@@ -10,6 +10,7 @@ import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { recommendLeadFollowUp } from "@/lib/call-intelligence";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
 import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { isTerminalLeadStatus, syncLeadFollowUp } from "@/lib/lead-mutation";
 
 export const dynamic = "force-dynamic";
 
@@ -92,25 +93,31 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         requestedCallbackAt,
       });
 
-      const closedLead = ["abgeschlossen", "verloren"].includes(lead.status);
-      const shouldSchedule = !closedLead && data.autoSchedule && recommendation.action === "call_again" && Boolean(recommendation.at);
       const explicitDoNotContact = data.reaction === "do_not_contact";
-      const stopAutoFollowUp = closedLead || (data.autoSchedule && recommendation.action === "no_auto_call") || explicitDoNotContact;
+      const terminalLead = isTerminalLeadStatus(lead.status) || explicitDoNotContact;
+      const latestContact = !lead.lastContactAt || calledAt.getTime() >= lead.lastContactAt.getTime();
+      const shouldSchedule = !terminalLead && latestContact && data.autoSchedule && recommendation.action === "call_again" && Boolean(recommendation.at);
+      const stopAutoFollowUp = terminalLead || (latestContact && data.autoSchedule && recommendation.action === "no_auto_call");
       const nextActionAt = shouldSchedule ? recommendation.at : stopAutoFollowUp ? null : lead.nextActionAt;
 
       const patch: Partial<typeof leads.$inferInsert> = {
         updatedAt: now,
-        lastContactAt: calledAt,
-        contactOutcome: recommendation.contactOutcome,
+        ...(latestContact ? { lastContactAt: calledAt, contactOutcome: recommendation.contactOutcome } : {}),
       };
 
-      if (lead.status === "neu") patch.status = "kontaktiert";
+      if (lead.status === "neu" && latestContact) patch.status = "kontaktiert";
       if (shouldSchedule || stopAutoFollowUp) patch.nextActionAt = nextActionAt;
-      if (data.reaction === "very_interested" && !["high", "hot"].includes(lead.priority)) patch.priority = "high";
+      if (latestContact && data.reaction === "very_interested" && !["high", "hot"].includes(lead.priority)) patch.priority = "high";
       if (explicitDoNotContact) {
-        patch.status = "verloren";
-        patch.closedAt = now;
+        // A contact objection must stop further calls without losing a won deal.
+        if (lead.status !== "abgeschlossen") patch.status = "verloren";
+        patch.closedAt = lead.closedAt ?? now;
         patch.nextActionAt = null;
+        patch.contactOutcome = recommendation.contactOutcome;
+        if (lead.status !== "abgeschlossen") {
+          patch.confirmedAt = null;
+          patch.confirmedSlot = null;
+        }
       }
 
       await tx.update(leads).set(patch).where(eq(leads.id, leadId));
@@ -131,46 +138,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         autoScheduled: shouldSchedule,
       });
 
-      const [followUp] = await tx
-        .select({ id: tasks.id })
-        .from(tasks)
-        .where(and(
-          eq(tasks.entityType, "lead"),
-          eq(tasks.entityId, leadId),
-          eq(tasks.type, "crm_follow_up"),
-          inArray(tasks.status, ["open", "in_progress"]),
-        ))
-        .orderBy(tasks.createdAt)
-        .limit(1);
-
       const leadLabel = lead.name || lead.email || lead.phone || `Lead #${lead.id}`;
       const taskOwner = lead.createdByEmployeeId ?? lead.assignedEmployeeId ?? user.id;
 
-      if (shouldSchedule && recommendation.at) {
-        const taskValues = {
-          assignedToEmployeeId: taskOwner,
+      if (shouldSchedule || stopAutoFollowUp) {
+        await syncLeadFollowUp(tx, {
+          leadId,
+          actorId: user.id,
+          ownerId: taskOwner,
           title: `Lead nachfassen: ${leadLabel}`,
           description: recommendation.reason,
-          priority: (patch.priority ?? lead.priority) === "hot" ? "critical" : (patch.priority ?? lead.priority) === "high" ? "high" : "normal",
-          status: "open",
-          dueAt: recommendation.at,
-          completedAt: null,
-          updatedAt: now,
-        } as const;
-
-        if (followUp) {
-          await tx.update(tasks).set(taskValues).where(eq(tasks.id, followUp.id));
-        } else {
-          await tx.insert(tasks).values({
-            entityType: "lead",
-            entityId: leadId,
-            createdByEmployeeId: user.id,
-            type: "crm_follow_up",
-            ...taskValues,
-          });
-        }
-      } else if (stopAutoFollowUp && followUp) {
-        await tx.update(tasks).set({ status: "cancelled", completedAt: null, updatedAt: now }).where(eq(tasks.id, followUp.id));
+          priority: patch.priority ?? lead.priority,
+          dueAt: nextActionAt,
+          now,
+        });
       }
 
       await writeAudit(tx, user.id, "lead.call.logged", "lead", leadId, undefined, {

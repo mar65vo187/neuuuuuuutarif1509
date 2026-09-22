@@ -122,6 +122,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, changed });
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Bulk-Aktion fehlgeschlagen." }, { status: 500 });
+    const errorStatus = typeof error === "object" && error && "status" in error ? Number(error.status) : 500;
+    const status = Number.isInteger(errorStatus) && errorStatus >= 400 && errorStatus < 500 ? errorStatus : 500;
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Bulk-Aktion fehlgeschlagen." }, { status });
   }
 }
