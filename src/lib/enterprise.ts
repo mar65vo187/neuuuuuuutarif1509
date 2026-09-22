@@ -610,9 +610,7 @@ export async function getCustomer360(id: number, user: SessionUser) {
   const canService = serviceCapabilities[PORTAL_PERMISSION.SERVICE_READ]
     || serviceCapabilities[PORTAL_PERMISSION.SERVICE_EDIT]
     || canServiceAssign;
-  const serviceAccess = canServiceAssign
-    ? eq(serviceCases.customerId, id)
-    : and(eq(serviceCases.customerId, id), eq(serviceCases.ownerEmployeeId, user.id));
+  const serviceAccess = eq(serviceCases.customerId, id);
 
   const [
     profileRows,
