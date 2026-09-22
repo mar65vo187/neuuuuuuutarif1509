@@ -35,11 +35,17 @@ test("task bulk reassignment is admin-only and audited", () => {
   const route = read("src/app/api/portal/enterprise/bulk/route.ts");
   const toolbar = read("src/components/portal/BulkToolbar.tsx");
   const list = read("src/components/portal/TaskBulkList.tsx");
+  const access = read("src/lib/enterprise-access.ts");
+  const createRoute = read("src/app/api/portal/tasks/route.ts");
 
   assert.match(route, /task: new Set\(\["status", "assign_employee"\]\)/);
   assert.match(route, /entity === "task" && action === "assign_employee" && user\.role !== "admin"/);
   assert.match(route, /"task\.bulk_assign_employee"/);
-  assert.match(route, /eq\(employees\.active, true\)/);
+  assert.match(route, /getTaskAssignableEmployee\(employeeId\)/);
+  assert.match(createRoute, /getTaskAssignableEmployee\(input\.assignedToEmployeeId\)/);
+  assert.match(access, /p\.key = \$\{PORTAL_PERMISSION\.TASK_MANAGE\}/);
+  assert.match(access, /listTaskAssignableEmployees/);
+  assert.match(access, /getTaskAssignableEmployee/);
   assert.match(toolbar, /entity === "lead" \|\| entity === "task"/);
   assert.match(toolbar, /entity === "task" \? "Neu zuweisen" : "Zuweisen"/);
   assert.match(list, /assignees=\{assignees\}/);
