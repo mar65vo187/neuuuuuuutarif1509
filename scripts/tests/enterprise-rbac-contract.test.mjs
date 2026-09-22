@@ -32,6 +32,7 @@ test("bulk mutations enforce entity-specific permissions", () => {
   assert.match(source, /PORTAL_PERMISSION\.LEAD_ASSIGN/);
   assert.match(source, /PORTAL_PERMISSION\.ORDER_EDIT/);
   assert.match(source, /PORTAL_PERMISSION\.TASK_MANAGE/);
+  assert.match(source, /PORTAL_PERMISSION\.CUSTOMER_EDIT/);
 });
 
 test("direct create pages are permission guarded", () => {

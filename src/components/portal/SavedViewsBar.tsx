@@ -18,7 +18,7 @@ export function SavedViewsBar({
   views,
   currentFilters,
 }: {
-  area: "leads" | "orders";
+  area: "leads" | "orders" | "customers";
   basePath: string;
   views: View[];
   currentFilters: Record<string, string>;
@@ -27,6 +27,11 @@ export function SavedViewsBar({
   const saving = useRef(false);
   const [busy, setBusy] = useState<number | "save" | null>(null);
   const [error, setError] = useState("");
+  const namePlaceholder = area === "customers"
+    ? "z. B. Reviews diese Woche"
+    : area === "orders"
+      ? "z. B. Provider-Prüfung"
+      : "z. B. Neue Energie-Leads";
 
   function href(filters: Record<string, unknown>) {
     const params = new URLSearchParams();
@@ -116,7 +121,7 @@ export function SavedViewsBar({
             <BookmarkPlus className="h-3.5 w-3.5" /> Aktuelle Ansicht speichern
           </summary>
           <form onSubmit={save} className="absolute left-0 z-20 mt-2 w-[min(88vw,330px)] rounded-[18px] border border-line bg-white p-4 shadow-soft">
-            <label className="label">Name<input name="name" required minLength={2} maxLength={80} className="field mt-1" placeholder="z. B. Neue Energie-Leads" /></label>
+            <label className="label">Name<input name="name" required minLength={2} maxLength={80} className="field mt-1" placeholder={namePlaceholder} /></label>
             <label className="mt-3 flex items-center gap-2 text-[12.5px] font-semibold"><input name="isDefault" type="checkbox" className="h-4 w-4 rounded border-line" /> Als Standard markieren</label>
             <button disabled={busy !== null} className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-semibold text-white hover:bg-electric disabled:opacity-50">
               {busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />} Speichern

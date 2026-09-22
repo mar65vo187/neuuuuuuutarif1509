@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Clock3, Download, Network, Plus, Search, Target } from "lucide-react";
-import { Card, formatDate } from "@/components/portal/ui";
+import { AlertTriangle, CheckCircle2, Clock3, Download, Plus, Search, Target } from "lucide-react";
+import { Card } from "@/components/portal/ui";
+import { CustomerBulkList } from "@/components/portal/CustomerBulkList";
+import { SavedViewsBar } from "@/components/portal/SavedViewsBar";
 import { getCurrentUser } from "@/lib/auth";
 import { listCustomers } from "@/lib/enterprise";
 import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { listSavedViews } from "@/lib/portal-productivity";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +24,10 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   const parsedPage = rawPage ? Number(rawPage) : 1;
   const page = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? Math.min(parsedPage, 100000) : 1;
   const pageSize = 50;
-  const queriedRows = await listCustomers(user, q, pageSize, { focus, page, lookahead: true });
+  const [queriedRows, savedViews] = await Promise.all([
+    listCustomers(user, q, pageSize, { focus, page, lookahead: true }),
+    listSavedViews(user, "customers"),
+  ]);
   const hasNextPage = queriedRows.length > pageSize;
   const rows = queriedRows.slice(0, pageSize);
   const hasPreviousPage = page > 1;
@@ -64,27 +70,38 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         })}
       </div>
     </div>
+    <SavedViewsBar
+      area="customers"
+      basePath="/portal/kunden"
+      views={savedViews}
+      currentFilters={{ ...(focus ? { focus } : {}), ...(q?.trim() ? { q: q.trim() } : {}) }}
+    />
     <Card className="p-0 sm:p-0">
-      {rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Kunden gefunden.</p> :
-      <ul className="divide-y divide-line">{rows.map((customer) => {
-        const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
-        return <li key={customer.id}><Link href={`/portal/kunden/${customer.id}`} className="grid gap-3 px-5 py-4 hover:bg-paper sm:grid-cols-[1fr_auto] sm:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-bold">{name}</p>
-              <span className="text-[12px] text-steel">{customer.customerNumber}</span>
-              {customer.referredByName && <span className="inline-flex items-center gap-1 rounded-full border border-electric/15 bg-electric/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-electric-deep"><Network className="h-3 w-3" /> von {customer.referredByName}</span>}
-              {customer.referralCount > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><Network className="h-3 w-3" /> {customer.referralCount} Empfehlung{customer.referralCount === 1 ? "" : "en"}</span>}
-              {customer.activeOrderCount > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700"><CheckCircle2 className="h-3 w-3" /> {customer.activeOrderCount} aktiv</span>}
-              {customer.openOpportunityCount > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-electric/20 bg-electric/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-electric-deep"><Target className="h-3 w-3" /> {customer.openOpportunityCount} Potenzial</span>}
-              {customer.reviewOverdue && <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-800"><Clock3 className="h-3 w-3" /> Review fällig</span>}
-              {(customer.relationshipStatus === "at_risk" || customer.crmRiskLevel === "high" || customer.crmRiskLevel === "critical") && <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10.5px] font-bold text-red-700"><AlertTriangle className="h-3 w-3" /> Risiko</span>}
-            </div>
-            <p className="mt-0.5 text-[13px] text-steel">{customer.email || "Keine E-Mail"} · {customer.phone || "Kein Telefon"} · {customer.city || "Ort offen"}</p>
-          </div>
-          <div className="text-[12px] text-steel sm:text-right"><p>Aktualisiert {formatDate(customer.updatedAt)}</p>{customer.lastContactAt && <p className="mt-0.5">Kontakt {formatDate(customer.lastContactAt)}</p>}{customer.nextReviewAt && <p className="mt-0.5">Review {formatDate(customer.nextReviewAt)}</p>}</div>
-        </Link></li>;
-      })}</ul>}
+      {rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Kunden gefunden.</p> : (
+        <CustomerBulkList
+          canEdit={canEdit}
+          rows={rows.map((customer) => ({
+            id: customer.id,
+            customerNumber: customer.customerNumber,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            companyName: customer.companyName,
+            email: customer.email,
+            phone: customer.phone,
+            city: customer.city,
+            referredByName: customer.referredByName,
+            referralCount: customer.referralCount,
+            activeOrderCount: customer.activeOrderCount,
+            openOpportunityCount: customer.openOpportunityCount,
+            reviewOverdue: customer.reviewOverdue,
+            relationshipStatus: customer.relationshipStatus,
+            crmRiskLevel: customer.crmRiskLevel,
+            updatedAt: customer.updatedAt.toISOString(),
+            lastContactAt: customer.lastContactAt?.toISOString() ?? null,
+            nextReviewAt: customer.nextReviewAt?.toISOString() ?? null,
+          }))}
+        />
+      )}
     </Card>
     {(hasPreviousPage || hasNextPage || rows.length > 0) && <nav className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-[0_12px_30px_-28px_rgba(6,11,22,0.45)]" aria-label="Kunden-Seiten">
       <p className="text-[11.5px] font-semibold text-steel">{rows.length ? `Kunden ${rangeStart}–${rangeEnd}` : "Keine Kunden auf dieser Seite"}</p>
