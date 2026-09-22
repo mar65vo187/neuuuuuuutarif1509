@@ -49,6 +49,7 @@ export default async function ServiceCaseDetailPage({ params }: { params: Promis
   ]);
   if (!data) notFound();
   const item = data.serviceCase;
+  const canEditThisCase = canEdit && (canAssign || user.role === "admin" || item.ownerEmployeeId === user.id);
   const active = ["open", "in_progress", "waiting_customer", "waiting_provider"].includes(item.status);
   const overdue = active && item.dueAt.getTime() < Date.now();
 
@@ -115,7 +116,7 @@ export default async function ServiceCaseDetailPage({ params }: { params: Promis
       </div>
 
       <div className="space-y-4">
-        {canEdit ? <ServiceCaseManager id={id} status={item.status} priority={item.priority} ownerEmployeeId={item.ownerEmployeeId} resolution={item.resolution} canAssign={canAssign} assignees={assignees} /> : <Card><div className="flex items-center gap-2"><UserRoundCheck className="h-4 w-4 text-electric-deep" /><h2 className="text-[15px] font-extrabold">Nur Lesen</h2></div><p className="mt-2 text-[12.5px] text-steel">Du kannst diesen Servicefall einsehen, aber nicht verändern.</p></Card>}
+        {canEditThisCase ? <ServiceCaseManager id={id} status={item.status} priority={item.priority} ownerEmployeeId={item.ownerEmployeeId} resolution={item.resolution} canAssign={canAssign} assignees={assignees} /> : <Card><div className="flex items-center gap-2"><UserRoundCheck className="h-4 w-4 text-electric-deep" /><h2 className="text-[15px] font-extrabold">Nur Lesen</h2></div><p className="mt-2 text-[12.5px] text-steel">Du kannst diesen Servicefall einsehen, aber nicht verändern.</p></Card>}
         <Card>
           <div className="flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-electric-deep" /><h2 className="text-[15px] font-extrabold">Prozessschutz</h2></div>
           <p className="mt-2 text-[12px] leading-relaxed text-steel">Serviceaktionen verändern keine Provision, keinen Vertragsstatus und versenden keine externe Nachricht automatisch. Alle Änderungen bleiben im Audit nachvollziehbar.</p>
