@@ -7,12 +7,13 @@ import { getCurrentUser } from "@/lib/auth";
 import { listCustomers, listOrders } from "@/lib/enterprise";
 import { leadAccessCondition } from "@/lib/queries";
 import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { listServiceCases } from "@/lib/service-cases";
 
 export const dynamic = "force-dynamic";
 
 type SearchResult = {
   id: string;
-  kind: "lead" | "customer" | "order" | "task" | "employee";
+  kind: "lead" | "customer" | "order" | "task" | "service_case" | "employee";
   title: string;
   subtitle: string;
   href: string;
@@ -33,11 +34,16 @@ export async function GET(request: NextRequest) {
       PORTAL_PERMISSION.ORDER_READ,
       PORTAL_PERMISSION.ORDER_EDIT,
       PORTAL_PERMISSION.TASK_MANAGE,
+      PORTAL_PERMISSION.SERVICE_READ,
+      PORTAL_PERMISSION.SERVICE_EDIT,
+      PORTAL_PERMISSION.SERVICE_ASSIGN,
     ] as const);
     const canLead = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
     const canCustomer = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
     const canOrder = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
     const canTask = capabilities[PORTAL_PERMISSION.TASK_MANAGE];
+    const canServiceAssign = capabilities[PORTAL_PERMISSION.SERVICE_ASSIGN] || user.role === "admin";
+    const canService = capabilities[PORTAL_PERMISSION.SERVICE_READ] || capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || canServiceAssign;
     const taskCondition = user.role === "admin" ? sql`true` : eq(tasks.assignedToEmployeeId, user.id);
     const employeePromise = user.role === "admin"
       ? db.select({ id: employees.id, name: employees.name, email: employees.email, role: employees.role })
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
           .limit(5)
       : Promise.resolve([]);
 
-    const [leadRows, customerRows, orderRows, taskRows, employeeRows] = await Promise.all([
+    const [leadRows, customerRows, orderRows, taskRows, serviceResult, employeeRows] = await Promise.all([
       canLead ? db.select({
         id: leads.id,
         name: leads.name,
@@ -85,6 +91,7 @@ export async function GET(request: NextRequest) {
         ))
         .orderBy(desc(tasks.updatedAt))
         .limit(6) : Promise.resolve([]),
+      canService ? listServiceCases(user, { status: "all", q, pageSize: 7 }, canServiceAssign) : Promise.resolve({ rows: [] }),
       employeePromise,
     ]);
 
@@ -121,7 +128,16 @@ export async function GET(request: NextRequest) {
             ? `/portal/kunden/${row.entityId}`
             : row.entityType === "lead" && canLead
               ? `/portal/leads/${row.entityId}`
-              : "/portal/aufgaben",
+              : row.entityType === "service_case" && canService
+                ? `/portal/service/${row.entityId}`
+                : "/portal/aufgaben",
+      })),
+      ...serviceResult.rows.map((row) => ({
+        id: `service-${row.serviceCase.id}`,
+        kind: "service_case" as const,
+        title: `${row.serviceCase.caseNumber} · ${row.serviceCase.subject}`,
+        subtitle: [row.customerName, row.serviceCase.status, row.ownerName].filter(Boolean).join(" · "),
+        href: `/portal/service/${row.serviceCase.id}`,
       })),
       ...employeeRows.map((row) => ({
         id: `employee-${row.id}`,
