@@ -50,8 +50,7 @@ export default async function ServiceCaseDetailPage({ params }: { params: Promis
   if (!data) notFound();
   const item = data.serviceCase;
   const canEditThisCase = canEdit && (canAssign || user.role === "admin" || item.ownerEmployeeId === user.id);
-  const active = ["open", "in_progress", "waiting_customer", "waiting_provider"].includes(item.status);
-  const overdue = active && item.dueAt.getTime() < Date.now();
+  const overdue = data.overdue;
 
   return <div className="space-y-6">
     <Link href="/portal/service" className="inline-flex items-center gap-2 text-[13px] font-bold text-steel hover:text-ink"><ArrowLeft className="h-4 w-4" /> Zurück zu Service</Link>
