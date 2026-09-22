@@ -52,7 +52,16 @@ export const SERVICE_CASE_PRIORITY_LABELS: Record<ServiceCasePriority, string> =
 
 const ACTIVE_STATUSES: ServiceCaseStatus[] = ["open", "in_progress", "waiting_customer", "waiting_provider"];
 
-function serviceCaseAccess(user: SessionUser, canAssign: boolean) {
+function serviceCaseReadAccess(user: SessionUser, canAssign: boolean) {
+  return user.role === "admin" || canAssign
+    ? sql`true`
+    : or(
+        eq(serviceCases.ownerEmployeeId, user.id),
+        eq(customers.ownerEmployeeId, user.id),
+      )!;
+}
+
+function serviceCaseEditAccess(user: SessionUser, canAssign: boolean) {
   return user.role === "admin" || canAssign ? sql`true` : eq(serviceCases.ownerEmployeeId, user.id);
 }
 
@@ -77,7 +86,7 @@ export async function listServiceCases(
   const page = Math.max(1, Math.trunc(filters.page ?? 1));
   const pageSize = Math.max(1, Math.min(filters.pageSize ?? 40, 100));
   const q = filters.q?.trim().slice(0, 160) || undefined;
-  const conditions = [serviceCaseAccess(user, canAssign)];
+  const conditions = [serviceCaseReadAccess(user, canAssign)];
 
   if (filters.status && filters.status !== "all") {
     conditions.push(filters.status === "active"
@@ -163,7 +172,9 @@ export async function getServiceCaseSummary(user: SessionUser, canAssign = false
     critical: sql<number>`count(*) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider') and ${serviceCases.priority} = 'critical')::int`,
     waitingProvider: sql<number>`count(*) filter (where ${serviceCases.status} = 'waiting_provider')::int`,
     unassigned: sql<number>`count(*) filter (where ${serviceCases.status} in ('open','in_progress','waiting_customer','waiting_provider') and ${serviceCases.ownerEmployeeId} is null)::int`,
-  }).from(serviceCases).where(serviceCaseAccess(user, canAssign));
+  }).from(serviceCases)
+    .innerJoin(customers, eq(serviceCases.customerId, customers.id))
+    .where(serviceCaseReadAccess(user, canAssign));
   return {
     active: row?.active ?? 0,
     overdue: row?.overdue ?? 0,
@@ -188,7 +199,7 @@ export async function getServiceCase(id: number, user: SessionUser, canAssign = 
     .innerJoin(customers, eq(serviceCases.customerId, customers.id))
     .leftJoin(orders, eq(serviceCases.orderId, orders.id))
     .leftJoin(employees, eq(serviceCases.ownerEmployeeId, employees.id))
-    .where(and(eq(serviceCases.id, id), serviceCaseAccess(user, canAssign)))
+    .where(and(eq(serviceCases.id, id), serviceCaseReadAccess(user, canAssign)))
     .limit(1);
   if (!row) return null;
 
@@ -359,9 +370,10 @@ export async function updateServiceCase(
   input: UpdateServiceCaseInput,
   canAssign: boolean,
 ) {
-  const currentData = await getServiceCase(id, user, canAssign);
-  if (!currentData) throw Object.assign(new Error("Servicefall nicht gefunden oder keine Berechtigung."), { status: 404 });
-  const current = currentData.serviceCase;
+  const [current] = await db.select().from(serviceCases)
+    .where(and(eq(serviceCases.id, id), serviceCaseEditAccess(user, canAssign)))
+    .limit(1);
+  if (!current) throw Object.assign(new Error("Servicefall nicht gefunden oder keine Bearbeitungsberechtigung."), { status: 404 });
 
   let nextOwner = current.ownerEmployeeId;
   if (input.ownerEmployeeId !== undefined && input.ownerEmployeeId !== current.ownerEmployeeId) {
