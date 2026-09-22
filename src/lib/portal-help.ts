@@ -100,10 +100,10 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/inbox",
-    title: "Benachrichtigungen",
-    purpose: "Automationshinweise und persönliche Systemmeldungen an einem Ort bündeln.",
-    actions: ["Neue Hinweise lesen", "Benachrichtigungen als gelesen markieren", "Automationsausgaben außerhalb von Team-Chats nachvollziehen"],
-    tips: ["Die Inbox ist für operative Hinweise gedacht – dauerhafte Regeln gehören in System oder Dokumentcenter.", "Automationen sollten nur Meldungen erzeugen, die eine konkrete Handlung oder Information auslösen."],
+    title: "Action Inbox",
+    purpose: "Persönliche Arbeitsmeldungen nach Dringlichkeit bündeln und direkt mit dem auslösenden CRM-Vorgang verbinden.",
+    actions: ["Ungelesene und dringende Hinweise priorisieren", "Mehrere Meldungen gesammelt bearbeiten", "Hinweise für 24 Stunden zurückstellen", "Erledigte Meldungen archivieren oder wiederherstellen", "Direkt zum betroffenen Lead, Kunden oder Auftrag springen"],
+    tips: ["Snooze verschiebt nur die interne Meldung – der CRM-Vorgang selbst wird nicht verändert.", "Archivieren ersetzt keine fachliche Bearbeitung eines offenen Leads, Auftrags oder einer Aufgabe.", "Automationen dürfen weiterhin keine Kundenkommunikation oder Vertragsänderung ohne menschliche Freigabe auslösen."],
   },
   {
     href: "/portal/chat",
