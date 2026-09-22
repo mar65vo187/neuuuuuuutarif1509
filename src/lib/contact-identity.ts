@@ -103,14 +103,14 @@ export async function lockAndFindStrongContactDuplicate(
       .limit(1);
 
     if (lead) {
-      const ownerEmployeeId = lead.createdByEmployeeId ?? lead.assignedEmployeeId;
+      const ownerEmployeeId = lead.assignedEmployeeId ?? lead.createdByEmployeeId;
       return {
         entity: "lead",
         id: lead.id,
         label: lead.name || lead.email || lead.phone || "Lead #" + lead.id,
         href: "/portal/leads/" + lead.id,
         ownerEmployeeId,
-        visible: user.role === "admin" || lead.createdByEmployeeId === user.id,
+        visible: user.role === "admin" || lead.createdByEmployeeId === user.id || lead.assignedEmployeeId === user.id,
       };
     }
   }
