@@ -58,7 +58,8 @@ test("leadership scenario uses real activation events and no hidden probability 
   assert.match(enterprise, /backlogDays = activationThroughputPerDay > 0/);
   assert.match(enterprise, /methodology: "30-Tage-Szenario = tatsächliche Aktivierungen/);
   assert.match(page, /deterministisches Szenario/);
-  assert.match(page, /Keine Garantie oder ML-Prognose/);
+  assert.match(enterprise, /Keine Garantie oder ML-Prognose/);
+  assert.match(page, /Methodik & Grenzen anzeigen/);
   assert.doesNotMatch(enterprise, /winProbability|closeProbability|predictedProbability/);
 });
 
