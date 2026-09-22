@@ -82,7 +82,7 @@ export default async function PortalDashboard() {
     .filter((row) => !["active", "rejected", "cancelled", "storno"].includes(row.status))
     .reduce((sum, row) => sum + row.count, 0);
   const attention =
-    (canLeadRead ? data.metrics.untouchedLeads24h : 0)
+    (canLeadRead ? data.metrics.untouchedLeadsSla : 0)
     + (canTaskManage ? data.metrics.overdueTasks : 0)
     + (canOrderRead ? data.metrics.attentionOrders : 0)
     + (canCustomerRead ? data.metrics.dueCustomerReviews + data.metrics.atRiskCustomers : 0);
@@ -123,11 +123,11 @@ export default async function PortalDashboard() {
       reason: data.metrics.overdueTasks + " Aufgabe" + (data.metrics.overdueTasks === 1 ? " ist" : "n sind") + " überfällig. Das ist konkreter als neue Arbeit zu beginnen.",
       href: "/portal/aufgaben",
     }] : []),
-    ...(canLeadRead && data.metrics.untouchedLeads24h > 0 ? [{
+    ...(canLeadRead && data.metrics.untouchedLeadsSla > 0 ? [{
       key: "untouched-leads",
       priority: "hoch",
       title: "Unberührte Leads prüfen",
-      reason: data.metrics.untouchedLeads24h + " neue Anfrage" + (data.metrics.untouchedLeads24h === 1 ? " wartet" : "n warten") + " seit mehr als 24 Stunden auf dokumentierte Bearbeitung.",
+      reason: data.metrics.untouchedLeadsSla + " neue Anfrage" + (data.metrics.untouchedLeadsSla === 1 ? " wartet" : "n warten") + " seit mehr als " + data.operationsPolicy.leadNextActionMissingHours + " Stunden auf dokumentierte Bearbeitung.",
       href: "/portal/leads?priority=attention",
     }] : []),
     ...(canCustomerRead && data.metrics.atRiskCustomers > 0 ? [{
