@@ -1,49 +1,41 @@
 import { pageMetadata } from "@/lib/seo";
 import { LegalPage } from "@/components/site/LegalPage";
-import { SITE } from "@/lib/content";
-import { publicBusinessAddress } from "@/lib/business-identity";
 
 export const metadata = pageMetadata("/impressum");
 
 export default function ImpressumPage() {
-  const businessAddress = publicBusinessAddress();
   return (
     <LegalPage eyebrow="Rechtliches" title="Impressum">
       <section>
-        <h2>Angaben gemäß § 5 DDG</h2>
         <p>
+          Marvin Noel Egenolf
+          <br />
           TarifWerk
           <br />
-          Inhaber: {SITE.founder}
+          Karawankenstraße 1
           <br />
-          {businessAddress}
+          65187 Wiesbaden
         </p>
       </section>
+
       <section>
         <h2>Kontakt</h2>
         <p>
-          Telefon: {SITE.whatsappDisplay}
+          Telefon: <a href="tel:+4915782301076">+49 157 82301076</a>
           <br />
-          E-Mail: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+          E-Mail: <a href="mailto:m.egenolf@tarifwerk.eu">m.egenolf@tarifwerk.eu</a>
         </p>
       </section>
+
       <section>
-        <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
-        <p>{SITE.founder}, Anschrift wie oben.</p>
+        <h2>Redaktionell verantwortlich</h2>
+        <p>Marvin Noel Egenolf</p>
       </section>
+
       <section>
-        <h2>Hinweis zur Tätigkeit</h2>
+        <h2>Verbraucherstreitbeilegung/Universalschlichtungsstelle</h2>
         <p>
-          TarifWerk vermittelt Produkte und Dienstleistungen verschiedener Anbieter (u. a. Telekommunikation, Energie, Photovoltaik, Wärmepumpen,
-          Immobilien, Edelmetalle, Versicherungen). Für vermittelte Verträge erhält TarifWerk eine Provision des jeweiligen Anbieters. Erstgespräch und
-          Prüfung sind für Kundinnen und Kunden kostenlos. Erlaubnispflichtige Tätigkeiten werden ausschließlich durch entsprechend zugelassene
-          Partner erbracht.
-        </p>
-      </section>
-      <section>
-        <h2>Verbraucherstreitbeilegung</h2>
-        <p>
-          Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+          Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
         </p>
       </section>
     </LegalPage>
