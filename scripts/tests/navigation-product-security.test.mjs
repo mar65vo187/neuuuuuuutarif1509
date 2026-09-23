@@ -23,6 +23,17 @@ test("portal navigation stays clear and readable after searching", () => {
   assert.match(shell, /text-\[10\.5px\].*text-silver\/70/);
 });
 
+test("CRM document titles identify the current portal area", () => {
+  const layout = read("src/app/portal/(app)/layout.tsx");
+  assert.match(layout, /export async function generateMetadata/);
+  assert.match(layout, /x-tarifwerk-portal-path/);
+  assert.match(layout, /Übersicht & Fokus/);
+  assert.match(layout, /Lead-Pipeline/);
+  assert.match(layout, /Kundenakte/);
+  assert.match(layout, /TarifWerk CRM/);
+  assert.match(layout, /robots: \{ index: false, follow: false \}/);
+});
+
 test("team challenges require lead access at page, api and navigation layers", () => {
   const page = read("src/app/portal/(app)/rennen/page.tsx");
   const api = read("src/app/api/portal/games/route.ts");
