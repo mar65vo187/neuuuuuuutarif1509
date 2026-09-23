@@ -25,7 +25,12 @@ function harness(path, initial = []) {
       CALL_REACHED_PERSON_LABELS: { customer: "Kunde / Lead selbst" },
       CALL_REACTION_LABELS: { neutral: "Neutral / offen" },
     },
-    "./ui": { STATUS_STYLES: { neu: "" } },
+    "./ui": { STATUS_STYLES: { neu: "" }, formatDate: () => "–" },
+    "@/lib/portal-date-time": {
+      addBerlinCalendarDaysAtNine: () => "",
+      formatBerlinDateTimeInput: () => "",
+      parseBerlinDateTimeInput: value => value || null,
+    },
   };
   const loaded = { exports: {} };
   const source = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;

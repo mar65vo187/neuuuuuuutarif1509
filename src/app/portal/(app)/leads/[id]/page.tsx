@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Network, Phone, PhoneCall } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
 import { LeadProductManager } from "@/components/portal/LeadProductManager";
+import { formatBerlinDateTimeInput } from "@/lib/portal-date-time";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
 import { getLead, getLeadCallActivities, getLeadNotes, getLeadProductLinks, listLeadProductOptions } from "@/lib/queries";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, SITUATIONS } from "@/lib/content";
@@ -12,21 +13,6 @@ import { CALL_REACTION_LABELS, CALL_REACHED_PERSON_LABELS } from "@/lib/call-int
 import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 export const dynamic = "force-dynamic";
-
-function toBerlinDateTimeInput(value: Date | null) {
-  if (!value) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Berlin",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(value);
-  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-}
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: raw } = await params;
@@ -308,7 +294,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   isAppointment={lead.type === "termin"}
                   priority={lead.priority}
                   contactOutcome={lead.contactOutcome}
-                  nextActionInput={toBerlinDateTimeInput(lead.nextActionAt)}
+                  nextActionInput={formatBerlinDateTimeInput(lead.nextActionAt)}
                   tags={lead.tags}
                 />
               ) : (
