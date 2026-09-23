@@ -5,7 +5,8 @@ import { AlarmClock, BrainCircuit, CalendarCheck, Check, Flame, Loader2, PhoneCa
 import { useRef, useState } from "react";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
 import { CALL_REACTION_LABELS, CALL_REACHED_PERSON_LABELS } from "@/lib/call-intelligence";
-import { STATUS_STYLES } from "./ui";
+import { formatDate, STATUS_STYLES } from "./ui";
+import { addBerlinCalendarDaysAtNine, formatBerlinDateTimeInput, parseBerlinDateTimeInput } from "@/lib/portal-date-time";
 
 type Props = {
   leadId: number;
@@ -18,11 +19,6 @@ type Props = {
   nextActionInput: string;
   tags: string[];
 };
-
-function localDateTimeValue(date: Date) {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export function LeadActions({
   leadId,
@@ -91,24 +87,37 @@ export function LeadActions({
   };
 
   function setFollowUp(days: number) {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    date.setHours(9, 0, 0, 0);
-    setNextAction(localDateTimeValue(date));
+    setNextAction(addBerlinCalendarDaysAtNine(days));
   }
 
   const saveCrm = () => {
     const parsedTags = [...new Set(tagText.split(",").map((tag) => tag.trim()).filter(Boolean))].slice(0, 12);
+    let nextActionAt: string | null;
+    try {
+      nextActionAt = parseBerlinDateTimeInput(nextAction);
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Bitte Datum und Uhrzeit prüfen.");
+      return false;
+    }
     return patch("crm", {
       priority: crmPriority,
       contactOutcome: outcome,
-      nextActionAt: nextAction ? new Date(nextAction).toISOString() : null,
+      nextActionAt,
       tags: parsedTags,
     });
   };
 
   const logCall = async () => {
     if (saving.current) return;
+    let calledAt: string | undefined;
+    let requestedCallbackAt: string | null;
+    try {
+      calledAt = callTime ? parseBerlinDateTimeInput(callTime) ?? undefined : undefined;
+      requestedCallbackAt = requestedCallback ? parseBerlinDateTimeInput(requestedCallback) : null;
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Bitte Datum und Uhrzeit prüfen.");
+      return;
+    }
     saving.current = true;
     setBusy("call");
     setError(null);
@@ -118,11 +127,11 @@ export function LeadActions({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          calledAt: callTime ? new Date(callTime).toISOString() : undefined,
+          calledAt,
           reachedPerson,
           reaction,
           note: callNote.trim(),
-          requestedCallbackAt: requestedCallback ? new Date(requestedCallback).toISOString() : null,
+          requestedCallbackAt,
           autoSchedule,
         }),
         signal: AbortSignal.timeout(15000),
@@ -144,7 +153,7 @@ export function LeadActions({
       setOutcome(json.recommendation.contactOutcome);
       setCrmPriority(json.recommendation.priority);
       if (json.recommendation.at && json.recommendation.autoScheduled) {
-        setNextAction(localDateTimeValue(new Date(json.recommendation.at)));
+        setNextAction(formatBerlinDateTimeInput(new Date(json.recommendation.at)));
       }
       setCallTime("");
       setCallNote("");
@@ -214,12 +223,12 @@ export function LeadActions({
             </select>
           </label>
           <label>
-            <span className="mb-1.5 block text-[11px] font-bold text-silver">Wann angerufen?</span>
+            <span className="mb-1.5 block text-[11px] font-bold text-silver">Wann angerufen? (Berlin)</span>
             <input type="datetime-local" className="field border-white/10 bg-white text-ink" value={callTime} onChange={(event) => setCallTime(event.target.value)} />
             <span className="mt-1 block text-[10px] text-silver">Leer lassen = jetzt.</span>
           </label>
           <label>
-            <span className="mb-1.5 block text-[11px] font-bold text-silver">Gewünschter Rückruf</span>
+            <span className="mb-1.5 block text-[11px] font-bold text-silver">Gewünschter Rückruf (Berlin)</span>
             <input type="datetime-local" className="field border-white/10 bg-white text-ink" value={requestedCallback} onChange={(event) => setRequestedCallback(event.target.value)} />
             <span className="mt-1 block text-[10px] text-silver">Falls die Person selbst einen Zeitpunkt genannt hat.</span>
           </label>
@@ -247,7 +256,7 @@ export function LeadActions({
             <p className="font-extrabold text-white">
               {callResult.at && callResult.autoScheduled ? "Wiedervorlage automatisch gesetzt" : callResult.action === "appointment" ? "Termin als nächster Schritt" : "Kein automatischer Rückruf"}
             </p>
-            {callResult.at && <p className="mt-1 font-bold">{new Date(callResult.at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</p>}
+            {callResult.at && <p className="mt-1 font-bold">{formatDate(callResult.at)}</p>}
             <p className="mt-1 leading-relaxed">{callResult.reason}</p>
           </div>
         )}
@@ -281,7 +290,7 @@ export function LeadActions({
           </label>
 
           <div>
-            <label htmlFor="next-action" className="label">Wiedervorlage / nächste Aktion</label>
+            <label htmlFor="next-action" className="label">Wiedervorlage / nächste Aktion (Berlin)</label>
             <div className="relative">
               <AlarmClock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
               <input id="next-action" type="datetime-local" className="field pl-10" value={nextAction} onChange={(event) => setNextAction(event.target.value)} />
