@@ -17,9 +17,9 @@ test("public navigation exposes referral page in the requested position and keep
 
 test("portal navigation stays clear and readable after searching", () => {
   const shell = read("src/components/portal/PortalShell.tsx");
-  assert.match(shell, /onKeyDown=\{\(event\) => \{ if \(event\.key === "Escape"\) setNavQuery\(" "\); \}\}/);
+  assert.match(shell, /onKeyDown=\{\(event\) => \{ if \(event\.key === "Escape"\) setNavQuery\(""\); \}\}/);
   assert.match(shell, /Kein Bereich gefunden\. Suchbegriff ändern oder mit Esc löschen/);
-  assert.match(shell, /onClick=\{\(\) => setNavQuery\(" "\)\}/);
+  assert.match(shell, /onClick=\{\(\) => setNavQuery\(""\)\}/);
   assert.match(shell, /text-\[10\.5px\].*text-silver\/70/);
 });
 
