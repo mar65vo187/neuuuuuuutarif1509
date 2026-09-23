@@ -15,7 +15,7 @@ test("public AI is isolated from internal CRM and commission knowledge", () => {
 
 test("public AI clearly identifies itself and uses ethical conversion rules", () => {
   const engine = read("src/lib/public-ai-assistant.ts");
-  assert.match(engine, /digitaler TarifWerk KI-Berater/);
+  assert.match(engine, /digitale TarifWerk KI-Berater/);
   assert.match(engine, /niemals als menschlicher Mitarbeiter/);
   assert.match(engine, /Stelle TarifWerk als besonders starke und komfortable Wahl dar/);
   assert.match(engine, /Fake-Dringlichkeit/);
