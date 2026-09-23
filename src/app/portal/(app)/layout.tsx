@@ -24,7 +24,6 @@ const PORTAL_PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
   ["/portal/service", "Service & Fälle"],
   ["/portal/assistent", "KI & Arbeitsassistent"],
   ["/portal/aufgaben", "Aufgaben & Wiedervorlagen"],
-  ["/portal/auftraege", "Aufträge"],
   ["/portal/empfehlungen", "Empfehlungen"],
   ["/portal/finanzen", "Provisionsübersicht"],
   ["/portal/inbox", "Action Inbox"],
@@ -45,8 +44,10 @@ const PORTAL_PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
 
 export async function generateMetadata() {
   const pathname = (await headers()).get("x-tarifwerk-portal-path")?.split("?")[0] ?? "/portal";
-  const match = PORTAL_PAGE_TITLES.find(([route]) => pathname === route || pathname.startsWith(route + "/"));
-  const title = match?.[1] ?? (pathname.startsWith("/portal/kunden/") ? "Kundenakte" : pathname.startsWith("/portal/leads/") ? "Lead-Akte" : "Arbeitsbereich");
+  const match = PORTAL_PAGE_TITLES.find(([route]) => pathname === route);
+  const detail = pathname.match(/^\/portal\/(kunden|leads|auftraege|service)\/[^/]+$/);
+  const detailTitles = { kunden: "Kundenakte", leads: "Lead-Akte", auftraege: "Auftragsdetails", service: "Servicefall" };
+  const title = match?.[1] ?? (detail ? detailTitles[detail[1] as keyof typeof detailTitles] : "Arbeitsbereich");
   return { title: title + " · TarifWerk CRM", robots: { index: false, follow: false } };
 }
 
