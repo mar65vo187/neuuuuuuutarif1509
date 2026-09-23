@@ -15,6 +15,14 @@ test("public navigation exposes referral page in the requested position and keep
   assert.match(source, /xl:hidden/);
 });
 
+test("portal navigation stays clear and readable after searching", () => {
+  const shell = read("src/components/portal/PortalShell.tsx");
+  assert.match(shell, /onKeyDown=\{\(event\) => \{ if \(event\.key === "Escape"\) setNavQuery\(" "\); \}\}/);
+  assert.match(shell, /Kein Bereich gefunden\. Suchbegriff ändern oder mit Esc löschen/);
+  assert.match(shell, /onClick=\{\(\) => setNavQuery\(" "\)\}/);
+  assert.match(shell, /text-\[10\.5px\].*text-silver\/70/);
+});
+
 test("team challenges require lead access at page, api and navigation layers", () => {
   const page = read("src/app/portal/(app)/rennen/page.tsx");
   const api = read("src/app/api/portal/games/route.ts");
