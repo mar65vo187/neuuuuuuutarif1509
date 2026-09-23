@@ -21,17 +21,45 @@ function redactPublicPrompt(input: string) {
   return { text: text.trim().slice(0, 1800), redactions };
 }
 
-function publicKnowledge(audience: AudienceMode, pagePath: string) {
+function normalize(value: string) {
+  return value.toLocaleLowerCase("de-DE").normalize("NFKD").replace(/[^a-z0-9äöüß\\s-]/g, " ");
+}
+
+function publicKnowledge(audience: AudienceMode, pagePath: string, question: string) {
   const copy = AUDIENCE_COPY[audience];
-  const services = SERVICES.map((service) => ({
+  const tokens = [...new Set(normalize(question).split(/\\s+/).filter((token) => token.length >= 3))].slice(0, 24);
+
+  const ranked = SERVICES.map((service) => {
+    const audienceText = SERVICE_AUDIENCE_COPY[audience][service.key] ?? "";
+    const searchable = normalize([
+      service.slug,
+      service.name,
+      service.short,
+      service.intro,
+      audienceText,
+      ...service.checks,
+      ...service.forWhom,
+      ...service.faq.flatMap((item) => [item.q, item.a]),
+    ].join(" "));
+    const lexical = tokens.reduce((score, token) => score + (searchable.includes(token) ? 1 : 0), 0);
+    const pageBoost = pagePath.includes(service.slug) ? 6 : 0;
+    return { service, audienceText, score: lexical + pageBoost };
+  }).sort((a, b) => b.score - a.score);
+
+  const relevantServices = ranked.slice(0, 3).map(({ service, audienceText }) => ({
     slug: service.slug,
     name: service.name,
-    short: service.short,
     intro: service.intro,
-    checks: service.checks.slice(0, 5),
-    forWhom: service.forWhom.slice(0, 4),
-    audienceText: SERVICE_AUDIENCE_COPY[audience][service.key] ?? "",
-    faq: service.faq.slice(0, 3),
+    audienceText,
+    checks: service.checks.slice(0, 3),
+    forWhom: service.forWhom.slice(0, 3),
+    faq: service.faq.slice(0, 2),
+  }));
+
+  const serviceOverview = SERVICES.map((service) => ({
+    name: service.name,
+    slug: service.slug,
+    short: service.short,
   }));
 
   return JSON.stringify({
@@ -42,16 +70,17 @@ function publicKnowledge(audience: AudienceMode, pagePath: string) {
       email: SITE.email,
       location: SITE.hq,
       hours: SITE.hours,
-      positioning: audience === "b2b" ? copy.hero.body : copy.hero.body,
+      positioning: copy.hero.body,
       transparency: copy.manifesto.transparency,
     },
     audience,
-    currentPage: pagePath.slice(0, 300),
+    currentPage: pagePath.slice(0, 220),
     process: copy.process.steps,
     trust: copy.trust,
-    publicFaq: [...copy.faq.items, ...FAQ].slice(0, 12),
-    services,
-  }).slice(0, 48_000);
+    publicFaq: [...copy.faq.items, ...FAQ].slice(0, 7),
+    serviceOverview,
+    relevantServices,
+  }).slice(0, 16_000);
 }
 
 const PUBLIC_SYSTEM = [
@@ -84,8 +113,8 @@ export async function askPublicTarifWerkAi(input: {
   const model = process.env.TARIFWERK_AI_XKIRO_MODEL?.trim() || "qwen/qwen3.8-omni-flash:free";
 
   let redactions = 0;
-  const messages = input.messages.slice(-10).map((message) => {
-    if (message.role === "assistant") return { role: "assistant" as const, content: message.content.slice(0, 2200) };
+  const messages = input.messages.slice(-6).map((message) => {
+    if (message.role === "assistant") return { role: "assistant" as const, content: message.content.slice(0, 1200) };
     const cleaned = redactPublicPrompt(message.content);
     redactions += cleaned.redactions;
     return { role: "user" as const, content: cleaned.text };
@@ -97,7 +126,11 @@ export async function askPublicTarifWerkAi(input: {
       ? "Zielgruppe: Geschäftskunden. Durchgehend professionelle Sie-Ansprache."
       : "Zielgruppe: Privatkunden. Durchgehend natürliche Du-Ansprache.",
     "ÖFFENTLICHE TARIFWERK-WISSENSBASIS:",
-    publicKnowledge(input.audience, input.pagePath),
+    publicKnowledge(
+      input.audience,
+      input.pagePath,
+      messages.filter((message) => message.role === "user").map((message) => message.content).join(" "),
+    ),
   ].join("\n\n");
 
   const response = await fetch("https://api.xkiro.com/v1/chat/completions", {
@@ -109,10 +142,11 @@ export async function askPublicTarifWerkAi(input: {
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      max_tokens: 900,
-      temperature: 0.55,
+      max_tokens: 500,
+      temperature: 0.45,
+      reasoning_effort: "none",
     }),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(50_000),
   });
 
   const json = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: unknown } }> } | null;
