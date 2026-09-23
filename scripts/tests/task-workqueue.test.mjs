@@ -57,3 +57,21 @@ test("task list highlights in-progress tasks as overdue when their due date has 
   const enterprise = read("src/lib/enterprise.ts");
   assert.match(enterprise, /coalesce\(\$\{tasks\.status\} in \('open','in_progress'\)[\s\S]*\$\{tasks\.dueAt\} < now\(\), false\)/);
 });
+
+test("task list supports inline editing and deterministic Berlin-local appointments", () => {
+  const actions = read("src/components/portal/TaskActions.tsx");
+  const list = read("src/components/portal/TaskBulkList.tsx");
+  const composer = read("src/components/portal/QuickTaskComposer.tsx");
+  const dateTime = read("src/lib/portal-date-time.ts");
+
+  assert.match(actions, /TASK_STATUS_OPTIONS/);
+  assert.match(actions, /TASK_PRIORITY_OPTIONS/);
+  assert.match(actions, /formatBerlinDateTimeInput/);
+  assert.match(actions, /parseBerlinDateTimeInput/);
+  assert.match(actions, /aria-label=\{\`\$\{title\} bearbeiten\`\}/);
+  assert.match(list, /TaskActions[\s\S]*title=\{task\.title\}[\s\S]*priority=\{task\.priority\}[\s\S]*dueAt=\{task\.dueAt\}/);
+  assert.match(composer, /parseBerlinDateTimeInput\(due\)/);
+  assert.match(dateTime, /Europe\/Berlin/);
+  assert.match(dateTime, /wegen der Zeitumstellung in Berlin nicht/);
+  assert.match(dateTime, /zweimal vorkommt/);
+});
