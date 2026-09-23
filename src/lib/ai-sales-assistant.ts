@@ -401,6 +401,8 @@ export async function askTarifWerkAi(input: {
 
   const system = [
     SYSTEM_CORE,
+    "TARIFWERK SALES PLAYBOOK (nur passend zur aktuellen Situation anwenden):\\n" + COACHING_PLAYBOOK,
+    "Arbeite kybernetisch: beobachte Gespräch und Bedarf, kläre Ziel und Grenzen, schlage genau einen passenden nächsten Schritt vor, werte die Reaktion aus und passe die nächste Empfehlung daran an. Behaupte keinen Erfolg, den das Gespräch nicht belegt.",
     "Aktueller Arbeitsmodus: " + MODE_GUIDANCE[input.mode],
     "Zielgruppe: " + (input.audience === "b2b" ? "Geschäftskunden / Unternehmen (Sie-Ansprache)" : "Privatkunden (Du-Ansprache)"),
     "Antworte auf Deutsch.",

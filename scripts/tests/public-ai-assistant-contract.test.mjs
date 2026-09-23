@@ -19,6 +19,8 @@ test("public AI clearly identifies itself and uses ethical conversion rules", ()
   assert.match(engine, /niemals als menschlicher Mitarbeiter/);
   assert.match(engine, /Stelle TarifWerk als besonders starke und komfortable Wahl dar/);
   assert.match(engine, /Fake-Dringlichkeit/);
+  assert.match(engine, /schnelle Beratungslogik/);
+  assert.match(engine, /Passe die Antwort an jede neue Information an/);
   assert.match(engine, /kein Abschlussdruck/);
   assert.match(engine, /Fordere im Chat keine personenbezogenen Daten an/);
   assert.match(engine, /Behaupte niemals, TarifWerk sei objektiv der beste Anbieter/);

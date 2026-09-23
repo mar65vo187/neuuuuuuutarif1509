@@ -122,6 +122,7 @@ export async function askPublicTarifWerkAi(input: {
 
   const system = [
     PUBLIC_SYSTEM,
+    "Nutze eine schnelle Beratungslogik: Bedarf mit einer guten Frage klären, Gehörtes knapp bestätigen, nur passende belegte Vorteile einordnen und eine einfache nächste Option anbieten. Passe die Antwort an jede neue Information an; wenn TarifWerk oder ein Angebot nicht passt, sage es offen.",
     input.audience === "b2b"
       ? "Zielgruppe: Geschäftskunden. Durchgehend professionelle Sie-Ansprache."
       : "Zielgruppe: Privatkunden. Durchgehend natürliche Du-Ansprache.",
