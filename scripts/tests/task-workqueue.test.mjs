@@ -62,6 +62,7 @@ test("task list supports inline editing and deterministic Berlin-local appointme
   const actions = read("src/components/portal/TaskActions.tsx");
   const list = read("src/components/portal/TaskBulkList.tsx");
   const composer = read("src/components/portal/QuickTaskComposer.tsx");
+  const page = read("src/app/portal/(app)/aufgaben/page.tsx");
   const dateTime = read("src/lib/portal-date-time.ts");
 
   assert.match(actions, /TASK_STATUS_OPTIONS/);
@@ -71,6 +72,7 @@ test("task list supports inline editing and deterministic Berlin-local appointme
   assert.match(actions, /aria-label=\{\`\$\{title\} bearbeiten\`\}/);
   assert.match(list, /TaskActions[\s\S]*title=\{task\.title\}[\s\S]*priority=\{task\.priority\}[\s\S]*dueAt=\{task\.dueAt\}/);
   assert.match(composer, /parseBerlinDateTimeInput\(due\)/);
+  assert.match(page, /description: task\.description/);
   assert.match(dateTime, /Europe\/Berlin/);
   assert.match(dateTime, /wegen der Zeitumstellung in Berlin nicht/);
   assert.match(dateTime, /zweimal vorkommt/);
