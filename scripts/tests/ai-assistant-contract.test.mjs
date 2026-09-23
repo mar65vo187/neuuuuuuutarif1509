@@ -27,6 +27,8 @@ test("AI knowledge comes from approved company, product and optional training da
   assert.match(engine, /training_modules/);
   assert.match(engine, /TARIFWERK_AI_INCLUDE_TRAINING/);
   assert.match(engine, /COACHING_PLAYBOOK/);
+  assert.match(engine, /TARIFWERK SALES PLAYBOOK/);
+  assert.match(engine, /Arbeite kybernetisch/);
   assert.match(engine, /TarifWerk Sales Playbook/);
   assert.match(engine, /Discovery/);
   assert.match(engine, /Einwand/);
