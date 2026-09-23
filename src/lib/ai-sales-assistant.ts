@@ -262,7 +262,7 @@ async function callXkiro(system: string, input: string) {
       max_tokens: 1400,
       temperature: 0.4,
     }),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(55_000),
   });
   const json = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: unknown } }> } | null;
   if (!response.ok) throw new Error("Xkiro-Anfrage fehlgeschlagen (" + response.status + ").");

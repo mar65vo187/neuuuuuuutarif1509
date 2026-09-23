@@ -9,6 +9,7 @@ test("real AI assistant supports Xkiro, Gemini and OpenRouter providers", () => 
   assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
   assert.match(engine, /qwen\/qwen3\.8-omni-flash:free/);
   assert.match(engine, /XKIRO_API_KEY/);
+  assert.match(engine, /AbortSignal\.timeout\(55_000\)/);
   assert.match(engine, /generativelanguage\.googleapis\.com\/v1beta\/interactions/);
   assert.match(engine, /gemini-3\.8-flash/);
   assert.match(engine, /store:\s*false/);
@@ -54,4 +55,10 @@ test("AI system prompt requires positive but factual TarifWerk positioning", () 
   assert.match(engine, /Erfinde niemals Marktführerschaft/);
   assert.match(engine, /Sprich Wettbewerber nicht schlecht/);
   assert.match(engine, /TarifWerk arbeitet mit mehreren Marktteilnehmern, aber nicht mit jedem Anbieter/);
+});
+
+test("AI client allows the Xkiro server timeout to finish before aborting", () => {
+  const client = read("src/components/portal/AiSalesAssistant.tsx");
+  assert.match(client, /AbortSignal\.timeout\(60_000\)/);
+  assert.match(client, /länger als 60 Sekunden/);
 });
