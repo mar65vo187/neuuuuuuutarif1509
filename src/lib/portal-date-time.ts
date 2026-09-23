@@ -13,6 +13,19 @@ export function formatBerlinDateTimeInput(value: Date | string | null | undefine
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }
 
+/** Add calendar days in Berlin and keep the existing 09:00 sales follow-up time. */
+export function addBerlinCalendarDaysAtNine(days: number, from: Date = new Date()): string {
+  if (!Number.isSafeInteger(days) || Math.abs(days) > 3650 || !Number.isFinite(from.getTime())) {
+    throw new Error("Ungültiger Zeitraum für die Wiedervorlage.");
+  }
+  const berlinDate = formatBerlinDateTimeInput(from).slice(0, 10);
+  const [year, month, day] = berlinDate.split("-").map(Number);
+  const target = new Date(Date.UTC(year, month - 1, day + days, 9, 0, 0, 0));
+  if (!Number.isFinite(target.getTime())) throw new Error("Ungültiges Datum für die Wiedervorlage.");
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${target.getUTCFullYear()}-${pad(target.getUTCMonth() + 1)}-${pad(target.getUTCDate())}T09:00`;
+}
+
 /** Never silently move a reminder through a DST gap or choose an ambiguous hour. */
 export function parseBerlinDateTimeInput(value: string): string | null {
   if (!value.trim()) return null;
