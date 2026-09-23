@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { customers } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
+import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -44,6 +45,7 @@ export async function lockAndFindStrongContactDuplicate(
   tx: Tx,
   input: { email?: string | null; phone?: string | null },
   user: SessionUser,
+  exclude?: { excludeCustomerId?: number; excludeLeadId?: number },
 ): Promise<StrongContactDuplicate | null> {
   const email = normalizeContactEmail(input.email);
   const phone = normalizeContactPhone(input.phone);
@@ -70,11 +72,13 @@ export async function lockAndFindStrongContactDuplicate(
     }).from(customers)
       .where(and(
         sql`${customers.archivedAt} is null`,
+        exclude?.excludeCustomerId ? sql`${customers.id} <> ${exclude.excludeCustomerId}` : undefined,
         or(...customerConditions)!,
       ))
       .limit(1);
 
     if (customer) {
+      const grants = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT] as const);
       const label = customer.companyName
         || [customer.firstName, customer.lastName].filter(Boolean).join(" ")
         || customer.customerNumber;
@@ -84,7 +88,8 @@ export async function lockAndFindStrongContactDuplicate(
         label,
         href: "/portal/kunden/" + customer.id,
         ownerEmployeeId: customer.ownerEmployeeId,
-        visible: user.role === "admin" || customer.ownerEmployeeId === user.id,
+        visible: (grants[PORTAL_PERMISSION.CUSTOMER_READ] || grants[PORTAL_PERMISSION.CUSTOMER_EDIT])
+          && (user.role === "admin" || customer.ownerEmployeeId === user.id),
       };
     }
   }
@@ -99,10 +104,18 @@ export async function lockAndFindStrongContactDuplicate(
       createdByEmployeeId: leads.createdByEmployeeId,
       assignedEmployeeId: leads.assignedEmployeeId,
     }).from(leads)
-      .where(or(...leadConditions)!)
+      .where(and(
+        or(...leadConditions)!,
+        exclude?.excludeLeadId ? sql`${leads.id} <> ${exclude.excludeLeadId}` : undefined,
+        exclude?.excludeCustomerId ? sql`not exists (
+          select 1 from customer_lead_links identity_link
+          where identity_link.lead_id = ${leads.id} and identity_link.customer_id = ${exclude.excludeCustomerId}
+        )` : undefined,
+      ))
       .limit(1);
 
     if (lead) {
+      const grants = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT] as const);
       const ownerEmployeeId = lead.assignedEmployeeId ?? lead.createdByEmployeeId;
       return {
         entity: "lead",
@@ -110,7 +123,7 @@ export async function lockAndFindStrongContactDuplicate(
         label: lead.name || lead.email || lead.phone || "Lead #" + lead.id,
         href: "/portal/leads/" + lead.id,
         ownerEmployeeId,
-        visible: user.role === "admin" || lead.createdByEmployeeId === user.id || lead.assignedEmployeeId === user.id,
+        visible: grants[PORTAL_PERMISSION.LEAD_EDIT] && (user.role === "admin" || lead.createdByEmployeeId === user.id || lead.assignedEmployeeId === user.id),
       };
     }
   }

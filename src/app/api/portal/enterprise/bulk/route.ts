@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
       if (action !== "status" || !value || !["open","in_progress","completed","cancelled"].includes(value)) throw new Error("Ungültiger Aufgabenstatus.");
       const rows = await tx.update(tasks).set({
         status: value,
-        completedAt: value === "completed" ? new Date() : null,
+        completedAt: value === "completed" ? sql`coalesce(${tasks.completedAt}, now())` : null,
         updatedAt: new Date(),
       }).where(condition).returning({ id: tasks.id });
       await writeAudit(tx, user.id, "task.bulk_status", "task", null, undefined, { ids: rows.map((r) => r.id), status: value });

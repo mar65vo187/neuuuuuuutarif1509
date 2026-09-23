@@ -112,3 +112,20 @@ test("overdue opportunity is explicit and explainable", () => {
   assert.equal(result.nextBestAction.key, "review_opportunity");
   assert.ok(result.riskFlags.some((flag) => flag.key === "opportunity_overdue"));
 });
+
+test("restricted order visibility cannot produce sales coverage or blocked-order signals", () => {
+  const result = getCustomerIntelligence(base({
+    canReadOrders: false,
+    orders: [
+      { status: "active", category: "Hidden category", createdAt: now, updatedAt: now },
+      { status: "documents_missing", category: "Hidden category", createdAt: now, updatedAt: now },
+    ],
+  }));
+  assert.equal(result.summary.activeOrders, 0);
+  assert.equal(result.coverage.activeCategories.length, 0);
+  assert.equal(result.coverage.crossSellSignals.length, 0);
+  assert(!result.riskFlags.some(flag => flag.key === "documents_missing"));
+  assert(!result.missing.includes("Produkt-/Potenzialbild"));
+  assert.equal(result.completeness, 100);
+  assert.equal(result.nextBestAction.key, "relationship_maintain");
+});

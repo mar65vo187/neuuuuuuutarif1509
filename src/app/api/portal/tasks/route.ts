@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { tasks } from "@/db/enterprise-schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { getCustomer, getOrder, writeAudit } from "@/lib/enterprise";
-import { getTaskAssignableEmployee, hasPermission, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
+import { getTaskAssignableEmployee, hasPermission, permissionSnapshot, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 import { getServiceCase } from "@/lib/service-cases";
 import { getLead } from "@/lib/queries";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
@@ -15,9 +15,9 @@ const schema = z.object({
   description: z.string().trim().max(2000).optional().default(""),
   priority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
   dueAt: z.string().datetime().nullable().optional(),
-  assignedToEmployeeId: z.number().int().positive().optional(),
+  assignedToEmployeeId: z.number().int().positive().max(2147483647).optional(),
   entityType: z.enum(["general", "lead", "customer", "order", "service_case"]).default("general"),
-  entityId: z.number().int().nonnegative().default(0),
+  entityId: z.number().int().nonnegative().max(2147483647).default(0),
 });
 
 export async function POST(request: NextRequest) {
@@ -31,8 +31,21 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return NextResponse.json({ ok: false, error: "Aufgabendaten sind unvollständig." }, { status: 422 });
     const input = parsed.data;
 
-    let entityId = input.entityType === "general" ? 0 : input.entityId;
+    const entityId = input.entityType === "general" ? 0 : input.entityId;
     if (input.entityType !== "general" && entityId < 1) return NextResponse.json({ ok: false, error: "Bitte einen gültigen Bezug angeben." }, { status: 422 });
+
+    if (input.entityType !== "general") {
+      const capabilities = await permissionSnapshot(user, [
+        PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT,
+        PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT,
+        PORTAL_PERMISSION.SERVICE_READ, PORTAL_PERMISSION.SERVICE_EDIT, PORTAL_PERMISSION.SERVICE_ASSIGN,
+      ] as const);
+      const canReference = input.entityType === "lead" ? capabilities[PORTAL_PERMISSION.LEAD_EDIT]
+        : input.entityType === "customer" ? capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT]
+        : input.entityType === "service_case" ? capabilities[PORTAL_PERMISSION.SERVICE_READ] || capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || capabilities[PORTAL_PERMISSION.SERVICE_ASSIGN]
+        : capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+      if (!canReference) return NextResponse.json({ ok: false, error: "Keine Berechtigung für diesen Aufgabenbezug." }, { status: 403 });
+    }
 
     if (input.entityType === "lead" && !await getLead(entityId, user)) return NextResponse.json({ ok: false, error: "Lead nicht gefunden oder keine Berechtigung." }, { status: 404 });
     if (input.entityType === "customer" && !await getCustomer(entityId, user)) return NextResponse.json({ ok: false, error: "Kunde nicht gefunden oder keine Berechtigung." }, { status: 404 });
@@ -51,6 +64,9 @@ export async function POST(request: NextRequest) {
 
     const result = await db.transaction(async (tx) => {
       if (input.entityType !== "general") {
+        // Concurrent adoptions of the same suggestion must share one active task.
+        const identity = JSON.stringify([input.entityType, entityId, assignee, input.title]);
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"task:" + identity}))`);
         const [existing] = await tx.select({ id: tasks.id }).from(tasks)
           .where(and(
             eq(tasks.entityType, input.entityType),

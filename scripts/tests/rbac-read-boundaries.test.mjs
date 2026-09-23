@@ -73,7 +73,8 @@ test("task workspace and task entity enrichment respect granted rights", () => {
   assert.match(enterprise, /canOrder && orderIds\.length/);
   assert.match(enterprise, /canService && serviceCaseIds\.length/);
   assert.match(enterprise, /entityHref/);
-  assert.match(list, /task\.entityHref \|\| "\/portal\/aufgaben"/);
+  assert.match(list, /href=\{task\.entityHref\}/);
+  assert.match(list, /Verknüpfter Datensatz nicht verfügbar/);
 });
 
 test("global search never queries protected CRM domains without their permission", () => {

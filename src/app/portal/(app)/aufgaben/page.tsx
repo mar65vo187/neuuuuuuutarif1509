@@ -20,30 +20,30 @@ export default async function TasksPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    status?: string;
-    page?: string;
-    q?: string;
-    priority?: string;
-    due?: string;
-    assignee?: string;
-    entity?: string;
+    status?: string | string[];
+    page?: string | string[];
+    q?: string | string[];
+    priority?: string | string[];
+    due?: string | string[];
+    assignee?: string | string[];
+    entity?: string | string[];
   }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Faufgaben");
   if (!await hasPermission(user, PORTAL_PERMISSION.TASK_MANAGE)) redirect("/portal");
 
-  const {
-    status,
-    page: rawPage,
-    q: rawSearch,
-    priority: rawPriority,
-    due: rawDue,
-    assignee: rawAssignee,
-    entity: rawEntity,
-  } = await searchParams;
+  const params = await searchParams;
+  const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+  const status = first(params.status);
+  const rawPage = first(params.page);
+  const rawSearch = first(params.q);
+  const rawPriority = first(params.priority);
+  const rawDue = first(params.due);
+  const rawAssignee = first(params.assignee);
+  const rawEntity = first(params.entity);
 
-  const selected = ["open", "in_progress", "completed", "cancelled", "all"].includes(status ?? "") ? status! : "open";
+  const selected = ["active", "open", "in_progress", "completed", "cancelled", "all"].includes(status ?? "") ? status! : "active";
   const priority = ["low", "normal", "high", "critical"].includes(rawPriority ?? "") ? rawPriority as TaskPriority : undefined;
   const due = ["overdue", "today", "upcoming", "no_due"].includes(rawDue ?? "") ? rawDue as DueFilter : undefined;
   const entityType = ["general", "lead", "customer", "order", "service_case"].includes(rawEntity ?? "") ? rawEntity as EntityFilter : undefined;
@@ -109,7 +109,7 @@ export default async function TasksPage({
           </p>
         </div>
         <details className="group relative">
-          <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-semibold text-white hover:bg-electric">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-semibold text-white hover:bg-electric">
             <Plus className="h-4 w-4" /> Aufgabe anlegen
           </summary>
           <div className="absolute right-0 z-20 mt-2 w-[min(92vw,420px)] rounded-[22px] border border-line bg-white p-5 shadow-soft">
@@ -119,18 +119,19 @@ export default async function TasksPage({
       </header>
 
       <nav className="no-scrollbar flex gap-2 overflow-x-auto" aria-label="Aufgabenstatus">
-        {["open", "in_progress", "completed", "all"].map((value) => (
+        {["active", "open", "in_progress", "completed", "cancelled", "all"].map((value) => (
           <Link
             key={value}
             href={href({ status: value, page: undefined })}
-            className={`chip h-9 shrink-0 px-3.5 ${selected === value ? "border-ink bg-ink text-white" : "border-line bg-white"}`}
+            aria-current={selected === value ? "page" : undefined}
+            className={`chip min-h-11 shrink-0 px-3.5 ${selected === value ? "border-ink bg-ink text-white" : "border-line bg-white"}`}
           >
-            {({ open: "Offen", in_progress: "In Arbeit", completed: "Erledigt", all: "Alle" } as Record<string, string>)[value]}
+            {({ active: "Aktiv", open: "Offen", in_progress: "In Arbeit", completed: "Erledigt", cancelled: "Abgebrochen", all: "Alle" } as Record<string, string>)[value]}
           </Link>
         ))}
       </nav>
 
-      <form className="grid gap-2 rounded-[18px] border border-line bg-white p-3 lg:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(130px,0.7fr))_auto]" method="get">
+      <form key={href({})} className="grid gap-2 rounded-[18px] border border-line bg-white p-3 lg:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(130px,0.7fr))_auto]" method="get">
         <input type="hidden" name="status" value={selected} />
         <label className="relative">
           <span className="sr-only">Aufgaben durchsuchen</span>
@@ -190,10 +191,12 @@ export default async function TasksPage({
           <p className="p-10 text-center text-[14.5px] text-steel">Keine Aufgaben in dieser Ansicht.</p>
         ) : (
           <TaskBulkList
+            key={href({ page: String(page) })}
             assignees={user.role === "admin" ? assignees : []}
             rows={rows.map(({ task, assigneeName, overdue, entityTitle, entitySubtitle, entityHref }) => ({
               id: task.id,
               title: task.title,
+              description: task.description,
               priority: task.priority,
               status: task.status,
               dueAt: task.dueAt?.toISOString() ?? null,
@@ -213,9 +216,9 @@ export default async function TasksPage({
         <nav className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-[0_12px_30px_-28px_rgba(6,11,22,0.45)]" aria-label="Aufgaben-Seiten">
           <p className="text-[11.5px] font-semibold text-steel">{rows.length ? `Aufgaben ${rangeStart}–${rangeEnd}` : "Keine Aufgaben auf dieser Seite"}</p>
           <div className="flex items-center gap-2">
-            {hasPreviousPage ? <Link href={href({ page: String(page - 1) })} className="inline-flex h-9 items-center rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold text-ink hover:border-electric/30">Zurück</Link> : <span className="inline-flex h-9 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Zurück</span>}
+            {hasPreviousPage ? <Link href={href({ page: String(page - 1) })} className="inline-flex min-h-11 items-center rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold text-ink hover:border-electric/30">Zurück</Link> : <span className="inline-flex min-h-11 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Zurück</span>}
             <span className="min-w-20 text-center text-[11.5px] font-extrabold text-ink">Seite {page}</span>
-            {hasNextPage ? <Link href={href({ page: String(page + 1) })} className="inline-flex h-9 items-center rounded-xl bg-electric px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">Weiter</Link> : <span className="inline-flex h-9 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Weiter</span>}
+            {hasNextPage ? <Link href={href({ page: String(page + 1) })} className="inline-flex min-h-11 items-center rounded-xl bg-electric px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">Weiter</Link> : <span className="inline-flex min-h-11 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Weiter</span>}
           </div>
         </nav>
       )}

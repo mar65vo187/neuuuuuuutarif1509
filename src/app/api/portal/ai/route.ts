@@ -37,10 +37,11 @@ async function recordUsage(input: {
   status: "completed" | "failed" | "blocked";
 }) {
   try {
-    await pool.query(`
+    const result = await pool.query(`
       INSERT INTO ai_assistant_usage
         (employee_id, provider, model, mode, input_chars, output_chars, status)
       VALUES ($1,$2,$3,$4,$5,$6,$7)
+      RETURNING id
     `, [
       input.employeeId,
       input.provider.slice(0, 80),
@@ -50,6 +51,7 @@ async function recordUsage(input: {
       Math.max(0, input.outputChars),
       input.status,
     ]);
+    return result.rows[0]?.id as number | undefined;
   } catch {
     console.error("[ai] usage telemetry unavailable");
   }
@@ -97,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const answer = await askTarifWerkAi(parsed.data);
-      await recordUsage({
+      const usageId = await recordUsage({
         employeeId: user.id,
         provider: answer.provider,
         model: answer.model,
@@ -109,6 +111,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ok: true,
         ...answer,
+        feedbackId: usageId ?? null,
         remaining: Math.max(0, provider.dailyLimit - used - 1),
       }, { headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {

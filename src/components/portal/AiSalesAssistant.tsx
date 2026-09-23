@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CheckCircle2, Copy, Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { Bot, CheckCircle2, Copy, Loader2, Send, ShieldCheck, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
 type Mode = "coach" | "objection" | "message" | "product" | "pitch";
@@ -12,6 +12,7 @@ type Answer = {
   sources: string[];
   redactions: number;
   remaining: number;
+  feedbackId: number | null;
 };
 
 const MODES: Array<{ key: Mode; label: string; hint: string }> = [
@@ -46,6 +47,8 @@ export function AiSalesAssistant({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [outcome, setOutcome] = useState<"next_step" | "more_information" | "not_a_fit" | "not_applied">("not_applied");
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function ask(event?: FormEvent) {
     event?.preventDefault();
@@ -69,6 +72,8 @@ export function AiSalesAssistant({
       if (!response.ok || !json?.ok || typeof json.text !== "string") {
         throw new Error(json?.error ?? "Die KI konnte gerade nicht antworten.");
       }
+      setOutcome("not_applied");
+      setFeedbackStatus("idle");
       setAnswer({
         text: json.text,
         provider: json.provider === "openrouter" ? "openrouter" : "gemini",
@@ -76,12 +81,31 @@ export function AiSalesAssistant({
         sources: Array.isArray(json.sources) ? json.sources.map(String) : [],
         redactions: Number(json.redactions ?? 0),
         remaining: Number(json.remaining ?? 0),
+        feedbackId: Number.isSafeInteger(json.feedbackId) ? Number(json.feedbackId) : null,
       });
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Die KI konnte gerade nicht antworten.");
     } finally {
       sending.current = false;
       setBusy(false);
+    }
+  }
+
+  async function sendFeedback(helpful: boolean) {
+    if (!answer?.feedbackId || feedbackStatus === "saving") return;
+    setFeedbackStatus("saving");
+    try {
+      const response = await fetch("/api/portal/ai/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usageId: answer.feedbackId, helpful, outcome }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const json = await response.json().catch(() => null) as { ok?: boolean } | null;
+      if (!response.ok || !json?.ok) throw new Error("Feedback konnte nicht gespeichert werden.");
+      setFeedbackStatus("saved");
+    } catch {
+      setFeedbackStatus("error");
     }
   }
 
@@ -161,6 +185,20 @@ export function AiSalesAssistant({
               </div>
               <div className="whitespace-pre-wrap py-4 text-[13.5px] leading-7 text-platinum">{answer.text}</div>
               {answer.redactions > 0 && <p className="mb-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10.5px] text-amber-100">{answer.redactions} mögliche personenbezogene Angabe(n) wurden vor der KI-Anfrage automatisch entfernt.</p>}
+              {answer.feedbackId && <div className="mt-4 border-t border-white/8 pt-3">
+                <p className="text-[10.5px] font-bold text-silver">Hat dir dieser Vorschlag geholfen? Rückmeldung verbessert den Coach. Es werden nur deine Auswahl, der Modus und ein Ergebniscode gespeichert – keine Frage oder Antwort.</p>
+                <label className="mt-2 block text-[10px] text-silver">Was ist im Gespräch passiert?
+                  <select value={outcome} onChange={event => { setOutcome(event.target.value as typeof outcome); setFeedbackStatus("idle"); }} className="ml-2 min-h-9 rounded-lg border border-white/10 bg-ink px-2 text-white">
+                    <option value="not_applied">Noch nicht angewendet</option><option value="next_step">Nächster Schritt vereinbart</option><option value="more_information">Weitere Informationen nötig</option><option value="not_a_fit">Kein passender Bedarf</option>
+                  </select>
+                </label>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => sendFeedback(true)} disabled={feedbackStatus === "saving"} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-[10.5px] font-bold text-silver hover:bg-white/8"><ThumbsUp className="h-3.5 w-3.5" /> Hilfreich</button>
+                  <button type="button" onClick={() => sendFeedback(false)} disabled={feedbackStatus === "saving"} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-[10.5px] font-bold text-silver hover:bg-white/8"><ThumbsDown className="h-3.5 w-3.5" /> Nicht hilfreich</button>
+                  {feedbackStatus === "saved" && <span role="status" className="text-[10.5px] text-emerald-200">Danke, Rückmeldung gespeichert.</span>}
+                  {feedbackStatus === "error" && <span role="alert" className="text-[10.5px] text-amber-200">Feedback nicht gespeichert. Bitte erneut versuchen.</span>}
+                </div>
+              </div>}
               {answer.sources.length > 0 && <div className="border-t border-white/8 pt-3"><p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-silver">Verwendete Wissensquellen</p><div className="mt-2 flex flex-wrap gap-1.5">{answer.sources.map((source) => <span key={source} className="rounded-full border border-white/8 bg-white/[0.035] px-2 py-1 text-[9.5px] text-silver">{source}</span>)}</div></div>}
             </div>
           ) : (

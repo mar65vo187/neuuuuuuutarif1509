@@ -14,32 +14,43 @@ export function OrderCreateForm({
   leads,
   providers,
   products,
+  initialCustomerId,
   initialLeadId,
   initialProductId,
   initialProviderId,
+  canUseCustomers = false,
+  canUseLeads = false,
+  canCreateCustomer = false,
   canEditCommission = false,
 }: {
   customers: CustomerOption[];
   leads: LeadOption[];
   providers: ProviderOption[];
   products: ProductOption[];
+  initialCustomerId?: number;
   initialLeadId?: number;
   initialProductId?: number;
   initialProviderId?: number;
+  canUseCustomers?: boolean;
+  canUseLeads?: boolean;
+  canCreateCustomer?: boolean;
   canEditCommission?: boolean;
 }) {
   const router = useRouter();
   const saving = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<"customer" | "lead">(initialLeadId ? "lead" : "customer");
-  const [providerId, setProviderId] = useState<number>(initialProviderId ?? providers[0]?.id ?? 0);
+  const [source, setSource] = useState<"customer" | "lead">(initialCustomerId && canUseCustomers ? "customer" : canUseLeads && (initialLeadId || !canUseCustomers) ? "lead" : "customer");
+  const [customerId, setCustomerId] = useState(initialCustomerId ?? 0);
+  const [leadId, setLeadId] = useState(initialLeadId ?? 0);
+  const hasSourceAccess = canUseCustomers || canUseLeads;
+  const [providerId, setProviderId] = useState<number>(initialProviderId ?? 0);
   const [productId, setProductId] = useState<number>(initialProductId ?? 0);
   const availableProducts = useMemo(() => products.filter((product) => product.providerId === providerId), [products, providerId]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (saving.current) return;
+    if (saving.current || !hasSourceAccess || !event.currentTarget.reportValidity()) return;
     saving.current = true;
     setBusy(true);
     setError(null);
@@ -60,8 +71,9 @@ export function OrderCreateForm({
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(15000),
       });
-      const json = await response.json() as { ok: boolean; error?: string; order?: { id: number } };
-      if (!response.ok || !json.ok || !json.order) throw new Error(json.error ?? "Auftrag konnte nicht angelegt werden.");
+      const json = await response.json().catch(() => null) as { ok?: boolean; error?: string; order?: { id: number } } | null;
+      if (response.status === 401) throw new Error("Deine Sitzung ist abgelaufen. Melde dich in einem neuen Tab erneut an und speichere anschließend noch einmal.");
+      if (!response.ok || !json?.ok || !json.order) throw new Error(json?.error ?? "Auftrag konnte nicht angelegt werden.");
       router.push(`/portal/auftraege/${json.order.id}`);
       router.refresh();
     } catch (problem) {
@@ -76,27 +88,30 @@ export function OrderCreateForm({
     <form onSubmit={submit} className="space-y-6">
       <div>
         <p className="label">Ausgangsbasis</p>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setSource("customer")} className={`chip h-9 px-3.5 ${source === "customer" ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>Bestehender Kunde</button>
-          <button type="button" onClick={() => setSource("lead")} className={`chip h-9 px-3.5 ${source === "lead" ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>Lead übernehmen</button>
+        <div className="flex flex-wrap gap-2">
+          {canUseCustomers && <button type="button" disabled={busy} aria-pressed={source === "customer"} onClick={() => setSource("customer")} className={`chip min-h-11 px-3.5 ${source === "customer" ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>Bestehender Kunde</button>}
+          {canUseLeads && <button type="button" disabled={busy} aria-pressed={source === "lead"} onClick={() => setSource("lead")} className={`chip min-h-11 px-3.5 ${source === "lead" ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>Lead übernehmen</button>}
         </div>
+        {!hasSourceAccess && <p className="mt-3 text-sm text-amber-800">Für die Auftragsaufnahme benötigst du Zugriff auf Kundenakten. Bitte wende dich an einen Administrator.</p>}
+        {source === "lead" && canUseLeads && !canCreateCustomer && <p className="mt-3 text-sm text-steel">Du kannst Leads übernehmen, die bereits mit einer für dich zugänglichen Kundenakte verknüpft sind. Eine neue Kundenakte muss ein berechtigter Mitarbeiter anlegen.</p>}
       </div>
 
-      {source === "customer" ? (
+      {hasSourceAccess && (source === "customer" ? (
         <label className="label">Kunde
-          <select name="customerId" required className="field">
+          <select name="customerId" required disabled={busy} className="field" value={customerId || ""} onChange={(event) => setCustomerId(Number(event.target.value) || 0)}>
             <option value="">Bitte auswählen</option>
             {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.customerNumber} · {customer.label}</option>)}
           </select>
         </label>
       ) : (
         <label className="label">Lead
-          <select name="leadId" required className="field" defaultValue={initialLeadId ?? ""}>
+          <select name="leadId" required disabled={busy} className="field" value={leadId || ""} onChange={(event) => setLeadId(Number(event.target.value) || 0)}>
             <option value="">Bitte auswählen</option>
             {leads.map((lead) => <option key={lead.id} value={lead.id}>#{lead.id} · {lead.label}</option>)}
           </select>
         </label>
-      )}
+      ))}
+      {hasSourceAccess && (source === "customer" ? customers.length === 0 : leads.length === 0) && <p className="text-sm text-steel">Für diese Ausgangsbasis sind noch keine Kontakte verfügbar.</p>}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="label">Provider
@@ -121,7 +136,7 @@ export function OrderCreateForm({
       <label className="label">Interne Notiz<textarea name="note" rows={3} maxLength={2000} className="field" /></label>
       {providers.length === 0 && <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-800">Es ist noch kein Provider hinterlegt. Ein Administrator kann Provider unter System & Integrationen anlegen.</p>}
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">{error}</p>}
-      <button disabled={busy || providers.length === 0} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-60">
+      <button disabled={busy || providers.length === 0 || !hasSourceAccess || (source === "customer" ? !customerId : !leadId)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-60">
         {busy && <Loader2 className="h-4 w-4 animate-spin" />} Auftrag anlegen
       </button>
     </form>

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq, getTableColumns, gte, ilike, inArray, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { employees, leadNotes, leads } from "@/db/schema";
@@ -36,8 +37,8 @@ import { syncReferralRewardForOrder } from "@/lib/referral-reward-engine";
 import { leadAccessCondition } from "@/lib/queries";
 import { getCustomerIntelligence } from "@/lib/customer-intelligence";
 import { percentage } from "@/lib/bi-metrics";
-import { contactDuplicateError, lockAndFindStrongContactDuplicate } from "@/lib/contact-identity";
-import { leadAssignableEmployeeCondition, permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { contactDuplicateError, lockAndFindStrongContactDuplicate, normalizeContactEmail, normalizeContactPhone } from "@/lib/contact-identity";
+import { leadAssignableEmployeeCondition, permissionSnapshot, PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 import { getOperationsPolicy } from "@/lib/operations-policy";
 import { operationsPolicyCutoffs } from "@/lib/operations-policy-shared";
 
@@ -211,22 +212,45 @@ export async function routeNewLead(tx: Tx, leadId: number, advisorId: number | n
   return selectedEmployeeId;
 }
 
-export async function ensureCustomerForLead(leadId: number, user: SessionUser): Promise<Customer> {
-  return db.transaction(async (tx) => {
-    const [lead] = await tx.select().from(leads)
-      .where(and(eq(leads.id, leadId), leadAccessCondition(user)))
-      .limit(1)
-      .for("update");
-    if (!lead) throw new Error("Lead nicht gefunden oder keine Berechtigung.");
+async function customerOrderSourceCapabilities(user: SessionUser) {
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT] as const);
+  if (!capabilities[PORTAL_PERMISSION.CUSTOMER_READ] && !capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT]) {
+    throw Object.assign(new Error("Keine Berechtigung für Kundenakten."), { status: 403 });
+  }
+  return capabilities;
+}
 
-    const [linked] = await tx
-      .select({ customer: customers })
-      .from(customerLeadLinks)
-      .innerJoin(customers, eq(customerLeadLinks.customerId, customers.id))
-      .where(eq(customerLeadLinks.leadId, leadId))
-      .limit(1);
-    if (linked?.customer) return linked.customer;
-
+async function ensureCustomerForLeadInTransaction(
+  tx: Tx,
+  leadId: number,
+  user: SessionUser,
+  canCreateCustomer: boolean,
+  expectedCustomerId?: number,
+): Promise<Customer> {
+  // Lock the authorized lead before checking links: concurrent conversions then reuse one customer.
+  const [lead] = await tx.select().from(leads)
+    .where(and(eq(leads.id, leadId), leadAccessCondition(user))).limit(1).for("update");
+  if (!lead) throw Object.assign(new Error("Lead nicht gefunden oder keine Berechtigung."), { status: 404 });
+  const [linked] = await tx.select({ customer: customers }).from(customerLeadLinks)
+    .innerJoin(customers, eq(customerLeadLinks.customerId, customers.id))
+    .where(eq(customerLeadLinks.leadId, leadId)).limit(1);
+  if (linked?.customer) {
+    if (linked.customer.archivedAt || (user.role !== "admin" && linked.customer.ownerEmployeeId !== user.id)) {
+      throw Object.assign(new Error("Kunde nicht gefunden oder keine Berechtigung."), { status: 404 });
+    }
+    if (expectedCustomerId && linked.customer.id !== expectedCustomerId) {
+      throw Object.assign(new Error("Lead und Kunde gehören nicht zur selben Kundenakte."), { status: 409 });
+    }
+    return linked.customer;
+  }
+  if (expectedCustomerId) {
+    throw Object.assign(new Error("Dieser Lead ist nicht mit dem ausgewählten Kunden verknüpft."), { status: 409 });
+  }
+  if (!canCreateCustomer) {
+    throw Object.assign(new Error("Für die Übernahme eines neuen Leads ist die Berechtigung zum Anlegen von Kunden erforderlich."), { status: 403 });
+  }
+  const duplicate = await lockAndFindStrongContactDuplicate(tx, { email: lead.email, phone: lead.phone }, user, { excludeLeadId: lead.id });
+  if (duplicate) throw contactDuplicateError(duplicate);
     const normalizedName = lead.name.trim();
     const parts = normalizedName ? normalizedName.split(/\s+/) : [];
     const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || null;
@@ -267,7 +291,13 @@ export async function ensureCustomerForLead(leadId: number, user: SessionUser): 
     });
     await emitEvent(tx, "customer.created", "customer", created.id, { leadId: lead.id, assignedEmployeeId: created.ownerEmployeeId });
     return created;
-  });
+
+}
+
+export async function ensureCustomerForLead(leadId: number, user: SessionUser): Promise<Customer> {
+  await requirePermission(user, PORTAL_PERMISSION.LEAD_EDIT);
+  const capabilities = await customerOrderSourceCapabilities(user);
+  return db.transaction((tx) => ensureCustomerForLeadInTransaction(tx, leadId, user, capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT]));
 }
 
 export async function createCustomer(input: {
@@ -341,7 +371,7 @@ export async function updateCustomer(id: number, input: {
       .where(and(eq(customers.id, id), customerAccess(user), isNull(customers.archivedAt)))
       .limit(1)
       .for("update");
-    if (!existing) throw new Error("Kunde nicht gefunden.");
+    if (!existing) throw Object.assign(new Error("Kunde nicht gefunden."), { status: 404 });
 
     const patch: Partial<typeof customers.$inferInsert> = { updatedAt: new Date() };
     const normalize = (value: string | null | undefined) => value === undefined ? undefined : value?.trim() || null;
@@ -354,6 +384,16 @@ export async function updateCustomer(id: number, input: {
     if (input.city !== undefined) patch.city = normalize(input.city);
     if (input.postalCode !== undefined) patch.postalCode = normalize(input.postalCode);
     if (input.preferredChannel !== undefined) patch.preferredChannel = normalize(input.preferredChannel);
+
+    const next = { ...existing, ...patch };
+    if (next.type === "business" ? !next.companyName : !next.firstName && !next.lastName) {
+      throw Object.assign(new Error(next.type === "business" ? "Firmenname fehlt." : "Name fehlt."), { status: 422 });
+    }
+    if (normalizeContactEmail(next.email) !== normalizeContactEmail(existing.email)
+      || normalizeContactPhone(next.phone) !== normalizeContactPhone(existing.phone)) {
+      const duplicate = await lockAndFindStrongContactDuplicate(tx, { email: next.email, phone: next.phone }, user, { excludeCustomerId: id });
+      if (duplicate) throw contactDuplicateError(duplicate);
+    }
 
     const [updated] = await tx.update(customers).set(patch).where(eq(customers.id, id)).returning();
     await writeAudit(tx, user.id, "customer.updated", "customer", id, {
@@ -469,84 +509,107 @@ export async function listCustomers(
   limit = 100,
   filter?: { focus?: "review" | "opportunity" | "risk"; page?: number; lookahead?: boolean },
 ) {
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT] as const);
+  const canReadOrders = capabilities[PORTAL_PERMISSION.ORDER_READ] || capabilities[PORTAL_PERMISSION.ORDER_EDIT];
+  const sourceAccess = user.role === "admin" ? sql`true` : sql`source.owner_employee_id = ${user.id}`;
+  const visibleOrders = user.role === "admin" ? sql`true` : sql`o.advisor_employee_id = ${user.id}`;
   const conditions = [customerAccess(user), isNull(customers.archivedAt)];
-  const q = search?.trim();
+  const q = typeof search === "string" ? search.trim().slice(0, 120) : "";
   if (q) {
+    const pattern = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
     conditions.push(or(
-      ilike(customers.customerNumber, `%${q}%`),
-      ilike(customers.firstName, `%${q}%`),
-      ilike(customers.lastName, `%${q}%`),
-      ilike(customers.companyName, `%${q}%`),
-      ilike(customers.email, `%${q}%`),
-      ilike(customers.phone, `%${q}%`),
+      ilike(customers.customerNumber, pattern),
+      ilike(customers.firstName, pattern),
+      ilike(customers.lastName, pattern),
+      ilike(customers.companyName, pattern),
+      ilike(customers.email, pattern),
+      ilike(customers.phone, pattern),
     )!);
   }
   if (filter?.focus === "review") conditions.push(sql`exists (
     select 1 from customer_crm_profiles ccp
-    where ccp.customer_id = ${customers.id}
+    where ccp.customer_id = "customers"."id"
       and ccp.next_review_at is not null
       and ccp.next_review_at < now()
   )`);
   if (filter?.focus === "opportunity") conditions.push(sql`exists (
     select 1 from customer_opportunities co
-    where co.customer_id = ${customers.id}
+    where co.customer_id = "customers"."id"
       and co.status in ('open','qualified','later')
   )`);
   if (filter?.focus === "risk") conditions.push(sql`exists (
     select 1 from customer_crm_profiles ccp
-    where ccp.customer_id = ${customers.id}
+    where ccp.customer_id = "customers"."id"
       and (ccp.relationship_status = 'at_risk' or ccp.risk_level in ('high','critical'))
   )`);
-  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Number(filter?.page) : 1;
-  const pageSize = Math.max(1, Math.min(limit, 200));
+  const page = Number.isSafeInteger(filter?.page) && Number(filter?.page) > 0 ? Math.min(Number(filter?.page), 100000) : 1;
+  const pageSize = Number.isSafeInteger(limit) && limit > 0 ? Math.min(limit, 200) : 100;
   const queryLimit = pageSize + (filter?.lookahead ? 1 : 0);
   const offset = (page - 1) * pageSize;
 
   return db.select({
     ...getTableColumns(customers),
-    referralCount: sql<number>`(select count(*)::int from customer_referrals cr where cr.source_customer_id = ${customers.id})`,
-    referredByCustomerId: sql<number | null>`(select cr.source_customer_id from customer_referrals cr where cr.referred_customer_id = ${customers.id} limit 1)`,
+    referralCount: sql<number>`(select count(*)::int from customer_referrals cr where cr.source_customer_id = "customers"."id")`,
+    referredByCustomerId: sql<number | null>`(
+      select cr.source_customer_id from customer_referrals cr
+      join customers source on source.id = cr.source_customer_id
+      where cr.referred_customer_id = "customers"."id" and source.archived_at is null and ${sourceAccess}
+      limit 1
+    )`,
     referredByName: sql<string | null>`(
       select coalesce(source.company_name, nullif(trim(concat_ws(' ', source.first_name, source.last_name)), ''), source.customer_number)
       from customer_referrals cr
       join customers source on source.id = cr.source_customer_id
-      where cr.referred_customer_id = ${customers.id}
+      where cr.referred_customer_id = "customers"."id" and source.archived_at is null and ${sourceAccess}
       limit 1
     )`,
-    activeOrderCount: sql<number>`(
+    activeOrderCount: canReadOrders ? sql<number>`(
       select count(*)::int from orders o
-      where o.customer_id = ${customers.id} and o.status in ('accepted','activation_pending','active')
-    )`,
+      where o.customer_id = "customers"."id" and o.status in ('accepted','activation_pending','active') and ${visibleOrders}
+    )` : sql<number>`0`,
     openOpportunityCount: sql<number>`(
       select count(*)::int from customer_opportunities co
-      where co.customer_id = ${customers.id} and co.status in ('open','qualified','later')
+      where co.customer_id = "customers"."id" and co.status in ('open','qualified','later')
     )`,
     nextReviewAt: sql<Date | null>`(
-      select ccp.next_review_at from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+      select ccp.next_review_at from customer_crm_profiles ccp where ccp.customer_id = "customers"."id"
     )`,
     reviewOverdue: sql<boolean>`exists (
       select 1 from customer_crm_profiles ccp
-      where ccp.customer_id = ${customers.id}
+      where ccp.customer_id = "customers"."id"
         and ccp.next_review_at is not null
         and ccp.next_review_at < now()
     )`,
     lastContactAt: sql<Date | null>`(
-      select ccp.last_contact_at from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+      select ccp.last_contact_at from customer_crm_profiles ccp where ccp.customer_id = "customers"."id"
     )`,
     relationshipStatus: sql<string | null>`(
-      select ccp.relationship_status from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+      select ccp.relationship_status from customer_crm_profiles ccp where ccp.customer_id = "customers"."id"
     )`,
     crmRiskLevel: sql<string | null>`(
-      select ccp.risk_level from customer_crm_profiles ccp where ccp.customer_id = ${customers.id}
+      select ccp.risk_level from customer_crm_profiles ccp where ccp.customer_id = "customers"."id"
     )`,
   }).from(customers).where(and(...conditions)).orderBy(desc(customers.updatedAt), desc(customers.id)).limit(queryLimit).offset(offset);
 }
 
 export async function getCustomer(id: number, user: SessionUser) {
-  const [customer] = await db.select().from(customers).where(and(eq(customers.id, id), customerAccess(user))).limit(1);
+  const grants = await permissionSnapshot(user, [
+    PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT,
+    PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.ORDER_READ, PORTAL_PERMISSION.ORDER_EDIT,
+    PORTAL_PERMISSION.TASK_MANAGE,
+  ] as const);
+  if (!grants[PORTAL_PERMISSION.CUSTOMER_READ] && !grants[PORTAL_PERMISSION.CUSTOMER_EDIT]) return null;
+  const capabilities = {
+    canLead: grants[PORTAL_PERMISSION.LEAD_EDIT],
+    canOrder: grants[PORTAL_PERMISSION.ORDER_READ] || grants[PORTAL_PERMISSION.ORDER_EDIT],
+    canTask: grants[PORTAL_PERMISSION.TASK_MANAGE],
+  };
+  const [customer] = await db.select().from(customers)
+    .where(and(eq(customers.id, id), customerAccess(user), isNull(customers.archivedAt))).limit(1);
   if (!customer) return null;
+  const referredCustomer = alias(customers, "referred_customer");
   const [customerOrders, customerTasks, referralSource, referrals] = await Promise.all([
-    db.select({
+    capabilities.canOrder ? db.select({
       order: orders,
       providerName: providers.name,
       productName: products.name,
@@ -555,10 +618,10 @@ export async function getCustomer(id: number, user: SessionUser) {
       .leftJoin(providers, eq(orders.providerId, providers.id))
       .leftJoin(products, eq(orders.productId, products.id))
       .where(and(eq(orders.customerId, id), orderAccess(user)))
-      .orderBy(desc(orders.createdAt)),
-    db.select().from(tasks)
+      .orderBy(desc(orders.createdAt)) : Promise.resolve([]),
+    capabilities.canTask ? db.select().from(tasks)
       .where(and(eq(tasks.entityType, "customer"), eq(tasks.entityId, id), taskAccess(user)))
-      .orderBy(desc(tasks.createdAt)),
+      .orderBy(desc(tasks.createdAt)) : Promise.resolve([]),
     db.select({
       sourceCustomerId: customerReferrals.sourceCustomerId,
       sourceCustomerNumber: sql<string>`source.customer_number`,
@@ -568,12 +631,15 @@ export async function getCustomer(id: number, user: SessionUser) {
       createdAt: customerReferrals.createdAt,
     }).from(customerReferrals)
       .innerJoin(sql`customers source`, sql`source.id = ${customerReferrals.sourceCustomerId}`)
-      .where(eq(customerReferrals.referredCustomerId, id))
-      .limit(1),
+      .where(and(
+        eq(customerReferrals.referredCustomerId, id),
+        sql`source.archived_at is null`,
+        user.role === "admin" ? sql`true` : sql`source.owner_employee_id = ${user.id}`,
+      )).limit(1),
     db.select({
       id: customerReferrals.id,
-      referredLeadId: customerReferrals.referredLeadId,
-      referredCustomerId: customerReferrals.referredCustomerId,
+      referredLeadId: leads.id,
+      referredCustomerId: referredCustomer.id,
       relationship: customerReferrals.relationship,
       note: customerReferrals.note,
       createdAt: customerReferrals.createdAt,
@@ -582,15 +648,26 @@ export async function getCustomer(id: number, user: SessionUser) {
       leadPhone: leads.phone,
       leadStatus: leads.status,
       leadTopic: leads.topic,
-      targetCustomerNumber: sql<string | null>`(select c.customer_number from customers c where c.id = ${customerReferrals.referredCustomerId})`,
-      targetCustomerName: sql<string | null>`(select coalesce(c.company_name, nullif(trim(concat_ws(' ', c.first_name, c.last_name)), ''), c.customer_number) from customers c where c.id = ${customerReferrals.referredCustomerId})`,
+      targetCustomerNumber: referredCustomer.customerNumber,
+      targetCustomerName: sql<string | null>`coalesce(${referredCustomer.companyName}, nullif(trim(concat_ws(' ', ${referredCustomer.firstName}, ${referredCustomer.lastName})), ''), ${referredCustomer.customerNumber})`,
     }).from(customerReferrals)
-      .leftJoin(leads, eq(customerReferrals.referredLeadId, leads.id))
-      .where(eq(customerReferrals.sourceCustomerId, id))
-      .orderBy(desc(customerReferrals.createdAt)),
+      .leftJoin(leads, and(
+        eq(customerReferrals.referredLeadId, leads.id),
+        capabilities.canLead ? leadAccessCondition(user) : sql`false`,
+      ))
+      .leftJoin(referredCustomer, and(
+        eq(customerReferrals.referredCustomerId, referredCustomer.id),
+        isNull(referredCustomer.archivedAt),
+        user.role === "admin" ? sql`true` : eq(referredCustomer.ownerEmployeeId, user.id),
+      ))
+      .where(and(
+        eq(customerReferrals.sourceCustomerId, id),
+        or(sql`${leads.id} is not null`, sql`${referredCustomer.id} is not null`),
+      )).orderBy(desc(customerReferrals.createdAt)),
   ]);
   return {
     customer,
+    capabilities,
     orders: customerOrders,
     tasks: customerTasks,
     referralSource: referralSource[0] ?? null,
@@ -644,7 +721,7 @@ export async function getCustomer360(id: number, user: SessionUser) {
       .where(eq(customerOpportunities.customerId, id))
       .orderBy(desc(customerOpportunities.updatedAt))
       .limit(100),
-    db.select({
+    base.capabilities.canLead ? db.select({
       id: leads.id,
       name: leads.name,
       topic: leads.topic,
@@ -655,10 +732,10 @@ export async function getCustomer360(id: number, user: SessionUser) {
       updatedAt: leads.updatedAt,
     }).from(customerLeadLinks)
       .innerJoin(leads, eq(customerLeadLinks.leadId, leads.id))
-      .where(eq(customerLeadLinks.customerId, id))
+      .where(and(eq(customerLeadLinks.customerId, id), leadAccessCondition(user)))
       .orderBy(desc(leads.createdAt))
-      .limit(80),
-    db.select({
+      .limit(80) : Promise.resolve([]),
+    base.capabilities.canLead ? db.select({
       id: leadNotes.id,
       leadId: leadNotes.leadId,
       body: leadNotes.body,
@@ -666,12 +743,13 @@ export async function getCustomer360(id: number, user: SessionUser) {
       createdAt: leadNotes.createdAt,
       employeeName: employees.name,
     }).from(customerLeadLinks)
-      .innerJoin(leadNotes, eq(customerLeadLinks.leadId, leadNotes.leadId))
+      .innerJoin(leads, eq(customerLeadLinks.leadId, leads.id))
+      .innerJoin(leadNotes, eq(leads.id, leadNotes.leadId))
       .leftJoin(employees, eq(leadNotes.employeeId, employees.id))
-      .where(eq(customerLeadLinks.customerId, id))
+      .where(and(eq(customerLeadLinks.customerId, id), leadAccessCondition(user)))
       .orderBy(desc(leadNotes.createdAt))
-      .limit(100),
-    db.select({
+      .limit(100) : Promise.resolve([]),
+    base.capabilities.canLead ? db.select({
       id: leadCallActivities.id,
       leadId: leadCallActivities.leadId,
       calledAt: leadCallActivities.calledAt,
@@ -681,12 +759,13 @@ export async function getCustomer360(id: number, user: SessionUser) {
       note: leadCallActivities.note,
       employeeName: employees.name,
     }).from(customerLeadLinks)
-      .innerJoin(leadCallActivities, eq(customerLeadLinks.leadId, leadCallActivities.leadId))
+      .innerJoin(leads, eq(customerLeadLinks.leadId, leads.id))
+      .innerJoin(leadCallActivities, eq(leads.id, leadCallActivities.leadId))
       .leftJoin(employees, eq(leadCallActivities.employeeId, employees.id))
-      .where(eq(customerLeadLinks.customerId, id))
+      .where(and(eq(customerLeadLinks.customerId, id), leadAccessCondition(user)))
       .orderBy(desc(leadCallActivities.calledAt))
-      .limit(100),
-    db.select({
+      .limit(100) : Promise.resolve([]),
+    base.capabilities.canOrder ? db.select({
       id: orderStatusHistory.id,
       orderId: orderStatusHistory.orderId,
       orderNumber: orders.orderNumber,
@@ -698,7 +777,7 @@ export async function getCustomer360(id: number, user: SessionUser) {
       .innerJoin(orders, eq(orderStatusHistory.orderId, orders.id))
       .where(and(eq(orders.customerId, id), orderAccess(user)))
       .orderBy(desc(orderStatusHistory.createdAt))
-      .limit(120),
+      .limit(120) : Promise.resolve([]),
     canService
       ? db.select({
           id: serviceCases.id,
@@ -927,6 +1006,7 @@ export async function getCustomer360(id: number, user: SessionUser) {
     })),
     referralCount: base.referrals.length,
     availableCategories: categoryRows.map((row) => row.category),
+    canReadOrders: base.capabilities.canOrder,
   });
 
   return {
@@ -1308,19 +1388,24 @@ export async function createOrder(input: {
   expectedCommission?: string | number | null;
   note?: string;
 }, user: SessionUser) {
-  let customerId = input.customerId;
-  if (!customerId && input.leadId) customerId = (await ensureCustomerForLead(input.leadId, user)).id;
-  if (!customerId) throw new Error("Kunde oder Lead fehlt.");
+  await requirePermission(user, PORTAL_PERMISSION.ORDER_CREATE);
+  const capabilities = await customerOrderSourceCapabilities(user);
+  if (input.leadId) await requirePermission(user, PORTAL_PERMISSION.LEAD_EDIT);
+  if (!input.customerId && !input.leadId) throw Object.assign(new Error("Kunde oder Lead fehlt."), { status: 422 });
 
   return db.transaction(async (tx) => {
-    const [customer] = await tx.select().from(customers).where(and(eq(customers.id, customerId!), customerAccess(user))).limit(1);
-    if (!customer) throw new Error("Kunde nicht gefunden.");
+    const customerId = input.leadId
+      ? (await ensureCustomerForLeadInTransaction(tx, input.leadId, user, capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT], input.customerId)).id
+      : input.customerId!;
+    const [customer] = await tx.select().from(customers)
+      .where(and(eq(customers.id, customerId), customerAccess(user), isNull(customers.archivedAt))).limit(1);
+    if (!customer) throw Object.assign(new Error("Kunde nicht gefunden oder keine Berechtigung."), { status: 404 });
     const [provider] = await tx.select().from(providers).where(and(eq(providers.id, input.providerId), eq(providers.active, true))).limit(1);
-    if (!provider) throw new Error("Provider nicht gefunden.");
+    if (!provider) throw Object.assign(new Error("Provider nicht gefunden."), { status: 422 });
     let product: typeof products.$inferSelect | null = null;
     if (input.productId) {
       [product] = await tx.select().from(products).where(and(eq(products.id, input.productId), eq(products.providerId, provider.id), eq(products.active, true))).limit(1);
-      if (!product) throw new Error("Produkt nicht gefunden.");
+      if (!product) throw Object.assign(new Error("Produkt nicht gefunden."), { status: 422 });
 
       const [catalogProfile] = await tx.select({ trainingRequired: productCatalogProfiles.trainingRequired })
         .from(productCatalogProfiles).where(eq(productCatalogProfiles.productId, product.id)).limit(1);
@@ -1526,17 +1611,19 @@ export async function listTasks(
   },
 ) {
   const conditions = [taskAccess(user)];
-  if (status !== "all") conditions.push(eq(tasks.status, status));
+  if (status === "active") conditions.push(inArray(tasks.status, ["open", "in_progress"]));
+  else if (status !== "all") conditions.push(eq(tasks.status, status));
   if (options?.priority) conditions.push(eq(tasks.priority, options.priority));
   if (options?.assigneeId && Number.isSafeInteger(options.assigneeId) && options.assigneeId > 0) {
     conditions.push(eq(tasks.assignedToEmployeeId, options.assigneeId));
   }
   if (options?.entityType) conditions.push(eq(tasks.entityType, options.entityType));
-  const search = options?.search?.trim();
+  const search = typeof options?.search === "string" ? options.search.trim().slice(0, 120) : "";
   if (search) {
+    const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
     conditions.push(or(
-      ilike(tasks.title, `%${search}%`),
-      ilike(tasks.description, `%${search}%`),
+      ilike(tasks.title, pattern),
+      ilike(tasks.description, pattern),
     )!);
   }
   if (options?.due === "overdue") {
@@ -1554,7 +1641,8 @@ export async function listTasks(
     conditions.push(isNull(tasks.dueAt));
   }
 
-  const page = Number.isSafeInteger(options?.page) && Number(options?.page) > 0 ? Number(options?.page) : 1;
+  const page = Number.isSafeInteger(options?.page) && Number(options?.page) > 0 ? Math.min(Number(options?.page), 100000) : 1;
+
   const pageSize = Number.isSafeInteger(options?.pageSize) && Number(options?.pageSize) > 0
     ? Math.min(Number(options?.pageSize), 300)
     : 300;
@@ -1699,11 +1787,11 @@ export async function listTasks(
 export async function updateTask(id: number, input: { status?: string; dueAt?: Date | null; priority?: string }, user: SessionUser) {
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(tasks).where(and(eq(tasks.id, id), taskAccess(user))).limit(1).for("update");
-    if (!existing) throw new Error("Aufgabe nicht gefunden.");
+    if (!existing) throw Object.assign(new Error("Aufgabe nicht gefunden."), { status: 404 });
     const patch: Partial<typeof tasks.$inferInsert> = { updatedAt: new Date() };
     if (input.status) {
       patch.status = input.status;
-      patch.completedAt = input.status === "completed" ? new Date() : null;
+      patch.completedAt = input.status === "completed" ? existing.completedAt ?? new Date() : null;
     }
     if (input.dueAt !== undefined) patch.dueAt = input.dueAt;
     if (input.priority) patch.priority = input.priority;

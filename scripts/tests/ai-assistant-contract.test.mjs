@@ -52,3 +52,20 @@ test("AI system prompt requires positive but factual TarifWerk positioning", () 
   assert.match(engine, /Sprich Wettbewerber nicht schlecht/);
   assert.match(engine, /TarifWerk arbeitet mit mehreren Marktteilnehmern, aber nicht mit jedem Anbieter/);
 });
+
+test("internal AI uses a consent-based cybernetic feedback loop and practical sales frameworks", () => {
+  const engine = read("src/lib/ai-sales-assistant.ts");
+  const widget = read("src/components/portal/AiSalesAssistant.tsx");
+  const feedbackRoute = read("src/app/api/portal/ai/feedback/route.ts");
+  const migration = read("migrations/0021_ai_coaching_feedback.sql");
+  assert.match(engine, /SPIN-Fragen/);
+  assert.match(engine, /Challenger-Elemente/);
+  assert.match(engine, /kybernetische Schleife beobachten/);
+  assert.match(engine, /coachingFeedback/);
+  assert.match(engine, /responses < 8/);
+  assert.match(widget, /Weitere Informationen nötig/);
+  assert.match(widget, /keine Frage oder Antwort/);
+  assert.match(feedbackRoute, /id = \$1 AND employee_id = \$4 AND status = 'completed'/);
+  assert.match(migration, /usage_id integer NOT NULL UNIQUE/);
+  assert.doesNotMatch(migration.replace(/^--.*$/gm, ""), /\b(prompt|response_text|question|answer)\s+(text|jsonb|varchar)/i);
+});

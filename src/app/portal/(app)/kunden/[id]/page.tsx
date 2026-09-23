@@ -25,7 +25,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   const canCreateServiceCase = capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || user.role === "admin";
   const data = await getCustomer360(id, user);
   if (!data) notFound();
-  const { customer } = data;
+  const { customer, capabilities: { canLead, canOrder, canTask } } = data;
   const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
   const hasContact = Boolean(customer.phone || customer.email);
   const referralRows = data.referrals.map((row) => ({
@@ -72,10 +72,10 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div><p className="eyebrow text-electric-deep">{customer.customerNumber}</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">{name}</h1><p className="text-[14px] text-steel">Kunde seit {formatDate(customer.createdAt)}</p></div>
       <div className="flex flex-wrap gap-2">
-        {customer.phone && <a href={`tel:${customer.phone}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> Telefon</a>}
-        {customer.email && <a href={`mailto:${customer.email}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
-        {canCreateOrder && <Link href={`/portal/auftraege/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>}
-        {canCreateServiceCase && <Link href={`/portal/service/neu?customer=${customer.id}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-electric/25 bg-electric/[0.06] px-4 text-[13.5px] font-semibold text-electric-deep hover:bg-electric/10"><AlertTriangle className="h-4 w-4" /> Servicefall</Link>}
+        {customer.phone && <a href={`tel:${customer.phone}`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Phone className="h-4 w-4" /> Telefon</a>}
+        {customer.email && <a href={`mailto:${customer.email}`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Mail className="h-4 w-4" /> E-Mail</a>}
+        {canCreateOrder && <Link href={`/portal/auftraege/neu?customer=${customer.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><FilePlus2 className="h-4 w-4" /> Auftrag anlegen</Link>}
+        {canCreateServiceCase && <Link href={`/portal/service/neu?customer=${customer.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-electric/25 bg-electric/[0.06] px-4 text-[13.5px] font-semibold text-electric-deep hover:bg-electric/10"><AlertTriangle className="h-4 w-4" /> Servicefall</Link>}
       </div>
     </header>
 
@@ -91,7 +91,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
         <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
           <div className="rounded-xl border border-current/10 bg-white/55 px-3 py-2 text-center"><p className="text-[9.5px] font-bold uppercase tracking-wider opacity-60">CRM</p><p className="mt-0.5 text-[20px] font-extrabold">{intelligence.completeness}%</p></div>
-          <div className="rounded-xl border border-current/10 bg-white/55 px-3 py-2 text-center"><p className="text-[9.5px] font-bold uppercase tracking-wider opacity-60">Aktiv</p><p className="mt-0.5 text-[20px] font-extrabold">{intelligence.summary.activeOrders}</p></div>
+          {canOrder && <div className="rounded-xl border border-current/10 bg-white/55 px-3 py-2 text-center"><p className="text-[9.5px] font-bold uppercase tracking-wider opacity-60">Aktiv</p><p className="mt-0.5 text-[20px] font-extrabold">{intelligence.summary.activeOrders}</p></div>}
           <div className="rounded-xl border border-current/10 bg-white/55 px-3 py-2 text-center"><p className="text-[9.5px] font-bold uppercase tracking-wider opacity-60">Potenziale</p><p className="mt-0.5 text-[20px] font-extrabold">{intelligence.summary.openOpportunities}</p></div>
           <div className="rounded-xl border border-current/10 bg-white/55 px-3 py-2 text-center"><p className="text-[9.5px] font-bold uppercase tracking-wider opacity-60">Kontakte</p><p className="mt-0.5 text-[20px] font-extrabold">{intelligence.summary.activities}</p></div>
         </div>
@@ -106,11 +106,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6" aria-label="Customer 360 Kennzahlen">
       {[
-        ["Aufträge aktiv", intelligence.summary.activeOrders, FilePlus2],
+        ...(canOrder ? [["Aufträge aktiv", intelligence.summary.activeOrders, FilePlus2]] : []),
         ["Offene Potenziale", intelligence.summary.openOpportunities, Target],
         ["Aktivitäten", intelligence.summary.activities, Activity],
         ["Empfehlungen", intelligence.summary.referrals, Network],
-        ["Überfällige Tasks", intelligence.summary.overdueTasks, AlertTriangle],
+        ...(canTask ? [["Überfällige Aufgaben", intelligence.summary.overdueTasks, AlertTriangle]] : []),
         ["Servicefälle", activeServiceCases.length, AlertTriangle],
       ].map(([label, value, Icon]) => {
         const IconComponent = Icon as typeof Activity;
@@ -133,7 +133,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-600" /><h2 className="text-[15px] font-extrabold">Risiken & Service-Signale</h2></div>
           {intelligence.riskFlags.length ? <div className="mt-3 space-y-2">{intelligence.riskFlags.map((flag) => <div key={flag.key} className={"rounded-xl border p-3 " + (flag.severity === "critical" ? "border-red-200 bg-red-50" : flag.severity === "high" ? "border-amber-200 bg-amber-50" : "border-line bg-paper")}><p className="text-[12.5px] font-extrabold">{flag.label}</p><p className="mt-1 text-[11px] leading-relaxed text-steel">{flag.detail}</p></div>)}</div> : <p className="mt-3 text-[12px] text-steel">Keine akuten Risiken aus den dokumentierten Daten.</p>}
         </Card>
-        <Card>
+        {canOrder && <Card>
           <div className="flex items-center gap-2"><Target className="h-4 w-4 text-electric-deep" /><h2 className="text-[15px] font-extrabold">Bedarfsabdeckung</h2></div>
           <p className="mt-1 text-[11.5px] text-steel">Keine automatische Verkaufsvorgabe: Diese Hinweise zeigen nur noch nicht dokumentierte Bereiche.</p>
           <div className="mt-3">
@@ -141,7 +141,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             <div className="mt-2 flex flex-wrap gap-1.5">{intelligence.coverage.activeCategories.length ? intelligence.coverage.activeCategories.map((item) => <span key={item} className="chip border-emerald-200 bg-emerald-50 text-emerald-800">{item}</span>) : <span className="text-[11.5px] text-steel">Noch kein aktiver Produktbereich dokumentiert.</span>}</div>
           </div>
           {intelligence.coverage.crossSellSignals.length > 0 && <div className="mt-4"><p className="text-[10.5px] font-extrabold uppercase tracking-wider text-steel">Noch nicht abgedeckt</p><div className="mt-2 flex flex-wrap gap-1.5">{intelligence.coverage.crossSellSignals.map((item) => <span key={item} className="chip border-electric/20 bg-electric/[0.06] text-electric-deep">{item}</span>)}</div></div>}
-        </Card>
+        </Card>}
       </section>
     )}
 
@@ -153,13 +153,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
         <p className="mt-1 text-[11.5px] text-steel">{hasContact ? "Kontaktweg vorhanden" : "Telefon oder E-Mail ergänzen"}</p>
       </div>
-      <div className={"rounded-2xl border px-4 py-3 " + (data.orders.length ? "border-emerald-200 bg-emerald-50" : "border-line bg-white")}>
+      {canOrder && <div className={"rounded-2xl border px-4 py-3 " + (data.orders.length ? "border-emerald-200 bg-emerald-50" : "border-line bg-white")}>
         <div className="flex items-center gap-2">
           <FilePlus2 className={"h-4 w-4 " + (data.orders.length ? "text-emerald-700" : "text-electric-deep")} />
           <p className="text-[11px] font-extrabold uppercase tracking-[0.12em]">2 · Auftrag</p>
         </div>
         <p className="mt-1 text-[11.5px] text-steel">{data.orders.length ? data.orders.length + " Auftrag/Aufträge vorhanden" : "Bedarf klären und Auftrag anlegen"}</p>
-      </div>
+      </div>}
       <div className={"rounded-2xl border px-4 py-3 " + (data.referrals.length ? "border-electric/20 bg-electric/[0.06]" : "border-line bg-white")}>
         <div className="flex items-center gap-2">
           <Network className="h-4 w-4 text-electric-deep" />
@@ -180,7 +180,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               <p className="text-[11.5px] text-steel">{data.referralSource.sourceCustomerNumber}{data.referralSource.relationship ? " · " + data.referralSource.relationship : ""}</p>
             </div>
           </div>
-          <Link href={"/portal/kunden/" + data.referralSource.sourceCustomerId} className="inline-flex h-9 items-center rounded-full border border-electric/20 bg-white px-3.5 text-[11.5px] font-bold text-electric-deep hover:bg-electric/[0.05]">
+          <Link href={"/portal/kunden/" + data.referralSource.sourceCustomerId} className="inline-flex min-h-11 items-center rounded-full border border-electric/20 bg-white px-3.5 text-[11.5px] font-bold text-electric-deep hover:bg-electric/[0.05]">
             Empfehlenden Kunden öffnen
           </Link>
         </div>
@@ -189,11 +189,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     )}
 
     <div className="grid gap-4 lg:grid-cols-5">
-      <Card className="lg:col-span-2">
+      <Card className={canOrder ? "lg:col-span-2" : "lg:col-span-5"}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="text-[16px] font-extrabold">Stammdaten</h2><p className="mt-0.5 text-[11.5px] text-steel">Kontakt- und Grunddaten der Kundenakte.</p></div>
           {canEdit && <CustomerEditForm
             customerId={customer.id}
+            customerType={customer.type}
             firstName={customer.firstName}
             lastName={customer.lastName}
             companyName={customer.companyName}
@@ -214,13 +215,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           ["Tags", customer.tags.join(", ")],
         ].map(([key, value]) => <div key={key as string}><dt className="text-[11.5px] font-semibold uppercase tracking-wider text-steel">{key}</dt><dd className="mt-0.5 font-medium">{value || "–"}</dd></div>)}
       </dl></Card>
-      <Card className="lg:col-span-3"><div className="flex items-center justify-between"><h2 className="text-[16px] font-extrabold">Aufträge</h2><span className="text-[12.5px] text-steel">{data.orders.length}</span></div>
+      {canOrder && <Card className="lg:col-span-3"><div className="flex items-center justify-between"><h2 className="text-[16px] font-extrabold">Aufträge</h2><span className="text-[12.5px] text-steel">{data.orders.length}</span></div>
         {data.orders.length === 0 ? <p className="mt-6 text-[14px] text-steel">Noch keine Aufträge.</p> :
         <ul className="mt-3 divide-y divide-line">{data.orders.map((row) => <li key={row.order.id}><Link href={`/portal/auftraege/${row.order.id}`} className="block py-3">
           <div className="flex items-center justify-between gap-3"><p className="font-semibold">{row.order.orderNumber} · {row.providerName}</p><span className="chip border-line bg-white">{row.order.status}</span></div>
           <p className="text-[12.5px] text-steel">{row.productName || "Ohne Produkt"} · {formatDate(row.order.createdAt)}</p>
         </Link></li>)}</ul>}
-      </Card>
+      </Card>}
     </div>
 
     <section className="space-y-4">
@@ -252,7 +253,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
     <Card className="p-0 sm:p-0">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
-        <div><p className="eyebrow text-electric-deep">360° Timeline</p><h2 className="mt-1 text-[18px] font-extrabold">Komplette Kundenhistorie</h2><p className="mt-1 text-[11.5px] text-steel">Kontakte, Leads, Anrufe, Aufträge, Aufgaben, Empfehlungen und Potenziale chronologisch zusammengeführt.</p></div>
+        <div><p className="eyebrow text-electric-deep">360° Timeline</p><h2 className="mt-1 text-[18px] font-extrabold">Kundenhistorie</h2><p className="mt-1 text-[11.5px] text-steel">{["Kontakte", ...(canLead ? ["Leads und Anrufe"] : []), ...(canOrder ? ["Aufträge"] : []), ...(canTask ? ["Aufgaben"] : []), "Empfehlungen und Potenziale"].join(", ")} – chronologisch gemäß deinen Zugriffsrechten.</p></div>
         <span className="text-[11px] font-bold text-steel">{data.timeline.length} Ereignisse</span>
       </div>
       {data.timeline.length ? (

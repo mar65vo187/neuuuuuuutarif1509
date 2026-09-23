@@ -40,6 +40,7 @@ export type CustomerIntelligenceInput = {
   referralCount: number;
   availableCategories: string[];
   now?: Date;
+  canReadOrders?: boolean;
 };
 
 export type CustomerRiskFlag = {
@@ -93,6 +94,7 @@ function unique(values: Array<string | null | undefined>) {
 }
 
 export function getCustomerIntelligence(input: CustomerIntelligenceInput): CustomerIntelligence {
+  const canReadOrders = input.canReadOrders !== false;
   const now = input.now ?? new Date();
   const nowMs = now.getTime();
   const createdAt = time(input.customer.createdAt) ?? nowMs;
@@ -101,7 +103,8 @@ export function getCustomerIntelligence(input: CustomerIntelligenceInput): Custo
   const workingTaskStatuses = new Set(["open", "in_progress"]);
   const openOpportunityStatuses = new Set(["open", "qualified", "later"]);
 
-  const activeOrders = input.orders.filter((order) => activeOrderStatuses.has(order.status));
+  const visibleOrders = canReadOrders ? input.orders : [];
+  const activeOrders = visibleOrders.filter((order) => activeOrderStatuses.has(order.status));
   const openOpportunities = input.opportunities.filter((item) => openOpportunityStatuses.has(item.status));
   const overdueTasks = input.tasks.filter((task) => {
     const due = time(task.dueAt);
@@ -111,7 +114,7 @@ export function getCustomerIntelligence(input: CustomerIntelligenceInput): Custo
     const review = time(item.nextReviewAt);
     return review !== null && review < nowMs;
   });
-  const documentsMissing = input.orders.filter((order) => order.status === "documents_missing");
+  const documentsMissing = visibleOrders.filter((order) => order.status === "documents_missing");
 
   const activityContactTimes = input.activities
     .filter((activity) => activity.type !== "note")
@@ -126,7 +129,7 @@ export function getCustomerIntelligence(input: CustomerIntelligenceInput): Custo
   const activeCategories = unique(activeOrders.map((order) => order.category));
   const opportunityCategories = unique(openOpportunities.map((item) => item.category));
   const coveredCategoryKeys = new Set([...activeCategories, ...opportunityCategories].map((item) => item.toLocaleLowerCase("de-DE")));
-  const crossSellSignals = unique(input.availableCategories)
+  const crossSellSignals = unique(canReadOrders ? input.availableCategories : [])
     .filter((category) => !coveredCategoryKeys.has(category.toLocaleLowerCase("de-DE")))
     .slice(0, 4);
 
@@ -181,7 +184,7 @@ export function getCustomerIntelligence(input: CustomerIntelligenceInput): Custo
 
   const nextReviewMs = time(input.profile?.nextReviewAt);
   let retention: CustomerIntelligence["retention"];
-  if (customerAgeDays < 30 && activeOrders.length === 0) {
+  if (canReadOrders && customerAgeDays < 30 && activeOrders.length === 0) {
     retention = {
       status: "new",
       label: "Neue Kundenbeziehung",
@@ -218,14 +221,16 @@ export function getCustomerIntelligence(input: CustomerIntelligenceInput): Custo
   if (!input.customer.preferredChannel) missing.push("Wunschkanal");
   if (lastContactMs === 0) missing.push("Kontaktaktivität");
   if (!input.profile?.nextReviewAt && activeOrders.length > 0) missing.push("Bestandscheck");
-  if (activeOrders.length === 0 && openOpportunities.length === 0) missing.push("Produkt-/Potenzialbild");
+  if (canReadOrders && activeOrders.length === 0 && openOpportunities.length === 0) missing.push("Produkt-/Potenzialbild");
 
   const checks = [
     Boolean(input.customer.phone || input.customer.email),
     Boolean(input.customer.preferredChannel),
     lastContactMs > 0,
-    Boolean(input.profile?.nextReviewAt) || activeOrders.length === 0,
-    activeOrders.length > 0 || openOpportunities.length > 0,
+    ...(canReadOrders ? [
+      Boolean(input.profile?.nextReviewAt) || activeOrders.length === 0,
+      activeOrders.length > 0 || openOpportunities.length > 0,
+    ] : []),
   ];
   const completeness = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
