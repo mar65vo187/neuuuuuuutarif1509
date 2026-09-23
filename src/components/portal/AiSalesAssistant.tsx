@@ -59,7 +59,7 @@ export function AiSalesAssistant({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: question.trim(), mode, audience }),
-        signal: AbortSignal.timeout(35_000),
+        signal: AbortSignal.timeout(60_000),
       });
       if (response.status === 401) {
         window.location.replace("/portal/login?next=%2Fportal%2Fassistent");
@@ -78,7 +78,11 @@ export function AiSalesAssistant({
         remaining: Number(json.remaining ?? 0),
       });
     } catch (problem) {
-      setError(problem instanceof Error ? problem.message : "Die KI konnte gerade nicht antworten.");
+      if (problem instanceof DOMException && problem.name === "TimeoutError") {
+        setError("Die KI hat länger als 60 Sekunden benötigt. Bitte erneut versuchen oder die Frage etwas kürzer formulieren.");
+      } else {
+        setError(problem instanceof Error ? problem.message : "Die KI konnte gerade nicht antworten.");
+      }
     } finally {
       sending.current = false;
       setBusy(false);
@@ -149,7 +153,7 @@ export function AiSalesAssistant({
           <button type="submit" disabled={!configured || busy || question.trim().length < 3} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-electric px-4 text-[12.5px] font-extrabold text-white hover:bg-electric-deep disabled:opacity-45">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {busy ? "KI arbeitet…" : "KI fragen"}
           </button>
-          <p className="text-[10.5px] leading-relaxed text-silver/70">Free-Tier-Schutz: maximal {dailyLimit} erfolgreiche Antworten pro Mitarbeiter und Tag. {trainingIncluded ? "Freigegebene Schulungsinhalte sind einbezogen." : "Schulungs-Volltexte werden standardmäßig nicht an externe Free-Modelle gesendet."}</p>
+          <p className="text-[10.5px] leading-relaxed text-silver/70">Interner Nutzungsschutz: maximal {dailyLimit} erfolgreiche Antworten pro Mitarbeiter und Tag. {trainingIncluded ? "Freigegebene Schulungsinhalte sind einbezogen." : "Schulungs-Volltexte werden standardmäßig nicht an externe Free-Modelle gesendet."}</p>
         </form>
 
         <div className="min-h-[420px] rounded-[22px] border border-white/8 bg-black/20 p-4 sm:p-5">
