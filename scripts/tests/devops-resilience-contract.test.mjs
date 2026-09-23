@@ -64,3 +64,13 @@ test("production readiness requires explicit legal address and runtime smoke gat
   assert.match(concurrencySmoke, /RUNTIME_SMOKE_CONCURRENCY/);
   assert.match(concurrencySmoke, /p95/);
 });
+
+test("Vercel acts only as a front door to the validated Railway production app", () => {
+  const config = read("next.config.ts");
+  assert.match(config, /process\.env\.VERCEL !== "1"/);
+  assert.match(config, /beforeFiles/);
+  assert.match(config, /source: "\/:path\*"/);
+  assert.match(config, /https:\/\/tarifwerk-prod-production\.up\.railway\.app\/:path\*/);
+  assert.match(config, /afterFiles: \[\]/);
+  assert.match(config, /fallback: \[\]/);
+});
