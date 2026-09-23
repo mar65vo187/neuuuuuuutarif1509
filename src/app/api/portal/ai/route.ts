@@ -10,8 +10,12 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   question: z.string().trim().min(3).max(5000),
-  mode: z.enum(["coach", "objection", "message", "product", "pitch"]).default("coach"),
+  mode: z.enum(["coach", "roleplay", "debrief", "objection", "message", "product", "pitch"]).default("coach"),
   audience: z.enum(["b2c", "b2b"]).default("b2c"),
+  history: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string().trim().min(1).max(5000),
+  }).strict()).max(10).default([]),
 }).strict();
 
 async function usedToday(employeeId: number) {
@@ -63,7 +67,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
 
   try {
-    const parsed = schema.safeParse(await readJsonBody(request, 24 * 1024));
+    const parsed = schema.safeParse(await readJsonBody(request, 64 * 1024));
     if (!parsed.success) {
       return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Bitte Eingabe prüfen." }, { status: 422 });
     }
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({
         ok: false,
-        error: "Das heutige kostenlose KI-Kontingent für diesen Zugang ist erreicht.",
+        error: "Das heutige interne KI-Kontingent für diesen Zugang ist erreicht.",
         remaining: 0,
       }, { status: 429 });
     }

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { QuickContact } from "@/components/site/QuickContact";
+import { PublicAiChat } from "@/components/site/PublicAiChat";
 import { JourneyContext } from "@/components/site/JourneyContext";
 import { REGIONS, SERVICES, SITE } from "@/lib/content";
 import { resolveSiteAudience } from "@/lib/audience-server";
@@ -101,6 +102,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         {children}
       </main>
       <Footer audience={audience} />
+      <PublicAiChat audience={audience} />
       <QuickContact audience={audience} />
     </>
   );
