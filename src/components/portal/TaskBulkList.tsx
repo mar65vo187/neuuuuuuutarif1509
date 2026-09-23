@@ -79,9 +79,12 @@ export function TaskBulkList({ rows, assignees = [] }: { rows: Row[]; assignees?
                   </p>
                   <p className="inline-flex items-start gap-2 text-steel"><UserRound aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><span>Zuständig: {task.assigneeName || "Nicht zugewiesen"}</span></p>
                 </div>
-                {task.entityType === "general" ? <p className="mt-3 text-sm text-steel">Allgemeine Aufgabe</p> : task.entityHref ? (
-                  <Link href={task.entityHref} className="mt-2 inline-flex min-h-11 max-w-full items-center gap-2 rounded-lg py-2 text-sm font-semibold text-electric-deep hover:underline"><span className="break-words">{ENTITY_LABELS[task.entityType] ?? "Bezug"}: {task.entityTitle || `#${task.entityId}`}</span><ArrowUpRight aria-hidden="true" className="h-4 w-4 shrink-0" /></Link>
-                ) : <p className="mt-3 text-sm text-steel">Verknüpfter Datensatz nicht verfügbar.</p>}
+                {task.entityType === "general" ? <p className="mt-3 text-sm text-steel">Allgemeine Aufgabe</p> : (
+                  <Link href={task.entityHref || "/portal/aufgaben"} className="mt-2 inline-flex min-h-11 max-w-full items-center gap-2 rounded-lg py-2 text-sm font-semibold text-electric-deep hover:underline">
+                    <span className="break-words">{task.entityHref ? `${ENTITY_LABELS[task.entityType] ?? "Bezug"}: ${task.entityTitle || `#${task.entityId}`}` : "Verknüpfter Datensatz nicht verfügbar · Zur Aufgabenliste"}</span>
+                    <ArrowUpRight aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  </Link>
+                )}
                 {task.entitySubtitle && <p className="break-words text-sm text-steel">{task.entitySubtitle}</p>}
               </div>
               <TaskActions key={`${task.id}:${task.status}:${task.priority}:${task.dueAt ?? ""}`} id={task.id} title={task.title} status={task.status} priority={task.priority} dueAt={task.dueAt} />
