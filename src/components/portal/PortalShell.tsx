@@ -134,11 +134,11 @@ export function PortalShell({
       <a href="#portal-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-blue-600 focus:px-5 focus:py-3 focus:text-white">Zum Arbeitsbereich</a>
       <aside className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-[radial-gradient(circle_at_top_left,rgba(79,141,255,0.16),transparent_32%),#060b16] px-5 py-3 text-white lg:h-screen lg:flex-col lg:items-stretch lg:justify-start lg:border-b-0 lg:border-r lg:border-white/8 lg:px-5 lg:py-6">
         <div className="flex min-w-0 items-center gap-3"><Logo size={34} href="/portal" withWordmark={false} /><div className="min-w-0"><p className="text-sm font-extrabold tracking-wide text-white">TarifWerk CRM</p><p className="mt-0.5 truncate text-xs text-silver"><span className="lg:hidden">{currentHelp.title}</span><span className="hidden lg:inline">Vertrieb & Betrieb</span></p></div></div>
-        <div className="hidden lg:mt-6 lg:block"><label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" /><input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.055] pl-9 pr-3 text-[12.5px] text-white placeholder:text-silver/65 focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/15" placeholder="Bereich suchen…" aria-label="Portalbereich suchen" /></label></div>
+        <div className="hidden lg:mt-6 lg:block"><label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-silver" /><input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setNavQuery(""); }} className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.055] pl-9 pr-3 text-[12.5px] text-white placeholder:text-silver/65 focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/15" placeholder="Bereich suchen…" aria-label="Portalbereich suchen" /></label></div>
         <nav className="no-scrollbar hidden lg:mt-5 lg:flex lg:max-w-none lg:flex-col lg:gap-4 lg:overflow-y-auto" aria-label="Portal">
           {navigationSections.map((section) => (
             <div key={section.label} className="contents lg:block">
-              <p className="mb-1 hidden px-3 text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-silver/45 lg:block">{section.label}</p>
+              <p className="mb-1 hidden px-3 text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-silver/70 lg:block">{section.label}</p>
               <div className="contents lg:block lg:space-y-0.5">
                 {section.items.map((n) => {
                   const exact = "exact" in n && n.exact;
@@ -146,7 +146,7 @@ export function PortalShell({
                   const Icon = n.icon;
                   return (
                     <div key={n.href} className={`group/nav flex shrink-0 items-center rounded-xl transition ${active ? "bg-white/10" : "hover:bg-white/6"}`}>
-                      <Link href={n.href}
+                      <Link href={n.href} onClick={() => setNavQuery("")}
                         aria-current={active ? "page" : undefined}
                         className={`inline-flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${active ? "text-white" : "text-silver hover:text-white"}`}>
                         <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-electric-soft" : ""}`} />
@@ -161,6 +161,7 @@ export function PortalShell({
               </div>
             </div>
           ))}
+          {navigationSections.length === 0 && <p className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-silver/80" role="status">Kein Bereich gefunden. Suchbegriff ändern oder mit Esc löschen.</p>}
         </nav>
         <div className="hidden lg:mt-auto lg:block">
           <Link href="/" className="inline-flex items-center gap-2 text-[13px] text-silver hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Website öffnen</Link>
@@ -183,14 +184,14 @@ export function PortalShell({
           <div><h2 id="portal-navigation-title" className="text-lg font-bold">Dein Arbeitsbereich</h2><p className="mt-1 text-sm text-slate-400">{user.name}</p></div>
           <button type="button" onClick={closeMobileMenu} aria-label="Navigation schließen" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-700"><X className="h-5 w-5" /></button>
         </div>
-        <label className="mt-5 block text-sm font-medium">Bereich suchen<input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} className="field mt-2 min-h-11" placeholder="Leads, Kunden, Aufgaben …" /></label>
+        <label className="mt-5 block text-sm font-medium">Bereich suchen<input value={navQuery} onChange={(event) => setNavQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setNavQuery(""); }} className="field mt-2 min-h-11" placeholder="Leads, Kunden, Aufgaben …" /></label>
         <nav aria-label="Mobile Portalnavigation" className="mt-5 space-y-5">
           {navigationSections.map((section) => <section key={section.label}>
             <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">{section.label}</h3>
             <div className="space-y-1">{section.items.map((item) => {
               const active = "exact" in item && item.exact ? pathname === item.href : pathname.startsWith(item.href);
               const Icon = item.icon;
-              return <Link key={item.href} href={item.href} onClick={closeMobileMenu} aria-current={active ? "page" : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${active ? "bg-blue-600 text-white" : "text-slate-200 hover:bg-slate-800"}`}><Icon className="h-5 w-5 shrink-0" />{item.label}</Link>;
+              return <Link key={item.href} href={item.href} onClick={() => { setNavQuery(""); closeMobileMenu(); }} aria-current={active ? "page" : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${active ? "bg-blue-600 text-white" : "text-slate-200 hover:bg-slate-800"}`}><Icon className="h-5 w-5 shrink-0" />{item.label}</Link>;
             })}</div>
           </section>)}
           {navigationSections.length === 0 && <p className="text-sm text-slate-400" role="status">Kein Bereich gefunden. Versuche einen anderen Suchbegriff.</p>}
