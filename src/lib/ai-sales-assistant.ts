@@ -174,7 +174,7 @@ async function productKnowledge(question: string) {
       ...requiredDocuments,
     ].join(" ");
     return { ...row, salesArguments, objections, checklist, requiredDocuments, score: scoreText(combined, tokens) };
-  }).sort((a, b) => b.score - a.score || a.product_name.localeCompare(b.product_name, "de")).slice(0, 12);
+  }).sort((a, b) => b.score - a.score || a.product_name.localeCompare(b.product_name, "de")).slice(0, 6);
 }
 
 async function trainingKnowledge(question: string) {
@@ -198,7 +198,7 @@ function staticKnowledge() {
   const services = SERVICES.map((service) => ({
     name: service.name,
     intro: service.intro,
-    checks: service.checks.slice(0, 5),
+    checks: service.checks.slice(0, 3),
   }));
   return {
     company: {
