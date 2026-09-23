@@ -42,6 +42,7 @@ test("AI redacts common PII and never stores prompt contents in telemetry", () =
   assert.match(engine, /\[E-Mail entfernt\]/);
   assert.match(engine, /\[Telefon entfernt\]/);
   assert.match(engine, /sanitizeHistory/);
+  assert.match(engine, /const cleaned = redactPrompt\(message\.content\);\s*redactions \+= cleaned\.redactions;\s*return \{\s*role: message\.role,/);
   assert.match(route, /dailyLimit/);
   assert.match(route, /ai_assistant_usage/);
   assert.doesNotMatch(migration, /\b(prompt|response_text|question|answer)\s+(text|jsonb|varchar)/i);
@@ -81,6 +82,9 @@ test("internal AI supports conversational roleplay and debrief training", () => 
   assert.match(route, /roleplay/);
   assert.match(client, /Live-Rollenspiel/);
   assert.match(client, /Gespräch auswerten/);
+  assert.match(client, /KI-Einrichtung fehlt/);
+  assert.match(client, /Kundenakten getrennt/);
+  assert.match(client, /Training neu starten/);
   assert.match(client, /history/);
 });
 

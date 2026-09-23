@@ -123,12 +123,12 @@ export function redactPrompt(input: string) {
 function sanitizeHistory(history: AiAssistantHistoryMessage[]) {
   let redactions = 0;
   const messages = history.slice(-8).map((message) => {
-    if (message.role === "assistant") {
-      return { role: "assistant" as const, content: message.content.trim().slice(0, 2800) };
-    }
     const cleaned = redactPrompt(message.content);
     redactions += cleaned.redactions;
-    return { role: "user" as const, content: cleaned.text.slice(0, 3200) };
+    return {
+      role: message.role,
+      content: cleaned.text.slice(message.role === "assistant" ? 2800 : 3200),
+    };
   }).filter((message) => message.content.length > 0);
   return { messages, redactions };
 }

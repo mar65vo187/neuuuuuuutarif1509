@@ -136,6 +136,7 @@ export function AiSalesAssistant({
   }
 
   function resetTraining(nextMode?: Mode) {
+    if (sending.current) return;
     setThread([]);
     setMeta(null);
     setError("");
@@ -170,12 +171,15 @@ export function AiSalesAssistant({
           </div>
           <div className="flex flex-wrap gap-2">
             <span className={"inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10.5px] font-bold " + (configured ? "border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-200" : "border-amber-300/20 bg-amber-300/[0.08] text-amber-200")}>
-              <span className={"h-2 w-2 rounded-full " + (configured ? "bg-emerald-300" : "bg-amber-300")} /> {configured ? "Coach bereit" : "API-Key fehlt"}
+              <span className={"h-2 w-2 rounded-full " + (configured ? "bg-emerald-300" : "bg-amber-300")} /> {configured ? "KI konfiguriert" : "KI-Einrichtung fehlt"}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-bold text-silver"><ShieldCheck className="h-3.5 w-3.5" /> Keine CRM-PII</span>
-            <button type="button" onClick={() => resetTraining()} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-bold text-silver hover:bg-white/8 hover:text-white"><RotateCcw className="h-3.5 w-3.5" /> Neuer Drill</button>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-bold text-silver" title="Leads und Kundenakten werden nicht automatisch an die KI übermittelt. Deine Frage und der Verlauf gehen mit freigegebenem TarifWerk-Wissen an den konfigurierten Anbieter. Bitte Beispiele anonymisieren; E-Mail-Adressen und Telefonnummern werden vor dem Versand entfernt." aria-label="Kundenakten werden nicht automatisch an die KI übermittelt"><ShieldCheck className="h-3.5 w-3.5" /> Kundenakten getrennt</span>
+            <button type="button" onClick={() => resetTraining()} disabled={busy} title="Aktuellen Verlauf verwerfen und neues Training starten" aria-label="Training neu starten; aktueller Verlauf wird verworfen" className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-bold text-silver hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"><RotateCcw className="h-3.5 w-3.5" /> Training neu starten</button>
           </div>
         </div>
+        {!configured && (
+          <p role="status" className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-3.5 py-3 text-[11.5px] leading-relaxed text-amber-100">Der KI-Coach kann noch nicht antworten. Bitte den TarifWerk-Administrator informieren; für echte Antworten muss ein KI-Anbieter-Schlüssel sicher auf dem Server hinterlegt sein.</p>
+        )}
       </div>
 
       <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[0.82fr_1.18fr]">
@@ -184,7 +188,7 @@ export function AiSalesAssistant({
             <p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-silver">Trainingsmodus</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {MODES.map((item) => (
-                <button key={item.key} type="button" onClick={() => { if (item.key !== mode) resetTraining(item.key); }} aria-pressed={mode === item.key} className={"rounded-xl border p-3 text-left transition " + (mode === item.key ? "border-electric/50 bg-electric/[0.11]" : "border-white/8 bg-white/[0.03] hover:bg-white/[0.06]")}>
+                <button key={item.key} type="button" onClick={() => { if (item.key !== mode) resetTraining(item.key); }} disabled={busy} aria-pressed={mode === item.key} className={"rounded-xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 " + (mode === item.key ? "border-electric/50 bg-electric/[0.11]" : "border-white/8 bg-white/[0.03] hover:bg-white/[0.06]")}>
                   <p className="text-[11.5px] font-extrabold text-white">{item.label}</p>
                   <p className="mt-0.5 text-[10.5px] leading-relaxed text-silver">{item.hint}</p>
                 </button>
@@ -193,13 +197,14 @@ export function AiSalesAssistant({
           </div>
 
           <div className="flex gap-2">
-            <button type="button" onClick={() => { setAudience("b2c"); resetTraining(); }} className={"h-9 rounded-full border px-3 text-[11px] font-bold " + (audience === "b2c" ? "border-white bg-white text-ink" : "border-white/10 text-silver")}>Privat</button>
-            <button type="button" onClick={() => { setAudience("b2b"); resetTraining(); }} className={"h-9 rounded-full border px-3 text-[11px] font-bold " + (audience === "b2b" ? "border-champagne bg-champagne text-ink" : "border-white/10 text-silver")}>Business</button>
+            <button type="button" onClick={() => { setAudience("b2c"); resetTraining(); }} disabled={busy} className={"h-9 rounded-full border px-3 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-50 " + (audience === "b2c" ? "border-white bg-white text-ink" : "border-white/10 text-silver")}>Privat</button>
+            <button type="button" onClick={() => { setAudience("b2b"); resetTraining(); }} disabled={busy} className={"h-9 rounded-full border px-3 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-50 " + (audience === "b2b" ? "border-champagne bg-champagne text-ink" : "border-white/10 text-silver")}>Business</button>
           </div>
 
           <label className="block">
             <span className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-silver">{roleplay ? "Deine nächste Aussage im Rollenspiel" : "Frage / Trainingsaufgabe"}</span>
-            <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={5} maxLength={5000} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-[13px] leading-relaxed text-white outline-none placeholder:text-silver/50 focus:border-electric/50 focus:ring-2 focus:ring-electric/10" placeholder={roleplay ? "Sprich mit dem Kunden. Für eine Auswertung schreibe später: Stopp, gib mir Feedback." : "Keine Kundennamen, E-Mail-Adressen oder Telefonnummern eingeben…"} />
+            <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={5} maxLength={5000} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-[13px] leading-relaxed text-white outline-none placeholder:text-silver/50 focus:border-electric/50 focus:ring-2 focus:ring-electric/10" placeholder={roleplay ? "Übe mit einer anonymisierten Kundensituation. Für Feedback schreibe später: Stopp." : "Keine Kundennamen, E-Mail-Adressen oder Telefonnummern eingeben…"} />
+            <span className="mt-2 block text-[10.5px] leading-relaxed text-silver/70">Deine Frage und der Verlauf werden mit freigegebenem TarifWerk-Wissen an den KI-Anbieter gesendet. Kundenakten werden nicht automatisch angehängt. Bitte Namen und weitere Angaben anonymisieren; E-Mail-Adressen und Telefonnummern werden vor dem Versand entfernt.</span>
           </label>
 
           {thread.length === 0 && <div className="flex flex-wrap gap-1.5">
