@@ -130,7 +130,14 @@ export async function POST(req: NextRequest) {
         preferredTime: data.preferredTime || null,
         advisorId,
         source: data.source || "website",
-        meta: { ...(data.meta ?? {}), userAgent: req.headers.get("user-agent")?.slice(0, 200) ?? null },
+        meta: {
+          ...(data.meta ?? {}),
+          userAgent: req.headers.get("user-agent")?.slice(0, 200) ?? null,
+          consentGranted: true,
+          consentPurpose: "lead_response",
+          consentRecordedAt: new Date().toISOString(),
+          consentSource: "website_form",
+        },
       })
       .returning({ id: leads.id });
 

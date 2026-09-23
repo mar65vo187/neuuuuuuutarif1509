@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Network, Phone, PhoneCall } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
 import { LeadProductManager } from "@/components/portal/LeadProductManager";
+import { LeadOracleCouncil } from "@/components/portal/LeadOracleCouncil";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
 import { getLead, getLeadCallActivities, getLeadNotes, getLeadProductLinks, listLeadProductOptions } from "@/lib/queries";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, SITUATIONS } from "@/lib/content";
@@ -142,6 +143,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
         )}
       </section>
+
+      <LeadOracleCouncil leadId={lead.id} />
 
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-3">
