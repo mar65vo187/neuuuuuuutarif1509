@@ -43,3 +43,14 @@ test("public AI widget is mounted globally on public site with human handoff", (
   assert.match(widget, /Keine persönlichen Daten im Chat teilen/);
   assert.match(widget, /\/api\/public-ai/);
 });
+
+test("public AI keeps context and output bounded for production latency", () => {
+  const engine = read("src/lib/public-ai-assistant.ts");
+  assert.match(engine, /slice\(0, 16_000\)/);
+  assert.match(engine, /slice\(-6\)/);
+  assert.match(engine, /max_tokens: 500/);
+  assert.match(engine, /reasoning_effort: "none"/);
+  assert.match(engine, /AbortSignal\.timeout\(50_000\)/);
+  assert.match(engine, /relevantServices/);
+  assert.match(engine, /serviceOverview/);
+});

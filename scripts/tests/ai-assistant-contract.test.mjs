@@ -90,3 +90,13 @@ test("curated sales academy migration seeds internal-only training modules", () 
   assert.match(migration, /Rollenspiel-Scorecard/);
   assert.doesNotMatch(migration, /fake scarcity|dark psychology/i);
 });
+
+test("internal AI retrieval stays focused enough for interactive coaching", () => {
+  const engine = read("src/lib/ai-sales-assistant.ts");
+  assert.match(engine, /slice\(0, 6\)/);
+  assert.match(engine, /slice\(0, 4\)/);
+  assert.match(engine, /slice\(0, 45_000\)/);
+  assert.match(engine, /max_tokens: 1200/);
+  assert.match(engine, /reasoning_effort: "none"/);
+  assert.match(engine, /slice\(-8_000\)/);
+});
