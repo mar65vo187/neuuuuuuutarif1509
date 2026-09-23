@@ -50,7 +50,7 @@ export function PublicAiChat({ audience }: { audience: AudienceMode }) {
   async function send(text: string) {
     const value = text.trim();
     if (sending.current || value.length < 2) return;
-    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: value }].slice(-10);
+    const nextMessages: ChatMessage[] = [...messages, { role: "user" as const, content: value }].slice(-10);
     setMessages(nextMessages);
     setInput("");
     setBusy(true);
@@ -77,7 +77,7 @@ export function PublicAiChat({ audience }: { audience: AudienceMode }) {
       if (!response.ok || !json?.ok || typeof json.text !== "string") {
         throw new Error(json?.error ?? "Der KI-Berater konnte gerade nicht antworten.");
       }
-      setMessages((current) => [...current, { role: "assistant", content: json.text! }].slice(-10));
+      setMessages((current) => [...current, { role: "assistant" as const, content: json.text! }].slice(-10));
       setRedactions(Number(json.redactions ?? 0));
     } catch (problem) {
       if (problem instanceof DOMException && problem.name === "TimeoutError") {
