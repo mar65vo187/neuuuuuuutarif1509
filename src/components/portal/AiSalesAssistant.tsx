@@ -89,7 +89,7 @@ export function AiSalesAssistant({
     setBusy(true);
     setError("");
     setCopied(false);
-    setThread((current) => [...current, { role: "user", content: value }]);
+    setThread((current) => [...current, { role: "user" as const, content: value }]);
     setQuestion("");
 
     try {
@@ -114,7 +114,7 @@ export function AiSalesAssistant({
         throw new Error(json?.error ?? "Die KI konnte gerade nicht antworten.");
       }
 
-      setThread((current) => [...current, { role: "assistant", content: json.text! }].slice(-12));
+      setThread((current) => [...current, { role: "assistant" as const, content: json.text! }].slice(-12));
       setMeta({
         provider: json.provider === "xkiro" ? "xkiro" : json.provider === "openrouter" ? "openrouter" : "gemini",
         model: String(json.model ?? ""),
