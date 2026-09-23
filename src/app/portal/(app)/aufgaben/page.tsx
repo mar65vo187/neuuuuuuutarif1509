@@ -194,6 +194,7 @@ export default async function TasksPage({
             rows={rows.map(({ task, assigneeName, overdue, entityTitle, entitySubtitle, entityHref }) => ({
               id: task.id,
               title: task.title,
+              description: task.description,
               priority: task.priority,
               status: task.status,
               dueAt: task.dueAt?.toISOString() ?? null,

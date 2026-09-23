@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, Loader2, Plus } from "lucide-react";
+import { parseBerlinDateTimeInput } from "@/lib/portal-date-time";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 
@@ -36,7 +37,7 @@ export function QuickTaskComposer({
           description: data.get("description"),
           priority: data.get("priority"),
           assignedToEmployeeId: Number(data.get("assignedToEmployeeId") || currentUserId),
-          dueAt: due ? new Date(due).toISOString() : null,
+          dueAt: parseBerlinDateTimeInput(due),
           entityType: "general",
           entityId: 0,
         }),
@@ -62,14 +63,14 @@ export function QuickTaskComposer({
   return (
     <form onSubmit={submit} className="space-y-3">
       <label className="label">Aufgabe
-        <input name="title" required minLength={2} maxLength={180} className="field mt-1" placeholder="z. B. Kunde zurückrufen" />
+        <input name="title" required minLength={2} maxLength={180} className="field mt-1 min-h-11" placeholder="z. B. Kunde zurückrufen" />
       </label>
       <label className="label">Notiz
         <textarea name="description" maxLength={2000} rows={2} className="field mt-1 resize-none" placeholder="Optionaler Kontext" />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="label">Priorität
-          <select name="priority" defaultValue="normal" className="field mt-1">
+          <select name="priority" defaultValue="normal" className="field mt-1 min-h-11">
             <option value="low">Niedrig</option>
             <option value="normal">Normal</option>
             <option value="high">Hoch</option>
@@ -77,12 +78,12 @@ export function QuickTaskComposer({
           </select>
         </label>
         <label className="label">Fällig
-          <input name="dueAt" type="datetime-local" className="field mt-1" />
+          <input name="dueAt" type="datetime-local" className="field mt-1 min-h-11" />
         </label>
       </div>
       {assignees.length > 1 && (
         <label className="label">Zuweisen an
-          <select name="assignedToEmployeeId" defaultValue={String(currentUserId)} className="field mt-1">
+          <select name="assignedToEmployeeId" defaultValue={String(currentUserId)} className="field mt-1 min-h-11">
             {assignees.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
           </select>
         </label>
