@@ -103,7 +103,7 @@ function safeObjections(value: unknown): Array<{ objection: string; answer: stri
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is { objection: string; answer: string } =>
     Boolean(item && typeof item === "object" && typeof (item as { objection?: unknown }).objection === "string" && typeof (item as { answer?: unknown }).answer === "string"),
-  ).slice(0, 12);
+  ).slice(0, 6);
 }
 
 export function redactPrompt(input: string) {
@@ -122,13 +122,13 @@ export function redactPrompt(input: string) {
 
 function sanitizeHistory(history: AiAssistantHistoryMessage[]) {
   let redactions = 0;
-  const messages = history.slice(-10).map((message) => {
+  const messages = history.slice(-8).map((message) => {
     if (message.role === "assistant") {
-      return { role: "assistant" as const, content: message.content.trim().slice(0, 5000) };
+      return { role: "assistant" as const, content: message.content.trim().slice(0, 2800) };
     }
     const cleaned = redactPrompt(message.content);
     redactions += cleaned.redactions;
-    return { role: "user" as const, content: cleaned.text };
+    return { role: "user" as const, content: cleaned.text.slice(0, 3200) };
   }).filter((message) => message.content.length > 0);
   return { messages, redactions };
 }
@@ -190,7 +190,7 @@ async function trainingKnowledge(question: string) {
   return result.rows
     .map((row) => ({ ...row, score: scoreText([row.title, row.category, row.description, row.content].join(" "), tokens) }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
+    .slice(0, 4)
     .map(({ score: _score, ...row }) => row);
 }
 
@@ -229,7 +229,7 @@ export async function buildAiKnowledge(question: string) {
     "TarifWerk Unternehmensgrundsätze",
     ...products.map((row) => row.provider_name + " · " + row.product_name),
     ...training.map((row) => "Schulung · " + row.title),
-  ].slice(0, 24);
+  ].slice(0, 14);
 
   const productContext = products.map((row) => ({
     product: row.product_name,
@@ -257,9 +257,9 @@ export async function buildAiKnowledge(question: string) {
         title: row.title,
         category: row.category,
         description: row.description,
-        content: row.content.slice(0, 7000),
+        content: row.content.slice(0, 3500),
       })),
-    }).slice(0, 90_000),
+    }).slice(0, 45_000),
   };
 }
 
@@ -301,8 +301,9 @@ async function callXkiro(system: string, input: string) {
         { role: "system", content: system },
         { role: "user", content: input },
       ],
-      max_tokens: 1800,
-      temperature: 0.45,
+      max_tokens: 1200,
+      temperature: 0.4,
+      reasoning_effort: "none",
     }),
     signal: AbortSignal.timeout(55_000),
   });
@@ -395,7 +396,7 @@ export async function askTarifWerkAi(input: {
   const knowledgeQuery = [
     ...history.messages.filter((message) => message.role === "user").map((message) => message.content),
     redacted.text,
-  ].join(" ").slice(-12_000);
+  ].join(" ").slice(-8_000);
   const knowledge = await buildAiKnowledge(knowledgeQuery);
 
   const system = [
