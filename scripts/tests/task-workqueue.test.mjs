@@ -75,5 +75,5 @@ test("task list supports inline editing and deterministic Berlin-local appointme
   assert.match(page, /description: task\.description/);
   assert.match(dateTime, /Europe\/Berlin/);
   assert.match(dateTime, /wegen der Zeitumstellung in Berlin nicht/);
-  assert.match(dateTime, /zweimal vorkommt/);
+  assert.match(dateTime, /zweimal vor/);
 });
