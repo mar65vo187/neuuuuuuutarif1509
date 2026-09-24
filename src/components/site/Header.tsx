@@ -11,6 +11,7 @@ import { withAudience, type AudienceMode } from "@/lib/audience";
 
 const NAV = [
   { href: "/leistungen", label: "Leistungen" },
+  { href: "/optimierungsservice", label: "Optimieren" },
   { href: "/berater", label: "Beratung" },
   { href: "/ueber-uns", label: "Über uns" },
   { href: "/karriere", label: "Karriere" },
