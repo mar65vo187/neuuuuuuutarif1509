@@ -46,13 +46,25 @@ test("public AI widget is mounted globally on public site with human handoff", (
   assert.match(widget, /\/api\/public-ai/);
 });
 
+test("public AI uses Groq Qwen as primary provider with bounded resilient fallback", () => {
+  const engine = read("src/lib/public-ai-assistant.ts");
+  assert.match(engine, /api\.groq\.com\/openai\/v1\/chat\/completions/);
+  assert.match(engine, /qwen\/qwen3\.8-27b/);
+  assert.match(engine, /GROQ_API_KEY/);
+  assert.match(engine, /TARIFWERK_PUBLIC_AI_GROQ_MODEL/);
+  assert.match(engine, /reasoning_effort: "none"/);
+  assert.match(engine, /include_reasoning: false/);
+  assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
+  assert.match(engine, /callXkiroFallback/);
+});
+
 test("public AI keeps context and output bounded for production latency", () => {
   const engine = read("src/lib/public-ai-assistant.ts");
   assert.match(engine, /slice\(0, 16_000\)/);
   assert.match(engine, /slice\(-6\)/);
-  assert.match(engine, /max_tokens: 500/);
-  assert.match(engine, /reasoning_effort: "none"/);
-  assert.match(engine, /AbortSignal\.timeout\(50_000\)/);
+  assert.match(engine, /max_completion_tokens: 520/);
+  assert.match(engine, /timeoutMs: 22_000/);
   assert.match(engine, /relevantServices/);
   assert.match(engine, /serviceOverview/);
+  assert.match(engine, /cleanModelText/);
 });
