@@ -7,7 +7,7 @@ type Mode = "coach" | "roleplay" | "debrief" | "objection" | "message" | "produc
 type ThreadMessage = { role: "user" | "assistant"; content: string };
 
 type AnswerMeta = {
-  provider: "xkiro" | "gemini" | "openrouter";
+  provider: "groq" | "xkiro" | "gemini" | "openrouter";
   model: string;
   sources: string[];
   redactions: number;
@@ -116,7 +116,7 @@ export function AiSalesAssistant({
 
       setThread((current) => [...current, { role: "assistant" as const, content: json.text! }].slice(-12));
       setMeta({
-        provider: json.provider === "xkiro" ? "xkiro" : json.provider === "openrouter" ? "openrouter" : "gemini",
+        provider: json.provider === "groq" ? "groq" : json.provider === "xkiro" ? "xkiro" : json.provider === "openrouter" ? "openrouter" : "gemini",
         model: String(json.model ?? ""),
         sources: Array.isArray(json.sources) ? json.sources.map(String) : [],
         redactions: Number(json.redactions ?? 0),

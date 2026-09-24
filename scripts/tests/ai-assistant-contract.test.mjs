@@ -4,8 +4,12 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../../" + path, import.meta.url), "utf8");
 
-test("real AI assistant supports Xkiro, Gemini and OpenRouter providers", () => {
+test("real AI assistant supports Groq, Xkiro, Gemini and OpenRouter providers", () => {
   const engine = read("src/lib/ai-sales-assistant.ts");
+  assert.match(engine, /api\.groq\.com\/openai\/v1\/chat\/completions/);
+  assert.match(engine, /GROQ_API_KEY/);
+  assert.match(engine, /qwen\/qwen3\.8-27b/);
+  assert.match(engine, /callGroq/);
   assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
   assert.match(engine, /qwen\/qwen3\.8-omni-flash:free/);
   assert.match(engine, /XKIRO_API_KEY/);
@@ -16,6 +20,8 @@ test("real AI assistant supports Xkiro, Gemini and OpenRouter providers", () => 
   assert.match(engine, /openrouter\.ai\/api\/v1\/chat\/completions/);
   assert.match(engine, /openrouter\/free/);
   assert.match(engine, /TARIFWERK_AI_PROVIDER/);
+  assert.match(engine, /tryGroq/);
+  assert.match(engine, /groq: Boolean\(process\.env\.GROQ_API_KEY/);
 });
 
 test("AI knowledge comes from approved company, product and optional training data", () => {
@@ -83,6 +89,7 @@ test("internal AI supports conversational roleplay and debrief training", () => 
   assert.match(client, /Live-Rollenspiel/);
   assert.match(client, /Gespräch auswerten/);
   assert.match(client, /KI-Einrichtung fehlt/);
+  assert.match(client, /provider: "groq" \| "xkiro"/);
   assert.match(client, /Kundenakten getrennt/);
   assert.match(client, /Training neu starten/);
   assert.match(client, /history/);
