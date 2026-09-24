@@ -12,6 +12,7 @@ const REQUIRED_TABLES = [
   "employee_images", "team_messages", "portal_sessions", "portal_login_rate_limits",
   "marketing_campaign_spend", "public_intake_rate_limits", "ai_assistant_usage",
   "optimization_subscriptions", "optimization_requests", "optimization_offers", "optimization_documents", "optimization_events", "optimization_contract_notices",
+  "prospect_contacts", "prospect_contact_product_links",
 ] as const;
 
 export async function GET() {
