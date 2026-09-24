@@ -258,7 +258,7 @@ export async function upsertOptimizationMembership(user: SessionUser, input: {
         status,
         monthlyPriceCents: OPTIMIZATION_MEMBERSHIP_PRICE_CENTS,
         planCode: OPTIMIZATION_PLAN_CODE,
-        ownerEmployeeId: existing.ownerEmployeeId ?? user.id,
+        ownerEmployeeId: customer.ownerEmployeeId ?? existing.ownerEmployeeId ?? user.id,
         billingProvider,
         billingCustomerRef,
         billingSubscriptionRef,
@@ -283,7 +283,7 @@ export async function upsertOptimizationMembership(user: SessionUser, input: {
       planCode: OPTIMIZATION_PLAN_CODE,
       monthlyPriceCents: OPTIMIZATION_MEMBERSHIP_PRICE_CENTS,
       status,
-      ownerEmployeeId: user.id,
+      ownerEmployeeId: customer.ownerEmployeeId ?? user.id,
       billingProvider,
       billingCustomerRef,
       billingSubscriptionRef,
@@ -333,14 +333,14 @@ export async function createOptimizationGoal(user: SessionUser, input: {
       targetDate,
       budgetCents,
       financingNeeded,
-      assignedEmployeeId: user.id,
+      assignedEmployeeId: customer.ownerEmployeeId ?? user.id,
       createdByEmployeeId: user.id,
     }).returning();
     await writeAudit(tx, user.id, "optimization.goal.created", "optimization_goal", created.id, undefined, {
       customerId: customer.id, category, priority,
     });
     await emitEvent(tx, "optimization.goal.created", "optimization_goal", created.id, {
-      customerId: customer.id, category, assignedEmployeeId: user.id,
+      customerId: customer.id, category, assignedEmployeeId: customer.ownerEmployeeId ?? user.id,
     });
     return created;
   });
