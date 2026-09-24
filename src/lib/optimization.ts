@@ -27,7 +27,7 @@ export const OPTIMIZATION_STATUS_LABELS: Record<string, string> = {
   qualified: "Geprüft",
   collecting_docs: "Unterlagen fehlen",
   market_scan: "Angebote werden geprüft",
-  offers_ready: "3er-Vergleich bereit",
+  offers_ready: "Vergleich wird vorbereitet",
   waiting_customer: "Kundenentscheidung",
   accepted: "Angebot gewählt",
   implementation: "Umsetzung läuft",
@@ -55,7 +55,7 @@ export async function getOptimizationHubData(user: SessionUser) {
     ? ""
     : "where (s.owner_employee_id = $1 or c.owner_employee_id = $1 or r.assigned_employee_id = $1)";
 
-  const [statsResult, subscriptionsResult, requestsResult, employeesResult] = await Promise.all([
+  const [statsResult, subscriptionsResult, requestsResult, documentsResult, employeesResult, providersResult] = await Promise.all([
     pool.query<{
       active_subscriptions: number;
       mrr_cents: number;
@@ -96,23 +96,39 @@ export async function getOptimizationHubData(user: SessionUser) {
       params,
     ),
     pool.query<{
-      id: number; subscription_id: number; customer_name: string; request_type: string; status: string; priority: string;
+      id: number; subscription_id: number; customer_name: string; public_token: string; request_type: string; status: string; priority: string;
       title: string; description: string; financing_wanted: boolean; assigned_employee_id: number | null; assignee_name: string | null;
       created_at: Date; updated_at: Date; offer_count: number; sent_offer_count: number;
+      offers: Array<{ id: number; rank: number; title: string; status: string; monthly_cents: number | null; estimated_savings_cents: number | null }>;
     }>(
-      "select r.id,r.subscription_id,s.customer_name,r.request_type,r.status,r.priority,r.title,r.description,r.financing_wanted," +
+      "select r.id,r.subscription_id,s.customer_name,s.public_token,r.request_type,r.status,r.priority,r.title,r.description,r.financing_wanted," +
       " r.assigned_employee_id,e.name as assignee_name,r.created_at,r.updated_at," +
-      " count(o.id)::int as offer_count,count(o.id) filter (where o.status in ('sent','accepted','rejected'))::int as sent_offer_count" +
+      " count(o.id)::int as offer_count,count(o.id) filter (where o.status in ('sent','accepted','rejected'))::int as sent_offer_count," +
+      " coalesce(json_agg(json_build_object('id',o.id,'rank',o.rank,'title',o.title,'status',o.status,'monthly_cents',o.monthly_cents,'estimated_savings_cents',o.estimated_savings_cents) order by o.rank)" +
+      " filter (where o.id is not null),'[]'::json) as offers" +
       " from optimization_requests r join optimization_subscriptions s on s.id=r.subscription_id" +
       " left join customers c on c.id=s.customer_id left join employees e on e.id=r.assigned_employee_id" +
       " left join optimization_offers o on o.request_id=r.id " + requestScope +
-      " group by r.id,s.customer_name,e.name order by" +
+      " group by r.id,s.customer_name,s.public_token,e.name order by" +
       " case r.priority when 'critical' then 0 when 'high' then 1 when 'normal' then 2 else 3 end,r.updated_at desc limit 200",
+      params,
+    ),
+    pool.query<{
+      id: number; subscription_id: number; request_id: number | null; customer_name: string; request_title: string | null;
+      category: string; filename: string; content_type: string; size_bytes: number; created_at: Date;
+    }>(
+      "select d.id,d.subscription_id,d.request_id,s.customer_name,r.title as request_title,d.category,d.filename,d.content_type,d.size_bytes,d.created_at" +
+      " from optimization_documents d join optimization_subscriptions s on s.id=d.subscription_id" +
+      " left join customers c on c.id=s.customer_id left join optimization_requests r on r.id=d.request_id " + requestScope +
+      " order by d.created_at desc limit 150",
       params,
     ),
     admin
       ? pool.query<{ id: number; name: string }>("select id,name from employees where active=true order by name asc")
-      : Promise.resolve({ rows: [{ id: user.id, name: user.name }] } as { rows: Array<{ id: number; name: string }> }),
+      : Promise.resolve({ rows: [{ id: user.id, name: user.name }] }),
+    pool.query<{ id: number; name: string; category: string }>(
+      "select id,name,category from providers where active=true order by category,name limit 500",
+    ),
   ]);
 
   return {
@@ -121,7 +137,9 @@ export async function getOptimizationHubData(user: SessionUser) {
     },
     subscriptions: subscriptionsResult.rows,
     requests: requestsResult.rows,
+    documents: documentsResult.rows,
     employees: employeesResult.rows,
+    providers: providersResult.rows,
     isAdmin: admin,
   };
 }
