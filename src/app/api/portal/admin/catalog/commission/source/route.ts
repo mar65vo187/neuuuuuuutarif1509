@@ -17,7 +17,9 @@ const ALLOWED = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel",
+  "application/octet-stream",
 ]);
+const ALLOWED_EXTENSIONS = new Set(["csv", "pdf", "xls", "xlsx"]);
 
 function safeFilename(value: string) {
   return value.replace(/[\u0000-\u001f\u007f/\\]/g, "_").slice(0, 180) || "provisionsliste";
@@ -37,7 +39,10 @@ export async function POST(request: NextRequest) {
     if (!(file instanceof File)) return NextResponse.json({ ok: false, error: "Bitte eine Datei auswählen." }, { status: 422 });
     if (!Number.isInteger(providerId) || providerId <= 0) return NextResponse.json({ ok: false, error: "Bitte einen Partner auswählen." }, { status: 422 });
     if (file.size < 1 || file.size > MAX_SIZE) return NextResponse.json({ ok: false, error: "Datei darf maximal 12 MB groß sein." }, { status: 413 });
-    if (!ALLOWED.has(file.type)) return NextResponse.json({ ok: false, error: "Erlaubt sind CSV, XLS/XLSX und PDF." }, { status: 415 });
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ALLOWED_EXTENSIONS.has(extension) || (file.type && !ALLOWED.has(file.type))) {
+      return NextResponse.json({ ok: false, error: "Erlaubt sind CSV, XLS/XLSX und PDF." }, { status: 415 });
+    }
 
     const [provider] = await db.select({ id: providers.id, name: providers.name }).from(providers).where(eq(providers.id, providerId)).limit(1);
     if (!provider) return NextResponse.json({ ok: false, error: "Partner nicht gefunden." }, { status: 404 });
