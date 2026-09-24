@@ -4,7 +4,7 @@ import { pool } from "@/db";
 import { isSameOriginRequest } from "@/lib/auth";
 import { optimizationCheckoutSchema } from "@/lib/optimization-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
-import { SITE } from "@/lib/content";
+import { SITE } from "@/lib/content";\nimport { transactionalEmailReady } from "@/lib/transactional-email";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -84,13 +84,14 @@ export async function POST(request: NextRequest) {
   const token = randomBytes(32).toString("hex");
   const now = new Date();
 
+  const onlineBillingReady = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_OPTIMIZATION_PRICE_ID && transactionalEmailReady());
   const created = await pool.query<{ id: number }>(
     "insert into optimization_subscriptions(public_token,plan_code,price_cents,currency,billing_provider,billing_status,status,customer_name,email,phone,consent_terms_at,consent_privacy_at)" +
     " values($1,'optimierung_plus',199,'EUR',$2,$3,'onboarding',$4,$5,$6,$7,$7) returning id",
     [
       token,
-      process.env.STRIPE_SECRET_KEY && process.env.STRIPE_OPTIMIZATION_PRICE_ID ? "stripe" : "manual",
-      process.env.STRIPE_SECRET_KEY && process.env.STRIPE_OPTIMIZATION_PRICE_ID ? "pending" : "pending_manual",
+      onlineBillingReady ? "stripe" : "manual",
+      onlineBillingReady ? "pending" : "pending_manual",
       data.name,
       data.email,
       data.phone || null,
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
 
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   const stripePrice = process.env.STRIPE_OPTIMIZATION_PRICE_ID;
-  if (!stripeSecret || !stripePrice) {
+  if (!onlineBillingReady || !stripeSecret || !stripePrice) {
     return NextResponse.json({
       ok: true,
       pending: true,
