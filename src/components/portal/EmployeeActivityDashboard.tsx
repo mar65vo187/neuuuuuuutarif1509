@@ -17,6 +17,7 @@ type ActivityEmployee = {
   lastLoginAt: string | null;
   lastActionAt: string | null;
   activeDays7: number;
+  contacts7: number;
   leads7: number;
   calls7: number;
   customerActivities7: number;
@@ -182,9 +183,10 @@ export function EmployeeActivityDashboard({ employees, stats, currentAdminId }: 
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-7">
               {[
                 ["Aktive Tage", employee.activeDays7],
+                ["Kontakte", employee.contacts7],
                 ["Leads", employee.leads7],
                 ["Calls", employee.calls7],
                 ["Kundenaktionen", employee.customerActivities7],
