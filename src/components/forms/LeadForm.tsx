@@ -66,13 +66,29 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
 
   const canNext = step === 0 ? Boolean(form.topic && form.situation) : true;
 
+  const goNext = () => {
+    setError(null);
+    setErrorField(null);
+    if (!form.topic) {
+      setError(business ? "Bitte wählen Sie zuerst ein Thema." : "Bitte wähle zuerst ein Thema.");
+      setErrorField("topic");
+      return;
+    }
+    if (!form.situation) {
+      setError(business ? "Bitte wählen Sie Ihre aktuelle Situation." : "Bitte wähle deine aktuelle Situation.");
+      setErrorField("situation");
+      return;
+    }
+    setStep(1);
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (sending.current) return;
     setError(null);
     setErrorField(null);
     if (step === 0) {
-      if (canNext) setStep(1);
+      goNext();
       return;
     }
     if (!form.topic || !form.situation) {
@@ -358,7 +374,7 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
             </Button>
           )}
           {step === 0 ? (
-            <Button type="button" disabled={!canNext} onClick={() => setStep(1)} iconRight={<ArrowRight />}>
+            <Button type="button" onClick={goNext} iconRight={<ArrowRight />}>
               {business ? "Weiter" : "Weiter"}
             </Button>
           ) : (
