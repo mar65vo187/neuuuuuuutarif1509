@@ -27,8 +27,8 @@ function initialMessage(audience: AudienceMode): ChatMessage {
   return {
     role: "assistant",
     content: audience === "b2b"
-      ? "Hallo! Ich bin der digitale TarifWerk KI-Berater. Was möchten Sie für Ihr Unternehmen gerade einfacher, günstiger oder übersichtlicher lösen?"
-      : "Hi! Ich bin der digitale TarifWerk KI-Berater. Worum geht es bei dir gerade – Vertrag, Energie, Absicherung, Zuhause oder etwas ganz anderes?",
+      ? "Hallo! Ich bin TarifWerks KI. Was möchten Sie für Ihr Unternehmen gerade einfacher, günstiger oder übersichtlicher lösen?"
+      : "Hi! Ich bin TarifWerks KI. Worum geht es bei dir gerade – Vertrag, Energie, Absicherung, Zuhause oder etwas ganz anderes?",
   };
 }
 
@@ -92,7 +92,7 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
         redactions?: number;
       } | null;
       if (!response.ok || !json?.ok || typeof json.text !== "string") {
-        throw new Error(json?.error ?? "Der KI-Berater konnte gerade nicht antworten.");
+        throw new Error(json?.error ?? "TarifWerks KI konnte gerade nicht antworten.");
       }
       setMessages((current) => [...current, { role: "assistant" as const, content: json.text! }].slice(-10));
       setRedactions(Number(json.redactions ?? 0));
@@ -100,7 +100,7 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
       if (problem instanceof DOMException && problem.name === "TimeoutError") {
         setError("Die Antwort dauert gerade zu lange. Bitte versuche es noch einmal.");
       } else {
-        setError(problem instanceof Error ? problem.message : "Der KI-Berater konnte gerade nicht antworten.");
+        setError(problem instanceof Error ? problem.message : "TarifWerks KI konnte gerade nicht antworten.");
       }
     } finally {
       sending.current = false;
@@ -119,16 +119,16 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
         <section
           role="dialog"
           aria-modal="true"
-          aria-label="TarifWerk KI-Berater"
+          aria-label="TarifWerks KI"
           className="fixed bottom-[88px] right-3 z-[70] flex max-h-[min(690px,calc(100dvh-120px))] w-[min(410px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[26px] border border-white/12 bg-[#071324]/98 text-white shadow-[0_30px_90px_-24px_rgba(0,0,0,.9)] backdrop-blur-xl md:bottom-24 md:right-6"
         >
           <header className="flex items-center gap-3 border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(79,141,255,.24),transparent_42%)] p-4">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-electric text-white"><Bot className="h-5 w-5" /></span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-electric-soft">TarifWerk · digitaler KI-Berater</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-electric-soft">TarifWerks KI · digitale Erstorientierung</p>
               <p className="mt-0.5 text-[13px] font-bold">Schnell klären, was für dich Sinn ergibt.</p>
             </div>
-            <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl text-silver hover:bg-white/8 hover:text-white" aria-label="KI-Berater schließen"><X className="h-4.5 w-4.5" /></button>
+            <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl text-silver hover:bg-white/8 hover:text-white" aria-label="TarifWerks KI schließen"><X className="h-4.5 w-4.5" /></button>
           </header>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -163,7 +163,7 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
 
           <div className="border-t border-white/10 p-3.5">
             <form onSubmit={submit} className="flex gap-2">
-              <label className="sr-only" htmlFor="public-ai-message">Nachricht an den KI-Berater</label>
+              <label className="sr-only" htmlFor="public-ai-message">Nachricht an TarifWerks KI</label>
               <input
                 id="public-ai-message"
                 ref={inputRef}
@@ -177,7 +177,7 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
             </form>
             <div className="mt-2.5 flex items-center justify-between gap-3">
               <p className="inline-flex items-center gap-1.5 text-[9.5px] leading-relaxed text-silver/65"><ShieldCheck className="h-3 w-3" /> Keine persönlichen Daten im Chat teilen.</p>
-              <Link href={withAudience("/anfrage", audience)} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-extrabold text-electric-soft hover:text-white">Persönlich beraten lassen <ChevronRight className="h-3.5 w-3.5" /></Link>
+              <Link href={withAudience("/anfrage?via=tarifwerks-ki", audience)} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-extrabold text-electric-soft hover:text-white">Persönlich beraten lassen <ChevronRight className="h-3.5 w-3.5" /></Link>
             </div>
           </div>
         </section>
@@ -188,10 +188,10 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
         onClick={() => setOpen((value) => !value)}
         className="fixed bottom-[76px] right-3 z-[69] inline-flex h-12 items-center gap-2 rounded-full border border-electric/30 bg-ink-800 px-3.5 text-[11px] font-extrabold text-white shadow-[0_16px_44px_-16px_rgba(79,141,255,.7)] transition hover:-translate-y-0.5 hover:border-electric/60 md:bottom-24 md:right-6 md:h-13 md:px-4"
         aria-expanded={open}
-        aria-label={open ? "TarifWerk KI-Berater schließen" : "TarifWerk KI-Berater öffnen"}
+        aria-label={open ? "TarifWerks KI schließen" : "TarifWerks KI öffnen"}
       >
         <span className="relative grid h-7 w-7 place-items-center rounded-full bg-electric text-white"><Sparkles className="h-3.5 w-3.5" /></span>
-        <span className="hidden sm:inline">{open ? "Chat schließen" : "KI-Berater fragen"}</span>
+        <span className="hidden sm:inline">{open ? "Chat schließen" : "TarifWerks KI fragen"}</span>
         <MessageCircle className="h-4 w-4 sm:hidden" />
       </button>
     </>

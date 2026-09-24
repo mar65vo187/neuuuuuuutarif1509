@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
     }
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Der KI-Berater ist gerade nicht verfügbar." },
+      { ok: false, error: error instanceof Error ? error.message : "TarifWerks KI ist gerade nicht verfügbar." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
