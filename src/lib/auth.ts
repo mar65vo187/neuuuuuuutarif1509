@@ -168,7 +168,7 @@ export type SessionUser = Pick<Employee, "id" | "name" | "email" | "role" | "adv
 };
 
 export function isPortalOwner(user: Pick<SessionUser, "email" | "role">): boolean {
-  const ownerEmail = (process.env.PORTAL_OWNER_EMAIL || process.env.PORTAL_ADMIN_EMAIL || "").trim().toLowerCase();
+  const ownerEmail = (process.env.PORTAL_OWNER_EMAIL || "").trim().toLowerCase();
   return user.role === "admin" && ownerEmail.length > 0 && user.email.trim().toLowerCase() === ownerEmail;
 }
 
