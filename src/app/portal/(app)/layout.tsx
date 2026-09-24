@@ -22,7 +22,7 @@ const PORTAL_PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
   ["/portal/leads", "Leads & Termine"],
   ["/portal/service/neu", "Servicefall anlegen"],
   ["/portal/service", "Service & Fälle"],
-  ["/portal/assistent", "KI & Arbeitsassistent"],
+  ["/portal/assistent", "KI & Arbeitsassistent"],\n  ["/portal/optimierung", "Optimierung+"],
   ["/portal/aufgaben", "Aufgaben & Wiedervorlagen"],
   ["/portal/empfehlungen", "Empfehlungen"],
   ["/portal/finanzen", "Provisionsübersicht"],
