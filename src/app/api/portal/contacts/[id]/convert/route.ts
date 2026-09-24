@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { leadNotes, leads } from "@/db/schema";
 import { leadProductLinks, prospectContactProductLinks, prospectContacts, tasks } from "@/db/enterprise-schema";
