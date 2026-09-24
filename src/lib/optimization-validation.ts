@@ -56,6 +56,16 @@ export const optimizationActionSchema = z.discriminatedUnion("action", [
     note: z.string().trim().max(3000).optional(),
   }),
   z.object({
+    action: z.literal("goal_status"),
+    goalId: z.number().int().positive(),
+    status: z.enum(["open", "researching", "offers_ready", "completed", "cancelled"]),
+  }),
+  z.object({
+    action: z.literal("contract_status"),
+    contractId: z.number().int().positive(),
+    status: z.enum(["active", "review_due", "switch_planned", "cancelled", "expired"]),
+  }),
+  z.object({
     action: z.literal("offer_status"),
     offerId: z.number().int().positive(),
     status: z.enum(["draft", "proposed", "accepted", "rejected", "expired"]),
