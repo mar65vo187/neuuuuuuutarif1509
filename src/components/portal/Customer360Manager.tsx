@@ -239,7 +239,7 @@ export function Customer360Manager({
           </button>
         </section>
 
-        <section className="rounded-[22px] border border-electric/15 bg-slate-900 p-4 sm:p-5">
+        <section className="rounded-[22px] border border-electric/15 bg-[linear-gradient(145deg,rgba(79,141,255,0.07),rgba(255,255,255,0.96))] p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-electric text-white"><Target className="h-4 w-4" /></span>
             <div><h3 className="text-[14px] font-extrabold">Opportunity erfassen</h3><p className="mt-0.5 text-[11.5px] text-steel">Nur tatsächlichen Bedarf oder konkretes Folgepotenzial dokumentieren.</p></div>
