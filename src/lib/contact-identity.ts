@@ -1,4 +1,4 @@
-import { and, eq, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { and, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { customers, prospectContacts } from "@/db/enterprise-schema";
