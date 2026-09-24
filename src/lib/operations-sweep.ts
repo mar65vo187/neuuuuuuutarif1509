@@ -199,7 +199,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
         'optimization_review_due',
         'Optimierungsservice · Bestandscheck fällig',
         'Der geplante Review im TarifWerk Optimierungsservice ist fällig. Verträge, Wünsche, offene Angebote und neue Ziele gemeinsam prüfen.',
-        CASE WHEN om.next_review_at < now() - interval '14 days' THEN 'high' ELSE 'normal' END,
+        CASE WHEN om.next_review_at < now() - $1::int * interval '1 day' THEN 'high' ELSE 'normal' END,
         'open', now(), now(), now()
       FROM optimization_memberships om
       INNER JOIN customers c ON c.id = om.customer_id
@@ -218,7 +218,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       ORDER BY om.next_review_at ASC
       LIMIT 500
       RETURNING id
-    `);
+    `, [operationsPolicy.customerReviewHighDays]);
 
     const optimizationContractReviews = await client.query<{ id: number }>(`
       WITH due AS (
