@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS optimization_offers (
   monthly_cost_cents integer CHECK (monthly_cost_cents IS NULL OR monthly_cost_cents >= 0),
   one_time_cost_cents integer CHECK (one_time_cost_cents IS NULL OR one_time_cost_cents >= 0),
   term_months integer CHECK (term_months IS NULL OR term_months >= 0),
-  position integer NOT NULL DEFAULT 1 CHECK (position BETWEEN 1 AND 10),
+  position integer NOT NULL DEFAULT 1 CHECK (position BETWEEN 1 AND 3),
   status text NOT NULL DEFAULT 'proposed' CHECK (status IN ('draft','proposed','accepted','rejected','expired')),
   valid_until date,
   note text NOT NULL DEFAULT '',
@@ -95,6 +95,9 @@ CREATE INDEX IF NOT EXISTS optimization_offers_customer_status_idx
   ON optimization_offers(customer_id, status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS optimization_offers_goal_position_idx
   ON optimization_offers(goal_id, position);
+CREATE UNIQUE INDEX IF NOT EXISTS optimization_offers_goal_position_open_unique
+  ON optimization_offers(goal_id, position)
+  WHERE goal_id IS NOT NULL AND status IN ('draft','proposed');
 
 CREATE TABLE IF NOT EXISTS optimization_documents (
   id serial PRIMARY KEY,
