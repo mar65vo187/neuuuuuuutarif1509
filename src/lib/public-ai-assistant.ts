@@ -206,6 +206,7 @@ export async function askPublicTarifWerkAi(input: {
   messages: PublicAiMessage[];
   audience: AudienceMode;
   pagePath: string;
+  allowGroq?: boolean;
 }) {
   let redactions = 0;
   const messages = input.messages.slice(-6).map((message) => {
@@ -237,7 +238,7 @@ export async function askPublicTarifWerkAi(input: {
   const preferred = (process.env.TARIFWERK_PUBLIC_AI_PROVIDER?.trim() || "auto").toLowerCase();
   const errors: string[] = [];
 
-  if (preferred !== "xkiro") {
+  if (preferred !== "xkiro" && input.allowGroq !== false) {
     try {
       const result = await callGroq(system, messages);
       return { ...result, redactions, fallback: false };
@@ -247,14 +248,12 @@ export async function askPublicTarifWerkAi(input: {
     }
   }
 
-  if (preferred !== "groq" || !process.env.GROQ_API_KEY?.trim()) {
-    try {
-      const result = await callXkiroFallback(system, messages);
-      return { ...result, redactions, fallback: preferred !== "xkiro" };
-    } catch (error) {
-      errors.push("xkiro:" + (error instanceof Error ? error.message : "unbekannt"));
-      console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
-    }
+  try {
+    const result = await callXkiroFallback(system, messages);
+    return { ...result, redactions, fallback: preferred !== "xkiro" };
+  } catch (error) {
+    errors.push("xkiro:" + (error instanceof Error ? error.message : "unbekannt"));
+    console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
   }
 
   console.error("[public-ai] all providers unavailable", errors.join(" | "));
