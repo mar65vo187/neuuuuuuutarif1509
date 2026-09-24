@@ -9,7 +9,7 @@ export type PublicAiMessage = {
 
 type ProviderResult = {
   text: string;
-  provider: "groq" | "xkiro";
+  provider: "groq" | "xkiro" | "local";
   model: string;
 };
 
@@ -160,6 +160,52 @@ async function postChatCompletion(input: {
   return text;
 }
 
+function callLocalFallback(input: {
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  audience: AudienceMode;
+  pagePath: string;
+}): ProviderResult {
+  const lastUser = [...input.messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  const normalizedQuestion = normalize(lastUser);
+  const tokens = [...new Set(normalizedQuestion.split(/\s+/).filter((token) => token.length >= 3))];
+
+  const ranked = SERVICES.map((service) => {
+    const audienceText = SERVICE_AUDIENCE_COPY[input.audience][service.key] ?? "";
+    const haystack = normalize([
+      service.slug,
+      service.name,
+      service.short,
+      service.intro,
+      audienceText,
+      ...service.checks,
+      ...service.forWhom,
+    ].join(" "));
+    const score = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0)
+      + (input.pagePath.includes(service.slug) ? 5 : 0);
+    return { service, audienceText, score };
+  }).sort((a, b) => b.score - a.score);
+
+  const best = ranked[0];
+  const salutation = input.audience === "b2b" ? "Sie" : "du";
+  const possessive = input.audience === "b2b" ? "Ihre" : "deine";
+
+  if (best && best.score > 0) {
+    const checks = best.service.checks.slice(0, 2).join(" und ");
+    const text = input.audience === "b2b"
+      ? `Das passt am ehesten zu **${best.service.name}**. ${best.audienceText || best.service.intro}\n\nFür eine erste Einordnung würden wir vor allem ${checks} prüfen. Wenn Sie möchten, können Sie über „Persönlich beraten lassen“ eine konkrete Prüfung anstoßen – ohne dass hier im Chat persönliche Daten nötig sind.\n\nWas ist bei diesem Thema für Sie aktuell am wichtigsten?`
+      : `Das passt am ehesten zu **${best.service.name}**. ${best.audienceText || best.service.intro}\n\nFür eine erste Einordnung würden wir vor allem ${checks} prüfen. Wenn du möchtest, kannst du über „Persönlich beraten lassen“ eine konkrete Prüfung anstoßen – ohne dass du hier im Chat persönliche Daten teilen musst.\n\nWas ist dir bei diesem Thema aktuell am wichtigsten?`;
+    return { text: text.slice(0, 2200), provider: "local", model: "tarifwerk-public-knowledge" };
+  }
+
+  const examples = SERVICES.slice(0, 4).map((service) => service.name).join(", ");
+  const text = input.audience === "b2b"
+    ? `Gern. Ich kann Sie zu den öffentlichen TarifWerk-Themen einordnen – zum Beispiel ${examples}.\n\nNennen Sie mir einfach das Thema oder Ziel, bei dem Sie Unterstützung suchen. Persönliche Daten brauchen Sie hier nicht einzutragen.`
+    : `Gern. Ich kann dich zu den öffentlichen TarifWerk-Themen einordnen – zum Beispiel ${examples}.\n\nSag mir einfach, welches Thema oder Ziel du gerade angehen möchtest. Persönliche Daten brauchst du hier nicht einzutragen.`;
+  void salutation;
+  void possessive;
+  return { text, provider: "local", model: "tarifwerk-public-knowledge" };
+}
+
 async function callGroq(system: string, messages: Array<{ role: "user" | "assistant"; content: string }>): Promise<ProviderResult> {
   const key = process.env.GROQ_API_KEY?.trim();
   if (!key) throw new Error("GROQ_API_KEY fehlt.");
@@ -257,6 +303,7 @@ export async function askPublicTarifWerkAi(input: {
     console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
   }
 
-  console.error("[public-ai] all providers unavailable", errors.join(" | "));
-  throw new Error("Der KI-Berater ist gerade nicht erreichbar. Bitte nutze die persönliche Beratung.");
+  console.error("[public-ai] external providers unavailable; using local fallback", errors.join(" | "));
+  const local = callLocalFallback({ messages, audience: input.audience, pagePath: input.pagePath });
+  return { ...local, redactions, fallback: true };
 }

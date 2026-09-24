@@ -61,6 +61,9 @@ test("public AI uses Groq Qwen as primary provider with bounded resilient fallba
   assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
   assert.match(engine, /callXkiroFallback/);
   assert.match(engine, /allowGroq/);
+  assert.match(engine, /callLocalFallback/);
+  assert.match(engine, /provider: "local"/);
+  assert.match(engine, /tarifwerk-public-knowledge/);
 });
 
 test("public AI keeps context and output bounded for production latency", () => {
