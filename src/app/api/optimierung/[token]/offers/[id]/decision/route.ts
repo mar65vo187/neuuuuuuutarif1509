@@ -43,35 +43,38 @@ export async function POST(request: NextRequest, context: { params: Promise<{ to
   }
 
   const decision = parsed.data.decision;
-  await pool.query("begin");
+  const client = await pool.connect();
   try {
-    await pool.query(
+    await client.query("BEGIN");
+    await client.query(
       "update optimization_offers set status=$2,decision_at=now(),updated_at=now() where id=$1",
       [offerId, decision],
     );
     if (decision === "accepted") {
-      await pool.query(
+      await client.query(
         "update optimization_offers set status='rejected',decision_at=coalesce(decision_at,now()),updated_at=now()" +
         " where request_id=$1 and id<>$2 and status='sent'",
         [row.request_id, offerId],
       );
-      await pool.query(
+      await client.query(
         "update optimization_requests set status='accepted',updated_at=now(),review_due_at=now()+interval '1 day' where id=$1",
         [row.request_id],
       );
     } else {
-      const remaining = await pool.query<{ count: number }>(
+      const remaining = await client.query<{ count: number }>(
         "select count(*)::int as count from optimization_offers where request_id=$1 and status='sent' and id<>$2",
         [row.request_id, offerId],
       );
       if ((remaining.rows[0]?.count ?? 0) === 0) {
-        await pool.query("update optimization_requests set status='market_scan',updated_at=now() where id=$1", [row.request_id]);
+        await client.query("update optimization_requests set status='market_scan',updated_at=now() where id=$1", [row.request_id]);
       }
     }
-    await pool.query("commit");
+    await client.query("COMMIT");
   } catch (error) {
-    await pool.query("rollback");
+    await client.query("ROLLBACK").catch(() => undefined);
     throw error;
+  } finally {
+    client.release();
   }
 
   await writeOptimizationEvent({
