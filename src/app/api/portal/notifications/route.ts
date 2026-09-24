@@ -53,7 +53,13 @@ export async function PATCH(request: NextRequest) {
             lte(notificationQueue.scheduledAt, now),
             or(isNull(notificationQueue.snoozedUntil), lte(notificationQueue.snoozedUntil, now)),
           )
-        : and(base, inArray(notificationQueue.id, parsed.data.ids));
+        : and(
+            base,
+            inArray(notificationQueue.id, parsed.data.ids),
+            parsed.data.action === "archive"
+              ? or(eq(notificationQueue.requiresAck, false), isNotNull(notificationQueue.acknowledgedAt))
+              : undefined,
+          );
 
       const patch: Partial<typeof notificationQueue.$inferInsert> = {};
       if (parsed.data.action === "mark_read") {
