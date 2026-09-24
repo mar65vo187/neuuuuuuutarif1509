@@ -223,7 +223,7 @@ export const commissionListVersions = pgTable("commission_list_versions", {
   version: integer("version").notNull(),
   sourceName: text("source_name").notNull(),
   sourceType: text("source_type").notNull().default("manual"),
-  sourceDocumentId: integer("source_document_id").references(() => internalDocuments.id, { onDelete: "set null" }),
+  sourceDocumentId: integer("source_document_id"),
   validFrom: timestamp("valid_from", { withTimezone: true }),
   validTo: timestamp("valid_to", { withTimezone: true }),
   ownerPoolPercent: numeric("owner_pool_percent", { precision: 5, scale: 2 }).notNull().default("15.00"),
