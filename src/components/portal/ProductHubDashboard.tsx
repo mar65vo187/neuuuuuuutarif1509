@@ -95,6 +95,7 @@ type OwnerData = {
     version: number;
     sourceName: string;
     sourceType: string;
+    sourceDocumentId: number | null;
     validFrom: string | null;
     validTo: string | null;
     createdAt: string;
@@ -728,6 +729,6 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
       </form>
     </section>}
 
-    {data.owner && data.ownerData?.commissionLists.length ? <section className="rounded-[24px] border border-line bg-white p-5 sm:p-6"><div className="flex items-center gap-3"><FileSpreadsheet className="h-5 w-5 text-electric-deep" /><h2 className="text-[17px] font-extrabold">Letzte Provisionslisten</h2></div><div className="mt-4 divide-y divide-line">{data.ownerData.commissionLists.map((list) => <div key={list.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0"><div><p className="text-[13.5px] font-bold">{list.providerName} · Version {list.version}</p><p className="text-[11.5px] text-steel">{list.sourceName} · {list.sourceType}</p></div><p className="text-[12px] text-steel">{date(list.createdAt)}</p></div>)}</div></section> : null}
+    {data.owner && data.ownerData?.commissionLists.length ? <section className="rounded-[24px] border border-line bg-white p-5 sm:p-6"><div className="flex items-center gap-3"><FileSpreadsheet className="h-5 w-5 text-electric-deep" /><h2 className="text-[17px] font-extrabold">Letzte Provisionslisten</h2></div><div className="mt-4 divide-y divide-line">{data.ownerData.commissionLists.map((list) => <div key={list.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0"><div><p className="text-[13.5px] font-bold">{list.providerName} · Version {list.version}</p><p className="text-[11.5px] text-steel">{list.sourceName} · {list.sourceType}</p>{list.sourceDocumentId && <a href={`/api/portal/admin/catalog/commission/source/${list.sourceDocumentId}`} target="_blank" className="mt-1 inline-flex text-[11.5px] font-bold text-electric-deep hover:underline">Originaldatei öffnen</a>}</div><p className="text-[12px] text-steel">{date(list.createdAt)}</p></div>)}</div></section> : null}
   </div>;
 }
