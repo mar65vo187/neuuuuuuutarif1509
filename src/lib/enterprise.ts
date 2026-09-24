@@ -1617,19 +1617,17 @@ export async function listTasks(
   },
 ) {
   const conditions = [taskAccess(user)];
-  if (status === "active") conditions.push(inArray(tasks.status, ["open", "in_progress"]));
-  else if (status !== "all") conditions.push(eq(tasks.status, status));
+  if (status !== "all") conditions.push(eq(tasks.status, status));
   if (options?.priority) conditions.push(eq(tasks.priority, options.priority));
   if (options?.assigneeId && Number.isSafeInteger(options.assigneeId) && options.assigneeId > 0) {
     conditions.push(eq(tasks.assignedToEmployeeId, options.assigneeId));
   }
   if (options?.entityType) conditions.push(eq(tasks.entityType, options.entityType));
-  const search = typeof options?.search === "string" ? options.search.trim().slice(0, 120) : "";
+  const search = options?.search?.trim();
   if (search) {
-    const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
     conditions.push(or(
-      ilike(tasks.title, pattern),
-      ilike(tasks.description, pattern),
+      ilike(tasks.title, `%${search}%`),
+      ilike(tasks.description, `%${search}%`),
     )!);
   }
   if (options?.due === "overdue") {
@@ -1647,8 +1645,7 @@ export async function listTasks(
     conditions.push(isNull(tasks.dueAt));
   }
 
-  const page = Number.isSafeInteger(options?.page) && Number(options?.page) > 0 ? Math.min(Number(options?.page), 100000) : 1;
-
+  const page = Number.isSafeInteger(options?.page) && Number(options?.page) > 0 ? Number(options?.page) : 1;
   const pageSize = Number.isSafeInteger(options?.pageSize) && Number(options?.pageSize) > 0
     ? Math.min(Number(options?.pageSize), 300)
     : 300;
@@ -1793,11 +1790,11 @@ export async function listTasks(
 export async function updateTask(id: number, input: { status?: string; dueAt?: Date | null; priority?: string }, user: SessionUser) {
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(tasks).where(and(eq(tasks.id, id), taskAccess(user))).limit(1).for("update");
-    if (!existing) throw Object.assign(new Error("Aufgabe nicht gefunden."), { status: 404 });
+    if (!existing) throw new Error("Aufgabe nicht gefunden.");
     const patch: Partial<typeof tasks.$inferInsert> = { updatedAt: new Date() };
     if (input.status) {
       patch.status = input.status;
-      patch.completedAt = input.status === "completed" ? existing.completedAt ?? new Date() : null;
+      patch.completedAt = input.status === "completed" ? new Date() : null;
     }
     if (input.dueAt !== undefined) patch.dueAt = input.dueAt;
     if (input.priority) patch.priority = input.priority;
