@@ -13,8 +13,8 @@ import {
   WalletCards,
   XCircle,
 } from "lucide-react";
-import { useMemo, useRef, useState, type FormEvent } from "react";
-import { OPTIMIZATION_CATEGORY_LABELS, OPTIMIZATION_CATEGORIES } from "@/lib/optimization-hub";
+import { useRef, useState, type FormEvent } from "react";
+import { OPTIMIZATION_CATEGORY_LABELS, OPTIMIZATION_CATEGORIES } from "@/lib/optimization-shared";
 
 type CustomerOption = { id: number; customerNumber: string; name: string };
 type MembershipRow = {
