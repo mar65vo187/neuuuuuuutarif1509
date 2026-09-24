@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { advisors, employees, leadNotes, leads, teamMessages, type Advisor } from "@/db/schema";
 import { leadCallActivities, leadProductLinks, productCatalogProfiles, products, providers } from "@/db/enterprise-schema";
 import { SITE } from "@/lib/content";
-import { requireUser, type SessionUser } from "@/lib/auth";
+import { isPortalOwner, requireUser, type SessionUser } from "@/lib/auth";
 import { getLeadPageBounds, leadSearchPattern, normalizeLeadProductFilter } from "@/lib/lead-query-filters";
 
 /* ------------------------------------------------------------------ */
@@ -405,9 +405,111 @@ export async function getDashboardStats(user?: SessionUser) {
 /*  Team-Chat                                                          */
 /* ------------------------------------------------------------------ */
 
-export async function listTeamMessages(channel: "all" | "admins" = "all", limit = 100, user?: SessionUser) {
+export type ChatChannel = "all" | "admins" | "direct";
+
+export type ChatRecipient = {
+  id: number;
+  name: string;
+  email: string;
+  imageUrl: string | null;
+  role: "admin" | "berater";
+};
+
+export async function listChatRecipients(user?: SessionUser): Promise<ChatRecipient[]> {
+  const current = user ?? await requireUser();
+  const rows = await db
+    .select({
+      id: employees.id,
+      name: employees.name,
+      email: employees.email,
+      imageUrl: employees.imageUrl,
+      role: employees.role,
+    })
+    .from(employees)
+    .where(eq(employees.active, true))
+    .orderBy(asc(employees.name), asc(employees.email));
+
+  return rows.filter((row) => row.id !== current.id);
+}
+
+export async function findChatRecipient(input: { id?: number; email?: string }): Promise<ChatRecipient | null> {
+  const id = Number.isSafeInteger(input.id) && Number(input.id) > 0 ? Number(input.id) : null;
+  const email = input.email?.trim().toLowerCase() ?? "";
+  if (!id && !email) return null;
+
+  const condition = id
+    ? eq(employees.id, id)
+    : sql`lower(${employees.email}) = ${email}`;
+
+  const [row] = await db
+    .select({
+      id: employees.id,
+      name: employees.name,
+      email: employees.email,
+      imageUrl: employees.imageUrl,
+      role: employees.role,
+    })
+    .from(employees)
+    .where(and(eq(employees.active, true), condition))
+    .limit(1);
+
+  return row ?? null;
+}
+
+function directChatCondition(current: SessionUser, recipientEmployeeId: number | null, ownerAll: boolean): SQL {
+  const direct = eq(teamMessages.channel, "direct");
+
+  if (ownerAll && isPortalOwner(current)) {
+    if (!recipientEmployeeId) return direct;
+    return and(
+      direct,
+      or(
+        eq(teamMessages.employeeId, recipientEmployeeId),
+        eq(teamMessages.recipientEmployeeId, recipientEmployeeId),
+      ),
+    )!;
+  }
+
+  if (recipientEmployeeId) {
+    return and(
+      direct,
+      or(
+        and(
+          eq(teamMessages.employeeId, current.id),
+          eq(teamMessages.recipientEmployeeId, recipientEmployeeId),
+        ),
+        and(
+          eq(teamMessages.employeeId, recipientEmployeeId),
+          eq(teamMessages.recipientEmployeeId, current.id),
+        ),
+      ),
+    )!;
+  }
+
+  return and(
+    direct,
+    or(
+      eq(teamMessages.employeeId, current.id),
+      eq(teamMessages.recipientEmployeeId, current.id),
+    ),
+  )!;
+}
+
+export async function listTeamMessages(
+  channel: ChatChannel = "all",
+  limit = 100,
+  user?: SessionUser,
+  recipientEmployeeId: number | null = null,
+  ownerAll = false,
+) {
   const current = user ?? await requireUser();
   if (channel === "admins" && current.role !== "admin") throw new Error("FORBIDDEN");
+  if (ownerAll && !isPortalOwner(current)) throw new Error("FORBIDDEN");
+
+  const condition = channel === "direct"
+    ? directChatCondition(current, recipientEmployeeId, ownerAll)
+    : eq(teamMessages.channel, channel);
+
   const rows = await db
     .select({
       id: teamMessages.id,
@@ -415,13 +517,19 @@ export async function listTeamMessages(channel: "all" | "admins" = "all", limit 
       channel: teamMessages.channel,
       createdAt: teamMessages.createdAt,
       employeeId: teamMessages.employeeId,
+      recipientEmployeeId: teamMessages.recipientEmployeeId,
       authorName: employees.name,
       authorImageUrl: employees.imageUrl,
+      authorEmail: employees.email,
+      recipientName: sql<string | null>`(select recipient.name from employees recipient where recipient.id = ${teamMessages.recipientEmployeeId})`,
+      recipientEmail: sql<string | null>`(select recipient.email from employees recipient where recipient.id = ${teamMessages.recipientEmployeeId})`,
+      recipientImageUrl: sql<string | null>`(select recipient.image_url from employees recipient where recipient.id = ${teamMessages.recipientEmployeeId})`,
     })
     .from(teamMessages)
     .leftJoin(employees, eq(teamMessages.employeeId, employees.id))
-    .where(eq(teamMessages.channel, channel))
+    .where(condition)
     .orderBy(desc(teamMessages.createdAt))
     .limit(Number.isSafeInteger(limit) ? Math.max(1, Math.min(limit, 200)) : 100);
+
   return rows.reverse();
 }

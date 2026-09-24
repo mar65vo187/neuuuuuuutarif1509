@@ -138,5 +138,11 @@ export const leadCallActivitySchema = z.object({
 
 export const chatMessageSchema = z.object({
   body: trimmed(1000).min(1),
-  channel: z.enum(["all", "admins"]).default("all"),
+  channel: z.enum(["all", "admins", "direct"]).default("all"),
+  recipientId: z.number().int().positive().optional(),
+  recipientEmail: z.string().trim().email().max(254).optional(),
+}).superRefine((value, ctx) => {
+  if (value.channel === "direct" && !value.recipientId && !value.recipientEmail) {
+    ctx.addIssue({ code: "custom", message: "Für eine Direktnachricht ist ein Empfänger erforderlich.", path: ["recipientId"] });
+  }
 });

@@ -167,6 +167,11 @@ export type SessionUser = Pick<Employee, "id" | "name" | "email" | "role" | "adv
   mfaVerified?: boolean;
 };
 
+export function isPortalOwner(user: Pick<SessionUser, "email" | "role">): boolean {
+  const ownerEmail = (process.env.PORTAL_OWNER_EMAIL || "").trim().toLowerCase();
+  return user.role === "admin" && ownerEmail.length > 0 && user.email.trim().toLowerCase() === ownerEmail;
+}
+
 export type ActivePortalSession = {
   id: number;
   createdAt: Date;

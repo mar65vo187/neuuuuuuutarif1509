@@ -135,10 +135,10 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
   },
   {
     href: "/portal/chat",
-    title: "Team-Chat",
-    purpose: "Teamkommunikation von Kunden- und Auftragsdaten getrennt halten.",
-    actions: ["Mit dem gesamten Team kommunizieren", "Admin-interne Themen im Admin-Kanal besprechen", "Wichtige operative Hinweise austauschen"],
-    tips: ["Vertrauliche Owner-Zahlen gehören nicht in allgemeine Team-Chats.", "Dauerhafte Prozessregeln sollten zusätzlich im Produkt- oder Dokumentcenter stehen."],
+    title: "Nachrichten",
+    purpose: "Team-, Admin- und private Direktkommunikation sicher innerhalb des Portals bündeln.",
+    actions: ["Mit dem gesamten Team kommunizieren", "Admin-interne Themen im Admin-Kanal besprechen", "Berater per Auswahl oder E-Mail direkt anschreiben", "Als Owner die geschützte Gesamtübersicht der Direktnachrichten prüfen"],
+    tips: ["Direktnachrichten sind für normale Nutzer ausschließlich zwischen Sender und Empfänger sichtbar.", "Die Owner-Gesamtübersicht ist eine Kontrollfunktion und sollte nur bei betrieblichem Bedarf verwendet werden.", "Dauerhafte Prozessregeln sollten zusätzlich im Produkt- oder Dokumentcenter stehen."],
   },
   {
     href: "/portal/empfehlungen",

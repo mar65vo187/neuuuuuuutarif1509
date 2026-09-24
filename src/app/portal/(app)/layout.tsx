@@ -30,7 +30,7 @@ const PORTAL_PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
   ["/portal/finanzen", "Provisionsübersicht"],
   ["/portal/inbox", "Action Inbox"],
   ["/portal/kampagnen", "Kampagnen"],
-  ["/portal/chat", "Team-Chat"],
+  ["/portal/chat", "Nachrichten"],
   ["/portal/betrieb", "Team & Betriebsqualität"],
   ["/portal/aktivitaet", "Mitarbeiter-Aktivität"],
   ["/portal/rennen", "Team-Challenges"],
