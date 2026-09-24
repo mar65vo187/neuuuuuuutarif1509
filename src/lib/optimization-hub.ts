@@ -15,8 +15,6 @@ import { emitEvent, writeAudit } from "@/lib/enterprise";
 import { OPTIMIZATION_CATEGORIES, OPTIMIZATION_MEMBERSHIP_PRICE_CENTS, OPTIMIZATION_PLAN_CODE } from "@/lib/optimization-shared";
 
 
-const ACTIVE_GOAL_STATUSES = ["open", "researching", "offers_ready"] as const;
-
 function customerAccess(user: SessionUser) {
   return user.role === "admin" ? sql`true` : eq(customers.ownerEmployeeId, user.id);
 }
