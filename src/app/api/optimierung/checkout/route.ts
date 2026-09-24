@@ -4,7 +4,8 @@ import { pool } from "@/db";
 import { isSameOriginRequest } from "@/lib/auth";
 import { optimizationCheckoutSchema } from "@/lib/optimization-validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
-import { SITE } from "@/lib/content";\nimport { transactionalEmailReady } from "@/lib/transactional-email";
+import { SITE } from "@/lib/content";
+import { transactionalEmailReady } from "@/lib/transactional-email";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
