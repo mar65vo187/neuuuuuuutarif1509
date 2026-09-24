@@ -155,3 +155,44 @@ test("homepage avoids redundant guidance sections and keeps phone disclosure foc
   assert.match(footer, /Persönliche Beratung und Vermittlungskoordination für Alltag, Zuhause und Vermögen/);
   assert.match(footer, /SITE\.whatsappDisplay/);
 });
+
+
+test("homepage promotes the recurring optimization service without overstating outcomes", () => {
+  const homepage = read("src/app/(site)/page.tsx");
+  const teaser = read("src/components/home/OptimizationMembershipTeaser.tsx");
+  const service = read("src/app/(site)/optimierungsservice/page.tsx");
+
+  assert.match(homepage, /<OptimizationMembershipTeaser audience=\{initialAudience\} \/>/);
+  assert.match(teaser, /1,99 €/);
+  assert.match(teaser, /Eine Anfrage allein aktiviert keine Mitgliedschaft/);
+  assert.match(teaser, /Keine pauschale Ersparnis/);
+  assert.match(service, /Die Mitgliedschaft wird erst nach bestätigter Freischaltung aktiv/);
+  assert.match(service, /keine garantierte Finanzierung/i);
+});
+
+test("consumer membership is not presented as a business subscription", () => {
+  const header = read("src/components/site/Header.tsx");
+  const footer = read("src/components/site/Footer.tsx");
+  const service = read("src/app/(site)/optimierungsservice/page.tsx");
+
+  assert.match(header, /optimierungsservice.+audience: "b2c"/s);
+  assert.match(header, /visibleNav = NAV\.filter/);
+  assert.match(footer, /audience === "b2c".+optimierungsservice/s);
+  assert.match(service, /Der 1,99-€-Optimierungsservice richtet sich aktuell an Privatkunden/);
+  assert.match(service, /Business-Anfrage starten/);
+});
+
+test("public AI advisor stays off the initial route bundle until the visitor asks for it", () => {
+  const layout = read("src/app/(site)/layout.tsx");
+  const lazy = read("src/components/site/LazyPublicAiChat.tsx");
+  const chat = read("src/components/site/PublicAiChat.tsx");
+
+  assert.match(layout, /LazyPublicAiChat/);
+  assert.doesNotMatch(layout, /import \{ PublicAiChat \}/);
+  assert.match(lazy, /dynamic\(/);
+  assert.match(lazy, /ssr: false/);
+  assert.match(lazy, /setActivated\(true\)/);
+  assert.match(chat, /aria-modal="true"/);
+  assert.match(chat, /inputRef\.current\?\.focus/);
+  assert.match(chat, /event\.key === "Escape"/);
+});
