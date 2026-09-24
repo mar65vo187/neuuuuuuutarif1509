@@ -48,6 +48,7 @@ type DocumentRow = {
 type Props = {
   token: string;
   subscription: {
+    id: number;
     customer_name: string;
     email: string;
     status: string;
@@ -93,7 +94,8 @@ export function OptimizationCustomerApp({ token, subscription, requests, documen
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const submitting = useRef(false);
-  const active = subscription.status === "active" && subscription.billing_status === "active";
+  const active = ["active", "canceling"].includes(subscription.status) && subscription.billing_status === "active";
+  const statusLabel = subscription.status === "canceling" ? "Kündigung vorgemerkt" : active ? "Aktiv" : subscription.status === "withdrawn" ? "Widerruf eingegangen" : "Noch nicht aktiv";
 
   async function createRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -193,13 +195,15 @@ export function OptimizationCustomerApp({ token, subscription, requests, documen
           </div>
           <div className="rounded-[28px] border border-white/10 bg-white/[0.055] p-6">
             <div className="flex items-center gap-3"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h2 className="font-extrabold">Abo-Status</h2></div>
-            <p className={"mt-4 text-2xl font-extrabold " + (active ? "text-emerald-300" : "text-amber-300")}>{active ? "Aktiv" : "Noch nicht aktiv"}</p>
+            <p className={"mt-4 text-2xl font-extrabold " + (active ? "text-emerald-300" : "text-amber-300")}>{statusLabel}</p>
             <dl className="mt-4 space-y-2 text-sm text-silver">
+              <div className="flex justify-between gap-4"><dt>Vertragsnummer</dt><dd className="font-bold text-white">TW-OPT-{subscription.id}</dd></div>
               <div className="flex justify-between gap-4"><dt>Preis</dt><dd className="font-bold text-white">{euro(subscription.price_cents)} / Monat</dd></div>
               <div className="flex justify-between gap-4"><dt>Nächster Check</dt><dd className="text-white">{formatDate(subscription.next_review_at)}</dd></div>
               <div className="flex justify-between gap-4"><dt>Vorgänge</dt><dd className="text-white">{requests.length}</dd></div>
             </dl>
-            {!active && <p className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-5 text-amber-100">Neue Wünsche und Uploads werden freigeschaltet, sobald die Zahlung als aktiv bestätigt ist.</p>}
+            {!active && subscription.status !== "withdrawn" && <p className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-5 text-amber-100">Neue Wünsche und Uploads werden freigeschaltet, sobald die Zahlung als aktiv bestätigt ist.</p>}
+            <div className="mt-4 flex flex-wrap gap-3 text-xs"><Link href="/abo-kuendigen" className="underline underline-offset-2 text-slate-300">Verträge hier kündigen</Link><Link href="/vertrag-widerrufen" className="underline underline-offset-2 text-slate-300">Vertrag widerrufen</Link></div>
           </div>
         </section>
 
