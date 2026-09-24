@@ -11,7 +11,7 @@ www.tarifwerk.eu
   -> Vercel Front Door
   -> Railway Production App (Next.js)
   -> PostgreSQL
-  -> Xkiro / Qwen für öffentliche und interne KI
+  -> Groq / Qwen für öffentliche KI\n  -> Xkiro / weitere Provider für interne KI
 ```
 
 Die Vercel-Front-Door-Weiterleitung ist in `next.config.ts` so gekapselt, dass sie nur unter `VERCEL=1` greift. Railway selbst proxyt dadurch nicht zurück auf sich selbst.
@@ -40,7 +40,7 @@ Eigenschaften:
 - personenbezogene Kontaktangaben werden vor KI-Anfragen entfernt
 - Same-Origin-Schutz und Rate-Limit
 - menschliche Übergabe zur persönlichen Beratung
-- Xkiro als OpenAI-kompatibler Provider
+- Groq als primärer OpenAI-kompatibler Provider mit Qwen 3.8 27B\n- xKiro nur als optionaler Ausfall-Fallback für den öffentlichen Chat
 
 ## Interne KI / Sales Academy
 
@@ -71,18 +71,25 @@ Eigenschaften:
 Nur Namen – Werte gehören ausschließlich in die jeweilige Hosting-/Secret-Verwaltung:
 
 ```text
+GROQ_API_KEY
+TARIFWERK_PUBLIC_AI_PROVIDER
+TARIFWERK_PUBLIC_AI_GROQ_MODEL
 XKIRO_API_KEY
+TARIFWERK_PUBLIC_AI_XKIRO_MODEL
+
 TARIFWERK_AI_PROVIDER
 TARIFWERK_AI_XKIRO_MODEL
 TARIFWERK_AI_DAILY_LIMIT
 TARIFWERK_AI_INCLUDE_TRAINING
 ```
 
-Aktuell erwartetes Modell:
+Öffentliches Primärmodell:
 
 ```text
-qwen/qwen3.8-omni-flash:free
+qwen/qwen3.8-27b
 ```
+
+Der öffentliche Chat verwendet standardmäßig `auto`: Groq/Qwen zuerst, xKiro nur bei fehlendem Groq-Secret oder einem Provider-Ausfall.
 
 ## Weitere notwendige Runtime Variablen
 
