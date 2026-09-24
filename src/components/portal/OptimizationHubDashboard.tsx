@@ -143,14 +143,14 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
 
   const normalized = query.trim().toLowerCase();
   const matches = (parts: Array<string | number | null | undefined>) => !normalized || parts.some((part) => String(part ?? "").toLowerCase().includes(normalized));
-  const filteredMemberships = useMemo(() => data.memberships.filter((row) => matches([row.customerName, row.customerNumber, row.status, row.billingProvider])), [data.memberships, normalized]);
-  const filteredGoals = useMemo(() => data.goals.filter((row) => matches([row.customerName, row.title, row.category, row.status, row.description])), [data.goals, normalized]);
-  const filteredContracts = useMemo(() => data.contracts.filter((row) => matches([row.customerName, row.providerName, row.contractName, row.category, row.status])), [data.contracts, normalized]);
-  const filteredOffers = useMemo(() => data.offers.filter((row) => matches([row.customerName, row.providerName, row.title, row.status])), [data.offers, normalized]);
-  const filteredDocuments = useMemo(() => data.documents.filter((row) => matches([row.customerName, row.title, row.fileName, row.kind])), [data.documents, normalized]);
+  const filteredMemberships = data.memberships.filter((row) => matches([row.customerName, row.customerNumber, row.status, row.billingProvider]));
+  const filteredGoals = data.goals.filter((row) => matches([row.customerName, row.title, row.category, row.status, row.description]));
+  const filteredContracts = data.contracts.filter((row) => matches([row.customerName, row.providerName, row.contractName, row.category, row.status]));
+  const filteredOffers = data.offers.filter((row) => matches([row.customerName, row.providerName, row.title, row.status]));
+  const filteredDocuments = data.documents.filter((row) => matches([row.customerName, row.title, row.fileName, row.kind]));
 
   async function jsonRequest(key: string, payload: Record<string, unknown>, success: string) {
-    if (saving.current) return;
+    if (saving.current) return false;
     saving.current = true;
     setBusy(key);
     setMessage(null);
@@ -165,8 +165,10 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
       if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Speichern fehlgeschlagen.");
       setMessage({ type: "ok", text: success });
       router.refresh();
+      return true;
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Speichern fehlgeschlagen." });
+      return false;
     } finally {
       saving.current = false;
       setBusy(null);
@@ -178,7 +180,7 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const reviewDate = String(form.get("nextReviewDate") ?? "");
-    await jsonRequest("membership", {
+    const ok = await jsonRequest("membership", {
       action: "membership",
       customerId: Number(form.get("customerId")),
       status: form.get("status"),
@@ -187,14 +189,14 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
       billingCustomerRef: form.get("billingCustomerRef") || null,
       billingSubscriptionRef: form.get("billingSubscriptionRef") || null,
     }, "Mitgliedschaft aktualisiert.");
-    formElement.reset();
+    if (ok) formElement.reset();
   }
 
   async function goalSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    await jsonRequest("goal", {
+    const ok = await jsonRequest("goal", {
       action: "goal",
       customerId: Number(form.get("customerId")),
       category: form.get("category"),
@@ -205,14 +207,14 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
       budgetCents: toCents(form.get("budget")),
       financingNeeded: form.get("financingNeeded") === "on",
     }, "Ziel/Wunsch angelegt.");
-    formElement.reset();
+    if (ok) formElement.reset();
   }
 
   async function contractSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    await jsonRequest("contract", {
+    const ok = await jsonRequest("contract", {
       action: "contract",
       customerId: Number(form.get("customerId")),
       category: form.get("category"),
@@ -225,14 +227,14 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
       status: form.get("status"),
       note: form.get("note"),
     }, "Vertrag erfasst.");
-    formElement.reset();
+    if (ok) formElement.reset();
   }
 
   async function offerSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    await jsonRequest("offer", {
+    const ok = await jsonRequest("offer", {
       action: "offer",
       customerId: Number(form.get("customerId")),
       goalId: toNumber(form.get("goalId")),
@@ -247,7 +249,7 @@ export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: {
       validUntil: form.get("validUntil") || null,
       note: form.get("note"),
     }, "Angebot hinzugefügt.");
-    formElement.reset();
+    if (ok) formElement.reset();
   }
 
   async function uploadSubmit(event: FormEvent<HTMLFormElement>) {
