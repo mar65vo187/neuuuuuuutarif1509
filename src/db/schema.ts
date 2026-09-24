@@ -156,7 +156,8 @@ export const leadNotes = pgTable("lead_notes", {
 export const teamMessages = pgTable("team_messages", {
   id: serial("id").primaryKey(),
   employeeId: integer("employee_id").references(() => employees.id, { onDelete: "set null" }),
-  channel: text("channel").$type<"all" | "admins">().notNull().default("all"),
+  recipientEmployeeId: integer("recipient_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  channel: text("channel").$type<"all" | "admins" | "direct">().notNull().default("all"),
   body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
