@@ -1,13 +1,13 @@
 import { and, eq, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
-import { customers } from "@/db/enterprise-schema";
+import { customers, prospectContacts } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type StrongContactDuplicate = {
-  entity: "lead" | "customer";
+  entity: "lead" | "customer" | "contact";
   id: number;
   label: string;
   href: string;
@@ -44,6 +44,7 @@ export async function lockAndFindStrongContactDuplicate(
   tx: Tx,
   input: { email?: string | null; phone?: string | null },
   user: SessionUser,
+  options: { excludeContactId?: number } = {},
 ): Promise<StrongContactDuplicate | null> {
   const email = normalizeContactEmail(input.email);
   const phone = normalizeContactPhone(input.phone);
@@ -111,6 +112,36 @@ export async function lockAndFindStrongContactDuplicate(
         href: "/portal/leads/" + lead.id,
         ownerEmployeeId,
         visible: user.role === "admin" || lead.createdByEmployeeId === user.id || lead.assignedEmployeeId === user.id,
+      };
+    }
+  }
+
+
+  const contactConditions = duplicateConditions(prospectContacts.email, prospectContacts.phone, email, phone);
+  if (contactConditions.length) {
+    const conditions = [or(...contactConditions)!];
+    if (options.excludeContactId) conditions.push(sql`${prospectContacts.id} <> ${options.excludeContactId}`);
+    const [contact] = await tx.select({
+      id: prospectContacts.id,
+      name: prospectContacts.name,
+      email: prospectContacts.email,
+      phone: prospectContacts.phone,
+      ownerEmployeeId: prospectContacts.ownerEmployeeId,
+      createdByEmployeeId: prospectContacts.createdByEmployeeId,
+      status: prospectContacts.status,
+    }).from(prospectContacts)
+      .where(and(...conditions))
+      .limit(1);
+
+    if (contact && contact.status !== "converted" && contact.status !== "archived") {
+      const ownerEmployeeId = contact.ownerEmployeeId ?? contact.createdByEmployeeId;
+      return {
+        entity: "contact",
+        id: contact.id,
+        label: contact.name || contact.email || contact.phone || "Kontakt #" + contact.id,
+        href: "/portal/kontakte?id=" + contact.id,
+        ownerEmployeeId,
+        visible: user.role === "admin" || ownerEmployeeId === user.id,
       };
     }
   }
