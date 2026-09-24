@@ -234,10 +234,10 @@ export function NotificationInboxList({
                           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Jetzt anzeigen
                         </button>
                       )}
-                      <button type="button" disabled={busy} onClick={() => run(row.archived ? "restore" : "archive", [row.id])} className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold hover:border-electric/30 hover:text-electric-deep disabled:opacity-40">
+                      {(row.archived || !row.requiresAck || row.acknowledged) && <button type="button" disabled={busy} onClick={() => run(row.archived ? "restore" : "archive", [row.id])} className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold hover:border-electric/30 hover:text-electric-deep disabled:opacity-40">
                         {row.archived ? <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> : <Archive className="h-3.5 w-3.5" aria-hidden="true" />}
                         {row.archived ? "Wiederherstellen" : "Archivieren"}
-                      </button>
+                      </button>}
                     </div>
                   </div>
 
