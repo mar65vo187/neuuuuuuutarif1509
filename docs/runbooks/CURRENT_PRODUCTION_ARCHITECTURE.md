@@ -1,6 +1,6 @@
 # TarifWerk – aktuelle Produktionsarchitektur
 
-Stand: 23.09.2026
+Stand: 24.09.2026
 
 Dieses Dokument beschreibt den aktuellen produktiven Aufbau. Es enthält bewusst **keine Secret-Werte, Passwörter, API-Keys oder Session-Geheimnisse**.
 
@@ -74,6 +74,7 @@ Nur Namen – Werte gehören ausschließlich in die jeweilige Hosting-/Secret-Ve
 GROQ_API_KEY
 TARIFWERK_PUBLIC_AI_PROVIDER
 TARIFWERK_PUBLIC_AI_GROQ_MODEL
+TARIFWERK_PUBLIC_AI_GROQ_DAILY_LIMIT
 XKIRO_API_KEY
 TARIFWERK_PUBLIC_AI_XKIRO_MODEL
 
@@ -89,7 +90,7 @@ TARIFWERK_AI_INCLUDE_TRAINING
 qwen/qwen3.8-27b
 ```
 
-Der öffentliche Chat verwendet standardmäßig `auto`: Groq/Qwen zuerst, xKiro nur bei fehlendem Groq-Secret oder einem Provider-Ausfall.
+Der öffentliche Chat verwendet standardmäßig `auto`: Groq/Qwen zuerst, xKiro nur bei fehlendem Groq-Secret, ausgeschöpftem lokalem Tagesbudget oder einem Provider-Ausfall. Standardmäßig werden höchstens 900 Groq-Aufrufe pro 24-Stunden-Fenster zugelassen, damit ein Puffer unter dem Free-Tier-RPD-Limit bleibt.
 
 ## Weitere notwendige Runtime Variablen
 
