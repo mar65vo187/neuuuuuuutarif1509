@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { pool } from "@/db";\nimport { SITE } from "@/lib/content";\nimport { sendTransactionalEmail } from "@/lib/transactional-email";
+import { pool } from "@/db";
+import { SITE } from "@/lib/content";
+import { sendTransactionalEmail } from "@/lib/transactional-email";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
