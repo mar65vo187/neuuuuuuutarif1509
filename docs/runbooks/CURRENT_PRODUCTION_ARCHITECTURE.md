@@ -196,6 +196,19 @@ Die Quality-Pipeline prüft zusätzlich:
 
 Neue Änderungen werden gegen `main` geprüft. Vor produktiven Änderungen müssen mindestens TypeScript, ESLint, Tests, Production Build, Runtime-Smoke und Datenbankchecks grün sein.
 
-<!-- railway-source-trigger: 2026-09-24T19:26+02:00 production-source-build -->
+<!-- railway-source-trigger: 2026-09-24T16:48Z -->
 
 <!-- railway-real-source-build-trigger: 2026-09-24T17:35Z -->
+
+
+## Reproduzierbare Runtime-Fallbacks
+
+Die temporären Railway-Hotfixes sind ab jetzt ebenfalls versioniert:
+
+- `deploy/railway/public-ai-runtime-bridge.cjs`
+- `deploy/railway/nginx-public-nav.conf`
+- `deploy/railway/README.md`
+
+Diese Dateien enthalten keine Secrets. Sie dienen nur dazu, den aktuell laufenden älteren Railway-Snapshot reproduzierbar auf den Funktionsstand von `main` zu heben. Nach einem bestätigten vollständigen Source/Image-Deploy aus aktuellem `main` können die Bridges entfernt werden.
+
+<!-- railway-source-trigger: 2026-09-24T19:26+02:00 production-source-build -->
