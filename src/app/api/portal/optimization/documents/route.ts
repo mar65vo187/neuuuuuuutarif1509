@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
 
   try {
     await requirePermission(user, PORTAL_PERMISSION.CUSTOMER_EDIT);
+    const contentLength = Number(request.headers.get("content-length") ?? "0");
+    if (Number.isFinite(contentLength) && contentLength > 9 * 1024 * 1024) {
+      return NextResponse.json({ ok: false, error: "Upload ist zu groß. Maximal 8 MB Dateigröße." }, { status: 413 });
+    }
     const form = await request.formData();
     const file = form.get("file");
     const customerId = positiveId(form.get("customerId"));
