@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
@@ -12,37 +12,8 @@ import {
 } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 import { emitEvent, writeAudit } from "@/lib/enterprise";
+import { OPTIMIZATION_CATEGORIES, OPTIMIZATION_MEMBERSHIP_PRICE_CENTS, OPTIMIZATION_PLAN_CODE } from "@/lib/optimization-shared";
 
-export const OPTIMIZATION_MEMBERSHIP_PRICE_CENTS = 199;
-export const OPTIMIZATION_PLAN_CODE = "optimize_199";
-
-export const OPTIMIZATION_CATEGORIES = [
-  "internet_tv",
-  "mobilfunk",
-  "strom_gas",
-  "versicherung",
-  "solar_waermepumpe",
-  "immobilien",
-  "edelmetalle",
-  "klima",
-  "sicherheit",
-  "finanzierung",
-  "sonstiges",
-] as const;
-
-export const OPTIMIZATION_CATEGORY_LABELS: Record<(typeof OPTIMIZATION_CATEGORIES)[number], string> = {
-  internet_tv: "Internet & TV",
-  mobilfunk: "Mobilfunk",
-  strom_gas: "Strom & Gas",
-  versicherung: "Versicherungen",
-  solar_waermepumpe: "Solar & Wärmepumpe",
-  immobilien: "Immobilien",
-  edelmetalle: "Edelmetalle",
-  klima: "Klima",
-  sicherheit: "Sicherheit",
-  finanzierung: "Finanzierung",
-  sonstiges: "Sonstiges",
-};
 
 const ACTIVE_GOAL_STATUSES = ["open", "researching", "offers_ready"] as const;
 
@@ -436,7 +407,7 @@ export async function createOptimizationOffer(user: SessionUser, input: {
   }
   const position = Math.max(1, Math.min(10, Math.trunc(Number(input.position) || 1)));
   const status = ["draft", "proposed", "accepted", "rejected", "expired"].includes(input.status ?? "") ? String(input.status) : "proposed";
-  const termMonths = input.termMonths === null || input.termMonths === undefined || input.termMonths === ""
+  const termMonths = input.termMonths === null || input.termMonths === undefined
     ? null
     : Math.max(0, Math.min(600, Math.trunc(Number(input.termMonths))));
   const [created] = await db.insert(optimizationOffers).values({
