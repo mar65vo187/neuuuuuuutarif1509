@@ -76,6 +76,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
   "/ueber-uns": AUDIENCE_PAGE_SEO["/ueber-uns"].b2c,
   "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Sie erklären verständlich und hören Menschen zu? Lernen Sie die Arbeit als Berater bei TarifWerk kennen und bewerben Sie sich bei uns." },
   "/faq": AUDIENCE_PAGE_SEO["/faq"].b2c,
+  "/optimierungsservice": { title: "Optimierungsservice für 1,99 € im Monat | TarifWerk", description: "Verträge, Ziele und Wünsche laufend im Blick: TarifWerk bündelt Bestand, Vergleichsoptionen und nächste Schritte für 1,99 € pro Monat." },
   "/freund-werben": { title: "Freunde werben: bis 1.000 € Wunschgutschein | TarifWerk", description: "TarifWerk empfehlen und bei erfolgreicher Vermittlung je nach Bereich bis zu 1.000 € Wunschgutschein erhalten. Persönlicher Link und transparenter Status." },
   "/freund-werben/status": { title: "Dein Empfehlungsstatus | TarifWerk", description: "Deinen persönlichen Empfehlungsstatus mit privatem Zugangslink öffnen und zugeordnete Empfehlungen und Prämien im Blick behalten.", noindex: true },
   "/impressum": { title: "Impressum & Kontakt | TarifWerk", description: "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informationen zu Verantwortlichkeiten und unseren Kontaktmöglichkeiten.", noindex: true },
