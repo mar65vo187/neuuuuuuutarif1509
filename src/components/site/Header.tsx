@@ -10,13 +10,13 @@ import { SITE, SERVICES } from "@/lib/content";
 import { withAudience, type AudienceMode } from "@/lib/audience";
 
 const NAV = [
-  { href: "/leistungen", label: "Leistungen" },
-  { href: "/optimierungsservice", label: "Optimierungsservice" },
-  { href: "/berater", label: "Beratung" },
-  { href: "/ueber-uns", label: "Über uns" },
-  { href: "/karriere", label: "Karriere" },
-  { href: "/freund-werben", label: "Freund werben" },
-  { href: "/faq", label: "So funktioniert es" },
+  { href: "/leistungen", label: "Leistungen", audience: "all" as const },
+  { href: "/optimierungsservice", label: "Optimierungsservice", audience: "b2c" as const },
+  { href: "/berater", label: "Beratung", audience: "all" as const },
+  { href: "/ueber-uns", label: "Über uns", audience: "all" as const },
+  { href: "/karriere", label: "Karriere", audience: "all" as const },
+  { href: "/freund-werben", label: "Freund werben", audience: "all" as const },
+  { href: "/faq", label: "So funktioniert es", audience: "all" as const },
 ];
 
 export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
@@ -93,6 +93,8 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
     };
   }, [open]);
 
+  const visibleNav = NAV.filter((item) => item.audience === "all" || item.audience === audience);
+
   return (
     <>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-electric focus:px-4 focus:py-2 focus:text-white">Zum Inhalt springen</a>
@@ -101,7 +103,7 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
           <div className="container-x flex h-[72px] items-center justify-between">
             <Logo size={34} imageSrc="/assets/logo-symbol.jpg" />
             <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Hauptnavigation">
-              {NAV.map((item) => {
+              {visibleNav.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
                 return <Link key={item.href} href={withAudience(item.href, audience)} aria-current={active ? "page" : undefined} className={`relative rounded-full px-3 py-2 text-[14px] font-medium transition-colors duration-200 ${active ? "text-white" : "text-silver hover:text-white"}`}>{item.label}{active && <span aria-hidden="true" className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-electric" />}</Link>;
               })}
