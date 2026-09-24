@@ -8,6 +8,13 @@ export type PortalHelpTopic = {
 
 export const PORTAL_HELP: PortalHelpTopic[] = [
   {
+    href: "/portal/optimierung",
+    title: "Optimierungsservice",
+    purpose: "Wiederkehrende Kundenbetreuung für Ziele, Vertragsbestand, Vergleichsangebote, Dokumente und planmäßige Reviews zentral steuern.",
+    actions: ["1,99-€-Mitgliedschaft dokumentieren", "Kundenwünsche und Finanzierungsbedarf erfassen", "Bestandsverträge und Fristen pflegen", "Bis zu drei nachvollziehbare Vergleichsoptionen gegenüberstellen", "Vertrags- und Angebotsdokumente sicher ablegen"],
+    tips: ["Der Mitgliedschaftsstatus im CRM löst keine Abbuchung aus; Zahlungsdaten müssen über einen tatsächlich angebundenen Payment-Provider bestätigt werden.", "Angebote und Finanzierungsoptionen nur passend zum dokumentierten Kundenbedarf einordnen.", "Review-Termine und Kündigungsfristen sind Arbeitsanlässe, keine automatische Vertragsänderung."],
+  },
+  {
     href: "/portal/assistent",
     title: "Arbeitsassistent",
     purpose: "Erklärbare Priorisierung aus CRM-Daten: Der Assistent zeigt, was als Nächstes Aufmerksamkeit braucht und warum.",

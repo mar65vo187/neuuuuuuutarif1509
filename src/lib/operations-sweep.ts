@@ -9,6 +9,8 @@ export type OperationsSweepResult = {
   opportunities: number;
   atRiskCustomers: number;
   serviceEscalations: number;
+  optimizationReviews: number;
+  optimizationContractReviews: number;
 };
 
 export async function runOperationsSweep(): Promise<OperationsSweepResult> {
@@ -19,7 +21,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
     const lock = await client.query<{ locked: boolean }>("select pg_try_advisory_xact_lock(772020260920) as locked");
     if (!lock.rows[0]?.locked) {
       await client.query("ROLLBACK");
-      return { skipped: true, leads: 0, customerReviews: 0, staleOrders: 0, opportunities: 0, atRiskCustomers: 0, serviceEscalations: 0 };
+      return { skipped: true, leads: 0, customerReviews: 0, staleOrders: 0, opportunities: 0, atRiskCustomers: 0, serviceEscalations: 0, optimizationReviews: 0, optimizationContractReviews: 0 };
     }
 
     const leads = await client.query<{ id: number }>(`
@@ -187,6 +189,78 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       RETURNING id
     `);
 
+    const optimizationReviews = await client.query<{ id: number }>(`
+      INSERT INTO tasks (
+        entity_type, entity_id, assigned_to_employee_id, created_by_employee_id,
+        type, title, description, priority, status, due_at, created_at, updated_at
+      )
+      SELECT
+        'customer', om.customer_id, coalesce(om.owner_employee_id, c.owner_employee_id), null,
+        'optimization_review_due',
+        'Optimierungsservice · Bestandscheck fällig',
+        'Der geplante Review im TarifWerk Optimierungsservice ist fällig. Verträge, Wünsche, offene Angebote und neue Ziele gemeinsam prüfen.',
+        CASE WHEN om.next_review_at < now() - $1::int * interval '1 day' THEN 'high' ELSE 'normal' END,
+        'open', now(), now(), now()
+      FROM optimization_memberships om
+      INNER JOIN customers c ON c.id = om.customer_id
+      WHERE om.status = 'active'
+        AND om.next_review_at IS NOT NULL
+        AND om.next_review_at <= now()
+        AND coalesce(om.owner_employee_id, c.owner_employee_id) IS NOT NULL
+        AND c.archived_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM tasks t
+          WHERE t.entity_type = 'customer'
+            AND t.entity_id = om.customer_id
+            AND t.type = 'optimization_review_due'
+            AND t.status IN ('open','in_progress')
+        )
+      ORDER BY om.next_review_at ASC
+      LIMIT 500
+      RETURNING id
+    `, [operationsPolicy.customerReviewHighDays]);
+
+    const optimizationContractReviews = await client.query<{ id: number }>(`
+      WITH due AS (
+        SELECT
+          oc.customer_id,
+          coalesce(om.owner_employee_id, c.owner_employee_id) AS owner_employee_id,
+          min(oc.notice_date) AS due_at,
+          count(*)::int AS contract_count
+        FROM optimization_contracts oc
+        INNER JOIN customers c ON c.id = oc.customer_id
+        LEFT JOIN optimization_memberships om ON om.id = oc.membership_id
+        WHERE oc.status IN ('active','review_due','switch_planned')
+          AND oc.notice_date IS NOT NULL
+          AND oc.notice_date <= current_date + interval '30 days'
+          AND coalesce(om.owner_employee_id, c.owner_employee_id) IS NOT NULL
+          AND c.archived_at IS NULL
+        GROUP BY oc.customer_id, coalesce(om.owner_employee_id, c.owner_employee_id)
+      )
+      INSERT INTO tasks (
+        entity_type, entity_id, assigned_to_employee_id, created_by_employee_id,
+        type, title, description, priority, status, due_at, created_at, updated_at
+      )
+      SELECT
+        'customer', d.customer_id, d.owner_employee_id, null,
+        'optimization_contract_review',
+        'Optimierungsservice · Vertragsfrist prüfen',
+        d.contract_count || ' Vertrag/Verträge im Optimierungsservice erreichen innerhalb von 30 Tagen eine Prüf- oder Kündigungsfrist.',
+        CASE WHEN d.due_at <= current_date THEN 'high' ELSE 'normal' END,
+        'open', now(), now(), now()
+      FROM due d
+      WHERE NOT EXISTS (
+        SELECT 1 FROM tasks t
+        WHERE t.entity_type = 'customer'
+          AND t.entity_id = d.customer_id
+          AND t.type = 'optimization_contract_review'
+          AND t.status IN ('open','in_progress')
+      )
+      ORDER BY d.due_at ASC
+      LIMIT 500
+      RETURNING id
+    `);
+
     const serviceEscalations = await client.query<{ id: number }>(`
       INSERT INTO notification_queue (
         employee_id, channel, category, priority, subject, body,
@@ -237,6 +311,8 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       opportunities: opportunities.rowCount ?? 0,
       atRiskCustomers: riskCustomers.rowCount ?? 0,
       serviceEscalations: serviceEscalations.rowCount ?? 0,
+      optimizationReviews: optimizationReviews.rowCount ?? 0,
+      optimizationContractReviews: optimizationContractReviews.rowCount ?? 0,
     };
 
     await client.query(

@@ -21,6 +21,7 @@ const NAV_SECTIONS = [
       { href: "/portal/assistent", label: "KI & Arbeitsassistent", icon: BrainCircuit },
       { href: "/portal/leads", label: "Leads & Termine", icon: Inbox, anyPermission: ["lead.edit"] },
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
+      { href: "/portal/optimierung", label: "Optimierungsservice", icon: Sparkles, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.edit"] },
       { href: "/portal/aufgaben", label: "Aufgaben", icon: ListTodo, anyPermission: ["task.manage"] },
       { href: "/portal/service", label: "Service & Fälle", icon: Headphones, anyPermission: ["service.read", "service.edit", "service.assign"] },
