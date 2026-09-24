@@ -34,6 +34,8 @@ test("optimization service persists the complete recurring-customer lifecycle", 
   assert.match(migration, /monthly_price_cents integer NOT NULL DEFAULT 199/);
   assert.match(migration, /optimization_memberships_customer_unique/);
   assert.match(migration, /optimization_contracts_notice_idx/);
+  assert.match(migration, /position BETWEEN 1 AND 3/);
+  assert.match(migration, /optimization_offers_goal_position_open_unique/);
 });
 
 test("1.99 euro price is a server-side invariant and billing is not faked", () => {
@@ -58,6 +60,7 @@ test("document storage has explicit type, size and download safeguards", () => {
   assert.match(hub, /application\/pdf/);
   assert.match(hub, /image\/jpeg/);
   assert.match(hub, /createHash\("sha256"\)/);
+  assert.match(hub, /matchesDocumentSignature/);
   assert.match(upload, /requirePermission\(user, PORTAL_PERMISSION\.CUSTOMER_EDIT\)/);
   assert.match(download, /Cache-Control": "private, no-store, max-age=0"/);
   assert.match(download, /X-Content-Type-Options": "nosniff"/);
