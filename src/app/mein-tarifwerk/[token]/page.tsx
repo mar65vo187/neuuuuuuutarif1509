@@ -20,6 +20,7 @@ export default async function MyTarifwerkPage({ params }: { params: Promise<{ to
     <OptimizationCustomerApp
       token={token}
       subscription={{
+        id: data.subscription.id,
         customer_name: data.subscription.customer_name,
         email: data.subscription.email,
         status: data.subscription.status,
