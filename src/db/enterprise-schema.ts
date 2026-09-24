@@ -1,6 +1,7 @@
 import {
   boolean,
   customType,
+  date,
   index,
   integer,
   jsonb,
@@ -884,3 +885,122 @@ export type ServiceCase = typeof serviceCases.$inferSelect;
 export type ServiceCaseEvent = typeof serviceCaseEvents.$inferSelect;
 export type LeadCallActivity = typeof leadCallActivities.$inferSelect;
 export type OperationsPolicyRow = typeof operationsPolicy.$inferSelect;
+
+
+/* ------------------------------------------------------------------ */
+/*  TarifWerk Optimierungsservice                                      */
+/* ------------------------------------------------------------------ */
+
+export const optimizationMemberships = pgTable("optimization_memberships", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  planCode: text("plan_code").notNull().default("optimize_199"),
+  monthlyPriceCents: integer("monthly_price_cents").notNull().default(199),
+  status: text("status").notNull().default("pending"),
+  ownerEmployeeId: integer("owner_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  billingProvider: text("billing_provider"),
+  billingCustomerRef: text("billing_customer_ref"),
+  billingSubscriptionRef: text("billing_subscription_ref"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  nextBillingAt: timestamp("next_billing_at", { withTimezone: true }),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("optimization_memberships_customer_unique").on(table.customerId),
+  index("optimization_memberships_status_review_idx").on(table.status, table.nextReviewAt),
+  index("optimization_memberships_owner_idx").on(table.ownerEmployeeId, table.status),
+]);
+
+export const optimizationGoals = pgTable("optimization_goals", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  membershipId: integer("membership_id").references(() => optimizationMemberships.id, { onDelete: "set null" }),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  priority: text("priority").notNull().default("normal"),
+  status: text("status").notNull().default("open"),
+  targetDate: date("target_date", { mode: "string" }),
+  budgetCents: integer("budget_cents"),
+  financingNeeded: boolean("financing_needed").notNull().default(false),
+  assignedEmployeeId: integer("assigned_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("optimization_goals_customer_status_idx").on(table.customerId, table.status, table.updatedAt),
+  index("optimization_goals_assignee_idx").on(table.assignedEmployeeId, table.status, table.targetDate),
+]);
+
+export const optimizationContracts = pgTable("optimization_contracts", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  membershipId: integer("membership_id").references(() => optimizationMemberships.id, { onDelete: "set null" }),
+  category: text("category").notNull(),
+  providerName: text("provider_name").notNull(),
+  contractName: text("contract_name").notNull(),
+  monthlyCostCents: integer("monthly_cost_cents"),
+  startDate: date("start_date", { mode: "string" }),
+  endDate: date("end_date", { mode: "string" }),
+  noticeDate: date("notice_date", { mode: "string" }),
+  status: text("status").notNull().default("active"),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("optimization_contracts_customer_status_idx").on(table.customerId, table.status, table.noticeDate),
+  index("optimization_contracts_notice_idx").on(table.noticeDate),
+]);
+
+export const optimizationOffers = pgTable("optimization_offers", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  goalId: integer("goal_id").references(() => optimizationGoals.id, { onDelete: "set null" }),
+  contractId: integer("contract_id").references(() => optimizationContracts.id, { onDelete: "set null" }),
+  providerName: text("provider_name").notNull(),
+  title: text("title").notNull(),
+  monthlyCostCents: integer("monthly_cost_cents"),
+  oneTimeCostCents: integer("one_time_cost_cents"),
+  termMonths: integer("term_months"),
+  position: integer("position").notNull().default(1),
+  status: text("status").notNull().default("proposed"),
+  validUntil: date("valid_until", { mode: "string" }),
+  note: text("note").notNull().default(""),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("optimization_offers_customer_status_idx").on(table.customerId, table.status, table.updatedAt),
+  index("optimization_offers_goal_position_idx").on(table.goalId, table.position),
+]);
+
+export const optimizationDocuments = pgTable("optimization_documents", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  goalId: integer("goal_id").references(() => optimizationGoals.id, { onDelete: "set null" }),
+  contractId: integer("contract_id").references(() => optimizationContracts.id, { onDelete: "set null" }),
+  offerId: integer("offer_id").references(() => optimizationOffers.id, { onDelete: "set null" }),
+  kind: text("kind").notNull().default("contract"),
+  title: text("title").notNull(),
+  fileName: text("file_name").notNull(),
+  contentType: text("content_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  digest: text("digest").notNull(),
+  data: bytea("data").notNull(),
+  uploadedByEmployeeId: integer("uploaded_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("optimization_documents_customer_idx").on(table.customerId, table.createdAt),
+  index("optimization_documents_contract_idx").on(table.contractId),
+  index("optimization_documents_goal_idx").on(table.goalId),
+]);
+
+export type OptimizationMembership = typeof optimizationMemberships.$inferSelect;
+export type OptimizationGoal = typeof optimizationGoals.$inferSelect;
+export type OptimizationContract = typeof optimizationContracts.$inferSelect;
+export type OptimizationOffer = typeof optimizationOffers.$inferSelect;
+export type OptimizationDocument = typeof optimizationDocuments.$inferSelect;
