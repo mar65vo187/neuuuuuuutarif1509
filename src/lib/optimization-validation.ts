@@ -77,7 +77,7 @@ export const optimizationOfferDecisionSchema = z.object({
 }).strict();
 
 export const optimizationSubscriptionUpdateSchema = z.object({
-  status: z.enum(["onboarding", "active", "paused", "canceled"]).optional(),
+  status: z.enum(["onboarding", "active", "paused", "canceling", "canceled", "withdrawn"]).optional(),
   billingStatus: z.enum(["pending", "pending_manual", "active", "past_due", "canceled", "checkout_error"]).optional(),
   ownerEmployeeId: positiveId.nullable().optional(),
   nextReviewAt: z.string().datetime().nullable().optional(),
