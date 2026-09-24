@@ -47,6 +47,9 @@ test("public AI widget is mounted globally on public site with human handoff", (
   assert.match(layout, /PublicAiChat/);
   assert.match(widget, /TarifWerks KI fragen/);
   assert.match(widget, /Persönlich beraten lassen/);
+  assert.match(widget, /<a href=\{withAudience\("\/anfrage\?via=tarifwerks-ki", audience\)\}/);
+  assert.match(widget, /onClick=\{\(\) => setOpen\(false\)\}/);
+  assert.match(widget, /previousPathname\.current !== pathname/);
   assert.match(widget, /Keine persönlichen Daten im Chat teilen/);
   assert.match(widget, /\/api\/public-ai/);
   assert.match(widget, /\/anfrage\?via=tarifwerks-ki/);
