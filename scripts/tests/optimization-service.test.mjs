@@ -35,7 +35,8 @@ test("optimization service persists the complete recurring-customer lifecycle", 
   assert.match(migration, /optimization_memberships_customer_unique/);
   assert.match(migration, /optimization_contracts_notice_idx/);
   assert.match(migration, /position BETWEEN 1 AND 3/);
-  assert.match(migration, /optimization_offers_goal_position_open_unique/);\n  assert.match(migration, /optimization_offers_goal_accepted_unique/);
+  assert.match(migration, /optimization_offers_goal_position_open_unique/);
+  assert.match(migration, /optimization_offers_goal_accepted_unique/);
 });
 
 test("1.99 euro price is a server-side invariant and billing is not faked", () => {
@@ -80,6 +81,11 @@ test("optimization service is connected to daily CRM workflows", () => {
   assert.match(sweep, /optimization_contract_review/);
   assert.match(sweep, /interval '30 days'/);
   assert.match(sweep, /NOT EXISTS \([\s\S]*optimization_review_due/);
+  assert.match(api, /goal_status/);
+  assert.match(api, /contract_status/);
+  assert.match(hub, /optimization\.goal\.status/);
+  assert.match(hub, /optimization\.contract\.status/);
+  assert.match(hub, /Eine dokumentierte Kundenentscheidung kann nicht überschrieben werden/);
 });
 
 test("public acquisition path is discoverable and indexed deliberately", () => {
