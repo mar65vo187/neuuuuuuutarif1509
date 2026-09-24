@@ -142,6 +142,43 @@ export const products = pgTable("products", {
 ]);
 
 
+export const prospectContacts = pgTable("prospect_contacts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone"),
+  normalizedEmail: text("normalized_email"),
+  normalizedPhone: text("normalized_phone"),
+  region: text("region"),
+  topic: text("topic"),
+  preferredChannel: text("preferred_channel"),
+  preferredTime: text("preferred_time"),
+  note: text("note").notNull().default(""),
+  tags: text("tags").array().notNull().default([]),
+  status: text("status").notNull().default("parked"),
+  ownerEmployeeId: integer("owner_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  nextContactAt: timestamp("next_contact_at", { withTimezone: true }),
+  convertedLeadId: integer("converted_lead_id").references(() => leads.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("prospect_contacts_email_unique").on(table.normalizedEmail),
+  uniqueIndex("prospect_contacts_phone_unique").on(table.normalizedPhone),
+  index("prospect_contacts_owner_status_idx").on(table.ownerEmployeeId, table.status, table.nextContactAt, table.createdAt),
+]);
+
+export const prospectContactProductLinks = pgTable("prospect_contact_product_links", {
+  contactId: integer("contact_id").notNull().references(() => prospectContacts.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  relation: text("relation").notNull().default("interest"),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("prospect_contact_product_unique").on(table.contactId, table.productId),
+  index("prospect_contact_product_product_idx").on(table.productId, table.createdAt),
+]);
+
 export const customerOpportunities = pgTable("customer_opportunities", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
@@ -224,6 +261,7 @@ export const commissionListVersions = pgTable("commission_list_versions", {
   version: integer("version").notNull(),
   sourceName: text("source_name").notNull(),
   sourceType: text("source_type").notNull().default("manual"),
+  sourceDocumentId: integer("source_document_id"),
   validFrom: timestamp("valid_from", { withTimezone: true }),
   validTo: timestamp("valid_to", { withTimezone: true }),
   ownerPoolPercent: numeric("owner_pool_percent", { precision: 5, scale: 2 }).notNull().default("15.00"),
@@ -242,6 +280,8 @@ export const commissionRateVersions = pgTable("commission_rate_versions", {
   productName: text("product_name").notNull(),
   category: text("category").notNull(),
   grossAmount: numeric("gross_amount", { precision: 12, scale: 2 }).notNull(),
+  points: numeric("points", { precision: 12, scale: 2 }).notNull().default("0"),
+  rewardNote: text("reward_note").notNull().default(""),
   currency: text("currency").notNull().default("EUR"),
   validFrom: timestamp("valid_from", { withTimezone: true }),
   validTo: timestamp("valid_to", { withTimezone: true }),
@@ -674,6 +714,9 @@ export const notificationQueue = pgTable("notification_queue", {
   entityId: text("entity_id"),
   actionUrl: text("action_url"),
   metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  senderEmployeeId: integer("sender_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  requiresAck: boolean("requires_ack").notNull().default(false),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
   status: text("status").notNull().default("pending"),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull().defaultNow(),
   sentAt: timestamp("sent_at", { withTimezone: true }),
@@ -685,6 +728,8 @@ export const notificationQueue = pgTable("notification_queue", {
   index("notification_pending_idx").on(table.status, table.scheduledAt),
   index("notification_employee_inbox_idx").on(table.employeeId, table.archivedAt, table.status, table.scheduledAt),
   index("notification_employee_snooze_idx").on(table.employeeId, table.snoozedUntil),
+  index("notification_sender_created_idx").on(table.senderEmployeeId, table.createdAt),
+  index("notification_employee_ack_idx").on(table.employeeId, table.requiresAck, table.acknowledgedAt, table.createdAt),
 ]);
 
 export const webhookEndpoints = pgTable("webhook_endpoints", {
