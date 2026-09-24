@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AlarmClock, ArrowLeft, Flame, Loader2, PackagePlus, Save, Tags } from "lucide-react";
+import { AlarmClock, ArrowLeft, ContactRound, Flame, Loader2, PackagePlus, Save, Tags } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS, SERVICES } from "@/lib/content";
 import { DuplicateIdentityCheck } from "@/components/portal/DuplicateIdentityCheck";
@@ -18,10 +18,12 @@ type ProductOption = {
 
 const TOPIC_OPTIONS = [...new Set(SERVICES.map((service) => service.name))];
 
-export function LeadCreateForm({ products }: { products: ProductOption[] }) {
+export function LeadCreateForm({ products, defaultMode = "lead" }: { products: ProductOption[]; defaultMode?: "lead" | "contact" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<number | null>(null);
+  const [savedKind, setSavedKind] = useState<"lead" | "contact">(defaultMode);
+  const [entryMode, setEntryMode] = useState<"lead" | "contact">(defaultMode);
   const [duplicateLink, setDuplicateLink] = useState<{ href: string; label: string } | null>(null);
   const [form, setForm] = useState({
     type: "beratung",
@@ -64,35 +66,56 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
     setError(null);
     setDuplicateLink(null);
     try {
-      if (form.status === "termin_bestaetigt" && !form.confirmedSlot.trim()) {
+      if (entryMode === "lead" && form.status === "termin_bestaetigt" && !form.confirmedSlot.trim()) {
         throw new Error("Für einen terminierten Lead bitte eine Terminzeit eintragen.");
       }
       const topic = [...new Set([...selectedTopics, form.topic.trim()].filter(Boolean))].join(" · ");
       if (![form.name, form.email, form.phone, topic, form.message].some((value) => value.trim().length > 0)) {
         throw new Error("Bitte mindestens Name/Vorname, E-Mail, Telefon, einen Themenbereich oder eine Notiz eintragen.");
       }
-      const payload = {
-        ...form,
+      const common = {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
         topic,
-        nextActionAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : null,
+        region: form.region,
+        preferredChannel: form.preferredChannel,
+        preferredTime: form.preferredTime,
         tags: [...new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean))].slice(0, 12),
         productSelections: selectedProductIds.map((productId) => ({
           productId,
           relation: form.productRelation,
         })),
       };
-      const response = await fetch("/api/portal/leads", {
+      const payload = entryMode === "contact"
+        ? {
+            ...common,
+            note: form.message,
+            nextContactAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : null,
+          }
+        : {
+            ...common,
+            type: form.type,
+            status: form.status,
+            priority: form.priority,
+            contactOutcome: form.contactOutcome,
+            message: form.message,
+            nextActionAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : null,
+            confirmedSlot: form.confirmedSlot,
+          };
+      const response = await fetch(entryMode === "contact" ? "/api/portal/contacts" : "/api/portal/leads", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(20000),
       });
-      const body = await response.json() as { ok: boolean; id?: number; error?: string; duplicate?: { href?: string; label?: string } };
+      const body = await response.json() as { ok: boolean; id?: number; kind?: "lead" | "contact"; error?: string; duplicate?: { href?: string; label?: string } };
       if (!response.ok || !body.ok) {
         if (body.duplicate?.href) setDuplicateLink({ href: body.duplicate.href, label: body.duplicate.label ?? "Bestehenden Datensatz öffnen" });
-        throw new Error(body.error ?? "Der Lead konnte nicht gespeichert werden.");
+        throw new Error(body.error ?? (entryMode === "contact" ? "Der Kontakt konnte nicht gespeichert werden." : "Der Lead konnte nicht gespeichert werden."));
       }
+      setSavedKind(body.kind === "contact" ? "contact" : entryMode);
       setSavedId(body.id ?? null);
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Verbindung fehlgeschlagen.");
@@ -104,8 +127,8 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
   if (savedId !== null) {
     return (
       <div className="space-y-4">
-        <p role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">Lead #{savedId} wurde angelegt und direkt in die CRM-Pipeline einsortiert.</p>
-        <Link href={`/portal/leads/${savedId}`} className="inline-flex h-11 items-center rounded-full bg-ink px-5 text-[14px] font-semibold text-white">Lead öffnen</Link>
+        <p role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">{savedKind === "contact" ? `Kontakt #${savedId} wurde im Kontaktpool gespeichert. Er löst noch keine Lead-Nacharbeit aus.` : `Lead #${savedId} wurde angelegt und direkt in die CRM-Pipeline einsortiert.`}</p>
+        <Link href={savedKind === "contact" ? `/portal/kontakte?id=${savedId}` : `/portal/leads/${savedId}`} className="inline-flex h-11 items-center rounded-full bg-ink px-5 text-[14px] font-semibold text-white">{savedKind === "contact" ? "Kontaktpool öffnen" : "Lead öffnen"}</Link>
       </div>
     );
   }
@@ -114,10 +137,21 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
     <form onSubmit={submit} className="space-y-6">
       {error && <div role="alert" className="rounded-xl border border-red-300/40 bg-red-500/[0.07] px-4 py-3 text-[14px] text-red-200"><p>{error}</p>{duplicateLink && <Link href={duplicateLink.href} className="mt-2 inline-flex rounded-full border border-red-300/30 px-3 py-1.5 text-[11.5px] font-extrabold text-white hover:bg-red-400/10">{duplicateLink.label} öffnen</Link>}</div>}
 
+      <section className="rounded-2xl border border-electric/20 bg-electric/[0.045] p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-electric-soft"><ContactRound className="h-4 w-4" /></span>
+          <div><p className="text-[14px] font-extrabold text-ink">Wie soll der Eintrag starten?</p><p className="mt-0.5 text-[12px] leading-relaxed text-steel">Ein Kontakt bleibt außerhalb der Lead-Pipeline, bis ihr ihn bewusst qualifiziert.</p></div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={() => setEntryMode("contact")} className={"rounded-2xl border p-4 text-left transition " + (entryMode === "contact" ? "border-electric bg-electric/[0.08]" : "border-line bg-white hover:border-electric/30")}><p className="font-extrabold text-ink">Nur Kontakt speichern</p><p className="mt-1 text-[11.5px] leading-5 text-steel">Für Personen, die ihr später vielleicht ansprechen wollt. Keine Lead-Automation und keine Pflicht-Aufgabe.</p></button>
+          <button type="button" onClick={() => setEntryMode("lead")} className={"rounded-2xl border p-4 text-left transition " + (entryMode === "lead" ? "border-electric bg-electric/[0.08]" : "border-line bg-white hover:border-electric/30")}><p className="font-extrabold text-ink">Direkt als Lead</p><p className="mt-1 text-[11.5px] leading-5 text-steel">Für konkrete Bearbeitung: Pipeline, Priorität, Wiedervorlage und Automationen starten sofort.</p></button>
+        </div>
+      </section>
+
       <section>
         <div className="mb-4">
           <p className="text-[14px] font-extrabold text-ink">Kontaktdaten</p>
-          <p className="mt-0.5 text-[12px] text-steel">Grunddaten des Leads und gewünschter Kontaktweg.</p>
+          <p className="mt-0.5 text-[12px] text-steel">{entryMode === "contact" ? "Grunddaten für den Kontaktpool. Alles außer einem sinnvollen Identifikationsmerkmal kann später ergänzt werden." : "Grunddaten des Leads und gewünschter Kontaktweg."}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="label">Art<select className="field" value={form.type} onChange={(event) => set("type", event.target.value)}><option value="beratung">Beratung</option><option value="termin">Termin</option><option value="tarifcheck">Tarifcheck</option><option value="kontakt">Kontakt</option></select></label>
@@ -159,7 +193,7 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
         </label>
       </section>
 
-      <section className="rounded-2xl border border-electric/15 bg-[linear-gradient(145deg,rgba(79,141,255,0.10),rgba(255,255,255,0.92))] p-4 sm:p-5">
+      {entryMode === "lead" && <section className="rounded-2xl border border-electric/15 bg-[linear-gradient(145deg,rgba(79,141,255,0.10),rgba(255,255,255,0.92))] p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-electric-soft"><Flame className="h-4 w-4" /></span>
           <div>
@@ -202,7 +236,15 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
             </div>
           </label>
         </div>
-      </section>
+      </section>}
+
+      {entryMode === "contact" && <section className="rounded-2xl border border-line bg-paper/50 p-4 sm:p-5">
+        <p className="text-[14px] font-extrabold text-ink">Optionaler Merker</p>
+        <p className="mt-1 text-[12px] text-steel">Das Datum ist nur ein Hinweis im Kontaktpool und erzeugt noch keine Aufgabe.</p>
+        <label className="label mt-3">Vielleicht kontaktieren ab
+          <div className="relative"><AlarmClock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" /><input type="datetime-local" className="field pl-10" value={form.nextActionAt} onChange={(event) => set("nextActionAt", event.target.value)} /></div>
+        </label>
+      </section>}
 
       <section className="rounded-2xl border border-champagne/25 bg-champagne/10 p-4 sm:p-5">
         <div className="flex items-start gap-3">
@@ -256,11 +298,11 @@ export function LeadCreateForm({ products }: { products: ProductOption[] }) {
         </div>
       </section>
 
-      <label className="label">Interne Ausgangsnotiz / Nachricht<textarea rows={5} maxLength={2000} className="field" value={form.message} onChange={(event) => set("message", event.target.value)} placeholder="Worum geht es, was wurde bereits besprochen, was ist wichtig?" /></label>
+      <label className="label">{entryMode === "contact" ? "Interne Kontaktnotiz" : "Interne Ausgangsnotiz / Nachricht"}<textarea rows={5} maxLength={2000} className="field" value={form.message} onChange={(event) => set("message", event.target.value)} placeholder="Worum geht es, was wurde bereits besprochen, was ist wichtig?" /></label>
 
       <div className="flex flex-wrap gap-3">
-        <button type="submit" disabled={busy} className="inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-60">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Lead speichern</button>
-        <Link href="/portal/leads" className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-white px-5 text-[14px] font-semibold"><ArrowLeft className="h-4 w-4" /> Zurück</Link>
+        <button type="submit" disabled={busy} className="inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-white hover:bg-electric disabled:opacity-60">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {entryMode === "contact" ? "Kontakt speichern" : "Lead speichern"}</button>
+        <Link href={entryMode === "contact" ? "/portal/kontakte" : "/portal/leads"} className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-white px-5 text-[14px] font-semibold"><ArrowLeft className="h-4 w-4" /> Zurück</Link>
       </div>
     </form>
   );
