@@ -12,7 +12,7 @@ const ids = z.array(z.number().int().positive()).min(1).max(100);
 const schema = z.union([
   z.object({ action: z.literal("mark_read"), all: z.literal(true) }).strict(),
   z.object({
-    action: z.enum(["mark_read", "mark_unread", "archive", "restore", "unsnooze"]),
+    action: z.enum(["mark_read", "mark_unread", "archive", "restore", "unsnooze", "acknowledge"]),
     ids,
   }).strict(),
   z.object({
@@ -63,6 +63,11 @@ export async function PATCH(request: NextRequest) {
       } else if (parsed.data.action === "mark_unread") {
         patch.status = "pending";
         patch.readAt = null;
+      } else if (parsed.data.action === "acknowledge") {
+        patch.status = "read";
+        patch.readAt = now;
+        patch.sentAt = now;
+        patch.acknowledgedAt = now;
       } else if (parsed.data.action === "archive") {
         patch.archivedAt = now;
       } else if (parsed.data.action === "restore") {
