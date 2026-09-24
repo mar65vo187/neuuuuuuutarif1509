@@ -20,7 +20,9 @@ const schema = z.object({
 
 const LIMIT = 30;
 const WINDOW_MINUTES = 15;
+const GROQ_DAILY_LIMIT = Math.max(1, Math.min(950, Number(process.env.TARIFWERK_PUBLIC_AI_GROQ_DAILY_LIMIT ?? 900) || 900));
 const buckets = new Map<string, { count: number; reset: number }>();
+let localGroqBudget = { count: 0, reset: Date.now() + 24 * 60 * 60 * 1000 };
 
 function localRateLimit(key: string) {
   const now = Date.now();
@@ -78,6 +80,49 @@ async function sharedRateLimit(networkKey: string) {
   }
 }
 
+
+function localGroqDailyBudget() {
+  const now = Date.now();
+  if (localGroqBudget.reset <= now) localGroqBudget = { count: 0, reset: now + 24 * 60 * 60 * 1000 };
+  localGroqBudget.count += 1;
+  return { allowed: localGroqBudget.count <= GROQ_DAILY_LIMIT, remaining: Math.max(0, GROQ_DAILY_LIMIT - localGroqBudget.count) };
+}
+
+async function sharedGroqDailyBudget() {
+  if (!process.env.GROQ_API_KEY?.trim()) return { allowed: false, remaining: 0 };
+  const preferred = (process.env.TARIFWERK_PUBLIC_AI_PROVIDER?.trim() || "auto").toLowerCase();
+  if (preferred === "xkiro") return { allowed: false, remaining: 0 };
+
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) return localGroqDailyBudget();
+  const keyHash = createHmac("sha256", secret).update("public-ai:groq-daily:v1").digest("hex");
+  try {
+    const result = await pool.query<{ request_count: number }>(
+      `
+        INSERT INTO public_intake_rate_limits (key_hash, window_started_at, request_count, updated_at)
+        VALUES ($1, now(), 1, now())
+        ON CONFLICT (key_hash) DO UPDATE SET
+          request_count = CASE
+            WHEN public_intake_rate_limits.window_started_at <= now() - interval '24 hours' THEN 1
+            ELSE public_intake_rate_limits.request_count + 1
+          END,
+          window_started_at = CASE
+            WHEN public_intake_rate_limits.window_started_at <= now() - interval '24 hours' THEN now()
+            ELSE public_intake_rate_limits.window_started_at
+          END,
+          updated_at = now()
+        RETURNING request_count
+      `,
+      [keyHash],
+    );
+    const count = result.rows[0]?.request_count ?? GROQ_DAILY_LIMIT + 1;
+    return { allowed: count <= GROQ_DAILY_LIMIT, remaining: Math.max(0, GROQ_DAILY_LIMIT - count) };
+  } catch {
+    console.error("[public-ai] shared Groq daily budget unavailable");
+    return localGroqDailyBudget();
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
     return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
@@ -102,7 +147,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Bitte prüfe deine Nachricht." }, { status: 422 });
     }
 
-    const answer = await askPublicTarifWerkAi(parsed.data);
+    const groqBudget = await sharedGroqDailyBudget();
+    const answer = await askPublicTarifWerkAi({ ...parsed.data, allowGroq: groqBudget.allowed });
     return NextResponse.json(
       { ok: true, ...answer },
       { headers: { "Cache-Control": "no-store, private" } },
