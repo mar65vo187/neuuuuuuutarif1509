@@ -75,6 +75,11 @@ const requiredTables = [
   "operations_policy",
   "service_cases",
   "service_case_events",
+  "optimization_memberships",
+  "optimization_goals",
+  "optimization_contracts",
+  "optimization_offers",
+  "optimization_documents",
 ];
 
 const pool = new Pool({
