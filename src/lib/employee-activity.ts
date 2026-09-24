@@ -11,6 +11,7 @@ export type EmployeeActivityRow = {
   lastLoginAt: Date | null;
   lastActionAt: Date | null;
   activeDays7: number;
+  contacts7: number;
   leads7: number;
   calls7: number;
   customerActivities7: number;
@@ -33,10 +34,11 @@ function computeActivityIndex(row: Omit<EmployeeActivityRow, "activityIndex" | "
   const recency = ageHours <= 24 ? 25 : ageHours <= 72 ? 15 : ageHours <= 168 ? 5 : 0;
   const activeDays = Math.min(28, row.activeDays7 * 4);
   const leads = Math.min(15, row.leads7 * 3);
+  const contacts = Math.min(8, row.contacts7 * 2);
   const contactWork = Math.min(15, (row.calls7 + row.customerActivities7) * 2.5);
   const tasks = Math.min(9, row.tasksCompleted7 * 3);
   const orders = Math.min(8, row.orders7 * 4);
-  return Math.round(Math.min(100, recency + activeDays + leads + contactWork + tasks + orders));
+  return Math.round(Math.min(100, recency + activeDays + contacts + leads + contactWork + tasks + orders));
 }
 
 function band(index: number, lastActionAt: Date | null): EmployeeActivityRow["activityBand"] {
@@ -59,6 +61,7 @@ export async function getEmployeeActivityDashboard(user: SessionUser) {
     last_login_at: Date | null;
     last_action_at: Date | null;
     active_days_7: number;
+    contacts_7: number;
     leads_7: number;
     calls_7: number;
     customer_activities_7: number;
@@ -72,6 +75,9 @@ export async function getEmployeeActivityDashboard(user: SessionUser) {
     last_nudge_ack_at: Date | null;
   }>(`
     WITH activity AS (
+      SELECT created_by_employee_id AS employee_id, created_at AS occurred_at, 'contact'::text AS kind
+      FROM prospect_contacts WHERE created_by_employee_id IS NOT NULL
+      UNION ALL
       SELECT created_by_employee_id AS employee_id, created_at AS occurred_at, 'lead'::text AS kind
       FROM leads WHERE created_by_employee_id IS NOT NULL
       UNION ALL
@@ -94,6 +100,7 @@ export async function getEmployeeActivityDashboard(user: SessionUser) {
         max(occurred_at) AS last_action_at,
         count(DISTINCT (occurred_at AT TIME ZONE 'Europe/Berlin')::date)
           FILTER (WHERE occurred_at >= now() - interval '7 days')::int AS active_days_7,
+        count(*) FILTER (WHERE kind='contact' AND occurred_at >= now() - interval '7 days')::int AS contacts_7,
         count(*) FILTER (WHERE kind='lead' AND occurred_at >= now() - interval '7 days')::int AS leads_7,
         count(*) FILTER (WHERE kind='call' AND occurred_at >= now() - interval '7 days')::int AS calls_7,
         count(*) FILTER (WHERE kind='customer_activity' AND occurred_at >= now() - interval '7 days')::int AS customer_activities_7,
@@ -137,6 +144,7 @@ export async function getEmployeeActivityDashboard(user: SessionUser) {
     SELECT e.id,e.name,e.email,e.role::text,e.active,
       s.last_seen_at,l.last_login_at,a.last_action_at,
       coalesce(a.active_days_7,0)::int AS active_days_7,
+      coalesce(a.contacts_7,0)::int AS contacts_7,
       coalesce(a.leads_7,0)::int AS leads_7,
       coalesce(a.calls_7,0)::int AS calls_7,
       coalesce(a.customer_activities_7,0)::int AS customer_activities_7,
@@ -168,6 +176,7 @@ export async function getEmployeeActivityDashboard(user: SessionUser) {
       lastLoginAt: row.last_login_at,
       lastActionAt: row.last_action_at,
       activeDays7: row.active_days_7,
+      contacts7: row.contacts_7,
       leads7: row.leads_7,
       calls7: row.calls_7,
       customerActivities7: row.customer_activities_7,
@@ -192,7 +201,7 @@ export async function getEmployeeActivityDashboard(user: SessionUser) {
       activeToday: team.filter((employee) => employee.lastActionAt && Date.now() - employee.lastActionAt.getTime() <= 86_400_000).length,
       needsAttention: team.filter((employee) => employee.activityBand === "low" || employee.activityBand === "inactive").length,
       openNudges: team.reduce((sum, employee) => sum + employee.unacknowledgedNudges, 0),
-      actions7: team.reduce((sum, employee) => sum + employee.leads7 + employee.calls7 + employee.customerActivities7 + employee.tasksCompleted7 + employee.orders7, 0),
+      actions7: team.reduce((sum, employee) => sum + employee.contacts7 + employee.leads7 + employee.calls7 + employee.customerActivities7 + employee.tasksCompleted7 + employee.orders7, 0),
     },
   };
 }
