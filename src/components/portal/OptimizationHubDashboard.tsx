@@ -133,7 +133,7 @@ function statusClass(status: string) {
   return "border-line bg-paper text-steel";
 }
 
-export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; canEdit: boolean }) {
+export function OptimizationHubDashboard({ data, canEdit, initialCustomerId }: { data: HubData; canEdit: boolean; initialCustomerId?: number }) {
   const router = useRouter();
   const saving = useRef(false);
   const [tab, setTab] = useState<Tab>("cockpit");
@@ -353,7 +353,7 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
         <h2 className="text-[17px] font-extrabold text-ink">Mitgliedschaft anlegen / aktualisieren</h2>
         <p className="mt-1 text-[11.5px] text-steel">Der Monatspreis wird serverseitig fest auf 1,99 € gesetzt.</p>
         <div className="mt-4 grid gap-3">
-          <label className="label">Kunde<select name="customerId" required className="field"><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
+          <label className="label">Kunde<select name="customerId" required className="field" defaultValue={initialCustomerId ? String(initialCustomerId) : ""}><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
           <label className="label">Status<select name="status" defaultValue="pending" className="field"><option value="pending">Ausstehend</option><option value="active">Aktiv</option><option value="paused">Pausiert</option><option value="cancelled">Beendet</option></select></label>
           <label className="label">Nächster Bestandscheck<input name="nextReviewDate" type="date" className="field" /></label>
           <label className="label">Zahlungsanbieter / Modus<input name="billingProvider" maxLength={80} className="field" placeholder="z. B. Stripe, SEPA extern, manuell" /></label>
@@ -375,7 +375,7 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       {canEdit && <form onSubmit={goalSubmit} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
         <h2 className="text-[17px] font-extrabold text-ink">Ziel / Wunsch aufnehmen</h2>
         <div className="mt-4 grid gap-3">
-          <label className="label">Kunde<select name="customerId" required className="field"><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
+          <label className="label">Kunde<select name="customerId" required className="field" defaultValue={initialCustomerId ? String(initialCustomerId) : ""}><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
           <label className="label">Bereich<select name="category" defaultValue="internet_tv" className="field">{OPTIMIZATION_CATEGORIES.map((key) => <option key={key} value={key}>{OPTIMIZATION_CATEGORY_LABELS[key]}</option>)}</select></label>
           <label className="label">Wunsch / Ziel<input name="title" required maxLength={180} className="field" placeholder="z. B. Solaranlage mit Finanzierung prüfen" /></label>
           <label className="label">Beschreibung<textarea name="description" maxLength={3000} rows={4} className="field min-h-24 py-3" /></label>
@@ -398,7 +398,7 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       {canEdit && <form onSubmit={contractSubmit} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
         <h2 className="text-[17px] font-extrabold text-ink">Bestehenden Vertrag erfassen</h2>
         <div className="mt-4 grid gap-3">
-          <label className="label">Kunde<select name="customerId" required className="field"><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
+          <label className="label">Kunde<select name="customerId" required className="field" defaultValue={initialCustomerId ? String(initialCustomerId) : ""}><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
           <label className="label">Bereich<select name="category" defaultValue="internet_tv" className="field">{OPTIMIZATION_CATEGORIES.map((key) => <option key={key} value={key}>{OPTIMIZATION_CATEGORY_LABELS[key]}</option>)}</select></label>
           <div className="grid gap-3 sm:grid-cols-2"><label className="label">Anbieter<input name="providerName" required maxLength={180} className="field" /></label><label className="label">Vertrag / Tarif<input name="contractName" required maxLength={220} className="field" /></label></div>
           <label className="label">Monatliche Kosten €<input name="monthlyCost" inputMode="decimal" className="field" /></label>
@@ -422,7 +422,7 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
         <h2 className="text-[17px] font-extrabold text-ink">Vergleichsoption hinzufügen</h2>
         <p className="mt-1 text-[11.5px] text-steel">Für einen Wunsch idealerweise drei nachvollziehbare Optionen anlegen.</p>
         <div className="mt-4 grid gap-3">
-          <label className="label">Kunde<select name="customerId" required className="field"><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
+          <label className="label">Kunde<select name="customerId" required className="field" defaultValue={initialCustomerId ? String(initialCustomerId) : ""}><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
           <label className="label">Wunsch verknüpfen<select name="goalId" className="field"><option value="">Optional</option>{data.goals.filter((goal) => ["open","researching","offers_ready"].includes(goal.status)).map((goal) => <option key={goal.id} value={goal.id}>#{goal.id} · {goal.customerName} · {goal.title}</option>)}</select></label>
           <label className="label">Bestandsvertrag verknüpfen<select name="contractId" className="field"><option value="">Optional</option>{data.contracts.filter((contract) => ["active","review_due","switch_planned"].includes(contract.status)).map((contract) => <option key={contract.id} value={contract.id}>#{contract.id} · {contract.customerName} · {contract.providerName}</option>)}</select></label>
           <div className="grid gap-3 sm:grid-cols-2"><label className="label">Anbieter<input name="providerName" required maxLength={180} className="field" /></label><label className="label">Angebot<input name="title" required maxLength={220} className="field" /></label></div>
@@ -447,7 +447,7 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
         <h2 className="text-[17px] font-extrabold text-ink">Dokument hochladen</h2>
         <p className="mt-1 text-[11.5px] text-steel">PDF, JPG, PNG oder WebP · maximal 8 MB · SHA-256-Prüfhash wird gespeichert.</p>
         <div className="mt-4 grid gap-3">
-          <label className="label">Kunde<select name="customerId" required className="field"><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
+          <label className="label">Kunde<select name="customerId" required className="field" defaultValue={initialCustomerId ? String(initialCustomerId) : ""}><option value="">Bitte wählen</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.customerNumber}</option>)}</select></label>
           <label className="label">Titel<input name="title" required maxLength={220} className="field" placeholder="z. B. Telekom Rechnung August" /></label>
           <label className="label">Dokumentart<select name="kind" defaultValue="contract" className="field"><option value="contract">Vertrag</option><option value="offer">Angebot</option><option value="invoice">Rechnung</option><option value="proof">Nachweis</option><option value="other">Sonstiges</option></select></label>
           <label className="label">Vertrag verknüpfen<select name="contractId" className="field"><option value="">Optional</option>{data.contracts.map((row) => <option key={row.id} value={row.id}>#{row.id} · {row.customerName} · {row.providerName}</option>)}</select></label>
