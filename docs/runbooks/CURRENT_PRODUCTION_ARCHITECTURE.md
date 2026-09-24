@@ -11,7 +11,8 @@ www.tarifwerk.eu
   -> Railway Proxy (tarifwerk-web / nginx)
   -> Railway Production App (tarifwerk-prod / Next.js)
   -> PostgreSQL
-  -> Xkiro / Qwen für öffentliche und interne KI
+  -> Groq / Qwen für öffentliche KI
+  -> xKiro / weitere Provider für interne KI
 ```
 
 Die öffentliche Domain ist direkt mit dem Railway-Proxy `tarifwerk-web` verbunden. Dieser leitet intern an `tarifwerk-prod` weiter. Die optionale Vercel-Weiterleitung in `next.config.ts` bleibt als separater Fallback gekapselt und greift nur unter `VERCEL=1`.
@@ -40,7 +41,9 @@ Eigenschaften:
 - personenbezogene Kontaktangaben werden vor KI-Anfragen entfernt
 - Same-Origin-Schutz und Rate-Limit
 - menschliche Übergabe zur persönlichen Beratung
-- Xkiro als OpenAI-kompatibler Provider
+- Groq als primärer OpenAI-kompatibler Provider mit Qwen 3.8 27B
+- xKiro nur als automatischer Ausfall-Fallback für den öffentlichen Chat
+- serverseitiges Tagesbudget als Puffer unter dem Groq-Free-Tier-Limit
 
 ## Interne KI / Sales Academy
 
@@ -71,18 +74,28 @@ Eigenschaften:
 Nur Namen – Werte gehören ausschließlich in die jeweilige Hosting-/Secret-Verwaltung:
 
 ```text
+GROQ_API_KEY
+TARIFWERK_PUBLIC_AI_PROVIDER
+TARIFWERK_PUBLIC_AI_GROQ_MODEL
+TARIFWERK_PUBLIC_AI_GROQ_DAILY_LIMIT
 XKIRO_API_KEY
+TARIFWERK_PUBLIC_AI_XKIRO_MODEL
+
 TARIFWERK_AI_PROVIDER
 TARIFWERK_AI_XKIRO_MODEL
 TARIFWERK_AI_DAILY_LIMIT
 TARIFWERK_AI_INCLUDE_TRAINING
 ```
 
-Aktuell erwartetes Modell:
+Öffentliches Primärmodell:
 
 ```text
-qwen/qwen3.8-omni-flash:free
+qwen/qwen3.8-27b
 ```
+
+Der öffentliche Chat verwendet standardmäßig `auto`: Groq/Qwen zuerst, xKiro nur bei fehlendem Groq-Secret, ausgeschöpftem Tagesbudget oder einem Provider-Ausfall. Standardmäßig werden höchstens 900 Groq-Aufrufe pro 24-Stunden-Fenster zugelassen, damit ein Puffer unter dem Free-Tier-RPD-Limit bleibt.
+
+Interne KI-Konfiguration und internes Training bleiben davon getrennt.
 
 ## Weitere notwendige Runtime Variablen
 
