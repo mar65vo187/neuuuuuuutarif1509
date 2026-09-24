@@ -15,6 +15,20 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Der Assistent verändert keine Kunden-, Auftrags- oder Provisionsdaten automatisch.", "Empfehlungen sind Arbeitsprioritäten und ersetzen keine fachliche Beratung oder Freigabe."],
   },
   {
+    href: "/portal/aktivitaet",
+    title: "Mitarbeiter-Aktivität",
+    purpose: "Admins sehen nachvollziehbare CRM-Aktivitätssignale und können persönliche Nachrichten oder Anstupser direkt in die Action Inbox senden.",
+    actions: ["Aktivität der letzten sieben Tage nachvollziehen", "Leads, Kontakte, Calls, Aufgaben und Aufträge getrennt sehen", "Persönliche Nachricht senden", "Anstupser mit Lesebestätigung senden"],
+    tips: ["Der Aktivitätsindex ist ein Arbeitssignal und kein Qualitätsurteil.", "Nutzen Sie Anstupser konkret und konstruktiv; die Einzelkennzahlen bleiben sichtbar."],
+  },
+  {
+    href: "/portal/kontakte",
+    title: "Kontaktpool",
+    purpose: "Lose Kontakte sammeln, ohne sie sofort in Lead-Pipeline, Automationen und Pflicht-Nacharbeit zu überführen.",
+    actions: ["Kontakt mit wenigen Grunddaten speichern", "Optional Produkte und einen späteren Kontaktzeitpunkt notieren", "Kontakt später bewusst als Lead qualifizieren", "Nach der Qualifizierung normal in der Lead-Akte weiterarbeiten"],
+    tips: ["Ein Kontakt erzeugt bewusst keine Lead-Automation.", "Erst mit der Qualifizierung entsteht ein bearbeitbarer Lead und gegebenenfalls eine Wiedervorlage."],
+  },
+  {
     href: "/portal/verwaltung",
     title: "Mitarbeiter verwalten",
     purpose: "Interne Benutzer, Rollen, Profile und Zugänge zentral verwalten.",
