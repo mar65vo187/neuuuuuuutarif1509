@@ -98,6 +98,9 @@ CREATE INDEX IF NOT EXISTS optimization_offers_goal_position_idx
 CREATE UNIQUE INDEX IF NOT EXISTS optimization_offers_goal_position_open_unique
   ON optimization_offers(goal_id, position)
   WHERE goal_id IS NOT NULL AND status IN ('draft','proposed');
+CREATE UNIQUE INDEX IF NOT EXISTS optimization_offers_goal_accepted_unique
+  ON optimization_offers(goal_id)
+  WHERE goal_id IS NOT NULL AND status = 'accepted';
 
 CREATE TABLE IF NOT EXISTS optimization_documents (
   id serial PRIMARY KEY,
