@@ -122,7 +122,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={`/portal/leads/pipeline${pipelineQuery ? `?${pipelineQuery}` : ""}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink hover:border-electric/30"><LayoutDashboard aria-hidden="true" className="h-4 w-4" /> Pipeline</Link>
-          {canEdit && <Link href="/portal/leads/neu" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-electric px-4 text-sm font-bold text-white shadow-sm hover:bg-electric-deep"><Plus aria-hidden="true" className="h-4 w-4" /> Lead anlegen</Link>}
+          <Link href="/portal/kontakte" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink hover:border-electric/30">Kontaktpool</Link>
+          {canEdit && <Link href="/portal/leads/neu" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-electric px-4 text-sm font-bold text-white shadow-sm hover:bg-electric-deep"><Plus aria-hidden="true" className="h-4 w-4" /> Lead / Kontakt anlegen</Link>}
         </div>
       </header>
 
