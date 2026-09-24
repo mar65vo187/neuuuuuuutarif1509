@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, FileCheck2, Gift, Headphones, Inbox, LineChart, Megaphone,
-  KeyRound, Lightbulb, ListTodo, LogOut, Menu, MessageSquare, PackageSearch, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards, X,
+  KeyRound, Lightbulb, ListTodo, LogOut, Menu, MessageSquare, PackageSearch, RefreshCcw, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards, X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -18,7 +18,7 @@ const NAV_SECTIONS = [
     label: "Täglich arbeiten",
     items: [
       { href: "/portal", label: "Übersicht & Fokus", icon: BarChart3, exact: true },
-      { href: "/portal/assistent", label: "KI & Arbeitsassistent", icon: BrainCircuit },
+      { href: "/portal/assistent", label: "KI & Arbeitsassistent", icon: BrainCircuit },\n      { href: "/portal/optimierung", label: "Optimierung+", icon: RefreshCcw },
       { href: "/portal/leads", label: "Leads & Termine", icon: Inbox, anyPermission: ["lead.edit"] },
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.edit"] },
