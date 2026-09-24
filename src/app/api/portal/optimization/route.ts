@@ -6,6 +6,8 @@ import {
   createOptimizationContract,
   createOptimizationGoal,
   createOptimizationOffer,
+  updateOptimizationContractStatus,
+  updateOptimizationGoalStatus,
   updateOptimizationOfferStatus,
   upsertOptimizationMembership,
 } from "@/lib/optimization-hub";
@@ -39,6 +41,14 @@ export async function POST(request: NextRequest) {
     if (input.action === "offer") {
       const row = await createOptimizationOffer(user, input);
       return NextResponse.json({ ok: true, id: row.id }, { status: 201 });
+    }
+    if (input.action === "goal_status") {
+      const row = await updateOptimizationGoalStatus(user, input.goalId, input.status);
+      return NextResponse.json({ ok: true, id: row?.id }, { status: 200 });
+    }
+    if (input.action === "contract_status") {
+      const row = await updateOptimizationContractStatus(user, input.contractId, input.status);
+      return NextResponse.json({ ok: true, id: row?.id }, { status: 200 });
     }
     const row = await updateOptimizationOfferStatus(user, input.offerId, input.status);
     return NextResponse.json({ ok: true, id: row?.id }, { status: 200 });
