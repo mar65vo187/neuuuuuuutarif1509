@@ -90,12 +90,15 @@ export const commissionImportSchema = z.object({
   sourceType: z.enum(["csv", "structured", "manual"]).default("structured"),
   validFrom: z.string().datetime().nullable().optional(),
   validTo: z.string().datetime().nullable().optional(),
+  sourceDocumentId: id.nullable().optional(),
   rows: z.array(z.object({
     productId: id.nullable().optional(),
     externalProductId: text(160).optional(),
     productName: text(180).min(2),
     category: text(80).min(2),
     grossAmount: money,
+    points: money.optional().default(0),
+    rewardNote: text(500).optional().default(""),
   })).min(1).max(5000),
 });
 

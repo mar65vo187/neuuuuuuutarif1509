@@ -1,14 +1,14 @@
-import { and, eq, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { and, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
-import { customers } from "@/db/enterprise-schema";
+import { customers, prospectContacts } from "@/db/enterprise-schema";
 import type { SessionUser } from "@/lib/auth";
 import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type StrongContactDuplicate = {
-  entity: "lead" | "customer";
+  entity: "lead" | "customer" | "contact";
   id: number;
   label: string;
   href: string;
@@ -45,7 +45,7 @@ export async function lockAndFindStrongContactDuplicate(
   tx: Tx,
   input: { email?: string | null; phone?: string | null },
   user: SessionUser,
-  exclude?: { excludeCustomerId?: number; excludeLeadId?: number },
+  exclude?: { excludeCustomerId?: number; excludeLeadId?: number; excludeContactId?: number },
 ): Promise<StrongContactDuplicate | null> {
   const email = normalizeContactEmail(input.email);
   const phone = normalizeContactPhone(input.phone);
@@ -128,12 +128,43 @@ export async function lockAndFindStrongContactDuplicate(
     }
   }
 
+  const contactConditions = duplicateConditions(prospectContacts.email, prospectContacts.phone, email, phone);
+  if (contactConditions.length) {
+    const [contact] = await tx.select({
+      id: prospectContacts.id,
+      name: prospectContacts.name,
+      email: prospectContacts.email,
+      phone: prospectContacts.phone,
+      ownerEmployeeId: prospectContacts.ownerEmployeeId,
+      createdByEmployeeId: prospectContacts.createdByEmployeeId,
+      status: prospectContacts.status,
+    }).from(prospectContacts)
+      .where(and(
+        or(...contactConditions)!,
+        exclude?.excludeContactId ? sql`${prospectContacts.id} <> ${exclude.excludeContactId}` : undefined,
+      ))
+      .limit(1);
+
+    if (contact && !["converted", "archived"].includes(contact.status)) {
+      const grants = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT] as const);
+      const ownerEmployeeId = contact.ownerEmployeeId ?? contact.createdByEmployeeId;
+      return {
+        entity: "contact",
+        id: contact.id,
+        label: contact.name || contact.email || contact.phone || "Kontakt #" + contact.id,
+        href: "/portal/kontakte?id=" + contact.id,
+        ownerEmployeeId,
+        visible: grants[PORTAL_PERMISSION.LEAD_EDIT] && (user.role === "admin" || ownerEmployeeId === user.id),
+      };
+    }
+  }
+
   return null;
 }
 
 export function contactDuplicateError(duplicate: StrongContactDuplicate) {
   const message = duplicate.visible
-    ? `Kontakt existiert bereits als ${duplicate.entity === "lead" ? "Lead" : "Kunde"}: ${duplicate.label}. Bitte den bestehenden Datensatz öffnen statt einen zweiten anzulegen.`
+    ? `Kontakt existiert bereits als ${duplicate.entity === "lead" ? "Lead" : duplicate.entity === "customer" ? "Kunde" : "Kontakt"}: ${duplicate.label}. Bitte den bestehenden Datensatz öffnen statt einen zweiten anzulegen.`
     : "Dieser Kontakt ist bereits im System vorhanden. Bitte keine zweite Akte anlegen; ein Admin kann die bestehende Zuordnung prüfen.";
   return Object.assign(new Error(message), {
     status: 409,

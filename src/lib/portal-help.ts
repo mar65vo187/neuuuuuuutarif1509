@@ -15,6 +15,20 @@ export const PORTAL_HELP: PortalHelpTopic[] = [
     tips: ["Der Mitgliedschaftsstatus im CRM löst keine Abbuchung aus; Zahlungsdaten müssen über einen tatsächlich angebundenen Payment-Provider bestätigt werden.", "Angebote und Finanzierungsoptionen nur passend zum dokumentierten Kundenbedarf einordnen.", "Review-Termine und Kündigungsfristen sind Arbeitsanlässe, keine automatische Vertragsänderung."],
   },
   {
+    href: "/portal/aktivitaet",
+    title: "Mitarbeiter-Aktivität",
+    purpose: "Admins sehen nachvollziehbare CRM-Aktivitätssignale und können persönliche Nachrichten oder Anstupser direkt in die Action Inbox senden.",
+    actions: ["Aktivität der letzten sieben Tage nachvollziehen", "Kontakte, Leads, Calls, Aufgaben und Aufträge getrennt sehen", "Persönliche Nachricht senden", "Anstupser mit Lesebestätigung senden"],
+    tips: ["Der Aktivitätsindex ist ein Arbeitssignal und kein Qualitätsurteil.", "Anstupser konkret und konstruktiv verwenden; die Einzelkennzahlen bleiben sichtbar."],
+  },
+  {
+    href: "/portal/kontakte",
+    title: "Kontaktpool",
+    purpose: "Lose Kontakte sammeln, ohne sie sofort in Lead-Pipeline, Automationen und Pflicht-Nacharbeit zu überführen.",
+    actions: ["Kontakt mit wenigen Grunddaten speichern", "Optional Produkte und einen späteren Kontaktzeitpunkt notieren", "Kontakt später bewusst als Lead qualifizieren", "Nach der Qualifizierung normal in der Lead-Akte weiterarbeiten"],
+    tips: ["Ein Kontakt erzeugt bewusst keine Lead-Automation.", "Erst mit der Qualifizierung entsteht ein bearbeitbarer Lead und gegebenenfalls eine Wiedervorlage."],
+  },
+  {
     href: "/portal/assistent",
     title: "Arbeitsassistent",
     purpose: "Erklärbare Priorisierung aus CRM-Daten: Der Assistent zeigt, was als Nächstes Aufmerksamkeit braucht und warum.",

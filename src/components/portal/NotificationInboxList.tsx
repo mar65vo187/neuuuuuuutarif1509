@@ -26,9 +26,12 @@ type NotificationRow = {
   snoozedLabel: string | null;
   archived: boolean;
   actionUrl: string | null;
+  requiresAck: boolean;
+  acknowledged: boolean;
+  senderName: string | null;
 };
 
-type Action = "mark_read" | "mark_unread" | "archive" | "restore" | "snooze" | "unsnooze";
+type Action = "mark_read" | "mark_unread" | "archive" | "restore" | "snooze" | "unsnooze" | "acknowledge";
 
 const priorityLabel: Record<string, string> = {
   critical: "Kritisch",
@@ -47,6 +50,8 @@ function categoryLabel(value: string) {
   if (value === "quality") return "Qualität";
   if (value === "system") return "System";
   if (value === "service") return "Service";
+  if (value === "nudge") return "Anstupser";
+  if (value === "personal_message") return "Persönlich";
   return value || "Hinweis";
 }
 
@@ -198,9 +203,16 @@ export function NotificationInboxList({
                     </div>
 
                     <h2 className="mt-3 text-[15px] font-extrabold tracking-tight text-ink">{row.subject}</h2>
+                    {row.senderName && <p className="mt-1 text-[11px] font-bold text-electric-deep">Von {row.senderName}</p>}
                     <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-steel">{row.body}</p>
+                    {row.requiresAck && <p className={"mt-3 inline-flex rounded-full border px-2.5 py-1 text-[10.5px] font-extrabold " + (row.acknowledged ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800")}>{row.acknowledged ? "Bestätigt" : "Bestätigung offen"}</p>}
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {row.requiresAck && !row.acknowledged && !row.archived && (
+                        <button type="button" disabled={busy} onClick={() => run("acknowledge", [row.id])} className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-[11.5px] font-extrabold text-white hover:bg-emerald-700 disabled:opacity-40">
+                          <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" /> Gelesen & verstanden
+                        </button>
+                      )}
                       {row.actionUrl && (
                         <Link href={row.actionUrl} className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-ink px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">
                           Vorgang öffnen <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
@@ -222,10 +234,10 @@ export function NotificationInboxList({
                           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Jetzt anzeigen
                         </button>
                       )}
-                      <button type="button" disabled={busy} onClick={() => run(row.archived ? "restore" : "archive", [row.id])} className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold hover:border-electric/30 hover:text-electric-deep disabled:opacity-40">
+                      {(row.archived || !row.requiresAck || row.acknowledged) && <button type="button" disabled={busy} onClick={() => run(row.archived ? "restore" : "archive", [row.id])} className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold hover:border-electric/30 hover:text-electric-deep disabled:opacity-40">
                         {row.archived ? <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> : <Archive className="h-3.5 w-3.5" aria-hidden="true" />}
                         {row.archived ? "Wiederherstellen" : "Archivieren"}
-                      </button>
+                      </button>}
                     </div>
                   </div>
 

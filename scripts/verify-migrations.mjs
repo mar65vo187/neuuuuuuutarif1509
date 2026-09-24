@@ -80,6 +80,8 @@ const requiredTables = [
   "optimization_contracts",
   "optimization_offers",
   "optimization_documents",
+  "prospect_contacts",
+  "prospect_contact_product_links",
 ];
 
 const pool = new Pool({

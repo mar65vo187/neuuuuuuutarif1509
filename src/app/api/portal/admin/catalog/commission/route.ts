@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, max } from "drizzle-orm";
 import { db } from "@/db";
-import { commissionListVersions, commissionRateVersions, products, productUpdates, providers } from "@/db/enterprise-schema";
+import { commissionListVersions, commissionRateVersions, internalDocuments, products, productUpdates, providers } from "@/db/enterprise-schema";
 import { adminFailure, authorizeAdmin, lockAdminMutation, readAdminJson } from "@/lib/admin-server";
 import { writeAudit } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
@@ -26,6 +26,14 @@ export async function POST(request: NextRequest) {
         .where(eq(providers.id, parsed.data.providerId)).limit(1);
       if (!provider) throw new Error("PROVIDER_NOT_FOUND");
 
+      if (parsed.data.sourceDocumentId) {
+        const [sourceDocument] = await tx.select({ id: internalDocuments.id, providerId: internalDocuments.providerId, category: internalDocuments.category })
+          .from(internalDocuments).where(eq(internalDocuments.id, parsed.data.sourceDocumentId)).limit(1);
+        if (!sourceDocument || sourceDocument.providerId !== provider.id || sourceDocument.category !== "commission_list_source") {
+          throw new Error("SOURCE_DOCUMENT_MISMATCH");
+        }
+      }
+
       const [versionRow] = await tx.select({ version: max(commissionListVersions.version) })
         .from(commissionListVersions)
         .where(eq(commissionListVersions.providerId, provider.id));
@@ -36,6 +44,7 @@ export async function POST(request: NextRequest) {
         version,
         sourceName: parsed.data.sourceName,
         sourceType: parsed.data.sourceType,
+        sourceDocumentId: parsed.data.sourceDocumentId ?? null,
         validFrom: parsed.data.validFrom ? new Date(parsed.data.validFrom) : null,
         validTo: parsed.data.validTo ? new Date(parsed.data.validTo) : null,
         ownerPoolPercent: "15.00",
@@ -70,6 +79,8 @@ export async function POST(request: NextRequest) {
           productName: row.productName,
           category: row.category,
           grossAmount: String(row.grossAmount),
+          points: String(row.points ?? 0),
+          rewardNote: row.rewardNote || "",
           validFrom: parsed.data.validFrom ? new Date(parsed.data.validFrom) : null,
           validTo: parsed.data.validTo ? new Date(parsed.data.validTo) : null,
         });
@@ -96,6 +107,8 @@ export async function POST(request: NextRequest) {
         rows: parsed.data.rows.length,
         matched,
         sourceName: parsed.data.sourceName,
+        sourceDocumentId: parsed.data.sourceDocumentId ?? null,
+        totalPoints: parsed.data.rows.reduce((sum, row) => sum + Number(row.points ?? 0), 0),
       });
 
       return {
@@ -111,6 +124,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof Error && error.message === "PROVIDER_NOT_FOUND") {
       return NextResponse.json({ ok: false, error: "Partner nicht gefunden." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "SOURCE_DOCUMENT_MISMATCH") {
+      return NextResponse.json({ ok: false, error: "Die hochgeladene Quelldatei gehört nicht zu diesem Partner." }, { status: 422 });
     }
     if (error instanceof Error && error.message === "PRODUCT_MISMATCH") {
       return NextResponse.json({ ok: false, error: "Mindestens eine Produkt-ID gehört nicht zu diesem Partner." }, { status: 422 });
