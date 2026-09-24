@@ -43,6 +43,7 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sending = useRef(false);
+  const previousPathname = useRef(pathname);
 
   useEffect(() => {
     if (!open) return;
@@ -61,8 +62,13 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
   }, [open]);
 
   useEffect(() => {
+    if (previousPathname.current !== pathname) {
+      previousPathname.current = pathname;
+      setOpen(false);
+      return;
+    }
     if (open) requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "nearest" }));
-  }, [messages, open, busy]);
+  }, [pathname, messages, open, busy]);
 
   async function send(text: string) {
     const value = text.trim();
@@ -177,7 +183,7 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
             </form>
             <div className="mt-2.5 flex items-center justify-between gap-3">
               <p className="inline-flex items-center gap-1.5 text-[9.5px] leading-relaxed text-silver/65"><ShieldCheck className="h-3 w-3" /> Keine persönlichen Daten im Chat teilen.</p>
-              <Link href={withAudience("/anfrage?via=tarifwerks-ki", audience)} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-extrabold text-electric-soft hover:text-white">Persönlich beraten lassen <ChevronRight className="h-3.5 w-3.5" /></Link>
+              <a href={withAudience("/anfrage?via=tarifwerks-ki", audience)} onClick={() => setOpen(false)} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-extrabold text-electric-soft hover:text-white">Persönlich beraten lassen <ChevronRight className="h-3.5 w-3.5" /></a>
             </div>
           </div>
         </section>
