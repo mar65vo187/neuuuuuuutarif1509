@@ -17,6 +17,7 @@ const PORTAL_PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
   ["/portal/auftraege", "Aufträge"],
   ["/portal/kunden/neu", "Kundenprofil anlegen"],
   ["/portal/kunden", "Kunden"],
+  ["/portal/optimierung", "Optimierungsservice"],
   ["/portal/leads/neu", "Lead anlegen"],
   ["/portal/leads/pipeline", "Lead-Pipeline"],
   ["/portal/leads", "Leads & Termine"],
