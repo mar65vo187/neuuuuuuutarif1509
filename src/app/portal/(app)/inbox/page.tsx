@@ -84,6 +84,9 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
     snoozedLabel: row.snoozedUntil ? dateTime.format(row.snoozedUntil) : null,
     archived: Boolean(row.archivedAt),
     actionUrl: safeActionUrl(row),
+    requiresAck: row.requiresAck,
+    acknowledged: Boolean(row.acknowledgedAt),
+    senderName: typeof row.metadata?.senderName === "string" ? row.metadata.senderName : null,
   }));
 
   const viewTabs: Array<{ key: NotificationInboxView; label: string; count: number }> = [
