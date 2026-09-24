@@ -26,3 +26,5 @@ Dieser Commit dient zugleich als Source-Build-Trigger, nachdem `tarifwerk-prod` 
 ## Railway Source Cutover
 
 Source cutover verified for `tarifwerk-web` on 24.09.2026. This commit intentionally triggers Railway's GitHub autodeploy after the service was connected to `main`.
+
+Railway autodeploy trigger after source activation: 2026-09-24T14:13Z.
