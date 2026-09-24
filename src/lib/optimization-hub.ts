@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
@@ -467,8 +467,77 @@ export async function createOptimizationOffer(user: SessionUser, input: {
     await writeAudit(tx, user.id, "optimization.offer.created", "optimization_offer", created.id, undefined, {
       customerId: customer.id, goalId, contractId, position, status,
     });
+    if (goalId) {
+      const [openOffers] = await tx.select({ count: sql<number>`count(*)::int` }).from(optimizationOffers)
+        .where(and(eq(optimizationOffers.goalId, goalId), inArray(optimizationOffers.status, ["draft", "proposed"])));
+      if ((openOffers?.count ?? 0) >= 3) {
+        await tx.update(optimizationGoals).set({ status: "offers_ready", updatedAt: new Date() })
+          .where(and(eq(optimizationGoals.id, goalId), inArray(optimizationGoals.status, ["open", "researching"])));
+      }
+    }
     await emitEvent(tx, "optimization.offer.created", "optimization_offer", created.id, { customerId: customer.id, goalId, status });
     return created;
+  });
+}
+
+export async function updateOptimizationGoalStatus(user: SessionUser, goalId: number, status: string) {
+  if (!Number.isSafeInteger(goalId) || goalId < 1) throw Object.assign(new Error("Wunsch ist ungültig."), { status: 422 });
+  if (!["open", "researching", "offers_ready", "completed", "cancelled"].includes(status)) {
+    throw Object.assign(new Error("Wunschstatus ist ungültig."), { status: 422 });
+  }
+
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select({
+      id: optimizationGoals.id,
+      customerId: optimizationGoals.customerId,
+      status: optimizationGoals.status,
+    }).from(optimizationGoals)
+      .innerJoin(customers, eq(optimizationGoals.customerId, customers.id))
+      .where(and(eq(optimizationGoals.id, goalId), customerAccess(user)))
+      .limit(1)
+      .for("update");
+    if (!current) throw Object.assign(new Error("Wunsch nicht gefunden oder keine Berechtigung."), { status: 404 });
+    if (["completed", "cancelled"].includes(current.status) && current.status !== status) {
+      throw Object.assign(new Error("Ein abgeschlossener Wunsch kann nicht wieder geöffnet werden."), { status: 409 });
+    }
+    if (current.status === "accepted" && !["completed", "cancelled"].includes(status)) {
+      throw Object.assign(new Error("Ein angenommener Wunsch kann nur abgeschlossen oder beendet werden."), { status: 409 });
+    }
+
+    const [updated] = await tx.update(optimizationGoals).set({ status, updatedAt: new Date() })
+      .where(eq(optimizationGoals.id, goalId)).returning();
+    await writeAudit(tx, user.id, "optimization.goal.status", "optimization_goal", goalId, { status: current.status }, { status });
+    await emitEvent(tx, "optimization.goal.status", "optimization_goal", goalId, { customerId: current.customerId, status });
+    return updated;
+  });
+}
+
+export async function updateOptimizationContractStatus(user: SessionUser, contractId: number, status: string) {
+  if (!Number.isSafeInteger(contractId) || contractId < 1) throw Object.assign(new Error("Vertrag ist ungültig."), { status: 422 });
+  if (!["active", "review_due", "switch_planned", "cancelled", "expired"].includes(status)) {
+    throw Object.assign(new Error("Vertragsstatus ist ungültig."), { status: 422 });
+  }
+
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select({
+      id: optimizationContracts.id,
+      customerId: optimizationContracts.customerId,
+      status: optimizationContracts.status,
+    }).from(optimizationContracts)
+      .innerJoin(customers, eq(optimizationContracts.customerId, customers.id))
+      .where(and(eq(optimizationContracts.id, contractId), customerAccess(user)))
+      .limit(1)
+      .for("update");
+    if (!current) throw Object.assign(new Error("Vertrag nicht gefunden oder keine Berechtigung."), { status: 404 });
+    if (["cancelled", "expired"].includes(current.status) && current.status !== status) {
+      throw Object.assign(new Error("Ein beendeter Vertrag kann nicht wieder aktiviert werden."), { status: 409 });
+    }
+
+    const [updated] = await tx.update(optimizationContracts).set({ status, updatedAt: new Date() })
+      .where(eq(optimizationContracts.id, contractId)).returning();
+    await writeAudit(tx, user.id, "optimization.contract.status", "optimization_contract", contractId, { status: current.status }, { status });
+    await emitEvent(tx, "optimization.contract.status", "optimization_contract", contractId, { customerId: current.customerId, status });
+    return updated;
   });
 }
 
@@ -489,12 +558,37 @@ export async function updateOptimizationOfferStatus(user: SessionUser, offerId: 
       .for("update");
     if (!current) throw Object.assign(new Error("Angebot nicht gefunden oder keine Berechtigung."), { status: 404 });
 
+    if (["accepted", "rejected", "expired"].includes(current.status) && current.status !== status) {
+      throw Object.assign(new Error("Eine dokumentierte Kundenentscheidung kann nicht überschrieben werden."), { status: 409 });
+    }
+
+    if (status === "accepted" && current.goalId) {
+      const [goal] = await tx.select({ id: optimizationGoals.id }).from(optimizationGoals)
+        .where(eq(optimizationGoals.id, current.goalId)).limit(1).for("update");
+      if (!goal) throw Object.assign(new Error("Verknüpfter Wunsch wurde nicht gefunden."), { status: 409 });
+      const [otherAccepted] = await tx.select({ id: optimizationOffers.id }).from(optimizationOffers)
+        .where(and(
+          eq(optimizationOffers.goalId, current.goalId),
+          eq(optimizationOffers.status, "accepted"),
+          ne(optimizationOffers.id, offerId),
+        )).limit(1);
+      if (otherAccepted) throw Object.assign(new Error("Für diesen Wunsch wurde bereits eine andere Option angenommen."), { status: 409 });
+    }
+
     const [updated] = await tx.update(optimizationOffers).set({ status, updatedAt: new Date() })
       .where(eq(optimizationOffers.id, offerId)).returning();
+
     if (status === "accepted" && current.goalId) {
+      await tx.update(optimizationOffers).set({ status: "rejected", updatedAt: new Date() })
+        .where(and(
+          eq(optimizationOffers.goalId, current.goalId),
+          ne(optimizationOffers.id, offerId),
+          inArray(optimizationOffers.status, ["draft", "proposed"]),
+        ));
       await tx.update(optimizationGoals).set({ status: "accepted", updatedAt: new Date() })
         .where(eq(optimizationGoals.id, current.goalId));
     }
+
     await writeAudit(tx, user.id, "optimization.offer.status", "optimization_offer", offerId, { status: current.status }, { status });
     await emitEvent(tx, "optimization.offer.status", "optimization_offer", offerId, { customerId: current.customerId, goalId: current.goalId, status });
     return updated;
