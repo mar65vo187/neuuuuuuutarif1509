@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Clock3, Loader2, Network, SlidersHorizontal, Target, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/components/portal/ui";
 
@@ -161,11 +161,22 @@ function CustomerBulkToolbar({ selectedIds, onCompleted }: { selectedIds: number
 
 export function CustomerBulkList({ rows, canEdit }: { rows: Row[]; canEdit: boolean }) {
   const [selected, setSelected] = useState<number[]>([]);
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const allSelected = rows.length > 0 && selected.length === rows.length;
+  const visibleIds = useMemo(() => new Set(rows.map((row) => row.id)), [rows]);
+  const visibleSelected = selected.filter((id) => visibleIds.has(id));
+  const selectedSet = new Set(visibleSelected);
+  const allSelected = rows.length > 0 && visibleSelected.length === rows.length;
+  const partialSelected = visibleSelected.length > 0 && !allSelected;
+  const allCheckbox = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (allCheckbox.current) allCheckbox.current.indeterminate = partialSelected;
+  }, [partialSelected]);
 
   function toggle(id: number) {
-    setSelected((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+    setSelected((current) => {
+      const visible = current.filter((value) => visibleIds.has(value));
+      return visible.includes(id) ? visible.filter((value) => value !== id) : [...visible, id];
+    });
   }
 
   return (
@@ -176,6 +187,7 @@ export function CustomerBulkList({ rows, canEdit }: { rows: Row[]; canEdit: bool
             <input
               type="checkbox"
               checked={allSelected}
+              ref={allCheckbox}
               onChange={() => setSelected(allSelected ? [] : rows.map((row) => row.id))}
               className="h-4 w-4 rounded border-line"
               aria-label="Alle Kunden auf dieser Seite auswählen"
@@ -185,7 +197,7 @@ export function CustomerBulkList({ rows, canEdit }: { rows: Row[]; canEdit: bool
               <p className="mt-0.5 text-[10.5px] text-steel/80">Lifecycle, Beziehung, Risiko und Bestandscheck gesammelt pflegen.</p>
             </div>
           </div>
-          {selected.length > 0 && <div className="px-3 pt-3 sm:px-4"><CustomerBulkToolbar selectedIds={selected} onCompleted={() => setSelected([])} /></div>}
+          {visibleSelected.length > 0 && <div className="px-3 pt-3 sm:px-4"><CustomerBulkToolbar selectedIds={visibleSelected} onCompleted={() => setSelected([])} /></div>}
         </>
       ) : (
         <div className="border-b border-line bg-paper/60 px-5 py-3 text-[11.5px] font-semibold text-steel sm:px-6">Nur Leserechte · Änderungen sind für diese Rolle deaktiviert.</div>
