@@ -141,6 +141,43 @@ export const products = pgTable("products", {
 ]);
 
 
+export const prospectContacts = pgTable("prospect_contacts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone"),
+  normalizedEmail: text("normalized_email"),
+  normalizedPhone: text("normalized_phone"),
+  region: text("region"),
+  topic: text("topic"),
+  preferredChannel: text("preferred_channel"),
+  preferredTime: text("preferred_time"),
+  note: text("note").notNull().default(""),
+  tags: text("tags").array().notNull().default([]),
+  status: text("status").notNull().default("parked"),
+  ownerEmployeeId: integer("owner_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  nextContactAt: timestamp("next_contact_at", { withTimezone: true }),
+  convertedLeadId: integer("converted_lead_id").references(() => leads.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("prospect_contacts_email_unique").on(table.normalizedEmail),
+  uniqueIndex("prospect_contacts_phone_unique").on(table.normalizedPhone),
+  index("prospect_contacts_owner_status_idx").on(table.ownerEmployeeId, table.status, table.nextContactAt, table.createdAt),
+]);
+
+export const prospectContactProductLinks = pgTable("prospect_contact_product_links", {
+  contactId: integer("contact_id").notNull().references(() => prospectContacts.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  relation: text("relation").notNull().default("interest"),
+  createdByEmployeeId: integer("created_by_employee_id").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("prospect_contact_product_unique").on(table.contactId, table.productId),
+  index("prospect_contact_product_product_idx").on(table.productId, table.createdAt),
+]);
+
 export const customerOpportunities = pgTable("customer_opportunities", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
