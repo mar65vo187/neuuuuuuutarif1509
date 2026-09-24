@@ -1,6 +1,6 @@
 # TarifWerk – aktuelle Produktionsarchitektur
 
-Stand: 23.09.2026
+Stand: 24.09.2026
 
 Dieses Dokument beschreibt den aktuellen produktiven Aufbau. Es enthält bewusst **keine Secret-Werte, Passwörter, API-Keys oder Session-Geheimnisse**.
 
@@ -8,13 +8,13 @@ Dieses Dokument beschreibt den aktuellen produktiven Aufbau. Es enthält bewusst
 
 ```text
 www.tarifwerk.eu
-  -> Vercel Front Door
-  -> Railway Production App (Next.js)
+  -> Railway Proxy (tarifwerk-web / nginx)
+  -> Railway Production App (tarifwerk-prod / Next.js)
   -> PostgreSQL
   -> Xkiro / Qwen für öffentliche und interne KI
 ```
 
-Die Vercel-Front-Door-Weiterleitung ist in `next.config.ts` so gekapselt, dass sie nur unter `VERCEL=1` greift. Railway selbst proxyt dadurch nicht zurück auf sich selbst.
+Die öffentliche Domain ist direkt mit dem Railway-Proxy `tarifwerk-web` verbunden. Dieser leitet intern an `tarifwerk-prod` weiter. Die optionale Vercel-Weiterleitung in `next.config.ts` bleibt als separater Fallback gekapselt und greift nur unter `VERCEL=1`.
 
 Direkte Railway-Produktionsdomain:
 
@@ -115,17 +115,22 @@ Produktive App:
 - Pre-Deploy:
   `npm run db:migrate && node scripts/verify-migrations.mjs && npm run db:seed`
 
-## Container / Deployment Bridge
+## Deployment-Quelle
 
-Relevante Dateien:
+Primärer Produktionspfad:
+
+- `tarifwerk-prod` ist direkt mit dem privaten GitHub-Repository `mar65vo187/neuuuuuuutarif1509` verbunden.
+- Branch: `main`.
+- Änderungen auf `main` werden von Railway direkt gebaut und erst nach erfolgreichem Pre-Deploy und `/api/ready`-Healthcheck aktiv.
+- Bestehende Railway-Variablen, Datenbankverbindung, Startkommando und Healthcheck bleiben servicegebunden erhalten.
+
+Der frühere Container-Bridge-Pfad bleibt als Recovery-/Fallback-Baustein im Repository:
 
 - `Dockerfile`
 - `.dockerignore`
 - `.github/workflows/publish-railway-bridge.yml`
 
-Der GitHub-Workflow baut aus dem privaten Repository ein fertiges Runtime-Image und veröffentlicht ausschließlich das Image. Der Quellcode muss dafür nicht öffentlich gemacht werden.
-
-Der Railway-Service verwendet den veröffentlichten Image-Tag. Der Workflow erneuert das Bridge-Image regelmäßig und bei Änderungen auf `main`.
+Damit hängt die produktive Veröffentlichung nicht mehr von einem temporären `ttl.sh`-Image oder einem separaten GitHub-Actions-Image-Build ab.
 
 ## Vercel
 
@@ -136,18 +141,20 @@ Relevante Dateien:
 - `.github/workflows/deploy-production.yml`
 - `scripts/tests/devops-resilience-contract.test.mjs`
 
-Vercel dient für `www.tarifwerk.eu` als Front Door. Der aktuelle Code kann Requests transparent an die validierte Railway-Produktion weiterreichen.
+Vercel ist nicht mehr der notwendige Produktions-Front-Door-Pfad für `www.tarifwerk.eu`. Der aktuelle Code kann dort weiterhin als zusätzlicher Fallback Requests an die validierte Railway-Produktion weiterreichen.
 
-Die GitHub-Vercel-Integration kann separat durch Vercels Build-Rate-Limit eingeschränkt sein. Die produktive Anwendung bleibt davon unabhängig auf Railway lauffähig.
+Vercels Build-Rate-Limit kann damit die produktive Railway-Anwendung nicht blockieren.
 
 ## Datenbank / Migrationen
 
 Vor jedem produktiven App-Start werden Migrationen ausgeführt und verifiziert.
 
-Aktuelle KI-Sales-Academy-Migration:
+Aktuelle Migrationen umfassen unter anderem:
 
 ```text
 0022_sales_coaching_playbook.sql
+0023_optimization_membership_hub.sql
+0024_private_direct_messages.sql
 ```
 
 Die Quality-Pipeline prüft zusätzlich:
