@@ -15,7 +15,7 @@ test("public AI is isolated from internal CRM and commission knowledge", () => {
 
 test("public AI clearly identifies itself and uses ethical conversion rules", () => {
   const engine = read("src/lib/public-ai-assistant.ts");
-  assert.match(engine, /digitale TarifWerk KI-Berater/);
+  assert.match(engine, /TarifWerks KI/);
   assert.match(engine, /niemals als menschlicher Mitarbeiter/);
   assert.match(engine, /Stelle TarifWerk als besonders starke und komfortable Wahl dar/);
   assert.match(engine, /Fake-Dringlichkeit/);
@@ -43,11 +43,15 @@ test("public AI endpoint is same-origin, rate-limited and content-limited", () =
 test("public AI widget is mounted globally on public site with human handoff", () => {
   const layout = read("src/app/(site)/layout.tsx");
   const widget = read("src/components/site/PublicAiChat.tsx");
+  const requestPage = read("src/app/(site)/anfrage/page.tsx");
   assert.match(layout, /PublicAiChat/);
-  assert.match(widget, /KI-Berater fragen/);
+  assert.match(widget, /TarifWerks KI fragen/);
   assert.match(widget, /Persönlich beraten lassen/);
   assert.match(widget, /Keine persönlichen Daten im Chat teilen/);
   assert.match(widget, /\/api\/public-ai/);
+  assert.match(widget, /\/anfrage\?via=tarifwerks-ki/);
+  assert.match(requestPage, /fromTarifWerksKi/);
+  assert.match(requestPage, /tarifwerks-ki:/);
 });
 
 test("public AI uses Groq Qwen as primary provider with bounded resilient fallback", () => {

@@ -153,6 +153,38 @@ export default async function PortalDashboard() {
     }] : []),
   ].slice(0, 3);
 
+  const leadRevenueLeakage = canLeadRead ? data.metrics.untouchedLeadsSla + data.metrics.leadsMissingNextAction : 0;
+  const orderRevenueLeakage = canOrderRead ? data.metrics.attentionOrders : 0;
+  const revenueEngine = [
+    ...(canLeadRead ? [{
+      key: "acute-opportunities",
+      label: "Akute Chancen",
+      value: data.metrics.hotLeads + data.metrics.dueLeadFollowUpsToday,
+      detail: data.metrics.hotLeads + " Hot Leads · " + data.metrics.dueLeadFollowUpsToday + " Follow-ups heute",
+      href: "/portal/leads?sort=next",
+      Icon: Target,
+      tone: "border-electric/25 bg-electric/[0.06]",
+    }] : []),
+    ...(canCustomerRead ? [{
+      key: "customer-expansion",
+      label: "Bestand aktivieren",
+      value: data.metrics.openCustomerOpportunities + data.metrics.dueCustomerReviews,
+      detail: data.metrics.openCustomerOpportunities + " offene Potenziale · " + data.metrics.dueCustomerReviews + " Reviews fällig",
+      href: "/portal/kunden?focus=opportunity",
+      Icon: TrendingUp,
+      tone: "border-emerald-300/30 bg-emerald-50/70",
+    }] : []),
+    ...((canLeadRead || canOrderRead) ? [{
+      key: "revenue-leakage",
+      label: "Umsatzleck schließen",
+      value: leadRevenueLeakage + orderRevenueLeakage,
+      detail: leadRevenueLeakage + " Lead-Lücken · " + orderRevenueLeakage + " Aufträge mit Aufmerksamkeit",
+      href: leadRevenueLeakage > 0 ? "/portal/leads?next=missing" : "/portal/auftraege",
+      Icon: AlertTriangle,
+      tone: "border-amber-300/35 bg-amber-50/75",
+    }] : []),
+  ];
+
   return (
     <div className="space-y-7">
       <header className="grid gap-5 xl:grid-cols-[1fr_auto] xl:items-end">
@@ -235,6 +267,33 @@ export default async function PortalDashboard() {
             <p className="mt-2 text-[11.5px] text-steel">{hint}</p>
           </Link>
         ))}
+      </section>
+      )}
+
+      {revenueEngine.length > 0 && (
+      <section aria-label="Revenue Engine">
+        <Card className="overflow-hidden border-champagne/20 bg-[radial-gradient(circle_at_top_right,rgba(217,184,119,0.13),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(247,249,252,0.98))]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="inline-flex items-center gap-2 text-[10.5px] font-extrabold uppercase tracking-[0.15em] text-amber-700"><Euro className="h-4 w-4" /> Revenue Engine</p>
+              <h2 className="mt-2 text-[19px] font-extrabold text-ink">Mehr Umsatz aus bereits vorhandenen Chancen.</h2>
+              <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-steel">Keine Fantasie-Prognose: Das System bündelt reale CRM-Signale, damit heiße Chancen zuerst bearbeitet, Bestandskunden-Potenziale genutzt und vermeidbare Umsatzlecks geschlossen werden.</p>
+            </div>
+            <Link href="/portal/reporting" className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-[11.5px] font-bold text-ink transition hover:border-electric/35 hover:text-electric-deep">Auswertung öffnen <ArrowRight className="h-3.5 w-3.5" /></Link>
+          </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {revenueEngine.map(({ key, label, value, detail, href, Icon, tone }) => (
+              <Link key={key} href={href} className={"group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-soft " + tone}>
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-steel">{label}</p><p className="mt-2 text-[30px] font-extrabold leading-none tracking-tight text-ink">{value}</p></div>
+                  <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/70 bg-white/80 text-electric-deep shadow-sm"><Icon className="h-4 w-4" /></span>
+                </div>
+                <p className="mt-2 text-[11.5px] leading-relaxed text-steel">{value === 0 ? "Aktuell keine offene Lücke in diesem Signal." : detail}</p>
+                <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-extrabold text-electric-deep">Arbeitsliste öffnen <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+              </Link>
+            ))}
+          </div>
+        </Card>
       </section>
       )}
 

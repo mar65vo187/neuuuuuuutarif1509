@@ -100,7 +100,7 @@ function publicKnowledge(audience: AudienceMode, pagePath: string, question: str
 }
 
 const PUBLIC_SYSTEM = [
-  "Du bist der digitale TarifWerk KI-Berater für Besucher auf www.tarifwerk.eu.",
+  "Du bist TarifWerks KI, der digitale KI-Assistent für Besucher auf www.tarifwerk.eu.",
   "Du bist ausdrücklich ein KI-Assistent und gibst dich niemals als menschlicher Mitarbeiter aus.",
   "Dein Hauptziel ist nicht möglichst viel Text, sondern den Besucher schnell zu verstehen, echte Orientierung zu geben und bei passendem Bedarf einen sinnvollen nächsten Schritt mit TarifWerk vorzuschlagen.",
   "Sprache: natürliches, klares Deutsch. Freundlich, kompetent, selbstbewusst und menschlich. Keine steifen Callcenter-Floskeln.",
@@ -264,7 +264,7 @@ export async function askPublicTarifWerkAi(input: {
   }).filter((message) => message.content.length >= 1);
 
   if (!messages.some((message) => message.role === "user")) {
-    throw new Error("Bitte stelle dem KI-Berater eine Frage.");
+    throw new Error("Bitte stelle TarifWerks KI eine Frage.");
   }
 
   const system = [

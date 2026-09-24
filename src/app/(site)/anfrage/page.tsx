@@ -10,14 +10,17 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   return requestAudienceMetadata(await resolveSiteAudience((await searchParams).audience));
 }
 
-export default async function RequestPage({ searchParams }: { searchParams: Promise<{ thema?: string | string[]; situation?: string | string[]; region?: string | string[]; ref?: string | string[]; audience?: string | string[] }> }) {
-  const { thema, situation, region, ref, audience } = await searchParams;
+export default async function RequestPage({ searchParams }: { searchParams: Promise<{ thema?: string | string[]; situation?: string | string[]; region?: string | string[]; ref?: string | string[]; audience?: string | string[]; via?: string | string[] }> }) {
+  const { thema, situation, region, ref, audience, via } = await searchParams;
   const resolvedAudience = await resolveSiteAudience(audience);
   const business = resolvedAudience === "b2b";
   const normalized = normalizeTopic((Array.isArray(thema) ? thema[0] : thema) ?? "");
   const defaultRegion = ((Array.isArray(region) ? region[0] : region) ?? "").slice(0, 80);
   const rawReferral = Array.isArray(ref) ? ref[0] : ref;
   const referralCode = rawReferral && /^[a-f0-9]{24}$/.test(rawReferral) ? rawReferral : undefined;
+  const rawVia = (Array.isArray(via) ? via[0] : via) ?? "";
+  const fromTarifWerksKi = rawVia === "tarifwerks-ki";
+  const leadSource = fromTarifWerksKi ? `tarifwerks-ki:${business ? "b2b" : "b2c"}` : business ? "anfrage:b2b" : "anfrage";
   const topic = SERVICE_NAMES.includes(normalized) ? normalized : "";
   const rawSituation = (Array.isArray(situation) ? situation[0] : situation) ?? "";
   const defaultSituation = SITUATIONS.some((item) => item.value === rawSituation) ? rawSituation : "";
@@ -72,14 +75,20 @@ export default async function RequestPage({ searchParams }: { searchParams: Prom
           </Reveal>
           <Reveal className="lg:col-span-8" delay={0.1}>
             <div className="rounded-[26px] border border-line bg-white p-6 shadow-soft sm:p-9">
+              {fromTarifWerksKi && (
+                <div className="mb-5 rounded-2xl border border-electric/20 bg-electric/[0.06] p-4">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-electric-deep">TarifWerks KI → persönliche Beratung</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-steel">{business ? "Ihre digitale Erstorientierung wird jetzt sauber in eine persönliche Anfrage überführt. Bitte ergänzen Sie nur die Angaben, die wir für die Rückmeldung benötigen." : "Deine digitale Erstorientierung wird jetzt sauber in eine persönliche Anfrage überführt. Ergänze nur noch die Angaben, die wir für die Rückmeldung brauchen."}</p>
+                </div>
+              )}
               <LeadForm
-                key={`${topic}:${defaultSituation}:${defaultRegion}:${referralCode ?? ""}:${business ? "b2b" : "b2c"}`}
+                key={`${topic}:${defaultSituation}:${defaultRegion}:${referralCode ?? ""}:${business ? "b2b" : "b2c"}:${fromTarifWerksKi ? "ai" : "direct"}`}
                 referralCode={referralCode}
                 type="beratung"
                 defaultTopic={topic}
                 defaultSituation={defaultSituation}
                 defaultRegion={defaultRegion}
-                source={business ? "anfrage:b2b" : "anfrage"}
+                source={leadSource}
                 audience={business ? "b2b" : "b2c"}
               />
             </div>
