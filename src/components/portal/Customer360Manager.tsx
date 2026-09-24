@@ -3,6 +3,7 @@
 import { CheckCircle2, Clock3, Loader2, MessageSquarePlus, Plus, Save, Sparkles, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { formatBerlinDateTimeInput, parseBerlinDateTimeInput } from "@/lib/portal-date-time";
 
 type Product = {
   id: number;
@@ -49,20 +50,6 @@ const STATUS_LABELS: Record<string, string> = {
   later: "Später prüfen",
 };
 
-function toIso(value: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-}
-
-function toLocalInput(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "";
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-
 export function Customer360Manager({
   customerId,
   products,
@@ -95,10 +82,10 @@ export function Customer360Manager({
   const [lifecycleStage, setLifecycleStage] = useState(profile?.lifecycleStage ?? "active");
   const [relationshipStatus, setRelationshipStatus] = useState(profile?.relationshipStatus ?? "new");
   const [riskLevel, setRiskLevel] = useState(profile?.riskLevel ?? "normal");
-  const [nextReviewAt, setNextReviewAt] = useState(toLocalInput(profile?.nextReviewAt ?? null));
+  const [nextReviewAt, setNextReviewAt] = useState(formatBerlinDateTimeInput(profile?.nextReviewAt));
   const [profileNote, setProfileNote] = useState(profile?.note ?? "");
 
-  async function request(url: string, method: "POST" | "PATCH", body: Record<string, unknown>, key: string) {
+  async function request(url: string, method: "POST" | "PATCH", body: Record<string, unknown> | (() => Record<string, unknown>), key: string) {
     if (saving.current) return null;
     saving.current = true;
     setBusy(key);
@@ -108,7 +95,7 @@ export function Customer360Manager({
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(typeof body === "function" ? body() : body),
         signal: AbortSignal.timeout(15000),
       });
       if (response.status === 401) {
@@ -131,13 +118,13 @@ export function Customer360Manager({
     const result = await request(
       "/api/portal/enterprise/customers/" + customerId + "/activities",
       "POST",
-      {
+      () => ({
         type: activityType,
         direction: activityType === "note" ? "internal" : direction,
         outcome: outcome.trim(),
         note: activityNote.trim(),
-        nextActionAt: toIso(activityNext),
-      },
+        nextActionAt: parseBerlinDateTimeInput(activityNext),
+      }),
       "activity",
     );
     if (!result) return;
@@ -152,15 +139,15 @@ export function Customer360Manager({
     const result = await request(
       "/api/portal/enterprise/customers/" + customerId + "/opportunities",
       "POST",
-      {
+      () => ({
         productId: productId ? Number(productId) : null,
         topic: topic.trim(),
         priority: opportunityPriority,
         status: "open",
         source: "customer_360",
         note: opportunityNote.trim(),
-        nextReviewAt: toIso(opportunityNext),
-      },
+        nextReviewAt: parseBerlinDateTimeInput(opportunityNext),
+      }),
       "opportunity",
     );
     if (!result) return;
@@ -189,13 +176,15 @@ export function Customer360Manager({
     const result = await request(
       "/api/portal/enterprise/customers/" + customerId + "/crm",
       "PATCH",
-      {
+      () => ({
         lifecycleStage,
         relationshipStatus,
         riskLevel,
-        nextReviewAt: toIso(nextReviewAt),
+        nextReviewAt: nextReviewAt === formatBerlinDateTimeInput(profile?.nextReviewAt)
+          ? profile?.nextReviewAt ?? null
+          : parseBerlinDateTimeInput(nextReviewAt),
         note: profileNote.trim(),
-      },
+      }),
       "profile",
     );
     if (!result) return;
@@ -236,7 +225,7 @@ export function Customer360Manager({
             <label className="label sm:col-span-2">Notiz
               <textarea className="field" rows={3} maxLength={3000} value={activityNote} onChange={(event) => setActivityNote(event.target.value)} placeholder="Was wurde besprochen?" />
             </label>
-            <label className="label sm:col-span-2">Nächste Aktion
+            <label className="label sm:col-span-2">Nächste Aktion (Berlin)
               <div className="relative">
                 <Clock3 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
                 <input type="datetime-local" className="field pl-10" value={activityNext} onChange={(event) => setActivityNext(event.target.value)} />
@@ -274,7 +263,7 @@ export function Customer360Manager({
                 <option value="critical">Kritisch</option>
               </select>
             </label>
-            <label className="label sm:col-span-2">Prüftermin
+            <label className="label sm:col-span-2">Prüftermin (Berlin)
               <input type="datetime-local" className="field" value={opportunityNext} onChange={(event) => setOpportunityNext(event.target.value)} />
             </label>
             <label className="label sm:col-span-2">Kontext
@@ -317,7 +306,7 @@ export function Customer360Manager({
               <option value="critical">Kritisch</option>
             </select>
           </label>
-          <label className="label">Nächster Bestandscheck
+          <label className="label">Nächster Bestandscheck (Berlin)
             <input type="datetime-local" className="field" value={nextReviewAt} onChange={(event) => setNextReviewAt(event.target.value)} />
           </label>
         </div>

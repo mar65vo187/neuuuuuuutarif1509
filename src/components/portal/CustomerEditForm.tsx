@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { Loader2, Pencil, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 
 type Props = {
   customerId: number;
+  customerType: string;
   firstName: string | null;
   lastName: string | null;
   companyName: string | null;
@@ -22,7 +24,8 @@ export function CustomerEditForm(props: Props) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [duplicate, setDuplicate] = useState<{ href: string; label: string } | null>(null);
+  const draft = () => ({
     firstName: props.firstName ?? "",
     lastName: props.lastName ?? "",
     companyName: props.companyName ?? "",
@@ -32,16 +35,26 @@ export function CustomerEditForm(props: Props) {
     city: props.city ?? "",
     preferredChannel: props.preferredChannel ?? "",
   });
+  const [form, setForm] = useState(draft);
+
+  function reset(nextOpen: boolean) {
+    setForm(draft());
+    setError(null);
+    setDuplicate(null);
+    setOpen(nextOpen);
+  }
 
   function set(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function save() {
-    if (saving.current) return;
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving.current || !event.currentTarget.reportValidity()) return;
     saving.current = true;
     setBusy(true);
     setError(null);
+    setDuplicate(null);
     try {
       const response = await fetch(`/api/portal/enterprise/customers/${props.customerId}`, {
         method: "PATCH",
@@ -49,8 +62,11 @@ export function CustomerEditForm(props: Props) {
         body: JSON.stringify(form),
         signal: AbortSignal.timeout(15000),
       });
-      const json = await response.json() as { ok: boolean; error?: string };
-      if (!response.ok || !json.ok) throw new Error(json.error ?? "Speichern fehlgeschlagen.");
+      const json = await response.json().catch(() => null) as { ok?: boolean; error?: string; duplicate?: { href?: string; label?: string } } | null;
+      if (response.status === 409 && json?.duplicate?.href && /^\/portal\/(kunden|leads)\/\d+$/.test(json.duplicate.href)) {
+        setDuplicate({ href: json.duplicate.href, label: json.duplicate.label || "Bestehenden Kontakt öffnen" });
+      }
+      if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Speichern fehlgeschlagen.");
       setOpen(false);
       router.refresh();
     } catch (problem) {
@@ -63,19 +79,20 @@ export function CustomerEditForm(props: Props) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-[11.5px] font-bold text-ink hover:border-electric/30 hover:text-electric-deep">
+      <button type="button" onClick={() => reset(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-[11.5px] font-bold text-ink hover:border-electric/30 hover:text-electric-deep">
         <Pencil className="h-3.5 w-3.5" /> Stammdaten bearbeiten
       </button>
     );
   }
 
   return (
-    <div className="mt-3 w-full basis-full rounded-2xl border border-line bg-paper/60 p-4">
+    <form onSubmit={save} className="mt-3 w-full basis-full rounded-2xl border border-line bg-paper/60 p-4">
+      <fieldset disabled={busy}>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="label">Vorname<input className="field" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} maxLength={120} /></label>
+        <label className="label">Vorname<input className="field" required={props.customerType !== "business" && !form.lastName.trim()} pattern=".*\S.*" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} maxLength={120} /></label>
         <label className="label">Nachname<input className="field" value={form.lastName} onChange={(e) => set("lastName", e.target.value)} maxLength={120} /></label>
-        <label className="label">Firma<input className="field" value={form.companyName} onChange={(e) => set("companyName", e.target.value)} maxLength={180} /></label>
-        <label className="label">Telefon<input className="field" value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} /></label>
+        <label className="label">Firma<input className="field" required={props.customerType === "business"} pattern=".*\S.*" value={form.companyName} onChange={(e) => set("companyName", e.target.value)} maxLength={180} /></label>
+        <label className="label">Telefon<input type="tel" className="field" value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} /></label>
         <label className="label">E-Mail<input className="field" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} maxLength={200} /></label>
         <label className="label">PLZ<input className="field" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} maxLength={20} /></label>
         <label className="label">Ort<input className="field" value={form.city} onChange={(e) => set("city", e.target.value)} maxLength={120} /></label>
@@ -88,15 +105,17 @@ export function CustomerEditForm(props: Props) {
           </select>
         </label>
       </div>
+      </fieldset>
       {error && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">{error}</p>}
+      {duplicate && <Link href={duplicate.href} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold underline">{duplicate.label}</Link>}
       <div className="mt-3 flex gap-2">
-        <button type="button" disabled={busy} onClick={save} className="inline-flex h-9 items-center gap-2 rounded-full bg-ink px-4 text-[11.5px] font-bold text-white hover:bg-electric disabled:opacity-50">
+        <button type="submit" disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-4 text-[11.5px] font-bold text-white hover:bg-electric disabled:opacity-50">
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Speichern
         </button>
-        <button type="button" disabled={busy} onClick={() => setOpen(false)} className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white px-4 text-[11.5px] font-bold text-steel">
+        <button type="button" disabled={busy} onClick={() => reset(false)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-white px-4 text-[11.5px] font-bold text-steel">
           <X className="h-3.5 w-3.5" /> Abbrechen
         </button>
       </div>
-    </div>
+    </form>
   );
 }

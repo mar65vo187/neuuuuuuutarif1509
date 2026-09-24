@@ -43,7 +43,7 @@ test("automatic lead routing never selects employees who cannot edit leads", () 
 
 test("lead-to-customer conversion enforces the canonical creator-or-assignee scope first", () => {
   const enterprise = read("src/lib/enterprise.ts");
-  const start = enterprise.indexOf("export async function ensureCustomerForLead");
+  const start = enterprise.indexOf("async function ensureCustomerForLeadInTransaction");
   const end = enterprise.indexOf("export async function createCustomer", start);
   const conversion = enterprise.slice(start, end);
 
