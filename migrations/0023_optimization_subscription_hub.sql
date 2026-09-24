@@ -125,3 +125,30 @@ COMMENT ON TABLE optimization_subscriptions IS 'TarifWerk Optimierung+ recurring
 COMMENT ON TABLE optimization_requests IS 'Customer goals, wishes, contract reviews and project requests within Optimierung+.';
 COMMENT ON TABLE optimization_offers IS 'Up to three comparable offers per optimization request.';
 COMMENT ON TABLE optimization_documents IS 'Customer contract/project documents stored server-side for optimization workflows.';
+
+
+CREATE TABLE IF NOT EXISTS optimization_contract_notices (
+  id bigserial PRIMARY KEY,
+  subscription_id integer REFERENCES optimization_subscriptions(id) ON DELETE SET NULL,
+  receipt_token text NOT NULL UNIQUE,
+  notice_type text NOT NULL CHECK (notice_type IN ('cancellation','withdrawal')),
+  customer_name text NOT NULL,
+  email text NOT NULL,
+  contract_label text NOT NULL DEFAULT 'TarifWerk Optimierung+',
+  cancellation_type text,
+  reason text,
+  requested_end text,
+  status text NOT NULL DEFAULT 'received',
+  billing_action text NOT NULL DEFAULT 'pending',
+  confirmation_email_status text NOT NULL DEFAULT 'pending',
+  confirmation_email_id text,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  processed_at timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS optimization_contract_notices_subscription_idx
+  ON optimization_contract_notices(subscription_id, received_at DESC);
+CREATE INDEX IF NOT EXISTS optimization_contract_notices_email_idx
+  ON optimization_contract_notices(lower(email), received_at DESC);
+
+COMMENT ON TABLE optimization_contract_notices IS 'Timestamped cancellation and withdrawal declarations for Optimierung+ with confirmation delivery state.';
