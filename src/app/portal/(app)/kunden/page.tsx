@@ -11,7 +11,7 @@ import { listSavedViews } from "@/lib/portal-productivity";
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; focus?: string; page?: string }> }) {
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string | string[]; focus?: string | string[]; page?: string | string[] }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=%2Fportal%2Fkunden");
   const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.CUSTOMER_EXPORT] as const);
@@ -19,7 +19,10 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   const canRead = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || canEdit;
   if (!canRead) redirect("/portal");
   const canExport = capabilities[PORTAL_PERMISSION.CUSTOMER_EXPORT];
-  const { q, focus: rawFocus, page: rawPage } = await searchParams;
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q.trim() : undefined;
+  const rawFocus = typeof params.focus === "string" ? params.focus : undefined;
+  const rawPage = typeof params.page === "string" ? params.page : undefined;
   const focus = rawFocus && ["review", "opportunity", "risk"].includes(rawFocus) ? rawFocus as "review" | "opportunity" | "risk" : undefined;
   const parsedPage = rawPage ? Number(rawPage) : 1;
   const page = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? Math.min(parsedPage, 100000) : 1;
@@ -33,10 +36,10 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   const hasPreviousPage = page > 1;
   const rangeStart = rows.length ? (page - 1) * pageSize + 1 : 0;
   const rangeEnd = rows.length ? rangeStart + rows.length - 1 : 0;
-  const pageHref = (nextPage: number) => {
+  const pageHref = (nextPage: number, nextFocus: typeof focus | "" = focus) => {
     const params = new URLSearchParams();
     if (q?.trim()) params.set("q", q.trim());
-    if (focus) params.set("focus", focus);
+    if (nextFocus) params.set("focus", nextFocus);
     if (nextPage > 1) params.set("page", String(nextPage));
     const query = params.toString();
     return `/portal/kunden${query ? `?${query}` : ""}`;
@@ -46,15 +49,19 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="eyebrow text-electric-deep">CRM · Kundenreise</p><h1 className="mt-2 text-[clamp(1.6rem,3vw,2.4rem)] font-extrabold tracking-tight">Kunden</h1><p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-steel">{rows.length ? `Kunden ${rangeStart}–${rangeEnd}` : "Keine Kunden in dieser Ansicht"} · Herkunft, Aufträge und Empfehlungsnetzwerk bleiben miteinander verknüpft.</p></div>
       <div className="flex gap-2">
-        {canExport && <a href="/api/portal/enterprise/export?type=customers" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>}
-        {canEdit && <Link href="/portal/kunden/neu" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Kunde anlegen</Link>}
+        {canExport && <a href="/api/portal/enterprise/export?type=customers" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold"><Download className="h-4 w-4" /> CSV</a>}
+        {canEdit && <Link href="/portal/kunden/neu" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-semibold text-white hover:bg-electric"><Plus className="h-4 w-4" /> Kunde anlegen</Link>}
       </div>
     </header>
     <div className="grid gap-3 xl:grid-cols-[1fr_auto] xl:items-center">
-      <form className="relative">
+      <form role="search" className="flex items-center gap-2">
+        <label htmlFor="customer-search" className="sr-only">Kunden suchen</label>
+        <div className="relative min-w-0 flex-1">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
         <input type="hidden" name="focus" value={focus ?? ""} />
-        <input name="q" defaultValue={q ?? ""} className="field pl-11" placeholder="Kundennummer, Name, Firma, E-Mail oder Telefon suchen …" />
+        <input id="customer-search" type="search" name="q" defaultValue={q ?? ""} className="field pl-11" placeholder="Kundennummer, Name, Firma, E-Mail oder Telefon suchen …" />
+        </div>
+        <button type="submit" className="min-h-11 rounded-full border border-line px-4 text-sm font-semibold">Suchen</button>
       </form>
       <div className="flex flex-wrap gap-2">
         {[
@@ -64,9 +71,9 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
           ["Risiko", "risk", AlertTriangle],
         ].map(([label, value, Icon]) => {
           const active = focus === value || (!focus && value === undefined);
-          const href = value ? `/portal/kunden?focus=${value}` : "/portal/kunden";
+          const href = pageHref(1, (value ?? "") as typeof focus | "");
           const IconComponent = Icon as typeof Clock3;
-          return <Link key={String(label)} href={href} className={"inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[11.5px] font-bold transition " + (active ? "border-ink bg-ink text-white" : "border-line bg-white text-steel hover:border-electric/30 hover:text-electric-deep")}><IconComponent className="h-3.5 w-3.5" /> {String(label)}</Link>;
+          return <Link key={String(label)} href={href} aria-current={active ? "page" : undefined} className={"inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[11.5px] font-bold transition " + (active ? "border-ink bg-ink text-white" : "border-line bg-white text-steel hover:border-electric/30 hover:text-electric-deep")}><IconComponent className="h-3.5 w-3.5" /> {String(label)}</Link>;
         })}
       </div>
     </div>
@@ -79,6 +86,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
     <Card className="p-0 sm:p-0">
       {rows.length === 0 ? <p className="p-10 text-center text-[14.5px] text-steel">Keine Kunden gefunden.</p> : (
         <CustomerBulkList
+          key={pageHref(page)}
           canEdit={canEdit}
           rows={rows.map((customer) => ({
             id: customer.id,
@@ -106,9 +114,9 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
     {(hasPreviousPage || hasNextPage || rows.length > 0) && <nav className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-[0_12px_30px_-28px_rgba(6,11,22,0.45)]" aria-label="Kunden-Seiten">
       <p className="text-[11.5px] font-semibold text-steel">{rows.length ? `Kunden ${rangeStart}–${rangeEnd}` : "Keine Kunden auf dieser Seite"}</p>
       <div className="flex items-center gap-2">
-        {hasPreviousPage ? <Link href={pageHref(page - 1)} className="inline-flex h-9 items-center rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold text-ink hover:border-electric/30">Zurück</Link> : <span className="inline-flex h-9 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Zurück</span>}
+        {hasPreviousPage ? <Link href={pageHref(page - 1)} className="inline-flex min-h-11 items-center rounded-xl border border-line bg-white px-3 text-[11.5px] font-bold text-ink hover:border-electric/30">Zurück</Link> : <span className="inline-flex min-h-11 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Zurück</span>}
         <span className="min-w-20 text-center text-[11.5px] font-extrabold text-ink">Seite {page}</span>
-        {hasNextPage ? <Link href={pageHref(page + 1)} className="inline-flex h-9 items-center rounded-xl bg-electric px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">Weiter</Link> : <span className="inline-flex h-9 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Weiter</span>}
+        {hasNextPage ? <Link href={pageHref(page + 1)} className="inline-flex min-h-11 items-center rounded-xl bg-electric px-3 text-[11.5px] font-extrabold text-white hover:bg-electric-deep">Weiter</Link> : <span className="inline-flex min-h-11 items-center rounded-xl border border-line/60 px-3 text-[11.5px] font-bold text-steel/45">Weiter</span>}
       </div>
     </nav>}
   </div>;
