@@ -47,6 +47,8 @@ type Product = {
   ownerGrossCommission: number | null;
   ownerPoolAmount: number | null;
   employeeCommissionEstimate: number | null;
+  providerPoints: number;
+  rewardNote: string;
   currentRateVersionId: number | null;
 };
 type Provider = {
@@ -201,18 +203,22 @@ function parseCsv(text: string) {
   const index = (...names: string[]) => headers.findIndex((header) => names.includes(header));
   const productName = index("produkt", "produktname", "product", "productname", "tarif");
   const category = index("kategorie", "category", "bereich");
-  const gross = index("provision", "bruttoprovision", "grossamount", "gross", "betrag");
+  const gross = index("provision", "bruttoprovision", "grossamount", "gross", "betrag", "euro");
+  const points = index("punkte", "punkt", "points", "point");
+  const rewardNote = index("hinweis", "notiz", "rewardnote", "beschreibung");
   const external = index("sku", "tarifid", "produktidextern", "externalproductid");
   const productId = index("produktid", "productid");
 
-  if (productName < 0 || category < 0 || gross < 0) return [];
+  if (productName < 0 || category < 0 || (gross < 0 && points < 0)) return [];
   return rows.slice(1).map((cells) => ({
     productId: productId >= 0 && /^\d+$/.test(cells[productId] ?? "") ? Number(cells[productId]) : undefined,
     externalProductId: external >= 0 ? cells[external] || undefined : undefined,
     productName: cells[productName] ?? "",
     category: cells[category] ?? "",
-    grossAmount: Number((cells[gross] ?? "0").replace(/\./g, "").replace(",", ".")),
-  })).filter((row) => row.productName && row.category && Number.isFinite(row.grossAmount) && row.grossAmount >= 0);
+    grossAmount: gross >= 0 ? Number((cells[gross] ?? "0").replace(/\./g, "").replace(",", ".")) : 0,
+    points: points >= 0 ? Number((cells[points] ?? "0").replace(/\./g, "").replace(",", ".")) : 0,
+    rewardNote: rewardNote >= 0 ? cells[rewardNote] || "" : "",
+  })).filter((row) => row.productName && row.category && Number.isFinite(row.grossAmount) && row.grossAmount >= 0 && Number.isFinite(row.points) && row.points >= 0);
 }
 
 export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin: boolean }) {
@@ -224,8 +230,10 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [provider, setProvider] = useState("all");
-  const [csvRows, setCsvRows] = useState<Array<{ productId?: number; externalProductId?: string; productName: string; category: string; grossAmount: number }>>([]);
+  const [csvRows, setCsvRows] = useState<Array<{ productId?: number; externalProductId?: string; productName: string; category: string; grossAmount: number; points: number; rewardNote: string }>>([]);
   const [csvName, setCsvName] = useState("");
+  const [commissionProviderId, setCommissionProviderId] = useState(data.providers[0]?.id ?? 0);
+  const [sourceDocumentId, setSourceDocumentId] = useState<number | null>(null);
   const [selectedProductId, setSelectedProductId] = useState(data.products[0]?.id ?? 0);
   const [selectedProviderId, setSelectedProviderId] = useState(data.providers[0]?.id ?? 0);
   const [compareIds, setCompareIds] = useState<number[]>(data.products.slice(0, 2).map((product) => product.id));
@@ -259,16 +267,39 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
     }
   }
 
-  async function loadCsv(file: File | null) {
-    setError(null); setSuccess(null); setCsvRows([]); setCsvName(file?.name ?? "");
+  async function loadCommissionFile(file: File | null) {
+    setError(null); setSuccess(null); setCsvRows([]); setCsvName(file?.name ?? ""); setSourceDocumentId(null);
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setError("CSV-Datei ist zu groß. Maximal 5 MB."); return; }
-    const parsed = parseCsv(await file.text());
-    if (!parsed.length) {
-      setError("CSV konnte nicht erkannt werden. Pflichtspalten: Produkt, Kategorie und Provision.");
+    if (!commissionProviderId) { setError("Bitte zuerst einen Partner auswählen."); return; }
+    if (file.size > 12 * 1024 * 1024) { setError("Provisionsdatei ist zu groß. Maximal 12 MB."); return; }
+
+    const upload = new FormData();
+    upload.set("providerId", String(commissionProviderId));
+    upload.set("file", file);
+    const response = await fetch("/api/portal/admin/catalog/commission/source", {
+      method: "POST",
+      body: upload,
+      credentials: "same-origin",
+      signal: AbortSignal.timeout(30000),
+    });
+    const result = await response.json().catch(() => null) as { ok?: boolean; error?: string; documentId?: number } | null;
+    if (!response.ok || !result?.ok || !result.documentId) {
+      setError(result?.error ?? "Quelldatei konnte nicht gespeichert werden.");
       return;
     }
-    setCsvRows(parsed);
+    setSourceDocumentId(result.documentId);
+
+    if (file.name.toLowerCase().endsWith(".csv") || file.type.includes("csv")) {
+      const parsed = parseCsv(await file.text());
+      if (!parsed.length) {
+        setError("Datei gespeichert, aber CSV-Zeilen konnten nicht erkannt werden. Erwartet: Produkt, Kategorie und Provision und/oder Punkte.");
+        return;
+      }
+      setCsvRows(parsed);
+      setSuccess(`Quelldatei gespeichert und ${parsed.length} Positionen erkannt.`);
+    } else {
+      setSuccess("Originaldatei gespeichert. Werte können darunter manuell strukturiert erfasst werden.");
+    }
   }
 
   const activeProducts = data.products.filter((product) => ["active", "new", "test"].includes(product.lifecycleStatus)).length;
@@ -337,6 +368,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
         ["Schulung", (p: Product) => p.trainingRequired ? "Erforderlich" : "Keine Pflicht"],
         ["Vermarktung", (p: Product) => p.marketingChannels.filter((channel) => channel.status !== "blocked").map((channel) => channel.channel).join(", ") || "–"],
         ["Provision", (p: Product) => data.owner ? money(p.ownerGrossCommission ?? 0) : p.employeeCommissionEstimate !== null ? money(p.employeeCommissionEstimate) : "–"],
+        ["Punkte", (p: Product) => p.providerPoints > 0 ? new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(p.providerPoints) + " Pkt." : "–"],
       ].map(([label, getter]) => <tr key={String(label)}><td className="border-b border-line p-3 font-semibold text-steel">{String(label)}</td>{compareProducts.map((product) => <td key={product.id} className="border-b border-line p-3">{(getter as (p: Product) => string)(product)}</td>)}</tr>)}</tbody></table></div>}
     </section>}
 
@@ -396,7 +428,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">Region</p><p className="mt-1 text-[13.5px] font-bold">{product.region}</p></div>
-              <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">{data.owner ? "Provider-Provision" : "Ihr Provisionswert"}</p><p className="mt-1 text-[16px] font-extrabold">{data.owner ? money(product.ownerGrossCommission ?? 0) : product.employeeCommissionEstimate !== null ? money(product.employeeCommissionEstimate) : "–"}</p>{data.owner && <p className="mt-1 text-[11px] text-steel">davon 15 % interner Benefit-/Growth-Pool: {money(product.ownerPoolAmount ?? 0)}</p>}</div>
+              <div className="rounded-2xl bg-paper p-4"><p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-steel">{data.owner ? "Provider-Provision" : "Ihr Provisionswert"}</p><p className="mt-1 text-[16px] font-extrabold">{data.owner ? money(product.ownerGrossCommission ?? 0) : product.employeeCommissionEstimate !== null ? money(product.employeeCommissionEstimate) : "–"}</p>{product.providerPoints > 0 && <p className="mt-1 text-[12px] font-bold text-electric-deep">{new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(product.providerPoints)} Punkte</p>}{product.rewardNote && <p className="mt-1 text-[10.5px] text-steel">{product.rewardNote}</p>}{data.owner && <p className="mt-1 text-[11px] text-steel">davon 15 % interner Benefit-/Growth-Pool: {money(product.ownerPoolAmount ?? 0)}</p>}</div>
             </div>
             {product.marketingChannels.length > 0 && <div className="mt-4"><p className="text-[12px] font-bold uppercase tracking-[0.1em] text-steel">Vermarktung</p><div className="mt-2 flex flex-wrap gap-2">{product.marketingChannels.map((channel, index) => <span key={channel.channel + index} title={channel.note} className={`chip ${channel.status === "allowed" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : channel.status === "conditional" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-red-200 bg-red-50 text-red-700"}`}>{channel.channel} · {channelLabel[channel.status]}</span>)}</div></div>}
             {["active", "new", "test", "phasing_out"].includes(product.lifecycleStatus) && <div className="mt-4 flex flex-wrap gap-2">
@@ -600,7 +632,7 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
         }))} className="rounded-[24px] border border-line bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3"><PackageSearch className="h-5 w-5 text-electric-deep" /><h3 className="text-[17px] font-extrabold">Produkt anlegen</h3></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="label">Partner<select name="providerId" required className="field"><option value="">Auswählen</option>{data.providers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="label">Partner<select name="providerId" required value={commissionProviderId || ""} onChange={(event) => { setCommissionProviderId(Number(event.target.value)); setCsvRows([]); setCsvName(""); setSourceDocumentId(null); }} className="field"><option value="">Auswählen</option>{data.providers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <label className="label">Produktname<input name="name" required maxLength={180} className="field" /></label>
             <label className="label">Bereich<input name="category" required maxLength={80} className="field" /></label>
             <label className="label">SKU / Tarif-ID<input name="sku" maxLength={120} className="field" /></label>
@@ -635,11 +667,19 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
       {data.owner && <div className="grid gap-5 xl:grid-cols-2">
         <form onSubmit={(event) => submit(event, "commission", (form) => ({
           providerId: Number(form.get("providerId")), sourceName: csvName || form.get("sourceName"), sourceType: csvRows.length ? "csv" : "structured",
+          sourceDocumentId,
           validFrom: form.get("validFrom") ? new Date(String(form.get("validFrom")) + "T00:00:00.000Z").toISOString() : null,
           validTo: form.get("validTo") ? new Date(String(form.get("validTo")) + "T23:59:59.999Z").toISOString() : null,
           rows: csvRows.length ? csvRows : lines(form.get("manualRows")).map((line) => {
-            const [productName, category, gross, externalProductId] = line.split("|").map((part) => part.trim());
-            return { productName, category, grossAmount: Number((gross || "0").replace(",", ".")), externalProductId: externalProductId || undefined };
+            const [productName, category, gross, points, externalProductId, rewardNote] = line.split("|").map((part) => part.trim());
+            return {
+              productName,
+              category,
+              grossAmount: Number((gross || "0").replace(",", ".")),
+              points: Number((points || "0").replace(",", ".")),
+              externalProductId: externalProductId || undefined,
+              rewardNote: rewardNote || "",
+            };
           }),
         }), "/api/portal/admin/catalog/commission")} className="rounded-[24px] border border-electric/20 bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3"><FileSpreadsheet className="h-5 w-5 text-electric-deep" /><div><h3 className="text-[17px] font-extrabold">Provisionsliste importieren</h3><p className="text-[12px] text-steel">Owner-only · 15 % werden serverseitig als interner Planungsanteil geführt.</p></div></div>
@@ -648,9 +688,9 @@ export function ProductHubDashboard({ data, isAdmin }: { data: HubData; isAdmin:
             <label className="label">Bezeichnung<input name="sourceName" maxLength={240} placeholder="Provision Oktober 2026" className="field" /></label>
             <label className="label">Gültig ab<input name="validFrom" type="date" className="field" /></label>
             <label className="label">Gültig bis<input name="validTo" type="date" className="field" /></label>
-            <label className="label sm:col-span-2">CSV-Datei<input type="file" accept=".csv,text/csv" className="field" onChange={(event) => void loadCsv(event.target.files?.[0] ?? null)} /></label>
-            {csvRows.length > 0 && <div className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12.5px] text-emerald-800"><Upload className="mr-2 inline h-4 w-4" />{csvRows.length} Positionen erkannt. Erwartete Spalten: Produkt, Kategorie, Provision; optional SKU/Tarif-ID.</div>}
-            <label className="label sm:col-span-2">Alternativ manuell · Produkt|Kategorie|Provision|SKU<textarea name="manualRows" rows={4} className="field" placeholder={"GigaMobil M|Mobilfunk|300|GM-M\nGlasfaser 1000|Internet|450|GF1000"} /></label>
+            <label className="label sm:col-span-2">Original-Provisionsliste<input type="file" accept=".csv,.pdf,.xls,.xlsx,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="field" onChange={(event) => void loadCommissionFile(event.target.files?.[0] ?? null)} /><span className="mt-1 block text-[10.5px] font-normal text-steel">CSV wird automatisch strukturiert. PDF/XLS/XLSX wird als Originalbeleg gespeichert; Positionen darunter manuell erfassen.</span></label>
+            {sourceDocumentId && <div className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12.5px] text-emerald-800"><Upload className="mr-2 inline h-4 w-4" />Originaldatei gespeichert{csvRows.length ? ` · ${csvRows.length} Positionen erkannt` : ""}.</div>}
+            <label className="label sm:col-span-2">Alternativ / ergänzend manuell · Produkt|Kategorie|Provision €|Punkte|SKU|Hinweis<textarea name="manualRows" rows={5} className="field" placeholder={"GigaMobil M|Mobilfunk|300|4|GM-M|Aktionspunkte\nGlasfaser 1000|Internet|450|8|GF1000|"} /></label>
           </div>
           <button disabled={busy !== null || (!csvRows.length && !data.providers.length)} className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-white hover:bg-electric disabled:opacity-50">{busy === "commission" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Liste versioniert importieren</button>
         </form>
