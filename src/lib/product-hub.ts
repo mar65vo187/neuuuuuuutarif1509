@@ -224,6 +224,7 @@ export async function getProductHubData(user: SessionUser, search = "") {
       version: number;
       sourceName: string;
       sourceType: string;
+      sourceDocumentId: number | null;
       validFrom: Date | null;
       validTo: Date | null;
       createdAt: Date;
@@ -249,6 +250,7 @@ export async function getProductHubData(user: SessionUser, search = "") {
         version: commissionListVersions.version,
         sourceName: commissionListVersions.sourceName,
         sourceType: commissionListVersions.sourceType,
+        sourceDocumentId: commissionListVersions.sourceDocumentId,
         validFrom: commissionListVersions.validFrom,
         validTo: commissionListVersions.validTo,
         createdAt: commissionListVersions.createdAt,
