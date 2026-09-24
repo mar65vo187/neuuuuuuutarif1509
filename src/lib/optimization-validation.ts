@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OPTIMIZATION_CATEGORIES } from "@/lib/optimization-hub";
+import { OPTIMIZATION_CATEGORIES } from "@/lib/optimization-shared";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().nullable();
 const customerId = z.number().int().positive();
