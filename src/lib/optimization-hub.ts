@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { employees } from "@/db/schema";
 import {
@@ -41,6 +41,10 @@ function nullableDate(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const parsed = String(value);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed)) throw Object.assign(new Error("Datum ist ungültig."), { status: 422 });
+  const date = new Date(parsed + "T00:00:00Z");
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== parsed) {
+    throw Object.assign(new Error("Datum ist ungültig."), { status: 422 });
+  }
   return parsed;
 }
 
@@ -308,32 +312,38 @@ export async function createOptimizationGoal(user: SessionUser, input: {
   financingNeeded?: boolean;
 }) {
   const customer = await requireCustomer(user, input.customerId);
-  const [membership] = await db.select({ id: optimizationMemberships.id }).from(optimizationMemberships)
-    .where(eq(optimizationMemberships.customerId, customer.id)).limit(1);
   const category = OPTIMIZATION_CATEGORIES.includes(input.category as (typeof OPTIMIZATION_CATEGORIES)[number]) ? input.category : "sonstiges";
   const priority = ["low", "normal", "high", "critical"].includes(input.priority ?? "") ? String(input.priority) : "normal";
-  const [created] = await db.insert(optimizationGoals).values({
-    customerId: customer.id,
-    membershipId: membership?.id ?? null,
-    category,
-    title: text(input.title, 180, true),
-    description: text(input.description, 3000),
-    priority,
-    targetDate: nullableDate(input.targetDate),
-    budgetCents: cents(input.budgetCents),
-    financingNeeded: Boolean(input.financingNeeded),
-    assignedEmployeeId: user.id,
-    createdByEmployeeId: user.id,
-  }).returning();
-  await db.transaction(async (tx) => {
+  const title = text(input.title, 180, true);
+  const description = text(input.description, 3000);
+  const targetDate = nullableDate(input.targetDate);
+  const budgetCents = cents(input.budgetCents);
+  const financingNeeded = Boolean(input.financingNeeded);
+
+  return db.transaction(async (tx) => {
+    const [membership] = await tx.select({ id: optimizationMemberships.id }).from(optimizationMemberships)
+      .where(eq(optimizationMemberships.customerId, customer.id)).limit(1);
+    const [created] = await tx.insert(optimizationGoals).values({
+      customerId: customer.id,
+      membershipId: membership?.id ?? null,
+      category,
+      title,
+      description,
+      priority,
+      targetDate,
+      budgetCents,
+      financingNeeded,
+      assignedEmployeeId: user.id,
+      createdByEmployeeId: user.id,
+    }).returning();
     await writeAudit(tx, user.id, "optimization.goal.created", "optimization_goal", created.id, undefined, {
       customerId: customer.id, category, priority,
     });
     await emitEvent(tx, "optimization.goal.created", "optimization_goal", created.id, {
       customerId: customer.id, category, assignedEmployeeId: user.id,
     });
+    return created;
   });
-  return created;
 }
 
 export async function createOptimizationContract(user: SessionUser, input: {
@@ -349,31 +359,43 @@ export async function createOptimizationContract(user: SessionUser, input: {
   note?: string;
 }) {
   const customer = await requireCustomer(user, input.customerId);
-  const [membership] = await db.select({ id: optimizationMemberships.id }).from(optimizationMemberships)
-    .where(eq(optimizationMemberships.customerId, customer.id)).limit(1);
   const category = OPTIMIZATION_CATEGORIES.includes(input.category as (typeof OPTIMIZATION_CATEGORIES)[number]) ? input.category : "sonstiges";
   const status = ["active", "review_due", "switch_planned", "cancelled", "expired"].includes(input.status ?? "") ? String(input.status) : "active";
-  const [created] = await db.insert(optimizationContracts).values({
-    customerId: customer.id,
-    membershipId: membership?.id ?? null,
-    category,
-    providerName: text(input.providerName, 180, true),
-    contractName: text(input.contractName, 220, true),
-    monthlyCostCents: cents(input.monthlyCostCents),
-    startDate: nullableDate(input.startDate),
-    endDate: nullableDate(input.endDate),
-    noticeDate: nullableDate(input.noticeDate),
-    status,
-    note: text(input.note, 3000),
-    createdByEmployeeId: user.id,
-  }).returning();
-  await db.transaction(async (tx) => {
+  const providerName = text(input.providerName, 180, true);
+  const contractName = text(input.contractName, 220, true);
+  const monthlyCostCents = cents(input.monthlyCostCents);
+  const startDate = nullableDate(input.startDate);
+  const endDate = nullableDate(input.endDate);
+  const noticeDate = nullableDate(input.noticeDate);
+  const note = text(input.note, 3000);
+
+  if (startDate && endDate && startDate > endDate) {
+    throw Object.assign(new Error("Vertragsende darf nicht vor dem Startdatum liegen."), { status: 422 });
+  }
+
+  return db.transaction(async (tx) => {
+    const [membership] = await tx.select({ id: optimizationMemberships.id }).from(optimizationMemberships)
+      .where(eq(optimizationMemberships.customerId, customer.id)).limit(1);
+    const [created] = await tx.insert(optimizationContracts).values({
+      customerId: customer.id,
+      membershipId: membership?.id ?? null,
+      category,
+      providerName,
+      contractName,
+      monthlyCostCents,
+      startDate,
+      endDate,
+      noticeDate,
+      status,
+      note,
+      createdByEmployeeId: user.id,
+    }).returning();
     await writeAudit(tx, user.id, "optimization.contract.created", "optimization_contract", created.id, undefined, {
       customerId: customer.id, category, status,
     });
     await emitEvent(tx, "optimization.contract.created", "optimization_contract", created.id, { customerId: customer.id, category });
+    return created;
   });
-  return created;
 }
 
 export async function createOptimizationOffer(user: SessionUser, input: {
@@ -393,43 +415,61 @@ export async function createOptimizationOffer(user: SessionUser, input: {
   const customer = await requireCustomer(user, input.customerId);
   const goalId = Number.isSafeInteger(input.goalId) && Number(input.goalId) > 0 ? Number(input.goalId) : null;
   const contractId = Number.isSafeInteger(input.contractId) && Number(input.contractId) > 0 ? Number(input.contractId) : null;
-  if (goalId) {
-    const [goal] = await db.select({ id: optimizationGoals.id }).from(optimizationGoals)
-      .where(and(eq(optimizationGoals.id, goalId), eq(optimizationGoals.customerId, customer.id))).limit(1);
-    if (!goal) throw Object.assign(new Error("Wunsch passt nicht zum Kunden."), { status: 422 });
-  }
-  if (contractId) {
-    const [contract] = await db.select({ id: optimizationContracts.id }).from(optimizationContracts)
-      .where(and(eq(optimizationContracts.id, contractId), eq(optimizationContracts.customerId, customer.id))).limit(1);
-    if (!contract) throw Object.assign(new Error("Vertrag passt nicht zum Kunden."), { status: 422 });
-  }
-  const position = Math.max(1, Math.min(10, Math.trunc(Number(input.position) || 1)));
-  const status = ["draft", "proposed", "accepted", "rejected", "expired"].includes(input.status ?? "") ? String(input.status) : "proposed";
+  const position = Math.max(1, Math.min(3, Math.trunc(Number(input.position) || 1)));
+  const status = ["draft", "proposed"].includes(input.status ?? "") ? String(input.status) : "proposed";
   const termMonths = input.termMonths === null || input.termMonths === undefined
     ? null
     : Math.max(0, Math.min(600, Math.trunc(Number(input.termMonths))));
-  const [created] = await db.insert(optimizationOffers).values({
-    customerId: customer.id,
-    goalId,
-    contractId,
-    providerName: text(input.providerName, 180, true),
-    title: text(input.title, 220, true),
-    monthlyCostCents: cents(input.monthlyCostCents),
-    oneTimeCostCents: cents(input.oneTimeCostCents),
-    termMonths,
-    position,
-    status,
-    validUntil: nullableDate(input.validUntil),
-    note: text(input.note, 3000),
-    createdByEmployeeId: user.id,
-  }).returning();
-  await db.transaction(async (tx) => {
+  const providerName = text(input.providerName, 180, true);
+  const title = text(input.title, 220, true);
+  const monthlyCostCents = cents(input.monthlyCostCents);
+  const oneTimeCostCents = cents(input.oneTimeCostCents);
+  const validUntil = nullableDate(input.validUntil);
+  const note = text(input.note, 3000);
+
+  return db.transaction(async (tx) => {
+    if (goalId) {
+      const [goal] = await tx.select({ id: optimizationGoals.id, status: optimizationGoals.status }).from(optimizationGoals)
+        .where(and(eq(optimizationGoals.id, goalId), eq(optimizationGoals.customerId, customer.id))).limit(1).for("update");
+      if (!goal) throw Object.assign(new Error("Wunsch passt nicht zum Kunden."), { status: 422 });
+      if (["accepted", "completed", "cancelled"].includes(goal.status)) {
+        throw Object.assign(new Error("Für einen abgeschlossenen Wunsch können keine neuen Vergleichsoptionen angelegt werden."), { status: 409 });
+      }
+      const [collision] = await tx.select({ id: optimizationOffers.id }).from(optimizationOffers)
+        .where(and(
+          eq(optimizationOffers.goalId, goalId),
+          eq(optimizationOffers.position, position),
+          inArray(optimizationOffers.status, ["draft", "proposed"]),
+        )).limit(1);
+      if (collision) throw Object.assign(new Error(`Option ${position} ist für diesen Wunsch bereits belegt.`), { status: 409 });
+    }
+    if (contractId) {
+      const [contract] = await tx.select({ id: optimizationContracts.id }).from(optimizationContracts)
+        .where(and(eq(optimizationContracts.id, contractId), eq(optimizationContracts.customerId, customer.id))).limit(1);
+      if (!contract) throw Object.assign(new Error("Vertrag passt nicht zum Kunden."), { status: 422 });
+    }
+
+    const [created] = await tx.insert(optimizationOffers).values({
+      customerId: customer.id,
+      goalId,
+      contractId,
+      providerName,
+      title,
+      monthlyCostCents,
+      oneTimeCostCents,
+      termMonths,
+      position,
+      status,
+      validUntil,
+      note,
+      createdByEmployeeId: user.id,
+    }).returning();
     await writeAudit(tx, user.id, "optimization.offer.created", "optimization_offer", created.id, undefined, {
       customerId: customer.id, goalId, contractId, position, status,
     });
     await emitEvent(tx, "optimization.offer.created", "optimization_offer", created.id, { customerId: customer.id, goalId, status });
+    return created;
   });
-  return created;
 }
 
 export async function updateOptimizationOfferStatus(user: SessionUser, offerId: number, status: string) {
@@ -464,6 +504,14 @@ export async function updateOptimizationOfferStatus(user: SessionUser, offerId: 
 const ALLOWED_DOCUMENT_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 const MAX_DOCUMENT_BYTES = 8 * 1024 * 1024;
 
+function matchesDocumentSignature(data: Buffer, contentType: string) {
+  if (contentType === "application/pdf") return data.length >= 5 && data.subarray(0, 5).toString("ascii") === "%PDF-";
+  if (contentType === "image/jpeg") return data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+  if (contentType === "image/png") return data.length >= 8 && data.subarray(0, 8).toString("hex") === "89504e470d0a1a0a";
+  if (contentType === "image/webp") return data.length >= 12 && data.subarray(0, 4).toString("ascii") === "RIFF" && data.subarray(8, 12).toString("ascii") === "WEBP";
+  return false;
+}
+
 export async function storeOptimizationDocument(user: SessionUser, input: {
   customerId: number;
   title: string;
@@ -478,6 +526,7 @@ export async function storeOptimizationDocument(user: SessionUser, input: {
   const customer = await requireCustomer(user, input.customerId);
   if (!input.data.length || input.data.length > MAX_DOCUMENT_BYTES) throw Object.assign(new Error("Datei muss zwischen 1 Byte und 8 MB groß sein."), { status: 422 });
   if (!ALLOWED_DOCUMENT_TYPES.has(input.contentType)) throw Object.assign(new Error("Erlaubt sind PDF, JPG, PNG oder WebP."), { status: 422 });
+  if (!matchesDocumentSignature(input.data, input.contentType)) throw Object.assign(new Error("Dateiinhalt passt nicht zum angegebenen Dateityp."), { status: 422 });
   const title = text(input.title, 220, true);
   const fileName = text(input.fileName, 240, true);
   const kind = ["contract", "offer", "invoice", "proof", "other"].includes(input.kind ?? "") ? String(input.kind) : "contract";
@@ -489,32 +538,48 @@ export async function storeOptimizationDocument(user: SessionUser, input: {
     offerId: Number.isSafeInteger(input.offerId) && Number(input.offerId) > 0 ? Number(input.offerId) : null,
   };
 
-  if (ids.goalId) {
-    const [row] = await db.select({ id: optimizationGoals.id }).from(optimizationGoals).where(and(eq(optimizationGoals.id, ids.goalId), eq(optimizationGoals.customerId, customer.id))).limit(1);
-    if (!row) throw Object.assign(new Error("Wunsch passt nicht zum Kunden."), { status: 422 });
-  }
-  if (ids.contractId) {
-    const [row] = await db.select({ id: optimizationContracts.id }).from(optimizationContracts).where(and(eq(optimizationContracts.id, ids.contractId), eq(optimizationContracts.customerId, customer.id))).limit(1);
-    if (!row) throw Object.assign(new Error("Vertrag passt nicht zum Kunden."), { status: 422 });
-  }
-  if (ids.offerId) {
-    const [row] = await db.select({ id: optimizationOffers.id }).from(optimizationOffers).where(and(eq(optimizationOffers.id, ids.offerId), eq(optimizationOffers.customerId, customer.id))).limit(1);
-    if (!row) throw Object.assign(new Error("Angebot passt nicht zum Kunden."), { status: 422 });
-  }
+  return db.transaction(async (tx) => {
+    if (ids.goalId) {
+      const [row] = await tx.select({ id: optimizationGoals.id }).from(optimizationGoals).where(and(eq(optimizationGoals.id, ids.goalId), eq(optimizationGoals.customerId, customer.id))).limit(1);
+      if (!row) throw Object.assign(new Error("Wunsch passt nicht zum Kunden."), { status: 422 });
+    }
+    if (ids.contractId) {
+      const [row] = await tx.select({ id: optimizationContracts.id }).from(optimizationContracts).where(and(eq(optimizationContracts.id, ids.contractId), eq(optimizationContracts.customerId, customer.id))).limit(1);
+      if (!row) throw Object.assign(new Error("Vertrag passt nicht zum Kunden."), { status: 422 });
+    }
+    if (ids.offerId) {
+      const [row] = await tx.select({ id: optimizationOffers.id }).from(optimizationOffers).where(and(eq(optimizationOffers.id, ids.offerId), eq(optimizationOffers.customerId, customer.id))).limit(1);
+      if (!row) throw Object.assign(new Error("Angebot passt nicht zum Kunden."), { status: 422 });
+    }
 
-  const [created] = await db.insert(optimizationDocuments).values({
-    customerId: customer.id,
-    ...ids,
-    kind,
-    title,
-    fileName,
-    contentType: input.contentType,
-    byteSize: input.data.length,
-    digest,
-    data: input.data,
-    uploadedByEmployeeId: user.id,
-  }).returning({ id: optimizationDocuments.id });
-  return created;
+    const [created] = await tx.insert(optimizationDocuments).values({
+      customerId: customer.id,
+      ...ids,
+      kind,
+      title,
+      fileName,
+      contentType: input.contentType,
+      byteSize: input.data.length,
+      digest,
+      data: input.data,
+      uploadedByEmployeeId: user.id,
+    }).returning({ id: optimizationDocuments.id });
+    await writeAudit(tx, user.id, "optimization.document.created", "optimization_document", created.id, undefined, {
+      customerId: customer.id,
+      kind,
+      fileName,
+      contentType: input.contentType,
+      byteSize: input.data.length,
+      digest,
+    });
+    await emitEvent(tx, "optimization.document.created", "optimization_document", created.id, {
+      customerId: customer.id,
+      goalId: ids.goalId,
+      contractId: ids.contractId,
+      offerId: ids.offerId,
+    });
+    return created;
+  });
 }
 
 export async function getOptimizationDocument(user: SessionUser, id: number) {
