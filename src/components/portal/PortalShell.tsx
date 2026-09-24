@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, FileCheck2, Gift, Headphones, Inbox, LineChart, Megaphone,
+  Activity, BarChart3, Bell, BrainCircuit, BriefcaseBusiness, ContactRound, ExternalLink, FileCheck2, Gift, Headphones, Inbox, LineChart, Megaphone,
   KeyRound, Lightbulb, ListTodo, LogOut, Menu, MessageSquare, PackageSearch, RefreshCcw, Search, Settings2, ShieldCheck, Sparkles, TrendingUp, Trophy, UserRoundCog, UsersRound, WalletCards, X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -40,6 +40,7 @@ const NAV_SECTIONS = [
     label: "Team & Entwicklung",
     items: [
       { href: "/portal/betrieb", label: "Team & Betriebsqualität", icon: UsersRound },
+      { href: "/portal/aktivitaet", label: "Mitarbeiter-Aktivität", icon: Activity, adminOnly: true },
       { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy, anyPermission: ["lead.edit"] },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Team-Chat", icon: MessageSquare },
