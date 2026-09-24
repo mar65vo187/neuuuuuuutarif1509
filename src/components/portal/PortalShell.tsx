@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
       { href: "/portal", label: "Übersicht & Fokus", icon: BarChart3, exact: true },
       { href: "/portal/assistent", label: "KI & Arbeitsassistent", icon: BrainCircuit },
       { href: "/portal/leads", label: "Leads & Termine", icon: Inbox, anyPermission: ["lead.edit"] },
+      { href: "/portal/kontakte", label: "Kontaktpool", icon: ContactRound, anyPermission: ["lead.edit"] },
       { href: "/portal/kunden", label: "Kunden", icon: ContactRound, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/optimierung", label: "Optimierungsservice", icon: Sparkles, anyPermission: ["customer.read", "customer.edit"] },
       { href: "/portal/auftraege", label: "Aufträge", icon: BriefcaseBusiness, anyPermission: ["order.read", "order.edit"] },
@@ -40,6 +41,7 @@ const NAV_SECTIONS = [
     label: "Team & Entwicklung",
     items: [
       { href: "/portal/betrieb", label: "Team & Betriebsqualität", icon: UsersRound },
+      { href: "/portal/aktivitaet", label: "Mitarbeiter-Aktivität", icon: BarChart3, adminOnly: true },
       { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy, anyPermission: ["lead.edit"] },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Team-Chat", icon: MessageSquare },
