@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { pool } from "@/db";
+import { pool } from "@/db";\nimport { SITE } from "@/lib/content";\nimport { sendTransactionalEmail } from "@/lib/transactional-email";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -80,6 +80,42 @@ export async function POST(request: Request) {
       [directId, object.id ?? null, stripeCustomerId, stripeSubscriptionId],
     );
     await logBilling(directId, "billing.checkout.completed", { stripeEventId: event.id ?? null });
+    const details = await pool.query<{ customer_name: string; email: string; public_token: string }>(
+      "select customer_name,email,public_token from optimization_subscriptions where id=$1 limit 1",
+      [directId],
+    );
+    const customer = details.rows[0];
+    if (customer) {
+      const origin = SITE.url.replace(/\/$/, "");
+      const sent = await sendTransactionalEmail({
+        to: customer.email,
+        subject: "TarifWerk Optimierung+ – Vertragsbestätigung",
+        tag: "optimization_subscription",
+        text: [
+          "Vertragsbestätigung – TarifWerk Optimierung+",
+          "",
+          "Hallo " + customer.customer_name + ",",
+          "dein Optimierung+-Abo wurde aktiviert.",
+          "",
+          "Vertragsnummer: TW-OPT-" + directId,
+          "Preis: 1,99 € pro Monat",
+          "Laufzeit: unbefristet",
+          "Ordentliche Kündigung: monatlich zum Ende der laufenden Abrechnungsperiode",
+          "Leistung: persönlicher Optimierungsbereich, Vertrags- und Projektvorgänge, Dokumentenablage sowie Koordination von Prüfungen und verfügbaren Angebotsoptionen.",
+          "",
+          "Dein Bereich: " + origin + "/mein-tarifwerk/" + customer.public_token,
+          "Kündigung: " + origin + "/abo-kuendigen",
+          "Widerruf: " + origin + "/vertrag-widerrufen",
+          "AGB: " + origin + "/agb",
+          "Datenschutz: " + origin + "/datenschutz",
+          "",
+          "Bewahre diese Nachricht als Vertragsbestätigung auf.",
+        ].join("\n"),
+      });
+      await logBilling(directId, sent.ok ? "contract.confirmation.sent" : "contract.confirmation.failed", {
+        emailId: sent.ok ? sent.id : null,
+      });
+    }
   } else if (type === "customer.subscription.updated" || type === "customer.subscription.deleted") {
     const stripeSubscriptionId = object.id ?? null;
     if (stripeSubscriptionId) {
