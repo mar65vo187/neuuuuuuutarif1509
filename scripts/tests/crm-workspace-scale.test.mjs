@@ -23,7 +23,7 @@ test("customer workspace paginates while preserving search and focus", () => {
   assert.match(page, /pageSize = 50/);
   assert.match(page, /listCustomers\(user, q, pageSize, \{ focus, page, lookahead: true \}\)/);
   assert.match(page, /params\.set\("q", q\.trim\(\)\)/);
-  assert.match(page, /params\.set\("focus", focus\)/);
+  assert.match(page, /params\.set\("focus", nextFocus\)/);
   assert.match(page, /aria-label="Kunden-Seiten"/);
 });
 
