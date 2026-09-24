@@ -18,7 +18,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (!row) return NextResponse.json({ ok: false, error: "Dokument nicht gefunden." }, { status: 404 });
 
   const safeName = row.fileName.replace(/[\r\n"]/g, "_");
-  return new Response(row.data, {
+  const body = Uint8Array.from(row.data);
+  return new Response(body, {
     status: 200,
     headers: {
       "Content-Type": row.contentType,
