@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { notificationQueue } from "@/db/enterprise-schema";
@@ -12,7 +12,7 @@ const ids = z.array(z.number().int().positive()).min(1).max(100);
 const schema = z.union([
   z.object({ action: z.literal("mark_read"), all: z.literal(true) }).strict(),
   z.object({
-    action: z.enum(["mark_read", "mark_unread", "archive", "restore", "unsnooze"]),
+    action: z.enum(["mark_read", "mark_unread", "archive", "restore", "unsnooze", "acknowledge"]),
     ids,
   }).strict(),
   z.object({
@@ -53,7 +53,13 @@ export async function PATCH(request: NextRequest) {
             lte(notificationQueue.scheduledAt, now),
             or(isNull(notificationQueue.snoozedUntil), lte(notificationQueue.snoozedUntil, now)),
           )
-        : and(base, inArray(notificationQueue.id, parsed.data.ids));
+        : and(
+            base,
+            inArray(notificationQueue.id, parsed.data.ids),
+            parsed.data.action === "archive"
+              ? or(eq(notificationQueue.requiresAck, false), isNotNull(notificationQueue.acknowledgedAt))
+              : undefined,
+          );
 
       const patch: Partial<typeof notificationQueue.$inferInsert> = {};
       if (parsed.data.action === "mark_read") {
@@ -63,6 +69,11 @@ export async function PATCH(request: NextRequest) {
       } else if (parsed.data.action === "mark_unread") {
         patch.status = "pending";
         patch.readAt = null;
+      } else if (parsed.data.action === "acknowledge") {
+        patch.status = "read";
+        patch.readAt = now;
+        patch.sentAt = now;
+        patch.acknowledgedAt = now;
       } else if (parsed.data.action === "archive") {
         patch.archivedAt = now;
       } else if (parsed.data.action === "restore") {
