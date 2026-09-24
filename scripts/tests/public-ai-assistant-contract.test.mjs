@@ -34,6 +34,10 @@ test("public AI endpoint is same-origin, rate-limited and content-limited", () =
   assert.match(route, /LIMIT = 30/);
   assert.match(route, /Retry-After/);
   assert.match(route, /32 \* 1024/);
+  assert.match(route, /GROQ_DAILY_LIMIT/);
+  assert.match(route, /TARIFWERK_PUBLIC_AI_GROQ_DAILY_LIMIT/);
+  assert.match(route, /public-ai:groq-daily:v1/);
+  assert.match(route, /interval '24 hours'/);
 });
 
 test("public AI widget is mounted globally on public site with human handoff", () => {
@@ -56,6 +60,7 @@ test("public AI uses Groq Qwen as primary provider with bounded resilient fallba
   assert.match(engine, /include_reasoning: false/);
   assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
   assert.match(engine, /callXkiroFallback/);
+  assert.match(engine, /allowGroq/);
 });
 
 test("public AI keeps context and output bounded for production latency", () => {
