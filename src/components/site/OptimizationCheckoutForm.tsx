@@ -102,8 +102,12 @@ export function OptimizationCheckoutForm() {
         </label>
       </div>
 
-      <button type="submit" disabled={busy} className="mt-6 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-electric px-5 py-3.5 text-sm font-extrabold text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-70">
-        {busy ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Wird vorbereitet…</> : <>Für 1,99 € / Monat starten <ArrowRight className="h-4 w-4" /></>}
+      <div className="mt-5 rounded-2xl border border-white/10 bg-black/15 p-4 text-xs leading-5 text-slate-200">
+        <p><strong className="text-white">TarifWerk Optimierung+</strong> · 1,99 € pro Monat · unbefristete Laufzeit · monatlich zum Ende der laufenden Abrechnungsperiode kündbar.</p>
+        <p className="mt-2 text-silver">Leistung: persönlicher Optimierungsbereich, Vertrags- und Projektvorgänge, Dokumentenablage, Koordination von Prüfungen und – soweit passend und verfügbar – bis zu drei Angebotsoptionen. Konkrete Angebote oder Ersparnisse sind nicht garantiert.</p>
+      </div>
+      <button type="submit" disabled={busy} className="mt-4 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-electric px-5 py-3.5 text-sm font-extrabold text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-70">
+        {busy ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Wird vorbereitet…</> : <>Zahlungspflichtig bestellen – 1,99 € / Monat <ArrowRight className="h-4 w-4" /></>}
       </button>
       {error && <p role="alert" className="mt-3 rounded-xl border border-red-300/25 bg-red-400/10 px-4 py-3 text-sm text-red-100">{error}</p>}
       <p className="mt-4 text-center text-[11px] leading-5 text-silver">Die Zahlungsabwicklung startet erst nach dem Klick. Ohne aktivierte Online-Zahlung wird keine Zahlung als erfolgt dargestellt.</p>
