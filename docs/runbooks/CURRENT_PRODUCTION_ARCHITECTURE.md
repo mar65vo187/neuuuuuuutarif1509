@@ -196,6 +196,6 @@ Die Quality-Pipeline prüft zusätzlich:
 
 Neue Änderungen werden gegen `main` geprüft. Vor produktiven Änderungen müssen mindestens TypeScript, ESLint, Tests, Production Build, Runtime-Smoke und Datenbankchecks grün sein.
 
-<!-- railway-source-trigger: 2026-09-24T16:48Z -->
+<!-- railway-source-trigger: 2026-09-24T19:26+02:00 production-source-build -->
 
 <!-- railway-real-source-build-trigger: 2026-09-24T17:35Z -->
