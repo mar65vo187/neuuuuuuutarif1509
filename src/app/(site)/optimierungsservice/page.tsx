@@ -11,9 +11,11 @@ import {
   WalletCards,
 } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
+import { JsonLd } from "@/components/security/JsonLd";
 import { pageMetadata } from "@/lib/seo";
 import { resolveSiteAudience } from "@/lib/audience-server";
 import { withAudience } from "@/lib/audience";
+import { SITE } from "@/lib/content";
 
 type Props = { searchParams: Promise<{ audience?: string | string[] }> };
 
@@ -92,7 +94,27 @@ export default async function OptimizationServicePage({ searchParams }: Props) {
     </>;
   }
 
+  const serviceJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${SITE.url}/optimierungsservice#service`,
+    name: "TarifWerk Optimierungsservice",
+    serviceType: "Laufende Vertrags- und Projektbetreuung",
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: { "@type": "Country", name: "Deutschland" },
+    url: `${SITE.url}/optimierungsservice`,
+    description: "Laufende Betreuung für relevante TarifWerk-Themen, Vertragsbestände, Ziele, Wünsche und die Koordination nächster Schritte.",
+    offers: {
+      "@type": "Offer",
+      price: "1.99",
+      priceCurrency: "EUR",
+      url: `${SITE.url}/optimierungsservice`,
+      description: "Mitgliedsbeitrag pro Monat für die laufende Organisation und Übersicht des Optimierungsservices.",
+    },
+  };
+
   return <>
+    <JsonLd data={serviceJsonLd} />
     <PageHero
       eyebrow="TarifWerk Optimierungsservice"
       title={<>Deine Themen im Blick. <span className="display-i font-normal text-champagne-soft">Nicht nur einmal.</span></>}
