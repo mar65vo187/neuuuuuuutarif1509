@@ -10,7 +10,7 @@ export type AiAssistantHistoryMessage = {
 
 export type AiAssistantAnswer = {
   text: string;
-  provider: "xkiro" | "gemini" | "openrouter";
+  provider: "groq" | "xkiro" | "gemini" | "openrouter";
   model: string;
   sources: string[];
   redactions: number;
@@ -285,6 +285,49 @@ function extractGeminiText(payload: unknown) {
     .trim();
 }
 
+async function callGroq(system: string, input: string) {
+  const key = process.env.GROQ_API_KEY?.trim();
+  if (!key) throw new Error("GROQ_API_KEY fehlt.");
+  const model = process.env.TARIFWERK_AI_GROQ_MODEL?.trim()
+    || process.env.TARIFWERK_PUBLIC_AI_GROQ_MODEL?.trim()
+    || "qwen/qwen3.8-27b";
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + key,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: input },
+      ],
+      max_completion_tokens: 1400,
+      temperature: 0.4,
+      top_p: 0.85,
+      reasoning_effort: "none",
+      include_reasoning: false,
+      stream: false,
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const json = await response.json().catch(() => null) as {
+    choices?: Array<{ message?: { content?: unknown } }>;
+    error?: { message?: unknown };
+  } | null;
+  if (!response.ok) {
+    const providerMessage = typeof json?.error?.message === "string" ? json.error.message.slice(0, 240) : "";
+    throw new Error(providerMessage || "Groq-Anfrage fehlgeschlagen (" + response.status + ").");
+  }
+  const text = typeof json?.choices?.[0]?.message?.content === "string"
+    ? json.choices[0].message.content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim()
+    : "";
+  if (!text) throw new Error("Groq hat keine Textantwort geliefert.");
+  return { text: text.slice(0, 7000), provider: "groq" as const, model };
+}
+
 async function callXkiro(system: string, input: string) {
   const key = process.env.XKIRO_API_KEY?.trim();
   if (!key) throw new Error("XKIRO_API_KEY fehlt.");
@@ -374,6 +417,7 @@ async function callOpenRouter(system: string, input: string) {
 
 export function aiProviderStatus() {
   return {
+    groq: Boolean(process.env.GROQ_API_KEY?.trim()),
     xkiro: Boolean(process.env.XKIRO_API_KEY?.trim()),
     gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
     openrouter: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
@@ -428,16 +472,30 @@ export async function askTarifWerkAi(input: {
 
   const preferred = (process.env.TARIFWERK_AI_PROVIDER?.trim() || "auto").toLowerCase();
   const errors: string[] = [];
+  const tryGroq = preferred === "auto" || preferred === "groq";
   const tryXkiro = preferred === "auto" || preferred === "xkiro";
   const tryGemini = preferred === "auto" || preferred === "gemini";
   const tryOpenRouter = preferred === "auto" || preferred === "openrouter";
+
+  if (tryGroq && process.env.GROQ_API_KEY?.trim()) {
+    try {
+      const result = await callGroq(system, userInput);
+      return { ...result, sources: knowledge.sources, redactions: redacted.redactions + history.redactions };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Groq fehlgeschlagen.";
+      errors.push(message);
+      console.error("[ai] groq unavailable", message);
+    }
+  }
 
   if (tryXkiro && process.env.XKIRO_API_KEY?.trim()) {
     try {
       const result = await callXkiro(system, userInput);
       return { ...result, sources: knowledge.sources, redactions: redacted.redactions + history.redactions };
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : "Xkiro fehlgeschlagen.");
+      const message = error instanceof Error ? error.message : "Xkiro fehlgeschlagen.";
+      errors.push(message);
+      console.error("[ai] xkiro unavailable", message);
     }
   }
 
@@ -459,8 +517,8 @@ export async function askTarifWerkAi(input: {
     }
   }
 
-  if (!process.env.XKIRO_API_KEY?.trim() && !process.env.GEMINI_API_KEY?.trim() && !process.env.OPENROUTER_API_KEY?.trim()) {
-    throw new Error("KI ist noch nicht aktiviert. XKIRO_API_KEY, GEMINI_API_KEY oder OPENROUTER_API_KEY fehlt.");
+  if (!process.env.GROQ_API_KEY?.trim() && !process.env.XKIRO_API_KEY?.trim() && !process.env.GEMINI_API_KEY?.trim() && !process.env.OPENROUTER_API_KEY?.trim()) {
+    throw new Error("KI ist noch nicht aktiviert. GROQ_API_KEY, XKIRO_API_KEY, GEMINI_API_KEY oder OPENROUTER_API_KEY fehlt.");
   }
   throw new Error(errors[0] ?? "Kein KI-Provider war erreichbar.");
 }
