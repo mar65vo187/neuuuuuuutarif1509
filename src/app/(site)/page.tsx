@@ -7,6 +7,7 @@ import { DecisionCheck } from "@/components/home/DecisionCheck";
 import { SessionIntentCard } from "@/components/home/SessionIntentCard";
 import { BrandIdentitySection } from "@/components/home/BrandIdentitySection";
 import { TopicTicker } from "@/components/home/TopicTicker";
+import { OptimizationMembershipTeaser } from "@/components/home/OptimizationMembershipTeaser";
 import {
   AudienceEverydaySection,
   AudienceFaqSection,
@@ -65,6 +66,7 @@ export default async function HomePage({ searchParams }: Props) {
       <AudienceFocusSection audience={initialAudience} />
       <AudienceEverydaySection audience={initialAudience} />
       <DecisionCheck audience={initialAudience} />
+      <OptimizationMembershipTeaser audience={initialAudience} />
       <TrustEngine audience={initialAudience} />
       <FinderTeaser audience={initialAudience} />
       <AudienceProcess audience={initialAudience} />
