@@ -22,3 +22,7 @@ Die öffentlich zugängliche Website-KI ist technisch getrennt von der internen 
 ## Release
 
 Dieser Commit dient zugleich als Source-Build-Trigger, nachdem `tarifwerk-prod` auf das private GitHub-Repository und Branch `main` als Railway-Quelle umgestellt wurde.
+
+## Railway Source Cutover
+
+Source cutover verified for `tarifwerk-web` on 24.09.2026. This commit intentionally triggers Railway's GitHub autodeploy after the service was connected to `main`.
