@@ -32,16 +32,33 @@ function initialMessage(audience: AudienceMode): ChatMessage {
   };
 }
 
-export function PublicAiChat({ audience }: { audience: AudienceMode }) {
+export function PublicAiChat({ audience, initiallyOpen = false }: { audience: AudienceMode; initiallyOpen?: boolean }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [initialMessage(audience)]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [redactions, setRedactions] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const sending = useRef(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => {
+      endRef.current?.scrollIntoView({ block: "nearest" });
+      inputRef.current?.focus({ preventScroll: true });
+    });
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "nearest" }));
@@ -101,6 +118,7 @@ export function PublicAiChat({ audience }: { audience: AudienceMode }) {
       {open && (
         <section
           role="dialog"
+          aria-modal="true"
           aria-label="TarifWerk KI-Berater"
           className="fixed bottom-[88px] right-3 z-[70] flex max-h-[min(690px,calc(100dvh-120px))] w-[min(410px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[26px] border border-white/12 bg-[#071324]/98 text-white shadow-[0_30px_90px_-24px_rgba(0,0,0,.9)] backdrop-blur-xl md:bottom-24 md:right-6"
         >
@@ -148,6 +166,7 @@ export function PublicAiChat({ audience }: { audience: AudienceMode }) {
               <label className="sr-only" htmlFor="public-ai-message">Nachricht an den KI-Berater</label>
               <input
                 id="public-ai-message"
+                ref={inputRef}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 maxLength={1800}
