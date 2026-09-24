@@ -10,7 +10,7 @@ import { SITE, SERVICES } from "@/lib/content";
 import { withAudience, type AudienceMode } from "@/lib/audience";
 
 const NAV = [
-  { href: "/leistungen", label: "Leistungen" },
+  { href: "/leistungen", label: "Leistungen" },\n  { href: "/optimieren", label: "Optimierung+" },
   { href: "/berater", label: "Beratung" },
   { href: "/ueber-uns", label: "Über uns" },
   { href: "/karriere", label: "Karriere" },
