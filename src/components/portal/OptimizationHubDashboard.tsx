@@ -175,7 +175,8 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
 
   async function membershipSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const reviewDate = String(form.get("nextReviewDate") ?? "");
     await jsonRequest("membership", {
       action: "membership",
@@ -186,12 +187,13 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       billingCustomerRef: form.get("billingCustomerRef") || null,
       billingSubscriptionRef: form.get("billingSubscriptionRef") || null,
     }, "Mitgliedschaft aktualisiert.");
-    event.currentTarget.reset();
+    formElement.reset();
   }
 
   async function goalSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     await jsonRequest("goal", {
       action: "goal",
       customerId: Number(form.get("customerId")),
@@ -203,12 +205,13 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       budgetCents: toCents(form.get("budget")),
       financingNeeded: form.get("financingNeeded") === "on",
     }, "Ziel/Wunsch angelegt.");
-    event.currentTarget.reset();
+    formElement.reset();
   }
 
   async function contractSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     await jsonRequest("contract", {
       action: "contract",
       customerId: Number(form.get("customerId")),
@@ -222,12 +225,13 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       status: form.get("status"),
       note: form.get("note"),
     }, "Vertrag erfasst.");
-    event.currentTarget.reset();
+    formElement.reset();
   }
 
   async function offerSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     await jsonRequest("offer", {
       action: "offer",
       customerId: Number(form.get("customerId")),
@@ -243,17 +247,18 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       validUntil: form.get("validUntil") || null,
       note: form.get("note"),
     }, "Angebot hinzugefügt.");
-    event.currentTarget.reset();
+    formElement.reset();
   }
 
   async function uploadSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving.current) return;
+    const formElement = event.currentTarget;
     saving.current = true;
     setBusy("document");
     setMessage(null);
     try {
-      const form = new FormData(event.currentTarget);
+      const form = new FormData(formElement);
       const response = await fetch("/api/portal/optimization/documents", {
         method: "POST",
         body: form,
@@ -262,7 +267,7 @@ export function OptimizationHubDashboard({ data, canEdit }: { data: HubData; can
       const json = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (!response.ok || !json?.ok) throw new Error(json?.error ?? "Upload fehlgeschlagen.");
       setMessage({ type: "ok", text: "Dokument sicher gespeichert." });
-      event.currentTarget.reset();
+      formElement.reset();
       router.refresh();
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Upload fehlgeschlagen." });
