@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import {
-  BellRing, CheckCircle2, Clock3, Flame, Loader2, Mail, MessageSquareText,
+  BellRing, Flame, Loader2, MessageSquareText,
   MousePointerClick, Send, Target, UsersRound, Zap,
 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
