@@ -10,7 +10,7 @@ const REQUIRED_TABLES = [
   "benefit_pool_ledger", "product_updates", "product_update_reads", "incentive_campaigns", "training_modules",
   "employee_training_completions", "employee_benefits", "internal_documents", "reconciliation_imports",
   "employee_images", "team_messages", "portal_sessions", "portal_login_rate_limits",
-  "marketing_campaign_spend", "public_intake_rate_limits", "ai_assistant_usage",\n  "optimization_subscriptions", "optimization_requests", "optimization_offers", "optimization_documents", "optimization_events",
+  "marketing_campaign_spend", "public_intake_rate_limits", "ai_assistant_usage",\n  "optimization_subscriptions", "optimization_requests", "optimization_offers", "optimization_documents", "optimization_events", "optimization_contract_notices",
 ] as const;
 
 export async function GET() {
