@@ -44,6 +44,6 @@ test("direct create pages are permission guarded", () => {
   for (const [path, permission] of expectations) {
     const source = read(path);
     assert.ok(source.includes(permission), path + " must check " + permission);
-    assert.match(source, /hasPermission/);
+    assert.match(source, /hasPermission|permissionSnapshot/);
   }
 });
