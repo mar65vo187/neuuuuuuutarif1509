@@ -103,6 +103,8 @@ export async function getProductHubData(user: SessionUser, search = "") {
     productId: commissionRateVersions.productId,
     productName: commissionRateVersions.productName,
     grossAmount: commissionRateVersions.grossAmount,
+    points: commissionRateVersions.points,
+    rewardNote: commissionRateVersions.rewardNote,
     listVersionId: commissionRateVersions.commissionListVersionId,
     createdAt: commissionRateVersions.createdAt,
   }).from(commissionRateVersions)
@@ -157,6 +159,8 @@ export async function getProductHubData(user: SessionUser, search = "") {
       ownerGrossCommission: owner ? gross : null,
       ownerPoolAmount: owner ? gross * OWNER_POOL_PERCENT / 100 : null,
       employeeCommissionEstimate: owner ? null : gross * payoutPercent / 100,
+      providerPoints: Number(rate?.points ?? 0),
+      rewardNote: rate?.rewardNote ?? "",
       currentRateVersionId: owner ? rate?.listVersionId ?? null : null,
     };
   });
