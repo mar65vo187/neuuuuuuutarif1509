@@ -64,8 +64,6 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
           : "border-line bg-white text-ink-700 hover:border-electric/50"
     }`;
 
-  const canNext = step === 0 ? Boolean(form.topic && form.situation) : true;
-
   const goNext = () => {
     setError(null);
     setErrorField(null);
