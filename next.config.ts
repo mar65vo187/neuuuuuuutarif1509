@@ -17,19 +17,6 @@ const nextConfig: NextConfig = {
       { source: "/beratung", destination: "/berater", permanent: false },
     ];
   },
-  async rewrites() {
-    if (process.env.VERCEL !== "1") return [];
-    return {
-      beforeFiles: [
-        {
-          source: "/:path*",
-          destination: "https://tarifwerk-prod-production.up.railway.app/:path*",
-        },
-      ],
-      afterFiles: [],
-      fallback: [],
-    };
-  },
   async headers() {
     return [
       {
