@@ -72,7 +72,7 @@ export default async function LocalConsultingPage({ params, searchParams }: Prop
             <p className="mt-5 max-w-2xl text-[15.5px] leading-relaxed text-steel">{business ? page.localText : page.localTextPrivate}</p>
             <div className="mt-6 flex items-start gap-3 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-electric-deep" aria-hidden="true" />
-              <span>{page.contactText}</span>
+              <span>{business ? page.contactText : page.contactText.replace(/\bSie\b/g, "du").replace(/\bIhre\b/g, "deine").replace(/\bIhnen\b/g, "dir")}</span>
             </div>
           </div>
           <aside className="rounded-[24px] border border-line bg-white p-6 shadow-soft lg:col-span-5">
