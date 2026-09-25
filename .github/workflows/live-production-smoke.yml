@@ -16,10 +16,17 @@ concurrency:
 
 jobs:
   smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        base_url:
+          - https://www.tarifwerk.eu
+          - https://tarifwerk-prod-production.up.railway.app
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      LIVE_BASE_URL: https://www.tarifwerk.eu
+      LIVE_BASE_URL: ${{ matrix.base_url }}
+      EXPECTED_REVISION: ${{ github.event_name == 'push' && github.sha || '' }}
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout
