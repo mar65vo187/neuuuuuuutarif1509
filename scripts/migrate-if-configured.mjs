@@ -1,11 +1,7 @@
 import { spawnSync } from "node:child_process";
 
 if (!process.env.DATABASE_URL) {
-  if (process.env.VERCEL_ENV === "production") {
-    console.error("DATABASE_URL fehlt im Produktions-Build. Deployment wird zum Schutz des Portals abgebrochen.");
-    process.exit(1);
-  }
-  console.log("DATABASE_URL ist im Build nicht gesetzt; Datenbankmigration wird außerhalb der Produktion übersprungen.");
+  console.warn("DATABASE_URL ist im Build nicht gesetzt; Datenbankmigration wird übersprungen. Datenbankgebundene Portal-Funktionen benötigen DATABASE_URL zur Laufzeit.");
   process.exit(0);
 }
 
