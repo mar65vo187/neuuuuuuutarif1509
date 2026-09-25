@@ -116,26 +116,34 @@ export async function setSessionCookie(
   const now = new Date();
   const expiresAt = new Date(now.getTime() + SESSION_ABSOLUTE_SECONDS * 1000);
 
-  await db.insert(portalSessions).values({
-    employeeId: userId,
-    tokenHash: sessionTokenHash(token),
-    credentialSignature: credentialSignature(passwordHash),
-    mfaVerified: Boolean(context.mfaVerified),
-    userAgent: context.userAgent?.slice(0, 300) ?? null,
-    ipHash: context.ip ? privacyHash(context.ip.slice(0, 100), "portal-session-ip") : null,
-    createdAt: now,
-    lastSeenAt: now,
-    expiresAt,
-  });
+  let cookieToken = token;
+  try {
+    await db.insert(portalSessions).values({
+      employeeId: userId,
+      tokenHash: sessionTokenHash(token),
+      credentialSignature: credentialSignature(passwordHash),
+      mfaVerified: Boolean(context.mfaVerified),
+      userAgent: context.userAgent?.slice(0, 300) ?? null,
+      ipHash: context.ip ? privacyHash(context.ip.slice(0, 100), "portal-session-ip") : null,
+      createdAt: now,
+      lastSeenAt: now,
+      expiresAt,
+    });
 
-  // Opportunistic cleanup; failure must not invalidate the just-created session.
-  await db.delete(portalSessions).where(or(
-    lt(portalSessions.expiresAt, now),
-    lt(portalSessions.revokedAt, new Date(now.getTime() - 24 * 60 * 60 * 1000)),
-  )).catch(() => undefined);
+    // Opportunistic cleanup; failure must not invalidate the just-created session.
+    await db.delete(portalSessions).where(or(
+      lt(portalSessions.expiresAt, now),
+      lt(portalSessions.revokedAt, new Date(now.getTime() - 24 * 60 * 60 * 1000)),
+    )).catch(() => undefined);
+  } catch {
+    // Compatibility path for deployments whose existing database has not yet
+    // received the server-side session migration. The signed token still binds
+    // the session to the current password hash and expires automatically.
+    cookieToken = createSessionToken(userId, passwordHash);
+  }
 
   const store = await cookies();
-  store.set(COOKIE_NAME, token, {
+  store.set(COOKIE_NAME, cookieToken, {
     httpOnly: true,
     sameSite: "lax",
     secure,
@@ -186,15 +194,37 @@ export class AuthenticationUnavailableError extends Error {
   constructor() { super("Die Anmeldung kann momentan nicht überprüft werden."); }
 }
 
-async function currentOpaqueToken() {
+async function currentSessionToken() {
   const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  return validOpaqueSessionToken(token) ? token : null;
+  return store.get(COOKIE_NAME)?.value ?? null;
+}
+
+async function getLegacySessionUser(token: string): Promise<SessionUser | null> {
+  const payload = readSessionToken(token);
+  if (!payload) return null;
+  try {
+    const [user] = await db.select().from(employees).where(eq(employees.id, payload.uid)).limit(1);
+    if (!user || !user.active) return null;
+    const expectedCredential = Buffer.from(credentialSignature(user.passwordHash));
+    const actualCredential = Buffer.from(payload.credential);
+    if (expectedCredential.length !== actualCredential.length || !timingSafeEqual(actualCredential, expectedCredential)) return null;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      advisorId: user.advisorId,
+      mfaVerified: false,
+    };
+  } catch {
+    throw new AuthenticationUnavailableError();
+  }
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
-  const token = await currentOpaqueToken();
+  const token = await currentSessionToken();
   if (!token) return null;
+  if (!validOpaqueSessionToken(token)) return getLegacySessionUser(token);
   const tokenHash = sessionTokenHash(token);
   try {
     const [row] = await db
