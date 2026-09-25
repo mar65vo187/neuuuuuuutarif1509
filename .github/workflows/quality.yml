@@ -18,10 +18,10 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Node 24
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
@@ -80,10 +80,10 @@ jobs:
       DATABASE_URL: postgresql://tarifwerk:tarifwerk-test-password@localhost:5432/tarifwerk_test
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Node 24
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
@@ -129,10 +129,10 @@ jobs:
       BUSINESS_ADDRESS: CI Testadresse 1, 65185 Wiesbaden, Deutschland
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Node 24
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
