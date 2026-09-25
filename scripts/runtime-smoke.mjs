@@ -5,6 +5,7 @@ const routes = [
   "/",
   "/?audience=b2b",
   "/leistungen",
+  "/beratung",
   "/optimierungsservice",
   "/berater",
   "/anfrage",
