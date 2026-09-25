@@ -60,6 +60,38 @@ async function request(path, timeout = 15000) {
   };
 }
 
+const expectedRevision = process.env.EXPECTED_REVISION?.trim() || "";
+const revisionDeadline = Date.now() + 180000;
+
+if (expectedRevision) {
+  let matched = false;
+  let lastRevision = "unknown";
+  while (Date.now() < revisionDeadline) {
+    try {
+      const result = await request("/api/ready");
+      if (result.status === 200) {
+        const json = JSON.parse(result.body);
+        lastRevision = typeof json.revision === "string" ? json.revision : "unknown";
+        if (lastRevision === expectedRevision || lastRevision.startsWith(expectedRevision.slice(0, 12))) {
+          matched = true;
+          break;
+        }
+      }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+  if (!matched) {
+    console.error(JSON.stringify({
+      ok: false,
+      base,
+      expectedRevision,
+      observedRevision: lastRevision,
+      error: "Production did not expose the expected Git revision within 180s.",
+    }, null, 2));
+    process.exit(1);
+  }
+}
+
 const failures = [];
 const results = [];
 
