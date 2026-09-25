@@ -1,13 +1,37 @@
 const base = process.env.RUNTIME_BASE_URL || "http://127.0.0.1:3000";
 
 const routes = [
+  // Core public journey
   "/",
   "/?audience=b2b",
   "/leistungen",
   "/optimierungsservice",
   "/berater",
   "/anfrage",
+  "/anfrage/danke",
   "/faq",
+  "/ueber-uns",
+  "/karriere",
+  "/freund-werben",
+  "/freund-werben/status",
+  "/agb",
+  "/impressum",
+  "/datenschutz",
+  "/datenschutz/en",
+  // Every current service page
+  "/leistungen/internet-glasfaser-tv",
+  "/leistungen/strom-gas",
+  "/leistungen/versicherungen",
+  "/leistungen/sicherheitsloesungen",
+  "/leistungen/klimaanlagen",
+  "/leistungen/solar-photovoltaik",
+  "/leistungen/edelmetalle",
+  "/leistungen/immobilien",
+  // Every current local landing page
+  "/beratung/wiesbaden",
+  "/beratung/mainz",
+  "/beratung/frankfurt-am-main",
+  // Discovery / runtime endpoints
   "/robots.txt",
   "/sitemap.xml",
   "/portal/login",
