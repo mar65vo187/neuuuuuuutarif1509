@@ -213,7 +213,7 @@ async function callGroq(system: string, messages: Array<{ role: "user" | "assist
   const text = await postChatCompletion({
     endpoint: GROQ_ENDPOINT,
     key,
-    timeoutMs: 22_000,
+    timeoutMs: 18_000,
     body: {
       model,
       messages: [{ role: "system", content: system }, ...messages],
@@ -237,7 +237,7 @@ async function callXkiroFallback(system: string, messages: Array<{ role: "user" 
   const text = await postChatCompletion({
     endpoint: XKIRO_ENDPOINT,
     key,
-    timeoutMs: 36_000,
+    timeoutMs: 22_000,
     body: {
       model,
       messages: [{ role: "system", content: system }, ...messages],

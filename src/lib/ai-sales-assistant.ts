@@ -311,7 +311,7 @@ async function callGroq(system: string, input: string) {
       include_reasoning: false,
       stream: false,
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(18_000),
   });
   const json = await response.json().catch(() => null) as {
     choices?: Array<{ message?: { content?: unknown } }>;
@@ -348,7 +348,7 @@ async function callXkiro(system: string, input: string) {
       temperature: 0.4,
       reasoning_effort: "none",
     }),
-    signal: AbortSignal.timeout(55_000),
+    signal: AbortSignal.timeout(22_000),
   });
   const json = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: unknown } }> } | null;
   if (!response.ok) throw new Error("Xkiro-Anfrage fehlgeschlagen (" + response.status + ").");
@@ -377,7 +377,7 @@ async function callGemini(system: string, input: string) {
         thinking_level: "low",
       },
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(18_000),
   });
   const json = await response.json().catch(() => null);
   if (!response.ok) throw new Error("Gemini-Anfrage fehlgeschlagen (" + response.status + ").");
@@ -406,7 +406,7 @@ async function callOpenRouter(system: string, input: string) {
       ],
       max_tokens: 1800,
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(18_000),
   });
   const json = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: unknown } }> } | null;
   if (!response.ok) throw new Error("OpenRouter-Anfrage fehlgeschlagen (" + response.status + ").");
