@@ -98,3 +98,5 @@ Vollständig integrierte Metadaten und die drei Schritte zur Sitemap-Einreichung
 ## Abschlussaudit
 
 Der letzte Audit-Lauf und seine Grenzen sind in [dokumentation/FINAL-AUDIT.md](dokumentation/FINAL-AUDIT.md) dokumentiert. Nachgewiesen sind der Produktionsbuild, 16 Modultests und 29 isolierte Server-Integrationstests. Änderungen betreffen Sitzungserhalt bei Ausfällen, die erneute Prüfung von Adminrechten, den Login-Versuchszähler, Chat-Cleanup, Notizentwürfe und datensparsame Fehlerprotokolle.
+
+<!-- vercel-production-trigger: 2026-09-25T13:15+02:00 -->
