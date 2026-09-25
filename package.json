@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/migrate-if-configured.mjs && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -21,7 +21,8 @@
     "vercel-build": "npm run build",
     "perf:guard": "node scripts/performance-guard.mjs",
     "release:manifest": "node scripts/release-manifest.mjs",
-    "audit:repo": "node scripts/audit-repository-completeness.mjs"
+    "audit:repo": "node scripts/audit-repository-completeness.mjs",
+    "build:with-migrations": "node scripts/migrate-if-configured.mjs && next build"
   },
   "dependencies": {
     "dotenv": "17.3.1",
