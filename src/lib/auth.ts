@@ -329,8 +329,8 @@ export async function revokeAllPortalSessions(userId: number) {
 }
 
 export async function markCurrentSessionMfaVerified(verified: boolean) {
-  const token = await currentOpaqueToken();
-  if (!token) return false;
+  const token = await currentSessionToken();
+  if (!validOpaqueSessionToken(token)) return false;
   const rows = await db.update(portalSessions)
     .set({ mfaVerified: verified, lastSeenAt: new Date() })
     .where(and(eq(portalSessions.tokenHash, sessionTokenHash(token)), isNull(portalSessions.revokedAt)))
