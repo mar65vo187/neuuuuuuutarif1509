@@ -58,7 +58,7 @@ export default async function LocalConsultingPage({ params, searchParams }: Prop
       <PageHero
         eyebrow={page.eyebrow}
         title={<>{page.title}</>}
-        text={page.intro}
+        text={business ? page.intro : page.introPrivate}
         compact
       />
 
@@ -69,7 +69,7 @@ export default async function LocalConsultingPage({ params, searchParams }: Prop
             <h2 className="mt-3 text-[clamp(1.9rem,3.6vw,2.9rem)] font-extrabold leading-[1.04] text-ink">
               {business ? "Beratung beginnt mit Ihrer Ausgangslage – nicht mit einem Produkt." : "Beratung beginnt mit deiner Situation – nicht mit einem Produkt."}
             </h2>
-            <p className="mt-5 max-w-2xl text-[15.5px] leading-relaxed text-steel">{page.localText}</p>
+            <p className="mt-5 max-w-2xl text-[15.5px] leading-relaxed text-steel">{business ? page.localText : page.localTextPrivate}</p>
             <div className="mt-6 flex items-start gap-3 rounded-2xl border border-line bg-white p-5 text-[13.5px] leading-relaxed text-steel">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-electric-deep" aria-hidden="true" />
               <span>{page.contactText}</span>
