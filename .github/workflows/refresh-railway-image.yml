@@ -1,0 +1,30 @@
+name: Refresh Railway Production Image
+
+on:
+  push:
+    branches: [railway-production]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-production-image
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production image
+        run: docker build --pull -t ttl.sh/tarifwerk-production:24h .
+
+      - name: Push production image
+        run: docker push ttl.sh/tarifwerk-production:24h
