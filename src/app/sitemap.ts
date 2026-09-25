@@ -3,7 +3,7 @@ import { SERVICES, SITE } from "@/lib/content";
 import { getActiveAdvisors } from "@/lib/queries";
 import { LOCAL_PAGE_LIST } from "@/lib/local-pages";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const statics: MetadataRoute.Sitemap = [
