@@ -12,7 +12,10 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 86400,
   },
   async redirects() {
-    return [{ source: "/admin", destination: "/portal/verwaltung", permanent: false }];
+    return [
+      { source: "/admin", destination: "/portal/verwaltung", permanent: false },
+      { source: "/beratung", destination: "/berater", permanent: false },
+    ];
   },
   async rewrites() {
     if (process.env.VERCEL !== "1") return [];
