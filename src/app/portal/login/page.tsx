@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, KeyRound, Layers3, Loader2, Lock, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -61,7 +60,7 @@ export default function LoginPage() {
     <main className="relative grid min-h-screen place-items-center overflow-hidden bg-ink px-5 py-12 text-white grain">
       <div className="absolute inset-0 grid-lines" aria-hidden />
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-electric/20 blur-[140px]" />
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative w-full max-w-5xl">
+      <div className="relative w-full max-w-5xl">
         <div className="mb-7 flex items-center justify-center lg:justify-start"><Logo size={40} /><div className="ml-3"><p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-electric-soft">TarifWerk</p><p className="text-[12px] font-semibold text-silver">Mitarbeiterportal</p></div></div>
         <div className="grid overflow-hidden rounded-[30px] border border-white/10 bg-[#081426]/88 shadow-[0_36px_100px_-34px_rgba(0,0,0,0.85)] backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
           <section className="relative hidden min-h-[560px] overflow-hidden border-r border-white/8 bg-[radial-gradient(circle_at_20%_10%,rgba(79,141,255,0.24),transparent_35%),linear-gradient(145deg,#0b1a31,#07111f)] p-10 lg:flex lg:flex-col lg:justify-between">
@@ -101,7 +100,7 @@ export default function LoginPage() {
           </section>
         </div>
         <p className="mt-6 text-center text-[13px] text-steel lg:text-left"><Link href="/" className="hover:text-white">← Zurück zur Website</Link></p>
-      </motion.div>
+      </div>
     </main>
   );
 }
