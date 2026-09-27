@@ -1,0 +1,13 @@
+# Netlify (kostenloser Hobby-Plan) – Deployment aus dem GitHub-Repository.
+# Netlify erkennt Next.js automatisch; dynamische Routen laufen als Functions.
+# Benötigte Umgebungsvariablen (Dashboard → Site configuration → Environment):
+#   DATABASE_URL        – PostgreSQL (z. B. Neon Free, gepoolte Verbindungs-URL)
+#   SESSION_SECRET      – min. 32 zufällige Zeichen, dauerhaft gleich halten
+#   PORTAL_ADMIN_EMAIL  – Admin-Adresse des Portals
+#   CRON_SECRET         – für den internen Operations-Sweep (Scheduled Function)
+#   optional: GROQ_API_KEY / XKIRO_API_KEY / GEMINI_API_KEY / OPENROUTER_API_KEY
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
