@@ -16,7 +16,6 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    environment: production
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       VERCEL_ORG_ID: team_uIPjzP0PdOcEbym0vOxYnXAu
