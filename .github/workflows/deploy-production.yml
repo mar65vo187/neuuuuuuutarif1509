@@ -1,0 +1,147 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: production
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      VERCEL_ORG_ID: team_uIPjzP0PdOcEbym0vOxYnXAu
+      VERCEL_PROJECT_ID: prj_olE8TFIiAUlJ8MAZH3gGzrhNCxIL
+      PRODUCTION_URL: https://www.tarifwerk.eu
+    steps:
+      - name: Verify main branch
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Production deployments are only allowed from main."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Vercel CI secrets
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "::error::VERCEL_TOKEN muss als GitHub Actions Secret gesetzt sein."
+            exit 1
+          fi
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify release candidate
+        shell: bash
+        run: |
+          npm run perf:guard
+          npm run typecheck
+          npm run lint -- --max-warnings=0
+          npm test
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@50.15.0
+
+      - name: Pull production environment
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build production artifact
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Deploy immutable candidate
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOY_URL="$(vercel deploy --prebuilt --yes --token="${{ secrets.VERCEL_TOKEN }}" | tail -n 1 | tr -d '\r')"
+          if [[ ! "${DEPLOY_URL}" =~ ^https:// ]]; then
+            echo "::error::Vercel deployment URL could not be resolved."
+            exit 1
+          fi
+          echo "url=${DEPLOY_URL}" >> "${GITHUB_OUTPUT}"
+          echo "Candidate: ${DEPLOY_URL}"
+
+      - name: Candidate readiness gate
+        shell: bash
+        env:
+          DEPLOY_URL: ${{ steps.candidate.outputs.url }}
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            if curl --fail --silent --show-error --max-time 15 "${DEPLOY_URL}/api/ready" > /tmp/readiness.json; then
+              cat /tmp/readiness.json
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Candidate did not become ready."
+          exit 1
+
+      - name: Promote exact candidate
+        shell: bash
+        env:
+          DEPLOY_URL: ${{ steps.candidate.outputs.url }}
+        run: vercel promote "${DEPLOY_URL}" --yes --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Production readiness and rollback guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          READY=0
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --max-time 15 "${PRODUCTION_URL}/api/ready" > /tmp/production-readiness.json; then
+              cat /tmp/production-readiness.json
+              READY=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "${READY}" -ne 1 ]; then
+            echo "::error::Production readiness failed after promotion. Rolling back."
+            vercel rollback --yes --token="${{ secrets.VERCEL_TOKEN }}" || true
+            exit 1
+          fi
+
+      - name: Release manifest
+        run: npm run release:manifest
+
+      - name: Upload release manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-release-${{ github.sha }}
+          path: .tmp/release-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Deployment summary
+        shell: bash
+        env:
+          DEPLOY_URL: ${{ steps.candidate.outputs.url }}
+        run: |
+          {
+            echo "## Production deploy"
+            echo ""
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Candidate: ${DEPLOY_URL}"
+            echo "- Production: ${PRODUCTION_URL}"
+            echo "- Readiness: passed"
+            echo "- Strategy: prebuilt candidate → readiness → promote"
+          } >> "${GITHUB_STEP_SUMMARY}"
