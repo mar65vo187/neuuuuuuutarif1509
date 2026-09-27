@@ -11,7 +11,7 @@ function harness(path, initial = []) {
   const deps = {
     react: {
       useState(value) { const i = index++; if (!(i in state)) state[i] = typeof value === "function" ? value() : value; return [state[i], next => { state[i] = typeof next === "function" ? next(state[i]) : next; changes.push(i); }]; },
-      useRef: value => ({ current: value }), useCallback: fn => fn, useEffect: fn => effects.push(fn),
+      useRef: value => ({ current: value }), useCallback: fn => fn, useEffect: fn => effects.push(fn), useMemo: fn => fn(),
     },
     "react/jsx-runtime": { jsx, jsxs: jsx },
     "lucide-react": new Proxy({}, { get: (_, key) => key }),
@@ -35,7 +35,7 @@ function harness(path, initial = []) {
   const loaded = { exports: {} };
   const source = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const context = {
-    AbortController, AbortSignal, JSON, Date,
+    AbortController, AbortSignal, URLSearchParams, JSON, Date,
     fetch: (url, options) => new Promise(resolve => requests.push({ url, options, resolve })),
     window: { location: { replace: url => redirects.push(url) } },
     setTimeout: (fn, delay) => { timers.set(++timerId, { fn, delay }); return timerId; }, clearTimeout: id => timers.delete(id),

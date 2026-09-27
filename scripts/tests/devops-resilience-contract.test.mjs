@@ -27,16 +27,25 @@ test("quality pipeline proves PostgreSQL backup and restore", () => {
   assert.match(recovery, /verify-migrations\.mjs/);
 });
 
-test("production deploy promotes only a readiness-verified immutable candidate", () => {
-  const workflow = read(".github/workflows/deploy-production.yml");
-  assert.match(workflow, /Verify main branch/);
-  assert.match(workflow, /vercel build --prod/);
-  assert.match(workflow, /vercel deploy --prebuilt/);
-  assert.match(workflow, /Candidate readiness gate/);
-  assert.match(workflow, /\/api\/ready/);
-  assert.match(workflow, /vercel promote/);
-  assert.match(workflow, /vercel rollback/);
-  assert.doesNotMatch(workflow, /vercel deploy --prebuilt --prod/);
+test("production deploy ships a readiness-verified immutable runtime image", () => {
+  const dockerfile = read("Dockerfile");
+  const imageWorkflow = read(".github/workflows/publish-railway-bridge.yml");
+  const liveWorkflow = read(".github/workflows/live-production-smoke.yml");
+  const ready = read("src/app/api/ready/route.ts");
+  // immutable multi-stage image with an unprivileged runtime user
+  assert.match(dockerfile, /FROM node:24-bookworm-slim AS deps/);
+  assert.match(dockerfile, /FROM node:24-bookworm-slim AS builder/);
+  assert.match(dockerfile, /FROM node:24-bookworm-slim AS runner/);
+  assert.match(dockerfile, /USER node/);
+  assert.match(dockerfile, /npm prune --omit=dev/);
+  assert.doesNotMatch(dockerfile, /\.env|DATABASE_URL/);
+  // CI proves the image boots and answers HTTP before it may be promoted
+  assert.match(imageWorkflow, /docker build --pull --tag tarifwerk-runtime:ci \./);
+  assert.match(imageWorkflow, /Container HTTP smoke/);
+  // live production stays continuously verified against the readiness gate
+  assert.match(liveWorkflow, /live-production-smoke\.mjs/);
+  assert.match(ready, /tarifwerk_migrations/);
+  assert.match(ready, /status: "ready"/);
 });
 
 test("green builds emit reproducible release evidence", () => {
@@ -65,12 +74,14 @@ test("production readiness requires explicit legal address and runtime smoke gat
   assert.match(concurrencySmoke, /p95/);
 });
 
-test("Vercel acts only as a front door to the validated Railway production app", () => {
+test("runtime is self-contained without an external front door", () => {
   const config = read("next.config.ts");
-  assert.match(config, /process\.env\.VERCEL !== "1"/);
-  assert.match(config, /beforeFiles/);
-  assert.match(config, /source: "\/:path\*"/);
-  assert.match(config, /https:\/\/tarifwerk-prod-production\.up\.railway\.app\/:path\*/);
-  assert.match(config, /afterFiles: \[\]/);
-  assert.match(config, /fallback: \[\]/);
+  assert.doesNotMatch(config, /beforeFiles/);
+  assert.doesNotMatch(config, /\.up\.railway\.app/);
+  assert.doesNotMatch(config, /rewrites/);
+  // public entry points and security headers stay in the app itself
+  assert.match(config, /source: "\/admin"/);
+  assert.match(config, /destination: "\/portal\/verwaltung"/);
+  assert.match(config, /X-Content-Type-Options/);
+  assert.match(config, /X-Frame-Options/);
 });

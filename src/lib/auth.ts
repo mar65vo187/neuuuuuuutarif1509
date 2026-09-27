@@ -95,7 +95,7 @@ export function readSessionToken(token: string | undefined): SessionPayload | nu
   }
 }
 
-function validOpaqueSessionToken(token: string | undefined): token is string {
+function validOpaqueSessionToken(token: string | null | undefined): token is string {
   return Boolean(token && /^[A-Za-z0-9_-]{43}$/.test(token));
 }
 

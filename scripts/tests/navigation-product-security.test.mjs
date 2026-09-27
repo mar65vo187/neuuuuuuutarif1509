@@ -6,9 +6,9 @@ const read = (path) => readFileSync(new URL("../../" + path, import.meta.url), "
 
 test("public navigation exposes referral page in the requested position and keeps mobile fallback", () => {
   const source = read("src/components/site/Header.tsx");
-  const career = source.indexOf('{ href: "/karriere", label: "Karriere" }');
-  const referral = source.indexOf('{ href: "/freund-werben", label: "Freund werben" }');
-  const faq = source.indexOf('{ href: "/faq", label: "So funktioniert es" }');
+  const career = source.indexOf('{ href: "/karriere", label: "Karriere"');
+  const referral = source.indexOf('{ href: "/freund-werben", label: "Freund werben"');
+  const faq = source.indexOf('{ href: "/faq", label: "So funktioniert es"');
   assert.ok(career >= 0 && referral > career && faq > referral);
   assert.match(source, /min-width: 1280px/);
   assert.match(source, /xl:flex/);
