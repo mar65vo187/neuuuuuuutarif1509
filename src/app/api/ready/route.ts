@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 function revision() {
   return (
     process.env.GITHUB_SHA
+    || process.env.CONTEXT_GIT_SHA
     || process.env.GIT_SHA
     || "unknown"
   ).slice(0, 40);

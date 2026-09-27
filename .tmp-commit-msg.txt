@@ -1,0 +1,27 @@
+feat: automatisches Neon-Setup beim Netlify-Deploy (OpenNext)
+
+Die Produktion läuft auf Netlify Free (Hobby) + Neon Free:
+
+- netlify.toml: Build läuft in zwei Schritten – zuerst
+  scripts/provision-database.mjs (idempotent), dann next build.
+  Netlify unterstützt den Next.js App Router vollständig
+  (OpenNext-Adapter, automatisches Framework-Detection).
+- scripts/provision-database.mjs (neu): wendet Migrations an und
+  lädt beim allerersten Build den Seed-Snapshot aus seed-backup/
+  (Prüfsummen- + Zeilenverifikation). Ein Marker-Table stellt sicher,
+  dass spätere Deploys die Daten NIE überschreiben.
+- seed-backup/ (neu, 81 KB): aktueller Datenstand als Snapshot –
+  der einmalige Daten-Import ist damit vollständig automatisch.
+- netlify/functions/operations-sweep.mjs (neu) + [[functions]]
+  schedule in netlify.toml: täglicher geschützter Operations-Sweep
+  als Netlify Scheduled Function (ersetzt die Cron-Planung).
+- db-restore.mjs: Client-Streaming-Fallback erkennt jetzt auch den
+  Fehler "no such file or directory" (Neon: keine Serverdateien lesbar).
+- /api/ready + Release-Manifest: CONTEXT_GIT_SHA als
+  Revisionsquelle (wird von Netlify gesetzt).
+- README: Netlify-Schritte aktualisiert (5 Umgebungsvariablen,
+  Deploy, Domain).
+
+Verifiziert: Provisioning gegen leere Scratch-DB (77 Tabellen,
+187 Zeilen, bit-identisch zur Live-DB), 2. Lauf lässt Daten
+unverändert, 277/277 Tests, Build, Smoke 35/35, E2E bestanden.

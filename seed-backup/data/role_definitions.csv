@@ -1,0 +1,10 @@
+1,super_admin,Super Admin,Voller Systemzugriff,t,2026-09-27 08:55:07.075552+00
+2,management,Geschäftsführung,Unternehmensweite Steuerung,t,2026-09-27 08:55:07.075552+00
+3,sales_admin,Sales Admin,Vertrieb und Zuordnung,t,2026-09-27 08:55:07.075552+00
+4,team_lead,Teamleiter,Teamsteuerung,t,2026-09-27 08:55:07.075552+00
+5,advisor,Berater,"Eigene Leads, Kunden und Aufträge",t,2026-09-27 08:55:07.075552+00
+6,backoffice,Backoffice,Auftragsbearbeitung,t,2026-09-27 08:55:07.075552+00
+7,finance,Finance,Provision und Abgleich,t,2026-09-27 08:55:07.075552+00
+8,quality,Qualitätsmanagement,Qualität und Audit,t,2026-09-27 08:55:07.075552+00
+9,recruiting,Recruiting,Bewerbungen und Mitarbeiterprozesse,t,2026-09-27 08:55:07.075552+00
+10,read_only,Read Only,Nur Leserechte,t,2026-09-27 08:55:07.075552+00

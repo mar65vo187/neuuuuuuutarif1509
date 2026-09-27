@@ -15,6 +15,7 @@
     "db:up": "docker compose --env-file .env.local up -d --wait db",
     "db:stop": "docker compose --env-file .env.local stop db",
     "db:check": "node scripts/db-check.mjs",
+    "db:provision": "node scripts/provision-database.mjs",
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore": "node scripts/db-restore.mjs",
     "db:setup": "npm run env:check && npm run db:migrate && npm run db:seed && npm run db:check",

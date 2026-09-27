@@ -186,7 +186,7 @@ async function copyCsvFromServerFile(client, table, csv) {
     await client.query(`COPY "${table}" FROM ${sqlQuote(serverFile)} WITH (FORMAT csv)`);
   } catch (serverFileError) {
     const message = serverFileError instanceof Error ? serverFileError.message : String(serverFileError);
-    if (!/permission denied|must be superuser|not allowed|read from local files|local files/i.test(message)) throw serverFileError;
+    if (!/permission denied|must be superuser|not allowed|read from local files|local files|no such file or directory/i.test(message)) throw serverFileError;
     await copyCsvFromClientStream(client, table, csv);
   } finally {
     await rm(serverFile, { force: true });

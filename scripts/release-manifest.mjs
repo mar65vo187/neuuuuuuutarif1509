@@ -28,7 +28,7 @@ async function directoryBytes(path) {
 
 const manifest = {
   generatedAt: new Date().toISOString(),
-  revision: process.env.GITHUB_SHA || process.env.GIT_SHA || "unknown",
+  revision: process.env.GITHUB_SHA || process.env.CONTEXT_GIT_SHA || process.env.GIT_SHA || "unknown",
   ref: process.env.GITHUB_REF || null,
   node: process.version,
   package: {

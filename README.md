@@ -90,15 +90,14 @@ Empfehlung: Nach jeder größeren Änderung im Portal und vor jedem Update ein B
 
 Diese Anwendung ist ein Node.js-Server mit PostgreSQL: GitHub kann den **Code und die CI kostenlos** hosten (Repository + Workflows in `.github/`), kann ihn aber nicht **ausführen** – GitHub Pages ist rein statisch, GitHub Actions sind nicht dauerhaft erreichbar. Für den kostenlosen Dauerbetrieb ohne Vercel und Firebase: **Netlify Free (Hobby) für die App + Neon Free für die Datenbank**, beide dauerhaft kostenlos, ohne Kreditkarte.
 
-1. **Datenbank (Neon, kostenlos):** Auf [neon.com](https://neon.com) mit dem bestehenden GitHub-Account anmelden → Projekt erstellen (Free) → die **gepoolte** Verbindungs-URL notieren (`...pooler...`).
-2. **Daten einmalig überführen (vom eigenen Rechner):**
-   ```bash
-   DATABASE_URL="<Neon-URL>" PORTAL_ADMIN_EMAIL="<E-Mail>" PORTAL_ADMIN_PASSWORD="<Passwort>" npm run db:setup
-   ```
-   Damit werden Migrations und Admin auf der Neon-Datenbank angelegt. Bestehende Daten aus einer anderen Umgebung: dort `npm run db:backup` laufen lassen, das Verzeichnis hierher kopieren, dann `node scripts/db-restore.mjs <backup-verzeichnis> --url "<Neon-URL>"`.
-3. **App (Netlify, kostenlos):** Auf [app.netlify.com](https://app.netlify.com) mit GitHub anmelden → *Add new site → Import an existing project from Git* → Repository `neuuuuuuutarif1509` wählen → Netlify übernimmt Build-Kommando und Node-Version aus `netlify.toml` → Umgebungsvariablen setzen: `DATABASE_URL` (Neon-Gepoolt-URL), `SESSION_SECRET`, `PORTAL_ADMIN_EMAIL`, `CRON_SECRET` (+ optional die KI-Schlüssel) → **Deploy**. Danach erreichbar unter `<name>.netlify.app`.
-4. **Eigene Domain (optional, ebenfalls kostenlos):** Im Netlify-Dashboard die Domain (z. B. `tarifwerk.eu`) anbinden und beim DNS-Anbieter den A-/CNAME-Eintrag umstellen; HTTPS-Zertifikat stellt Netlify automatisch aus.
-5. **Regelmäßige Sicherung:** Im Dashboard unter *Site configuration → Scheduled functions* den internen Operations-Sweep auf `/api/internal/operations-sweep` (mit `CRON_SECRET` als Bearer) eintragen; Datenbank-Backups über `npm run db:backup` auf einem Rechner mit Datenbankzugang anlegen (alternativ Neon-eigene Point-in-Time-Recovery, ebenfalls im Free-Plan).
+Die Anwendung läuft auf Netlify über den offiziellen OpenNext-Adapter (App Router wird vollständig unterstützt; alle ~80 API-Routen laufen als Funktionen). Beim Build wird die Datenbank **automatisch** initialisiert – ein manueller Daten-Import ist nicht nötig:
+
+1. **Datenbank (Neon, kostenlos):** Auf [neon.com](https://neon.com) mit dem bestehenden GitHub-Account anmelden → Projekt erstellen (Free) → die **gepoolte** Verbindungs-URL notieren (`...-pooler...`). *Falls das Projekt schon existiert: Schritt einfach überspringen, die URL steht in der Neon-Konsole unter Connection Details.*
+2. **App (Netlify, kostenlos):** Auf [app.netlify.com](https://app.netlify.com) mit GitHub anmelden → *Add new site → Import an existing project from Git* → Repository `neuuuuuuutarif1509` wählen → Netlify übernimmt Build-Kommando, Publish-Verzeichnis und Node-Version aus `netlify.toml` → unter *Environment variables* eintragen: `DATABASE_URL` (die gepoolte Neon-URL), `SESSION_SECRET` (≥ 32 zufällige Zeichen), `PORTAL_ADMIN_EMAIL`, `PORTAL_ADMIN_PASSWORD`, `CRON_SECRET` (langer Zufallswert) sowie optional die KI-Schlüssel → **Deploy**.
+   - Beim allerersten Build wendet `scripts/provision-database.mjs` alle Migrations an und lädt den Seed-Snapshot aus `seed-backup/` (alle Inhalte, Prüfsummen- und Zeilenverifikation). Spätere Deploys erkennen den Initialisierungs-Marker und **berühren die Daten nie wieder** – es geht nichts verloren.
+   - Danach erreichbar unter `<name>.netlify.app`; `/api/ready` meldet `ok: true`.
+3. **Eigene Domain (optional, ebenfalls kostenlos):** Im Netlify-Dashboard die Domain (z. B. `tarifwerk.eu`) anbinden und beim DNS-Anbieter den A-/CNAME-Eintrag umstellen; HTTPS-Zertifikat stellt Netlify automatisch aus.
+4. **Regelmäßige Wartung:** Der tägliche Operations-Sweep läuft bereits als Scheduled Function (Konfiguration in `netlify.toml`, täglich 04:00 UTC, nur mit `CRON_SECRET` erreichbar). Datenbank-Backups weiterhin über `npm run db:backup` auf einem Rechner mit Datenbankzugang (Restore: `node scripts/db-restore.mjs <verzeichnis>`), alternativ Neon-eigene Point-in-Time-Recovery, ebenfalls im Free-Plan.
 
 Kostenkontrolle: Netlify Hobby und Neon Free sind ohne Bezahlmethode nutzbar; Limits (Netlify: 100 GB Bandbreite/Monat, Neon: 0,5 GB Speicher) decken den regulären Betrieb einer beratungsnahen Website mit weitem Abstand ab. Wird doch einmal ein Limit relevant, zeigt es der jeweilige Dashboard-Benachrichtigung klar an – es entstehen keine stillen Kosten.
 

@@ -1,0 +1,26 @@
+1,lead.read.all,Alle Leads lesen
+2,lead.read.team,Team-Leads lesen
+3,lead.edit,Leads bearbeiten
+4,lead.assign,Leads zuweisen
+5,customer.read,Kunden lesen
+6,customer.edit,Kunden bearbeiten
+7,customer.export,Kundendaten exportieren
+8,order.read,Aufträge lesen
+9,order.create,Aufträge anlegen
+10,order.edit,Aufträge bearbeiten
+11,order.cancel,Aufträge stornieren
+12,commission.read.self,Eigene Provision lesen
+13,commission.read.team,Team-Provision lesen
+14,commission.read.all,Alle Provisionen lesen
+15,commission.adjust,Provisionen korrigieren
+16,task.manage,Aufgaben verwalten
+17,report.sales,Vertriebsreporting lesen
+18,report.finance,Finanzreporting lesen
+19,employee.manage,Mitarbeiter verwalten
+20,audit.read,Audit-Log lesen
+21,automation.manage,Automationen verwalten
+22,integration.manage,Integrationen verwalten
+23,privacy.manage,Datenschutzanfragen verwalten
+24,service.read,Servicefälle lesen
+25,service.edit,Servicefälle bearbeiten
+26,service.assign,Servicefälle unternehmensweit zuweisen

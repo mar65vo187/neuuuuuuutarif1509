@@ -1,0 +1,2 @@
+1,Neuen Lead nachfassen,lead.created,t,{},"[{""type"": ""task"", ""title"": ""Erstkontakt durchführen"", ""dueMinutes"": 30}]",,2026-09-27 08:55:07.075552+00,2026-09-27 08:55:07.075552+00
+2,Nach bestätigtem Termin nachfassen,lead.status.termin_bestaetigt,t,{},"[{""type"": ""task"", ""title"": ""Termin vorbereiten"", ""dueMinutes"": 720}]",,2026-09-27 08:55:07.075552+00,2026-09-27 08:55:07.075552+00
