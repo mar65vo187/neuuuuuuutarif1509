@@ -6,9 +6,8 @@ export const runtime = "nodejs";
 
 function revision() {
   return (
-    process.env.VERCEL_GIT_COMMIT_SHA
-    || process.env.GITHUB_SHA
-    || process.env.RAILWAY_GIT_COMMIT_SHA
+    process.env.GITHUB_SHA
+    || process.env.GIT_SHA
     || "unknown"
   ).slice(0, 40);
 }

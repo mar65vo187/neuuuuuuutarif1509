@@ -56,7 +56,7 @@ npm run build
 npm start -- --hostname 127.0.0.1
 ```
 
-Next.js läuft standardmäßig auf Port 3000. Einen dauerhaft überwachten Prozess und einen HTTPS-Reverse-Proxy davor einrichten, einschließlich Weiterleitung von Host und Protokoll. Zugangsdaten, DNS und Zertifikate müssen zum eigenen Server gehören. Das Repository enthält keine erfundenen Zieladressen. `vercel.json` ist nur eine unveränderte Alt-Konfiguration und wird beim beschriebenen Node.js-Betrieb nicht benutzt.
+Next.js läuft standardmäßig auf Port 3000. Einen dauerhaft überwachten Prozess und einen HTTPS-Reverse-Proxy davor einrichten, einschließlich Weiterleitung von Host und Protokoll. Zugangsdaten, DNS und Zertifikate müssen zum eigenen Server gehören. Das Repository enthält keine erfundenen Zieladressen. Eine Vercel- oder Railway-Konfiguration existiert nicht mehr im Repository; der Betrieb läuft direkt über den Node.js-Prozess (Docker oder `npm start`).
 
 Vor der Domainumschaltung `/api/health`, `/leistungen`, `/berater`, `/anfrage` und `/portal/login` auf dem Zielserver prüfen; anschließend Anmeldung, Benutzeranlage und Profilbild-Upload. Erst danach die Domain beim DNS-Anbieter auf diesen Server zeigen lassen. GitHub Pages nicht als Host für diesen Servercode verwenden.
 
@@ -134,5 +134,3 @@ Vollständig integrierte Metadaten und die drei Schritte zur Sitemap-Einreichung
 ## Abschlussaudit
 
 Der letzte Audit-Lauf und seine Grenzen sind in [dokumentation/FINAL-AUDIT.md](dokumentation/FINAL-AUDIT.md) dokumentiert. Nachgewiesen sind der Produktionsbuild, 16 Modultests und 29 isolierte Server-Integrationstests. Änderungen betreffen Sitzungserhalt bei Ausfällen, die erneute Prüfung von Adminrechten, den Login-Versuchszähler, Chat-Cleanup, Notizentwürfe und datensparsame Fehlerprotokolle.
-
-<!-- vercel-production-trigger: 2026-09-25T13:15+02:00 -->

@@ -60,12 +60,14 @@ test("operations sweep endpoint requires constant-time CRON_SECRET authorization
   assert.match(route, /Bearer /);
 });
 
-test("production config schedules the protected sweep once daily", () => {
-  const config = JSON.parse(read("vercel.json"));
-  assert.ok(Array.isArray(config.crons));
-  const sweep = config.crons.find((item) => item.path === "/api/internal/operations-sweep");
-  assert.ok(sweep);
-  assert.equal(sweep.schedule, "15 5 * * *");
+test("the daily protected sweep is platform-neutral and Vercel is not part of the project", () => {
+  // Das Projekt nutzt keinen Vercel-/Railway-Betrieb mehr: Es existiert keine
+  // zugehörige Konfiguration, und die tägliche Planung des geschützten Sweeps
+  // gehört zum Hosting (README, "Kostenlos dauerhaft online").
+  assert.throws(() => read("vercel.json"), /ENOENT/, "vercel.json darf nicht im Repository liegen");
+  const readme = read("README.md");
+  assert.match(readme, /operations-sweep/i);
+  assert.match(readme, /CRON_SECRET/);
 });
 
 test("Step 4 templates stay limited to internal task and notification actions", () => {

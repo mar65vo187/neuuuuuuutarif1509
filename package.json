@@ -20,7 +20,6 @@
     "db:setup": "npm run env:check && npm run db:migrate && npm run db:seed && npm run db:check",
     "test": "node --test scripts/tests/*.test.mjs",
     "seo:export": "node scripts/export-seo.mjs",
-    "vercel-build": "npm run build",
     "perf:guard": "node scripts/performance-guard.mjs",
     "release:manifest": "node scripts/release-manifest.mjs",
     "audit:repo": "node scripts/audit-repository-completeness.mjs",
