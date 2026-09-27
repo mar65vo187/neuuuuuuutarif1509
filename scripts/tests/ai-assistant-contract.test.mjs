@@ -13,7 +13,11 @@ test("real AI assistant supports Groq, Xkiro, Gemini and OpenRouter providers", 
   assert.match(engine, /api\.xkiro\.com\/v1\/chat\/completions/);
   assert.match(engine, /qwen\/qwen3\.8-omni-flash:free/);
   assert.match(engine, /XKIRO_API_KEY/);
-  assert.match(engine, /AbortSignal\.timeout\(55_000\)/);
+  const boundedSignals = engine.match(/AbortSignal\.timeout\(\d+_000\)/g) ?? [];
+  assert.ok(boundedSignals.length >= 4, "jeder Provider-Call braucht ein begrenztes AbortSignal");
+  for (const call of ["callGroq", "callXkiro", "callGemini", "callOpenRouter"]) {
+    assert.ok(engine.slice(engine.indexOf("async function " + call), engine.indexOf("async function " + call) + 3000).includes("AbortSignal.timeout"), `${call} braucht ein begrenztes AbortSignal`);
+  }
   assert.match(engine, /generativelanguage\.googleapis\.com\/v1beta\/interactions/);
   assert.match(engine, /gemini-3\.8-flash/);
   assert.match(engine, /store:\s*false/);

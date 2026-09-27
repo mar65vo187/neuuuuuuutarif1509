@@ -2,24 +2,29 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { MotionPreferences } from "@/components/ui/MotionPreferences";
-import { Instrument_Serif, Manrope } from "next/font/google";
+import localFont from "next/font/local";
 import { SITE } from "@/lib/content";
 import { pageMetadata } from "@/lib/seo";
 import "./globals.css";
 
-const manrope = Manrope({
-  subsets: ["latin"],
+// Selbst gehostete Fonts (SIL OFL, siehe src/fonts/OFL*.txt): der Build
+// braucht damit keinen Zugriff auf fonts.googleapis.com und Besucher
+// laden keine Schriftarten von Drittanbietern.
+const manrope = localFont({
+  src: "../fonts/Manrope[wght].ttf",
   variable: "--font-manrope",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: "400 800",
 });
 
-const instrument = Instrument_Serif({
-  subsets: ["latin"],
+const instrument = localFont({
+  src: [
+    { path: "../fonts/InstrumentSerif-Regular.ttf", style: "normal" },
+    { path: "../fonts/InstrumentSerif-Italic.ttf", style: "italic" },
+  ],
   variable: "--font-instrument",
   display: "swap",
   weight: "400",
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {

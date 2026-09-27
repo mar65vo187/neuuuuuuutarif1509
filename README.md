@@ -56,7 +56,7 @@ npm run build
 npm start -- --hostname 127.0.0.1
 ```
 
-Next.js läuft standardmäßig auf Port 3000. Einen dauerhaft überwachten Prozess und einen HTTPS-Reverse-Proxy davor einrichten, einschließlich Weiterleitung von Host und Protokoll. Zugangsdaten, DNS und Zertifikate müssen zum eigenen Server gehören. Das Repository enthält keine erfundenen Zieladressen. `vercel.json` ist nur eine unveränderte Alt-Konfiguration und wird beim beschriebenen Node.js-Betrieb nicht benutzt.
+Next.js läuft standardmäßig auf Port 3000. Einen dauerhaft überwachten Prozess und einen HTTPS-Reverse-Proxy davor einrichten, einschließlich Weiterleitung von Host und Protokoll. Zugangsdaten, DNS und Zertifikate müssen zum eigenen Server gehören. Das Repository enthält keine erfundenen Zieladressen. Eine Vercel- oder Railway-Konfiguration existiert nicht mehr im Repository; der Betrieb läuft direkt über den Node.js-Prozess (Docker oder `npm start`).
 
 Vor der Domainumschaltung `/api/health`, `/leistungen`, `/berater`, `/anfrage` und `/portal/login` auf dem Zielserver prüfen; anschließend Anmeldung, Benutzeranlage und Profilbild-Upload. Erst danach die Domain beim DNS-Anbieter auf diesen Server zeigen lassen. GitHub Pages nicht als Host für diesen Servercode verwenden.
 
@@ -65,6 +65,41 @@ Vor der Domainumschaltung `/api/health`, `/leistungen`, `/berater`, `/anfrage` u
 `npm run db:stop` hält die lokale Datenbank an, erhält aber das Volume. `npm run db:up` startet sie erneut. Auch `docker compose --env-file .env.local down` erhält das Volume; **`down -v` löscht die Datenbank**. Vor Serverwechseln und Updates Datenbank und lokale Zugangsdaten getrennt und sicher sichern. Profilbilder liegen ebenfalls in PostgreSQL und sind dadurch Bestandteil der Datenbanksicherung.
 
 `POSTGRES_PASSWORD` initialisiert nur ein **neues** Volume. Eine spätere Änderung in der Datei ändert kein bestehendes Datenbankpasswort. Passwörter bei Bedarf zuerst in PostgreSQL ändern und anschließend die Verbindung angleichen; nicht das Datenvolume löschen. Die lokale Docker-Datenbank ist für Entwicklung gedacht; auf öffentlich betriebenen Systemen getrennte Datenbankrollen, Backups und Zugriffsschutz einrichten.
+
+### Datenbanksicherung und Wiederherstellung
+
+Mitarbeiter, Leads, Kunden, Bilder und Dokumente liegen in PostgreSQL – nicht im Code. `npm run db:backup` legt einen konsistenten, verschlüsselbaren Daten-Snapshot an:
+
+```bash
+npm run db:backup            # → backups/<Zeitstempel>/ (meta.json + data/*.csv)
+```
+
+Jedes Backup enthält alle Tabellen als CSV (bytea-Bilder base64-kodiert), Prüfsummen, Zeilenzahlen und den Migrationsstand. Die letzten 7 Backups werden automatisch behalten; das Verzeichnis `backups/` bleibt **außerhalb von Git** (keine personenbezogenen Daten im Repository).
+
+```bash
+npm run db:restore backups/<Zeitstempel>                  # Verifikation in neuer Scratch-DB
+npm run db:restore backups/<Zeitstempel> --drop           # Scratch-DB danach löschen
+npm run db:restore backups/<Zeitstempel> --url <PG-URL>   # in eine bestehende DB wiederherstellen
+```
+
+Der Restore prüft vor dem Einlesen die Prüfsummen, wendet das aktuelle Migrations-Schema an und vergleicht danach Zeilenzahl für Zeilenzahl. Die Produktion wird ohne explizites `--url` nie berührt. Bei administrativ betriebenen Datenbanken (z. B. Neon) wechselt der Restore automatisch auf Client-Streaming, weil dort keine Serverdateien lesbar sind.
+
+Empfehlung: Nach jeder größeren Änderung im Portal und vor jedem Update ein Backup anlegen und die Backup-Verzeichnisse zusätzlich auf einem zweiten Speicherort ablegen (z. B. verschlüsselt beim Anbieter des Backups).
+
+## Kostenlos dauerhaft online – ohne Vercel, ohne Firebase
+
+Diese Anwendung ist ein Node.js-Server mit PostgreSQL: GitHub kann den **Code und die CI kostenlos** hosten (Repository + Workflows in `.github/`), kann ihn aber nicht **ausführen** – GitHub Pages ist rein statisch, GitHub Actions sind nicht dauerhaft erreichbar. Für den kostenlosen Dauerbetrieb ohne Vercel und Firebase: **Netlify Free (Hobby) für die App + Neon Free für die Datenbank**, beide dauerhaft kostenlos, ohne Kreditkarte.
+
+Die Anwendung läuft auf Netlify über den offiziellen OpenNext-Adapter (App Router wird vollständig unterstützt; alle ~80 API-Routen laufen als Funktionen). Beim Build wird die Datenbank **automatisch** initialisiert – ein manueller Daten-Import ist nicht nötig:
+
+1. **Datenbank (Neon, kostenlos):** Auf [neon.com](https://neon.com) mit dem bestehenden GitHub-Account anmelden → Projekt erstellen (Free) → die **gepoolte** Verbindungs-URL notieren (`...-pooler...`). *Falls das Projekt schon existiert: Schritt einfach überspringen, die URL steht in der Neon-Konsole unter Connection Details.*
+2. **App (Netlify, kostenlos):** Auf [app.netlify.com](https://app.netlify.com) mit GitHub anmelden → *Add new site → Import an existing project from Git* → Repository `neuuuuuuutarif1509` wählen → Netlify übernimmt Build-Kommando, Publish-Verzeichnis und Node-Version aus `netlify.toml` → unter *Environment variables* eintragen: `DATABASE_URL` (die gepoolte Neon-URL), `SESSION_SECRET` (≥ 32 zufällige Zeichen), `PORTAL_ADMIN_EMAIL`, `PORTAL_ADMIN_PASSWORD`, `CRON_SECRET` (langer Zufallswert) sowie optional die KI-Schlüssel → **Deploy**.
+   - Beim allerersten Build wendet `scripts/provision-database.mjs` alle Migrations an und lädt den Seed-Snapshot aus `seed-backup/` (alle Inhalte, Prüfsummen- und Zeilenverifikation). Spätere Deploys erkennen den Initialisierungs-Marker und **berühren die Daten nie wieder** – es geht nichts verloren.
+   - Danach erreichbar unter `<name>.netlify.app`; `/api/ready` meldet `ok: true`.
+3. **Eigene Domain (optional, ebenfalls kostenlos):** Im Netlify-Dashboard die Domain (z. B. `tarifwerk.eu`) anbinden und beim DNS-Anbieter den A-/CNAME-Eintrag umstellen; HTTPS-Zertifikat stellt Netlify automatisch aus.
+4. **Regelmäßige Wartung:** Der tägliche Operations-Sweep läuft bereits als Scheduled Function (Konfiguration in `netlify.toml`, täglich 04:00 UTC, nur mit `CRON_SECRET` erreichbar). Datenbank-Backups weiterhin über `npm run db:backup` auf einem Rechner mit Datenbankzugang (Restore: `node scripts/db-restore.mjs <verzeichnis>`), alternativ Neon-eigene Point-in-Time-Recovery, ebenfalls im Free-Plan.
+
+Kostenkontrolle: Netlify Hobby und Neon Free sind ohne Bezahlmethode nutzbar; Limits (Netlify: 100 GB Bandbreite/Monat, Neon: 0,5 GB Speicher) decken den regulären Betrieb einer beratungsnahen Website mit weitem Abstand ab. Wird doch einmal ein Limit relevant, zeigt es der jeweilige Dashboard-Benachrichtigung klar an – es entstehen keine stillen Kosten.
 
 ## APIs und Prüfungen
 
@@ -98,5 +133,3 @@ Vollständig integrierte Metadaten und die drei Schritte zur Sitemap-Einreichung
 ## Abschlussaudit
 
 Der letzte Audit-Lauf und seine Grenzen sind in [dokumentation/FINAL-AUDIT.md](dokumentation/FINAL-AUDIT.md) dokumentiert. Nachgewiesen sind der Produktionsbuild, 16 Modultests und 29 isolierte Server-Integrationstests. Änderungen betreffen Sitzungserhalt bei Ausfällen, die erneute Prüfung von Adminrechten, den Login-Versuchszähler, Chat-Cleanup, Notizentwürfe und datensparsame Fehlerprotokolle.
-
-<!-- vercel-production-trigger: 2026-09-25T13:15+02:00 -->

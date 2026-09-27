@@ -1,0 +1,537 @@
+{
+  "createdAt": "2026-09-27T10:07:16.812Z",
+  "format": "tarifwerk-backup/1",
+  "retention": 7,
+  "migrations": [
+    {
+      "name": "0001_portal.sql",
+      "checksum": "188d4bd6ad35705e40a98d41b64201bf3fca2dcad3d0786edba363fbb7d3c766"
+    },
+    {
+      "name": "0002_referrals.sql",
+      "checksum": "9bac788003340ae850dfde897ff2e3432a479fd1cff642db2f4c7f12de8dc4e5"
+    },
+    {
+      "name": "0003_enterprise_backoffice.sql",
+      "checksum": "91439cb41fc3c3a9260d69668ce72318cbe94f7637d705476a07d1c1488ea7b7"
+    },
+    {
+      "name": "0004_lead_call_intelligence.sql",
+      "checksum": "4834becddc025a84e38bd50c4df2e7cc9f445017369f8dfc131af34d652228d7"
+    },
+    {
+      "name": "0004_referral_rewards.sql",
+      "checksum": "27c3bff9739842decbe7776162450e04d88a021a2083005f005c55ee7febe5c8"
+    },
+    {
+      "name": "0005_customer_referral_graph.sql",
+      "checksum": "94f238dcc61ff64c3c59045cb3859ed12654b3d7727f0f230ce2937cd4aadcf3"
+    },
+    {
+      "name": "0005_positioning_copy.sql",
+      "checksum": "7f71f979aa17bb134acfe5a09e1b87759713ab7631bf4eeb91e6c9db2b670ed4"
+    },
+    {
+      "name": "0006_customer_360.sql",
+      "checksum": "7ed6e2917d7119515d7ba332b2cc83a04fc61475b52ec99590953293c97f3591"
+    },
+    {
+      "name": "0006_formal_advisor_copy.sql",
+      "checksum": "655fc1d47acd92d75750a8671bd227f3feb9ce4b74c10761d309701b1cce08eb"
+    },
+    {
+      "name": "0007_internal_team_profiles_and_chat.sql",
+      "checksum": "1ec5741c03f23449a324c4f73043f27dbf83df598726f0e6192a96751b42faf3"
+    },
+    {
+      "name": "0007_public_intake_rate_limit.sql",
+      "checksum": "9603723b33b75c3758dde22f7a9114085da79223814209366a3b0123fe1dc4c3"
+    },
+    {
+      "name": "0008_compensation_program.sql",
+      "checksum": "54cf605d780194b8129c24d9062704c647c591bd6a3cd8e24c479a5f6dfdc59f"
+    },
+    {
+      "name": "0008_gamification_profiles.sql",
+      "checksum": "0d0987ddb235e0acb6c7257b0c114f00d1a3f4fa7ffe99be92b63b3be31483e3"
+    },
+    {
+      "name": "0008_portal_security_hardening.sql",
+      "checksum": "edb09b910da9f3f6b137ce109a3b32868b76abdec66c0389c2ed44318110d442"
+    },
+    {
+      "name": "0009_loyalty_bonus_ledger.sql",
+      "checksum": "5f2d9f755612363719ff816a1e6a0a5c1044ed7fbcff17e512ffa616158ffa9a"
+    },
+    {
+      "name": "0010_product_partner_growth_hub.sql",
+      "checksum": "3f25512a392c8507fc5b3c8c85f39c7acc1a95f7a1e0b6ab4b19a588fefa80ea"
+    },
+    {
+      "name": "0011_operations_completion.sql",
+      "checksum": "89975d333029d48ee946d518e36bb049d3f3aaa0a1de4a6d573be2d64755e22b"
+    },
+    {
+      "name": "0012_benefit_pool_source_key.sql",
+      "checksum": "c31d52512678be73400a824d08a266996ef29e00f31014427536d59c53bb6f71"
+    },
+    {
+      "name": "0012_marketing_campaign_spend.sql",
+      "checksum": "09cdac5247205678235d67b3a2a796d53aff12c6087591ec3d23a165cf625535"
+    },
+    {
+      "name": "0013_product_knowledge_and_training_proofs.sql",
+      "checksum": "4eea9dae81e91c3c105a4df8c7ac6ab93ec1b736bba072dc9487ea220cab10ce"
+    },
+    {
+      "name": "0014_ai_sales_assistant.sql",
+      "checksum": "051e54d94378f839c405ecec0e3a8ce9904da576b48a9e66c100e1ad9202c335"
+    },
+    {
+      "name": "0014_lead_creator_visibility.sql",
+      "checksum": "32e720932afb7fa8ca4bad19598237a0f487845ea6173d1d57aa4dfabac25947"
+    },
+    {
+      "name": "0015_lead_crm_pipeline.sql",
+      "checksum": "ed6e8c02b4ca761c44bdd01b5ff8397e7855978919a5feb6a0268e769c5f4620"
+    },
+    {
+      "name": "0016_duplicate_identity_search.sql",
+      "checksum": "376b1a15896af4410d7a1eabfbe3627b94469d401bf909e6c26065bc3cadfa4e"
+    },
+    {
+      "name": "0017_financial_ledger.sql",
+      "checksum": "5eb9eda558dc95c305319cd03d315733f064c8d030c993713090eaf65b667e5e"
+    },
+    {
+      "name": "0018_operations_policy.sql",
+      "checksum": "51e07be0ff6ae8cd9c897d8088e2cda6ccd3f98af6c7ac94b098411aea5b90ca"
+    },
+    {
+      "name": "0019_action_inbox.sql",
+      "checksum": "2feb644a24de94798a89f18f373b23024e376919734aff5dbbb76497c97736e8"
+    },
+    {
+      "name": "0020_service_case_management.sql",
+      "checksum": "d4dd7e64c6b81b7b2fe76a8f676c39994ba7835582e33735b3f18d4c49ee690b"
+    },
+    {
+      "name": "0021_product_catalog_images.sql",
+      "checksum": "c12dbf328398efcf81a28173b4f45456b2bdff7c26dde26d60241b52b6a71d4c"
+    },
+    {
+      "name": "0022_sales_coaching_playbook.sql",
+      "checksum": "6eda5d374f9eead35818bde934281147724429b5bbcf0eb30f12e9c907ed2f32"
+    },
+    {
+      "name": "0023_optimization_membership_hub.sql",
+      "checksum": "d669c6111763ef12f2658f4812b8e9145e486d86fe1c54b617e3351f035dbd78"
+    },
+    {
+      "name": "0024_employee_activity_messages_points.sql",
+      "checksum": "3335dcbacad5a2a3b89bc87fd9d6ddaf5e4642588f139680c343e3131a554a21"
+    },
+    {
+      "name": "0024_private_direct_messages.sql",
+      "checksum": "87bbf432a393fafc3c12d94c375fd4c9fc61310eed9e0eef4e985ae94006e76d"
+    }
+  ],
+  "tables": {
+    "advisor_images": {
+      "rows": 0,
+      "bytea": [
+        "data"
+      ]
+    },
+    "advisors": {
+      "rows": 1,
+      "bytea": []
+    },
+    "ai_assistant_usage": {
+      "rows": 0,
+      "bytea": []
+    },
+    "audit_events": {
+      "rows": 0,
+      "bytea": []
+    },
+    "automation_rules": {
+      "rows": 2,
+      "bytea": []
+    },
+    "automation_runs": {
+      "rows": 4,
+      "bytea": []
+    },
+    "benefit_pool_ledger": {
+      "rows": 0,
+      "bytea": []
+    },
+    "commission_events": {
+      "rows": 0,
+      "bytea": []
+    },
+    "commission_list_versions": {
+      "rows": 0,
+      "bytea": []
+    },
+    "commission_rate_versions": {
+      "rows": 0,
+      "bytea": []
+    },
+    "compensation_history": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customer_activities": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customer_consents": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customer_crm_profiles": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customer_lead_links": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customer_opportunities": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customer_referrals": {
+      "rows": 0,
+      "bytea": []
+    },
+    "customers": {
+      "rows": 0,
+      "bytea": []
+    },
+    "data_requests": {
+      "rows": 0,
+      "bytea": []
+    },
+    "document_records": {
+      "rows": 0,
+      "bytea": []
+    },
+    "employee_benefits": {
+      "rows": 0,
+      "bytea": []
+    },
+    "employee_compensation_profiles": {
+      "rows": 0,
+      "bytea": []
+    },
+    "employee_images": {
+      "rows": 0,
+      "bytea": [
+        "data"
+      ]
+    },
+    "employee_role_assignments": {
+      "rows": 0,
+      "bytea": []
+    },
+    "employee_training_completions": {
+      "rows": 0,
+      "bytea": []
+    },
+    "employees": {
+      "rows": 1,
+      "bytea": []
+    },
+    "financial_ledger_entries": {
+      "rows": 0,
+      "bytea": []
+    },
+    "incentive_campaigns": {
+      "rows": 0,
+      "bytea": []
+    },
+    "internal_documents": {
+      "rows": 0,
+      "bytea": [
+        "data"
+      ]
+    },
+    "lead_call_activities": {
+      "rows": 0,
+      "bytea": []
+    },
+    "lead_notes": {
+      "rows": 0,
+      "bytea": []
+    },
+    "lead_product_links": {
+      "rows": 0,
+      "bytea": []
+    },
+    "leads": {
+      "rows": 0,
+      "bytea": []
+    },
+    "login_events": {
+      "rows": 8,
+      "bytea": []
+    },
+    "loyalty_bonus_ledger": {
+      "rows": 0,
+      "bytea": []
+    },
+    "marketing_campaign_spend": {
+      "rows": 0,
+      "bytea": []
+    },
+    "mfa_credentials": {
+      "rows": 0,
+      "bytea": []
+    },
+    "notification_queue": {
+      "rows": 0,
+      "bytea": []
+    },
+    "operations_policy": {
+      "rows": 1,
+      "bytea": []
+    },
+    "optimization_contracts": {
+      "rows": 0,
+      "bytea": []
+    },
+    "optimization_documents": {
+      "rows": 0,
+      "bytea": [
+        "data"
+      ]
+    },
+    "optimization_goals": {
+      "rows": 0,
+      "bytea": []
+    },
+    "optimization_memberships": {
+      "rows": 0,
+      "bytea": []
+    },
+    "optimization_offers": {
+      "rows": 0,
+      "bytea": []
+    },
+    "order_status_history": {
+      "rows": 0,
+      "bytea": []
+    },
+    "orders": {
+      "rows": 0,
+      "bytea": []
+    },
+    "outbox_events": {
+      "rows": 4,
+      "bytea": []
+    },
+    "permissions": {
+      "rows": 26,
+      "bytea": []
+    },
+    "portal_login_rate_limits": {
+      "rows": 2,
+      "bytea": []
+    },
+    "portal_sessions": {
+      "rows": 4,
+      "bytea": []
+    },
+    "product_catalog_profiles": {
+      "rows": 0,
+      "bytea": []
+    },
+    "product_update_reads": {
+      "rows": 0,
+      "bytea": []
+    },
+    "product_updates": {
+      "rows": 0,
+      "bytea": []
+    },
+    "products": {
+      "rows": 0,
+      "bytea": []
+    },
+    "prospect_contact_product_links": {
+      "rows": 0,
+      "bytea": []
+    },
+    "prospect_contacts": {
+      "rows": 0,
+      "bytea": []
+    },
+    "provider_profiles": {
+      "rows": 0,
+      "bytea": []
+    },
+    "providers": {
+      "rows": 0,
+      "bytea": []
+    },
+    "public_intake_rate_limits": {
+      "rows": 1,
+      "bytea": []
+    },
+    "reconciliation_imports": {
+      "rows": 0,
+      "bytea": []
+    },
+    "reconciliation_issues": {
+      "rows": 0,
+      "bytea": []
+    },
+    "referral_reward_events": {
+      "rows": 0,
+      "bytea": []
+    },
+    "referral_rewards": {
+      "rows": 0,
+      "bytea": []
+    },
+    "referrals": {
+      "rows": 0,
+      "bytea": []
+    },
+    "referrers": {
+      "rows": 0,
+      "bytea": []
+    },
+    "role_definitions": {
+      "rows": 10,
+      "bytea": []
+    },
+    "role_permissions": {
+      "rows": 110,
+      "bytea": []
+    },
+    "saved_views": {
+      "rows": 0,
+      "bytea": []
+    },
+    "service_case_events": {
+      "rows": 0,
+      "bytea": []
+    },
+    "service_cases": {
+      "rows": 0,
+      "bytea": []
+    },
+    "tasks": {
+      "rows": 4,
+      "bytea": []
+    },
+    "team_members": {
+      "rows": 0,
+      "bytea": []
+    },
+    "team_messages": {
+      "rows": 0,
+      "bytea": []
+    },
+    "teams": {
+      "rows": 0,
+      "bytea": []
+    },
+    "training_modules": {
+      "rows": 9,
+      "bytea": []
+    },
+    "webhook_deliveries": {
+      "rows": 0,
+      "bytea": []
+    },
+    "webhook_endpoints": {
+      "rows": 0,
+      "bytea": []
+    }
+  },
+  "totalRows": 187,
+  "checksums": {
+    "advisor_images": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "advisors": "877c83a64034d24c2b2819f24fcbb86d0135184a5a395886fcabdc3a894945c2",
+    "ai_assistant_usage": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "audit_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "automation_rules": "c32526661ec136949c0f0fd7001387d46a179c9c548a03f43a8ee92cd3f6a70b",
+    "automation_runs": "e9337d9e4a47af793cf5e9571ad0b7e19166be9743d6195a1e7971d5706a1adc",
+    "benefit_pool_ledger": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "commission_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "commission_list_versions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "commission_rate_versions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compensation_history": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customer_activities": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customer_consents": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customer_crm_profiles": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customer_lead_links": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customer_opportunities": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customer_referrals": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "customers": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "data_requests": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "document_records": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "employee_benefits": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "employee_compensation_profiles": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "employee_images": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "employee_role_assignments": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "employee_training_completions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "employees": "b138db99df382520f9bfe9567e2d7e15a72aa41e46f56f731d73d34c24c7ae4b",
+    "financial_ledger_entries": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "incentive_campaigns": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "internal_documents": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lead_call_activities": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lead_notes": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lead_product_links": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "leads": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "login_events": "31db8281cebc1e56216aabf5e5d46ff55a548491e7aefd137c240112ce0d1eb5",
+    "loyalty_bonus_ledger": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "marketing_campaign_spend": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mfa_credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "notification_queue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "operations_policy": "52e26b948f8f1dae3a886f07177ca13f278a8ab694ecf86bb16f106e278dd491",
+    "optimization_contracts": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "optimization_documents": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "optimization_goals": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "optimization_memberships": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "optimization_offers": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "order_status_history": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "orders": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outbox_events": "2b334e43855649729775a2500345032c9f8c6c6390d7383428d3c6fdd9beb88c",
+    "permissions": "913936a565daffb36704ce08a36276665d1e03b5d09deb6271ee5dcc8bd3f491",
+    "portal_login_rate_limits": "229a907405c625ab5705854d64dc0bab62f79564f1958089d362b0fca8a9ab85",
+    "portal_sessions": "b01af91df2869adf6608649d6fc6ae72c602dc194f6ce0862f04b91d48cc3584",
+    "product_catalog_profiles": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "product_update_reads": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "product_updates": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "products": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prospect_contact_product_links": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prospect_contacts": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "provider_profiles": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "providers": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "public_intake_rate_limits": "afec418214a906381c3b8389c5433f81ec4a11c65d01ef2bb9bf111ebbe89b4e",
+    "reconciliation_imports": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reconciliation_issues": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "referral_reward_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "referral_rewards": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "referrals": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "referrers": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "role_definitions": "d05f5ce956e619548d927c8f7333a2ddad7e7f0821bedff5d0022b1fafbf7b74",
+    "role_permissions": "8647ee9dde5fe8198ea14533691fe6101f9b9c326f805949aa75880b7d6017b8",
+    "saved_views": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "service_case_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "service_cases": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tasks": "9645b8e1ebd9c81f9b58687f309d757418d5ec8c12ff38f577b06445db672323",
+    "team_members": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "team_messages": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "teams": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "training_modules": "c46d0e4e13c93f85a6290544b86b0c3ab1fe68f8e70ec56ec6a499c8d2bd2e26",
+    "webhook_deliveries": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "webhook_endpoints": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

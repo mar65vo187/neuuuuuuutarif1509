@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "*/30 * * * *"
+    # Alle 6 Stunden statt alle 30 Minuten: Ein 30-Minuten-Intervall verbrennt
+    # ~2.900 Actions-Minuten/Monat und überschreitet damit das kostenlose
+    # Kontingent privater Repos (~2.000 Min./Monat). 6 Stunden halten die
+    # Überwachung dauerhaft im Free-Bereich.
+    - cron: "15 */6 * * *"
   workflow_dispatch:
 
 permissions:
