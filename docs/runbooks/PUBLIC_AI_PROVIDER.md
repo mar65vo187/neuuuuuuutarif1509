@@ -1,6 +1,6 @@
 # Öffentliche TarifWerk-KI
 
-Stand: 24.09.2026
+Stand: 28.09.2026
 
 Die öffentlich zugängliche Website-KI ist technisch getrennt von der internen Mitarbeiter-KI.
 
@@ -11,7 +11,7 @@ Die öffentlich zugängliche Website-KI ist technisch getrennt von der internen 
 
 ## Laufzeitregeln
 
-- API-Schlüssel liegen ausschließlich als serverseitige Hosting-Secrets.
+- API-Schlüssel liegen ausschließlich als serverseitige Firebase App Hosting Secrets.
 - Der Browser erhält keinen Provider-Key.
 - Groq wird in `auto` bevorzugt, sobald `GROQ_API_KEY` vorhanden ist.
 - Ohne Groq-Key, bei Provider-Ausfall oder nach dem konfigurierten Groq-Tagesbudget wird automatisch der bestehende xKiro/Qwen-Fallback genutzt.
@@ -21,10 +21,4 @@ Die öffentlich zugängliche Website-KI ist technisch getrennt von der internen 
 
 ## Release
 
-Dieser Commit dient zugleich als Source-Build-Trigger, nachdem `tarifwerk-prod` auf das private GitHub-Repository und Branch `main` als Railway-Quelle umgestellt wurde.
-
-## Railway Source Cutover
-
-Source cutover verified for `tarifwerk-web` on 24.09.2026. This commit intentionally triggers Railway's GitHub autodeploy after the service was connected to `main`.
-
-Railway autodeploy trigger after source activation: 2026-09-24T14:13Z.
+Der vorgesehene Hosting-Pfad ist Firebase App Hosting, verbunden mit diesem GitHub-Repository. Ein erfolgreicher Firebase-Produktionsrollout ist noch nicht verifiziert; siehe `dokumentation/LAST_PRODUCTION_DEPLOY.md`.

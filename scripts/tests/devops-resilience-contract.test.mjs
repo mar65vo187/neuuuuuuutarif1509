@@ -27,9 +27,9 @@ test("quality pipeline proves PostgreSQL backup and restore", () => {
   assert.match(recovery, /verify-migrations\.mjs/);
 });
 
-test("production deploy ships a readiness-verified immutable runtime image", () => {
+test("GitHub validates the container runtime without deploying to a third-party host", () => {
   const dockerfile = read("Dockerfile");
-  const imageWorkflow = read(".github/workflows/publish-railway-bridge.yml");
+  const imageWorkflow = read(".github/workflows/docker-runtime-validation.yml");
   const liveWorkflow = read(".github/workflows/live-production-smoke.yml");
   const ready = read("src/app/api/ready/route.ts");
   // immutable multi-stage image with an unprivileged runtime user

@@ -1,17 +1,12 @@
-// Einmalige Datenbank-Initialisierung beim Deployment (plattformunabhängig).
+// Idempotent Firebase App Hosting runtime initialization.
 //
-// Ablauf:
-//   1) Migrations anwenden (idempotent, mit Prüfsummen in tarifwerk_migrations).
-//   2) Ist die Datenbank noch nicht initialisiert (kein Marker-Table),
-//      wird der Seed-Snapshot aus seed-backup/ geladen – inkl. Integritäts-
-//      prüfung (Prüfsummen) und Zeilenverifikation je Tabelle.
-//   3) Datenbank-Check (Migrations + Pflichttabellen).
+// - Applies the checksum-protected SQL migrations.
+// - Seeds the tracked snapshot only for a genuinely new, empty application DB.
+// - Never loads the snapshot into an existing TarifWerk schema.
+// - Serializes concurrent cold starts so App Hosting instances cannot migrate
+//   or initialize the same database at the same time.
 //
-// Der Marker stellt sicher, dass vorhandene Produktionsdaten NIEMALS
-// überschrieben werden – auch nicht, falls ein Admin später bewusst alle
-// Einträge löscht. Nur die allererste Initialisierung lädt den Snapshot.
-//
-// Aufruf:  node scripts/provision-database.mjs   (DATABASE_URL muss gesetzt sein)
+// DATABASE_URL must point to the Firebase project's PostgreSQL instance.
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -19,62 +14,99 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
-const root = path.dirname(path.join(fileURLToPath(import.meta.url), ".."));
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  console.error("[provision] DATABASE_URL fehlt – die Initialisierung wurde abgebrochen.");
+  console.error("[provision] DATABASE_URL fehlt – Initialisierung abgebrochen.");
   process.exit(1);
 }
 
-const run = (script, label, extraArgs = []) => {
+function run(script, label, extraArgs = []) {
   console.log(`[provision] ${label} …`);
   const result = spawnSync(process.execPath, [path.join(root, "scripts", script), ...extraArgs], {
     env: { ...process.env, DATABASE_URL: databaseUrl },
     stdio: "inherit",
     cwd: root,
   });
-  if (result.status !== 0) {
-    console.error(`[provision] „${label}“ ist fehlgeschlagen – Deployment abgebrochen, damit keine halbe Datenbank entsteht.`);
-    process.exit(result.status ?? 1);
-  }
-};
+  if (result.error) throw new Error(`${label} konnte nicht gestartet werden: ${result.error.message}`);
+  if (result.status !== 0) throw new Error(`${label} ist fehlgeschlagen.`);
+}
 
-run("migrate.mjs", "Datenbank-Migrationen anwenden");
+const pool = new pg.Pool({ connectionString: databaseUrl, max: 2, connectionTimeoutMillis: 20000 });
+let client;
+let locked = false;
 
-const pool = new pg.Pool({ connectionString: databaseUrl, max: 1, connectionTimeoutMillis: 20000 });
 try {
-  const { rows } = await pool.query("SELECT to_regclass('public.tarifwerk_seeded') AS marker");
-  if (rows[0].marker) {
-    console.log("[provision] Datenbank ist bereits initialisiert – vorhandene Daten bleiben unverändert.");
+  client = await pool.connect();
+  // Separate setup lock: the migration script uses a transaction-level lock.
+  await client.query("SELECT pg_advisory_lock(867392402)");
+  locked = true;
+
+  // Record whether the database already belonged to TarifWerk BEFORE applying
+  // migrations. A marker-less existing install must never receive the seed CSV,
+  // because the restore correctly truncates target tables before importing.
+  const priorSchema = await client.query(`
+    SELECT (
+      to_regclass('public.tarifwerk_migrations') IS NOT NULL OR
+      to_regclass('public.employees') IS NOT NULL OR
+      to_regclass('public.advisors') IS NOT NULL OR
+      to_regclass('public.leads') IS NOT NULL OR
+      to_regclass('public.customers') IS NOT NULL
+    ) AS exists
+  `);
+  const existingInstall = priorSchema.rows[0]?.exists === true;
+
+  run("migrate.mjs", "Datenbank-Migrationen anwenden");
+
+  const markerTable = await client.query("SELECT to_regclass('public.tarifwerk_seeded') AS marker");
+  let initialized = false;
+  if (markerTable.rows[0]?.marker) {
+    const marker = await client.query("SELECT source FROM tarifwerk_seeded WHERE marker = 'snapshot'");
+    if (!marker.rowCount) {
+      throw new Error("Initialisierungs-Marker ist unvollständig. Datenbank vor dem Start prüfen; kein Seed wird automatisch geladen.");
+    }
+    initialized = true;
+    console.log(`[provision] Datenbank initialisiert (${marker.rows[0].source}); vorhandene Daten bleiben unverändert.`);
+  } else if (existingInstall) {
+    console.log("[provision] Vorhandene TarifWerk-Datenbank erkannt; Repository-Snapshot wird NICHT geladen.");
+    run("db-check.mjs", "Vorhandene Datenbank prüfen");
+    await createMarker(client, "existing-data-preserved");
+    initialized = true;
   } else {
     const seedBackup = path.join(root, "seed-backup");
     if (!existsSync(path.join(seedBackup, "meta.json"))) {
-      console.error("[provision] seed-backup/meta.json fehlt im Repository – Deployment abgebrochen.");
-      process.exit(1);
+      throw new Error("seed-backup/meta.json fehlt – Datenbank bleibt unverändert.");
     }
-    run("db-restore.mjs", `Seed-Snapshot laden (${seedBackup})`, [
-      "seed-backup",
-      "--url",
-      databaseUrl,
-    ]);
-    await pool.query(
-      `CREATE TABLE IF NOT EXISTS tarifwerk_seeded (
-         marker text PRIMARY KEY,
-         source text NOT NULL,
-         loaded_at timestamptz NOT NULL DEFAULT now()
-       )`,
-    );
-    await pool.query(
-      `INSERT INTO tarifwerk_seeded (marker, source)
-       VALUES ('snapshot', 'seed-backup')
-       ON CONFLICT (marker) DO NOTHING`,
-    );
-    console.log("[provision] Seed-Snapshot geladen, Initialisierungs-Marker gesetzt.");
+    console.log("[provision] Neue TarifWerk-Datenbank erkannt; geprüften Ausgangs-Snapshot laden …");
+    run("db-restore.mjs", `Seed-Snapshot laden (${seedBackup})`, ["seed-backup", "--url", databaseUrl]);
+    await createMarker(client, "seed-backup");
+    initialized = true;
   }
+
+  run("db-check.mjs", "Datenbank-Check ausführen");
+  console.log(`[provision] Fertig – Firebase-PostgreSQL ist bereit${initialized ? "." : ""}`);
+} catch (error) {
+  console.error("[provision] Start abgebrochen:", error instanceof Error ? error.message : "Unbekannter Fehler");
+  process.exitCode = 1;
 } finally {
+  if (locked && client) await client.query("SELECT pg_advisory_unlock(867392402)").catch(() => {});
+  client?.release();
   await pool.end();
 }
 
-run("db-check.mjs", "Datenbank-Check ausführen");
-console.log("[provision] Fertig – die Datenbank ist bereit.");
+async function createMarker(connection, source) {
+  await connection.query(
+    `CREATE TABLE IF NOT EXISTS tarifwerk_seeded (
+       marker text PRIMARY KEY,
+       source text NOT NULL,
+       loaded_at timestamptz NOT NULL DEFAULT now()
+     )`,
+  );
+  await connection.query(
+    `INSERT INTO tarifwerk_seeded (marker, source)
+     VALUES ('snapshot', $1)
+     ON CONFLICT (marker) DO NOTHING`,
+    [source],
+  );
+}

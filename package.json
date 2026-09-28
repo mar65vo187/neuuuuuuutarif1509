@@ -5,6 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:firebase": "node scripts/firebase-start.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",

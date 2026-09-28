@@ -1,6 +1,6 @@
-# TarifWerk – Next.js mit PostgreSQL, ohne Vercel
+# TarifWerk – Next.js auf Firebase App Hosting
 
-Der vollständige Projektcode liegt in der Repository-Wurzel. GitHub speichert den Code; zum Ausführen werden Node.js und PostgreSQL benötigt. Eine ZIP-Datei auf GitHub startet keinen Server. Die vorhandene `tarifwerk new.zip` im Repository ist das unveränderte Eingangsarchiv; der aktuelle ausführbare Stand sind die entpackten Dateien in der Wurzel. GitHub Pages führt weder diese APIs noch das Portal aus.
+Der vollständige Projektcode liegt in der Repository-Wurzel. GitHub ist die Code- und Versionsverwaltung; Firebase App Hosting stellt den Next.js-Server bereit. Firebase Data Connect/Cloud SQL PostgreSQL ist als Firebase-Projekt-Datenbank vorgesehen. GitHub Pages kann diese dynamische Website, die APIs und das Portal nicht ausführen. Die vorhandene `tarifwerk new.zip` ist ein Eingangsarchiv; produktiv ist ausschließlich der Code in der Repository-Wurzel.
 
 ## Lokaler Start mit eigener Datenbank
 
@@ -45,20 +45,24 @@ npm run db:check
 
 `env:check` validiert Werte ohne Verbindungsaufbau. `db:check` verbindet sich tatsächlich und prüft Migrationsprüfsummen, Portaltabellen sowie das aktive Admin-Konto. Ein erfolgreicher Build allein bestätigt keine Datenbankverbindung.
 
-## Betrieb mit STRATO und GitHub
+## Produktion mit GitHub und Firebase
 
-Dieses Projekt benötigt einen dauerhaft laufenden Node.js-Prozess. Auf einem vorhandenen STRATO-Server/VPS mit Node.js und PostgreSQL kann es ohne Vercel betrieben werden. Ob dein gebuchter Tarif das unterstützt, ist nicht bekannt. Reiner Webspace oder eine Domain allein genügt für diese Next.js-Anwendung nicht. Ein zusätzlicher Server wird durch diese Dateien weder gebucht noch bezahlt; vollständig kostenloser Dauerbetrieb ist mit dem unbekannten Tarif nicht zugesichert.
+Für diese Next.js-Anwendung ist **Firebase App Hosting** erforderlich (Firebase Hosting allein ist für den Next.js-Server und seine APIs nicht ausreichend). App Hosting baut Next.js und kann bei jedem Push auf den verbundenen GitHub-Branch ausrollen. Dafür muss das Firebase-Projekt den **Blaze-Tarif mit aktivierter Google-Cloud-Abrechnung** verwenden; Kosten sind nutzungsabhängig und nicht garantiert kostenlos. Ein Budgetalarm sollte vor dem Livegang gesetzt werden.
 
-Auf einem geeigneten Server den Repository-Inhalt auschecken und die echten Variablen setzen. Nach `npm ci` und `npm run db:setup`:
+Die App verwendet aktuell PostgreSQL (`pg` und Drizzle) mit direkten SQL-Abfragen, Migrationen und Transaktionen. Sie kann deshalb nicht einfach auf Firestore umgestellt werden. Für den Firebase-Betrieb ist eine PostgreSQL-Datenbank im selben Firebase-Projekt nötig, z. B. eine von Firebase SQL Connect verwaltete Cloud-SQL-PostgreSQL-Instanz. Da Drizzle die Tabellen verwaltet, SQL Connect beim Verbinden so konfigurieren, dass es die Schema-Migrationen nicht eigenständig überschreibt. App Hosting braucht private VPC-Erreichbarkeit und der Backend-Service-Account braucht Cloud SQL-Zugriff; niemals `0.0.0.0/0` als Datenbankzugriff freigeben. Projekt-ID, Region, Datenbank und Zugangsdaten sind betreiberspezifisch und werden nicht in Git gespeichert.
 
-```bash
-npm run build
-npm start -- --hostname 127.0.0.1
-```
+### Einmalige Einrichtung im Firebase-Konto
 
-Next.js läuft standardmäßig auf Port 3000. Einen dauerhaft überwachten Prozess und einen HTTPS-Reverse-Proxy davor einrichten, einschließlich Weiterleitung von Host und Protokoll. Zugangsdaten, DNS und Zertifikate müssen zum eigenen Server gehören. Das Repository enthält keine erfundenen Zieladressen. Eine Vercel- oder Railway-Konfiguration existiert nicht mehr im Repository; der Betrieb läuft direkt über den Node.js-Prozess (Docker oder `npm start`).
+1. Im Firebase Console ein Projekt auswählen oder erstellen, Blaze aktivieren und einen Budgetalarm einrichten.
+2. Unter **App Hosting** einen Backend für dieses GitHub-Repository und den Branch `main` anlegen. Die Firebase GitHub-App und Developer Connect im Dialog autorisieren. Nach Merge auf `main` übernimmt App Hosting den Build und Rollout; ein separater Netlify-/Vercel-Deploy wird nicht verwendet.
+3. Im selben Firebase-Projekt eine PostgreSQL-Instanz über Firebase SQL Connect/Cloud SQL bereitstellen oder verknüpfen. SQL Connect darf die Drizzle-Schemamigrationen nicht selbst verwalten. Dieselbe Region bzw. VPC für Datenbank und App-Hosting-Backend verwenden. Der App-Hosting-Service-Account benötigt `roles/cloudsql.client` und einen PostgreSQL-Datenbankbenutzer mit den für Migrationen erforderlichen Rechten. In `apphosting.yaml` stehen zunächst die `default`-Netzwerk-IDs; falls das Projekt ein eigenes Netz nutzt, dort die echten `network`- und `subnetwork`-IDs eintragen. Private VPC-Erreichbarkeit für die Datenbank aktivieren.
+4. Im App Hosting Backend unter **Settings → Environment** sichere Runtime-Variablen konfigurieren: `DATABASE_URL` (private PostgreSQL-Adresse und Datenbankname), `SESSION_SECRET` (mindestens 32 zufällige Zeichen), `PORTAL_ADMIN_EMAIL` und `PORTAL_ADMIN_PASSWORD` (nur für Erstsetup/Passwortwechsel). Für echte Produktionsdaten muss vorher ein geprüftes Backup der aktuellen Produktionsdatenbank importiert werden. Der Startup-Provisioner lädt den Repository-Snapshot ausschließlich dann, wenn keine Anwendungsdaten vorhanden sind, und verweigert den Seed bei vorhandenen Daten.
+5. Zusätzlich `CRON_SECRET` einrichten, wenn der interne Operations-Sweep verwendet wird. Optionale KI-Provider-Schlüssel nur dann setzen, wenn diese externen KI-Dienste ausdrücklich gewünscht und erlaubt sind.
+6. Nach erfolgreichem Rollout `/api/health`, `/api/ready`, Startseite, Anfrageformular und Portal-Login prüfen. Erst nach der Datenbank- und Admin-Prüfung in Firebase die Produktionsdomain verbinden und die DNS-Einträge beim Domainanbieter umstellen. TLS wird von Firebase bereitgestellt.
 
-Vor der Domainumschaltung `/api/health`, `/leistungen`, `/berater`, `/anfrage` und `/portal/login` auf dem Zielserver prüfen; anschließend Anmeldung, Benutzeranlage und Profilbild-Upload. Erst danach die Domain beim DNS-Anbieter auf diesen Server zeigen lassen. GitHub Pages nicht als Host für diesen Servercode verwenden.
+App Hosting stellt `PORT` zur Verfügung. `apphosting.yaml` startet deshalb `scripts/firebase-start.mjs`: Der Server prüft die Konfiguration, führt idempotente Migrationen erst zur Laufzeit (mit VPC-Zugriff) aus, validiert Schema und Admin-Konto und startet Next.js nur bei erfolgreicher Bereitschaft. GitHub Actions sind separate Codeprüfungen; Firebase App Hosting kann unabhängig davon direkt mit GitHub deployen. Wenn GitHub Actions wegen Account-Abrechnung blockiert sind, müssen diese Prüfungen trotzdem vor einer Freigabe wieder aktiviert werden.
+
+**Wichtig:** Firebase-Projekt, Firebase-GitHub-Verbindung, private Datenbank, Domain-DNS und Billing lassen sich nicht allein durch Dateien in diesem Repository erstellen. Der Livegang ist erst abgeschlossen, wenn `/api/ready` auf der echten Firebase-Domain `ok: true` liefert und eine echte Anmeldung sowie Anfrage erfolgreich geprüft wurden.
 
 ## Daten erhalten
 
@@ -82,24 +86,15 @@ npm run db:restore backups/<Zeitstempel> --drop           # Scratch-DB danach l�
 npm run db:restore backups/<Zeitstempel> --url <PG-URL>   # in eine bestehende DB wiederherstellen
 ```
 
-Der Restore prüft vor dem Einlesen die Prüfsummen, wendet das aktuelle Migrations-Schema an und vergleicht danach Zeilenzahl für Zeilenzahl. Die Produktion wird ohne explizites `--url` nie berührt. Bei administrativ betriebenen Datenbanken (z. B. Neon) wechselt der Restore automatisch auf Client-Streaming, weil dort keine Serverdateien lesbar sind.
+Der Restore prüft vor dem Einlesen die Prüfsummen, wendet das aktuelle Migrations-Schema an und vergleicht danach Zeilenzahl für Zeilenzahl. Die Produktion wird ohne explizites `--url` nie berührt. Bei Firebase Cloud SQL greift der Restore bei fehlenden Serverdateirechten automatisch auf Client-Streaming zurück.
 
 Empfehlung: Nach jeder größeren Änderung im Portal und vor jedem Update ein Backup anlegen und die Backup-Verzeichnisse zusätzlich auf einem zweiten Speicherort ablegen (z. B. verschlüsselt beim Anbieter des Backups).
 
-## Kostenlos dauerhaft online – ohne Vercel, ohne Firebase
+## Veröffentlichung und täglicher Betrieb
 
-Diese Anwendung ist ein Node.js-Server mit PostgreSQL: GitHub kann den **Code und die CI kostenlos** hosten (Repository + Workflows in `.github/`), kann ihn aber nicht **ausführen** – GitHub Pages ist rein statisch, GitHub Actions sind nicht dauerhaft erreichbar. Für den kostenlosen Dauerbetrieb ohne Vercel und Firebase: **Netlify Free (Hobby) für die App + Neon Free für die Datenbank**, beide dauerhaft kostenlos, ohne Kreditkarte.
+Firebase App Hosting stellt die Next.js-API und dynamischen Seiten bereit. `/api/health` prüft die Datenbankverbindung; `/api/ready` prüft zusätzlich die Migrationen und meldet nur bei erfolgreichem Datenbankstart `ok: true`. Der tägliche interne Sweep ist eine geschützte HTTP-Route und muss – falls benötigt – mit Firebase Cloud Scheduler und `CRON_SECRET` aufgerufen werden.
 
-Die Anwendung läuft auf Netlify über den offiziellen OpenNext-Adapter (App Router wird vollständig unterstützt; alle ~80 API-Routen laufen als Funktionen). Beim Build wird die Datenbank **automatisch** initialisiert – ein manueller Daten-Import ist nicht nötig:
-
-1. **Datenbank (Neon, kostenlos):** Auf [neon.com](https://neon.com) mit dem bestehenden GitHub-Account anmelden → Projekt erstellen (Free) → die **gepoolte** Verbindungs-URL notieren (`...-pooler...`). *Falls das Projekt schon existiert: Schritt einfach überspringen, die URL steht in der Neon-Konsole unter Connection Details.*
-2. **App (Netlify, kostenlos):** Auf [app.netlify.com](https://app.netlify.com) mit GitHub anmelden → *Add new site → Import an existing project from Git* → Repository `neuuuuuuutarif1509` wählen → Netlify übernimmt Build-Kommando, Publish-Verzeichnis und Node-Version aus `netlify.toml` → unter *Environment variables* eintragen: `DATABASE_URL` (die gepoolte Neon-URL), `SESSION_SECRET` (≥ 32 zufällige Zeichen), `PORTAL_ADMIN_EMAIL`, `PORTAL_ADMIN_PASSWORD`, `CRON_SECRET` (langer Zufallswert) sowie optional die KI-Schlüssel → **Deploy**.
-   - Beim allerersten Build wendet `scripts/provision-database.mjs` alle Migrations an und lädt den Seed-Snapshot aus `seed-backup/` (alle Inhalte, Prüfsummen- und Zeilenverifikation). Spätere Deploys erkennen den Initialisierungs-Marker und **berühren die Daten nie wieder** – es geht nichts verloren.
-   - Danach erreichbar unter `<name>.netlify.app`; `/api/ready` meldet `ok: true`.
-3. **Eigene Domain (optional, ebenfalls kostenlos):** Im Netlify-Dashboard die Domain (z. B. `tarifwerk.eu`) anbinden und beim DNS-Anbieter den A-/CNAME-Eintrag umstellen; HTTPS-Zertifikat stellt Netlify automatisch aus.
-4. **Regelmäßige Wartung:** Der tägliche Operations-Sweep läuft bereits als Scheduled Function (Konfiguration in `netlify.toml`, täglich 04:00 UTC, nur mit `CRON_SECRET` erreichbar). Datenbank-Backups weiterhin über `npm run db:backup` auf einem Rechner mit Datenbankzugang (Restore: `node scripts/db-restore.mjs <verzeichnis>`), alternativ Neon-eigene Point-in-Time-Recovery, ebenfalls im Free-Plan.
-
-Kostenkontrolle: Netlify Hobby und Neon Free sind ohne Bezahlmethode nutzbar; Limits (Netlify: 100 GB Bandbreite/Monat, Neon: 0,5 GB Speicher) decken den regulären Betrieb einer beratungsnahen Website mit weitem Abstand ab. Wird doch einmal ein Limit relevant, zeigt es der jeweilige Dashboard-Benachrichtigung klar an – es entstehen keine stillen Kosten.
+Backups bleiben verpflichtend: `npm run db:backup` auf einem Rechner mit autorisiertem Datenbankzugang ausführen und verschlüsselt außerhalb des Git-Repositories ablegen. Vor Änderungen an der Produktionsinstanz einen Restore in einer getrennten Firebase-Datenbank testen.
 
 ## APIs und Prüfungen
 
@@ -113,7 +108,7 @@ npm run db:check
 
 Der fehlerhafte statische Export und die automatisch gesetzten GitHub-Unterpfade wurden aus `next.config.ts` entfernt; der Serverbetrieb einschließlich `/admin`-Weiterleitung und Sicherheitsheadern ist wiederhergestellt.
 
-CSS, Layoutklassen, sichtbare Texte, bestehende Bilddateien sowie Marketing- und Trackinglinks bleiben erhalten. Das anschließende SEO-Update ergänzt Metadaten und korrigiert semantische Überschriftentags und Porträt-Alttexte; Details stehen unten. Keine neue npm-Abhängigkeit. Prüfgrenzen und Ergebnisse: `FINAL_CHECKLIST.md`; frühere Berichte bleiben unter `dokumentation/` erhalten. Der lokale Docker-Container wurde in der Bearbeitungsumgebung mangels Docker nicht gestartet; Datenbanklogik und Serverflüsse werden dort separat mit einer isolierten PostgreSQL-kompatiblen Testdatenbank geprüft. Ein echter Live-Test auf deinem STRATO-Server bleibt erforderlich.
+CSS, Layoutklassen, sichtbare Texte, bestehende Bilddateien sowie Marketing- und Trackinglinks bleiben erhalten. Prüfgrenzen und frühere Ergebnisse stehen in `FINAL_CHECKLIST.md` und `dokumentation/`. Lokale Datenbanklogik wird mit einer isolierten PostgreSQL-kompatiblen Testdatenbank geprüft; der echte Firebase-Livebetrieb muss nach Einrichtung des Firebase-Projekts separat durch `/api/ready` und einen Browserdurchlauf bestätigt werden.
 
 Rechtliche Inhalte und Geschäftsdaten nicht erfinden: Die bereits dokumentierten fehlenden Betreiberangaben müssen vor dem öffentlichen Start mit echten Angaben vervollständigt werden; siehe `ASSUMPTIONS.md`.
 
