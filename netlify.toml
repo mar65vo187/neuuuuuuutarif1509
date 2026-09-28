@@ -23,9 +23,3 @@
 
 [build.environment]
   NODE_VERSION = "22"
-
-# Täglicher, geschützter Daten-Operations-Sweep als Netlify Scheduled Function
-# (ersetzt die frühere Cron-Konfiguration; Aufruf nur mit CRON_SECRET).
-[[functions]]
-  name = "operations-sweep"
-  schedule = "0 4 * * *"
