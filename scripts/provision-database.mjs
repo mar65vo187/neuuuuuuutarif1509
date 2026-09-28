@@ -66,10 +66,12 @@ try {
          SELECT 1 FROM information_schema.columns
          WHERE table_schema = 'public'
            AND table_name = 'tarifwerk_seeded'
-           AND column_name = 'source'
-       ) AS has_source_column`,
+           AND column_name IN ('marker', 'source')
+         GROUP BY table_name
+         HAVING count(DISTINCT column_name) = 2
+       ) AS has_marker_and_source_columns`,
     );
-    if (sourceColumns[0].has_source_column) {
+    if (sourceColumns[0].has_marker_and_source_columns) {
       const { rows } = await pool.query(
         "SELECT source FROM public.tarifwerk_seeded WHERE marker = 'snapshot' LIMIT 1",
       );
