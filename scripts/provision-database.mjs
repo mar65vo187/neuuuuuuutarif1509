@@ -43,24 +43,25 @@ const run = (script, label, extraArgs = []) => {
 };
 
 const pool = new pg.Pool({ connectionString: databaseUrl, max: 2, connectionTimeoutMillis: 20000 });
-let client;
-let lockHeld = false;
+let lockClient;
+let lockTransactionOpen = false;
 
 try {
-  client = await pool.connect();
+  lockClient = await pool.connect();
 
-  // Serialize first deploys so two concurrent builds cannot both restore the
-  // snapshot into the same initially empty database.
-  await client.query("SELECT pg_advisory_lock(867392402)");
-  lockHeld = true;
+  // Transaction-level locks also work through Neon/PgBouncer transaction
+  // pooling. Keep this transaction open while the child scripts run.
+  await lockClient.query("BEGIN");
+  lockTransactionOpen = true;
+  await lockClient.query("SELECT pg_advisory_xact_lock(867392402)");
 
-  const { rows: markerRows } = await client.query(
+  const { rows: markerRows } = await pool.query(
     "SELECT to_regclass('public.tarifwerk_seeded') IS NOT NULL AS marker_table_exists",
   );
   const markerTableExists = markerRows[0].marker_table_exists;
   let markerSource = null;
   if (markerTableExists) {
-    const { rows: sourceColumns } = await client.query(
+    const { rows: sourceColumns } = await pool.query(
       `SELECT EXISTS (
          SELECT 1 FROM information_schema.columns
          WHERE table_schema = 'public'
@@ -69,14 +70,14 @@ try {
        ) AS has_source_column`,
     );
     if (sourceColumns[0].has_source_column) {
-      const { rows } = await client.query(
+      const { rows } = await pool.query(
         "SELECT source FROM public.tarifwerk_seeded WHERE marker = 'snapshot' LIMIT 1",
       );
       markerSource = rows[0]?.source ?? null;
     }
   }
 
-  const { rows: tableRows } = await client.query(
+  const { rows: tableRows } = await pool.query(
     `SELECT EXISTS (
        SELECT 1 FROM pg_tables
        WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
@@ -106,14 +107,14 @@ try {
     }
 
     if (mode === "seed-fresh") {
-      await client.query(
+      await pool.query(
         `CREATE TABLE IF NOT EXISTS tarifwerk_seeded (
            marker text PRIMARY KEY,
            source text NOT NULL,
            loaded_at timestamptz NOT NULL DEFAULT now()
          )`,
       );
-      await client.query(
+      await pool.query(
         `INSERT INTO tarifwerk_seeded (marker, source)
          VALUES ('snapshot', 'seed-backup-in-progress')
          ON CONFLICT (marker) DO NOTHING`,
@@ -126,7 +127,7 @@ try {
       databaseUrl,
     ]);
 
-    await client.query(
+    await pool.query(
       "UPDATE public.tarifwerk_seeded SET source = 'seed-backup' WHERE marker = 'snapshot'",
     );
     console.log("[provision] Seed-Snapshot geladen.");
@@ -135,23 +136,23 @@ try {
   run("db-check.mjs", "Datenbank-Check ausführen");
 
   if (mode === "preserve-existing") {
-    await client.query(
+    await pool.query(
       `CREATE TABLE IF NOT EXISTS tarifwerk_seeded (
          marker text PRIMARY KEY,
          source text NOT NULL,
          loaded_at timestamptz NOT NULL DEFAULT now()
        )`,
     );
-    await client.query(
+    await pool.query(
       `INSERT INTO tarifwerk_seeded (marker, source)
        VALUES ('snapshot', 'existing-database-preserved')
        ON CONFLICT (marker) DO NOTHING`,
     );
   }
 } finally {
-  if (client) {
-    if (lockHeld) await client.query("SELECT pg_advisory_unlock(867392402)").catch(() => {});
-    client.release();
+  if (lockClient) {
+    if (lockTransactionOpen) await lockClient.query("ROLLBACK").catch(() => {});
+    lockClient.release();
   }
   await pool.end();
 }
