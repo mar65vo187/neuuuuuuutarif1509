@@ -1,15 +1,13 @@
-# Letzter Produktions-Deploy
+# Firebase-Produktionsdeploy: noch nicht nachgewiesen
 
-Dieser Marker dokumentiert den bewusst ausgelösten Produktions-Deploy nach dem Financial-Integrity- und Owner-Privacy-Audit.
+Der bisherige Vercel-Deploy-Vermerk ist historisch und bestätigt keinen aktuellen Livebetrieb. Das Repository wird auf Firebase App Hosting ausgerichtet; Netlify-Konfiguration und Netlify-Builddatei wurden entfernt.
 
-Geprüfter Code-Basis-Commit: `44b1367019e96c0f6bc27a00f63756652b13b532`
+Ein produktiver Firebase-Deploy kann aus dieser Entwicklungsumgebung noch nicht durchgeführt oder verifiziert werden, weil kein Firebase-Projektzugriff / Firebase-Login vorliegt und die produktive Datenbank, Backend-Verbindung sowie Domain nicht in der Umgebung konfiguriert sind.
 
-Prüfkette vor Merge:
-- PostgreSQL-Migrationen
-- Produktschema-Prüfung
-- TypeScript
-- ESLint
-- Regressionstests
-- Next.js Production Build
+Ein Deploy darf erst als erfolgreich dokumentiert werden, wenn:
 
-Der Deployment-Workflow baut mit Vercel CLI vor und veröffentlicht anschließend mit `vercel deploy --prebuilt --prod`.
+- Firebase App Hosting das GitHub-Repository und den Produktionsbranch verbunden hat;
+- die Firebase-PostgreSQL-Instanz und private VPC-Verbindung funktionieren;
+- der Rollout gesund ist und `/api/ready` HTTP 200 mit `ok: true` liefert;
+- Startseite, Anfrageformular und Portal-Login im Browser getestet sind;
+- die benutzerdefinierte Domain mit aktivem HTTPS auf Firebase zeigt.

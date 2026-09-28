@@ -1,0 +1,24 @@
+# Firebase App Hosting — Next.js full-stack runtime.
+# Connect this repository to a Firebase App Hosting backend on branch `main`.
+# The app keeps its PostgreSQL data layer; point DATABASE_URL at the private
+# PostgreSQL endpoint from the Firebase project's Data Connect / Cloud SQL
+# instance and enable VPC access for the backend in Firebase Console.
+runConfig:
+  minInstances: 0
+  maxInstances: 5
+  cpu: 1
+  memoryMiB: 1024
+  concurrency: 40
+  # Connect only to private Firebase-project resources. If the project uses a
+  # custom network, replace both IDs with its real network/subnetwork names.
+  # Never expose PostgreSQL with a 0.0.0.0/0 allowlist.
+  vpcAccess:
+    egress: PRIVATE_RANGES_ONLY
+    networkInterfaces:
+      - network: default
+        subnetwork: default
+
+scripts:
+  # The App Hosting Next.js adapter packages the standalone server under .next.
+  # Migrations run at container startup, when private VPC access is available.
+  runCommand: node .next/standalone/scripts/firebase-start.mjs

@@ -177,7 +177,7 @@ if (scratchName) {
 // Die Datenbank liest die CSV-Datei selbst (COPY ... FROM <datei>). Das
 // funktioniert in jeder Umgebung, in der Server und App dasselbe Dateisystem
 // teilen (Docker, VPS, lokale Instanz). Bei administrativ oder remote
-// betriebenen Datenbanken (z. B. Neon) greift der Fallback auf
+// betriebenen Datenbanken (z. B. Firebase Cloud SQL) greift der Fallback auf
 // Client-Streaming (COPY ... FROM STDIN) zurück.
 async function copyCsvFromServerFile(client, table, csv) {
   const serverFile = join(restoreTempDir, `${table}.csv`);
