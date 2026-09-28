@@ -1,0 +1,4 @@
+Production rebuild trigger
+Source: GitHub railway-production
+Purpose: force a clean source-based Railway/Vercel-compatible build after removal of the expired ttl.sh bridge.
+No application data or secrets are stored here.
