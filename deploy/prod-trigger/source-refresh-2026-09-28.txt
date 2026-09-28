@@ -1,0 +1,4 @@
+Targeted Railway source refresh for tarifwerk-prod.
+Purpose: force a GitHub-source deployment on the production service after stale ttl.sh image redeploys.
+No application data, secrets, runtime logic, or database contents changed.
+Date: 2026-09-28
