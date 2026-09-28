@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "cd /app 2>/dev/null || true; next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
