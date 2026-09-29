@@ -322,7 +322,7 @@ export async function askPublicTarifWerkAi(input: {
   const preferred = (process.env.TARIFWERK_PUBLIC_AI_PROVIDER?.trim() || "auto").toLowerCase();
   const errors: string[] = [];
 
-  if (preferred !== "xkiro" && input.allowGroq !== false) {
+  if ((preferred === "auto" || preferred === "groq") && input.allowGroq !== false) {
     try {
       const result = await callGroq(system, messages);
       return { ...result, redactions, fallback: false };
@@ -332,12 +332,14 @@ export async function askPublicTarifWerkAi(input: {
     }
   }
 
-  try {
-    const result = await callXkiroFallback(system, messages);
-    return { ...result, redactions, fallback: preferred !== "xkiro" };
-  } catch (error) {
-    errors.push("xkiro:" + (error instanceof Error ? error.message : "unbekannt"));
-    console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
+  if (preferred === "auto" || preferred === "xkiro") {
+    try {
+      const result = await callXkiroFallback(system, messages);
+      return { ...result, redactions, fallback: preferred !== "xkiro" };
+    } catch (error) {
+      errors.push("xkiro:" + (error instanceof Error ? error.message : "unbekannt"));
+      console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
+    }
   }
 
   try {
