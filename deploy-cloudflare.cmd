@@ -72,8 +72,8 @@ if errorlevel 1 (
   for /f "usebackq delims=" %%S in (`powershell.exe -NoProfile -Command "$b=New-Object byte[] 48; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)"`) do set "GENERATED_SESSION_SECRET=%%S"
   if not defined GENERATED_SESSION_SECRET goto :secret_failed
   echo(!GENERATED_SESSION_SECRET!| npx.cmd wrangler secret put SESSION_SECRET
-  set "GENERATED_SESSION_SECRET="
   if errorlevel 1 goto :secret_failed
+  set "GENERATED_SESSION_SECRET="
 ) else (
   echo       Vorhandener SESSION_SECRET bleibt unveraendert.
 )
