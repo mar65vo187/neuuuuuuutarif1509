@@ -57,11 +57,11 @@ if errorlevel 1 (
   echo       melde dich bei Cloudflare an und bestaetige den Code.
   echo.
   call npx.cmd wrangler login --device --browser=false
-  if errorlevel 1 goto :failed
+  if errorlevel 1 goto :temporary_fallback
 )
 
 call npx.cmd wrangler whoami
-if errorlevel 1 goto :failed
+if errorlevel 1 goto :temporary_fallback
 
 echo.
 echo [6/8] Lade TarifWerk zu Cloudflare Workers hoch...
@@ -77,7 +77,32 @@ if errorlevel 1 (
   echo       SESSION_SECRET fehlt - erzeuge ihn einmalig sicher.
   set "GENERATED_SESSION_SECRET="
   for /f "usebackq delims=" %%S in (`powershell.exe -NoProfile -Command "$b=New-Object byte[] 48; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)"`) do set "GENERATED_SESSION_SECRET=%%S"
-  if not defined GENERATED_SESSION_SECRET goto :secret_failed
+  if not defined GENERATED_SESSION_SECRET goto :temporary_fallback
+echo.
+echo ============================================================
+echo PERMANENTER LOGIN NICHT VERFUEGBAR
+echo Starte automatisch Cloudflare-Vorschau OHNE Login.
+echo ============================================================
+echo.
+call npx.cmd wrangler logout >nul 2>nul
+set "CLOUDFLARE_API_TOKEN="
+set "CLOUDFLARE_API_KEY="
+set "CLOUDFLARE_EMAIL="
+set "CLOUDFLARE_ACCOUNT_ID="
+call npx.cmd wrangler deploy --temporary --config wrangler.temporary.jsonc
+if errorlevel 1 goto :failed
+echo.
+echo ============================================================
+echo TEMPORAERE VORSCHAU ONLINE
+echo Oben stehen die workers.dev-Adresse und der Claim-Link.
+echo Fuer diese Vorschau wurden absichtlich keine Produktions-
+echo datenbank-Secrets gesetzt.
+echo ============================================================
+echo.
+pause
+exit /b 0
+
+:secret_failed
   echo(!GENERATED_SESSION_SECRET!| npx.cmd wrangler secret put SESSION_SECRET
   if errorlevel 1 goto :secret_failed
   set "GENERATED_SESSION_SECRET="
