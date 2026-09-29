@@ -3,7 +3,8 @@
   "name": "tarifwerk",
   "compatibility_date": "2026-09-28",
   "compatibility_flags": [
-    "nodejs_compat"
+    "nodejs_compat",
+    "global_fetch_strictly_public"
   ],
   "main": "vinext/server/fetch-handler",
   "preview_urls": true,
