@@ -12,5 +12,10 @@
   },
   "ai": {
     "binding": "AI"
+  },
+  "vars": {
+    "PORTAL_OWNER_EMAIL": "m.egenolf@tarifwerk.eu",
+    "TARIFWERK_AI_PROVIDER": "cloudflare",
+    "TARIFWERK_PUBLIC_AI_PROVIDER": "cloudflare"
   }
 }
