@@ -46,6 +46,10 @@ echo.
 echo [5/5] Lade temporaere Cloudflare-Vorschau OHNE Login hoch...
 echo.
 call npx.cmd wrangler logout >nul 2>nul
+set "CLOUDFLARE_API_TOKEN="
+set "CLOUDFLARE_API_KEY="
+set "CLOUDFLARE_EMAIL="
+set "CLOUDFLARE_ACCOUNT_ID="
 call npx.cmd wrangler deploy --temporary --config wrangler.temporary.jsonc
 if errorlevel 1 goto :failed
 
