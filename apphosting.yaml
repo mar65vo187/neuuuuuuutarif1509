@@ -1,16 +1,26 @@
-# Firebase App Hosting – TarifWerk
-# Next.js wird über den offiziellen Firebase Framework-Adapter gebaut.
-# Region beim Backend einmalig auf europe-west4 (Niederlande) setzen.
+# Firebase App Hosting – Konfiguration für TarifWerk
+# Vollständige Einrichtung: siehe FIREBASE.md
+#
+# Die Region wird NICHT hier festgelegt, sondern einmalig beim Anlegen des
+# Backends in der Firebase-Konsole: europe-west4 (Niederlande, EU) wählen.
 
 runConfig:
   cpu: 1
   memoryMiB: 1024
+  # 0 = Server fährt ohne Besucher herunter (kostenlos, erster Aufruf danach
+  # dauert einige Sekunden). 1 = immer wach, verursacht aber laufende Kosten.
   minInstances: 0
+  # Obergrenze schützt vor unerwarteten Kosten bei Lastspitzen.
   maxInstances: 3
   concurrency: 80
 
+scripts:
+  # Wendet vor dem Build die Datenbank-Migrationen an (idempotent, eine
+  # bestehende Datenbank wird nie überschrieben) und baut danach Next.js.
+  buildCommand: npm run build:firebase
+
 env:
-  # Secrets liegen im Google Secret Manager, niemals im Repository.
+  # --- Pflicht: Secrets (Werte liegen im Google Secret Manager, nie im Repo) ---
   - variable: DATABASE_URL
     secret: tarifwerk-database-url
     availability:
@@ -25,14 +35,11 @@ env:
     availability:
       - RUNTIME
 
+  # --- Pflicht: normale Werte ---
   - variable: PORTAL_ADMIN_EMAIL
     value: m.egenolf@tarifwerk.eu
     availability:
       - BUILD
-      - RUNTIME
-  - variable: PORTAL_OWNER_EMAIL
-    value: m.egenolf@tarifwerk.eu
-    availability:
       - RUNTIME
   - variable: NEXT_TELEMETRY_DISABLED
     value: "1"
@@ -40,43 +47,30 @@ env:
       - BUILD
       - RUNTIME
 
-  - variable: TARIFWERK_PUBLIC_AI_PROVIDER
-    value: auto
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_PUBLIC_AI_GROQ_MODEL
-    value: qwen/qwen3.8-27b
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_PUBLIC_AI_GROQ_DAILY_LIMIT
-    value: "900"
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_PUBLIC_AI_XKIRO_MODEL
-    value: qwen/qwen3.8-omni-flash:free
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_AI_PROVIDER
-    value: auto
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_AI_XKIRO_MODEL
-    value: qwen/qwen3.8-omni-flash:free
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_AI_DAILY_LIMIT
-    value: "30"
-    availability:
-      - RUNTIME
-  - variable: TARIFWERK_AI_INCLUDE_TRAINING
-    value: "false"
-    availability:
-      - RUNTIME
-
-  # Nach dem Anlegen der jeweiligen Secrets einkommentieren:
+  # --- Optional: KI-Schlüssel ---
+  # Erst einkommentieren, NACHDEM das jeweilige Secret angelegt wurde
+  # (firebase apphosting:secrets:set <name>), sonst schlägt der Build fehl.
+  #
   # - variable: GROQ_API_KEY
   #   secret: tarifwerk-groq-api-key
-  #   availability: [RUNTIME]
+  #   availability:
+  #     - RUNTIME
   # - variable: XKIRO_API_KEY
   #   secret: tarifwerk-xkiro-api-key
-  #   availability: [RUNTIME]
+  #   availability:
+  #     - RUNTIME
+  # - variable: GEMINI_API_KEY
+  #   secret: tarifwerk-gemini-api-key
+  #   availability:
+  #     - RUNTIME
+  # - variable: OPENROUTER_API_KEY
+  #   secret: tarifwerk-openrouter-api-key
+  #   availability:
+  #     - RUNTIME
+  #
+  # --- Optional: Google Search Console ---
+  # - variable: GOOGLE_SITE_VERIFICATION
+  #   value: "<content-Wert aus dem Meta-Tag>"
+  #   availability:
+  #     - BUILD
+  #     - RUNTIME

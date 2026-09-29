@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }],
     shortcut: ["/favicon.svg"],
-    apple: [{ url: "/favicon.svg", sizes: "260x260", type: "image/svg+xml" }],
+    // apple-touch-icon kommt als PNG aus src/app/apple-icon.tsx (iOS ignoriert SVG).
   },
   verification: process.env.GOOGLE_SITE_VERIFICATION
     ? { google: process.env.GOOGLE_SITE_VERIFICATION }
