@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/admin", destination: "/portal/verwaltung", permanent: false },
+      { source: "/admin", destination: "/portal/mitarbeiter", permanent: false },
       { source: "/beratung", destination: "/berater", permanent: false },
     ];
   },
