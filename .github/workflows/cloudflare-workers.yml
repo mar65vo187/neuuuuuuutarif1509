@@ -64,29 +64,8 @@ jobs:
             exit 1
           fi
 
-          WORKER_URL="$(grep -Eo 'https://[^[:space:]"'"'<>]+\.workers\.dev[^[:space:]"'"'<>]*' "$OUT" | head -n 1 | sed -E 's/[),.;]+$//')"
-          CLAIM_URL="$(grep -Eo 'https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]"'"'<>]+' "$OUT" | head -n 1)"
-
-          if [[ -z "$WORKER_URL" || -z "$CLAIM_URL" ]]; then
-            sed -E 's#https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+#[CLAIM_URL_REDACTED]#g' "$OUT"
-            echo "Temporary deployment completed without a parseable worker/claim URL."
-            exit 1
-          fi
-
-          CLAIM_CIPHER="$(printf '%s' "$CLAIM_URL" | node scripts/encrypt-cloudflare-claim.mjs)"
-          mkdir -p .cloudflare
-
-          WORKER_URL="$WORKER_URL" CLAIM_CIPHER="$CLAIM_CIPHER" node --input-type=module <<'NODE'
-          import { writeFileSync } from "node:fs";
-          writeFileSync(".cloudflare/deploy-result.json", JSON.stringify({
-            kind: "temporary",
-            workerUrl: process.env.WORKER_URL,
-            encryptedClaim: process.env.CLAIM_CIPHER,
-            claimWithinMinutes: 60,
-            generatedAt: new Date().toISOString()
-          }, null, 2) + "\n");
-          NODE
-
+          node scripts/capture-cloudflare-deploy.mjs "$OUT"
+          WORKER_URL="$(node -e 'const x=require("./.cloudflare/deploy-result.json"); process.stdout.write(x.workerUrl)')"
           echo "::notice title=Cloudflare Worker online::$WORKER_URL"
 
           git config user.name "github-actions[bot]"
