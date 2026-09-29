@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
@@ -32,15 +31,9 @@ export async function POST(request: NextRequest, context: Context) {
     const image = inspectProfileImage(original);
     if (!image) throw new AdminRequestError("Bitte ein gültiges JPG-, PNG- oder WebP-Bild mit höchstens 20 Megapixeln auswählen.", 422);
 
-    let data: Buffer;
-    try {
-      data = await sharp(original, { limitInputPixels: 20_000_000, failOn: "warning", animated: false })
-        .rotate()
-        .resize({ width: 1200, height: 1200, fit: "cover", position: "centre" })
-        .webp({ quality: 88 }).toBuffer();
-    } catch {
-      throw new AdminRequestError("Das Bild ist beschädigt oder kann nicht gelesen werden.", 422);
-    }
+    // The binary-header validator above rejects unsupported formats, oversized dimensions and trailing payload data.
+    // Keep the validated original bytes on Workers to avoid native image codecs while preserving zero-cost uploads.
+    const data = original;
 
     const digest = createHash("sha256").update(data).digest("hex");
     const imageUrl = `/api/portal/employees/${employeeId}/image?v=${digest.slice(0, 16)}`;
@@ -49,8 +42,8 @@ export async function POST(request: NextRequest, context: Context) {
       await lockAdminMutation(tx, admin.id);
       const [employee] = await tx.select({ id: employees.id }).from(employees).where(eq(employees.id, employeeId)).for("update");
       if (!employee) throw new AdminRequestError("Mitarbeiter nicht gefunden.", 404);
-      await tx.insert(employeeImages).values({ employeeId, contentType: "image/webp", data, digest })
-        .onConflictDoUpdate({ target: employeeImages.employeeId, set: { contentType: "image/webp", data, digest, updatedAt: new Date() } });
+      await tx.insert(employeeImages).values({ employeeId, contentType: image.contentType, data, digest })
+        .onConflictDoUpdate({ target: employeeImages.employeeId, set: { contentType: image.contentType, data, digest, updatedAt: new Date() } });
       await tx.update(employees).set({ imageUrl }).where(eq(employees.id, employeeId));
     });
 
