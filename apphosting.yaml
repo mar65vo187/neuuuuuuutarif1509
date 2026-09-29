@@ -1,0 +1,82 @@
+# Firebase App Hosting – TarifWerk
+# Next.js wird über den offiziellen Firebase Framework-Adapter gebaut.
+# Region beim Backend einmalig auf europe-west4 (Niederlande) setzen.
+
+runConfig:
+  cpu: 1
+  memoryMiB: 1024
+  minInstances: 0
+  maxInstances: 3
+  concurrency: 80
+
+env:
+  # Secrets liegen im Google Secret Manager, niemals im Repository.
+  - variable: DATABASE_URL
+    secret: tarifwerk-database-url
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: SESSION_SECRET
+    secret: tarifwerk-session-secret
+    availability:
+      - RUNTIME
+  - variable: CRON_SECRET
+    secret: tarifwerk-cron-secret
+    availability:
+      - RUNTIME
+
+  - variable: PORTAL_ADMIN_EMAIL
+    value: m.egenolf@tarifwerk.eu
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: PORTAL_OWNER_EMAIL
+    value: m.egenolf@tarifwerk.eu
+    availability:
+      - RUNTIME
+  - variable: NEXT_TELEMETRY_DISABLED
+    value: "1"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: TARIFWERK_PUBLIC_AI_PROVIDER
+    value: auto
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_PUBLIC_AI_GROQ_MODEL
+    value: qwen/qwen3.8-27b
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_PUBLIC_AI_GROQ_DAILY_LIMIT
+    value: "900"
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_PUBLIC_AI_XKIRO_MODEL
+    value: qwen/qwen3.8-omni-flash:free
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_AI_PROVIDER
+    value: auto
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_AI_XKIRO_MODEL
+    value: qwen/qwen3.8-omni-flash:free
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_AI_DAILY_LIMIT
+    value: "30"
+    availability:
+      - RUNTIME
+  - variable: TARIFWERK_AI_INCLUDE_TRAINING
+    value: "false"
+    availability:
+      - RUNTIME
+
+  # Nach dem Anlegen der jeweiligen Secrets einkommentieren:
+  # - variable: GROQ_API_KEY
+  #   secret: tarifwerk-groq-api-key
+  #   availability: [RUNTIME]
+  # - variable: XKIRO_API_KEY
+  #   secret: tarifwerk-xkiro-api-key
+  #   availability: [RUNTIME]
