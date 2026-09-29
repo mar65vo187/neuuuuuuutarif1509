@@ -1,42 +1,45 @@
 # TarifWerk auf Firebase App Hosting
 
-Diese Konfiguration bereitet den `main`-Branch für **Firebase App Hosting** in der EU-Region `europe-west4` vor. Firebase erkennt die Next.js-App und verwendet den offiziellen Framework-Adapter. `apphosting.yaml` überschreibt den Build-Befehl bewusst **nicht**.
+Diese Anleitung zieht die Website von Render auf **Firebase App Hosting** (Google Cloud, Region **europe-west4 / Niederlande**). Die Datenbank bleibt bei **Neon** – es werden keine Daten verschoben.
 
-## Was im Repository bereits vorbereitet ist
+Konfiguration im Repository:
 
-- `apphosting.yaml`: Cloud-Run-Ressourcen, Runtime-/Build-Variablen und Secret-Referenzen.
-- `package.json`: `prebuild` führt `scripts/migrate-if-configured.mjs` aus. Mit `DATABASE_URL` werden nur idempotente Migrationen + Verifikation ausgeführt; ohne `DATABASE_URL` wird der Schritt übersprungen.
-- `.github/workflows/operations-sweep.yml`: täglicher geschützter Operations-Sweep.
+| Datei | Zweck |
+|---|---|
+| `apphosting.yaml` | Server-Größe, Build-Befehl, Umgebungsvariablen und Secrets |
+| `package.json` → `build:firebase` | Wendet Migrationen an (`scripts/provision-database.mjs`) und baut Next.js |
+| `.github/workflows/operations-sweep.yml` | Täglicher Operations-Sweep um 04:00 UTC (ersetzt die Netlify-Funktion) |
+| `src/app/apple-icon.tsx` | PNG-Icon für iPhone/iPad (iOS zeigt SVG-Icons nicht an) |
 
-## 1. Firebase App Hosting Backend
+---
 
-In der Firebase-Konsole unter **Hosting & Serverless → App Hosting** ein Backend anlegen:
+## 1. Firebase-Projekt anlegen (einmalig, ca. 5 Min.)
 
-- Repository: `mar65vo187/neuuuuuuutarif1509`
-- Live-Branch: `main`
-- App root: `/`
-- Region: `europe-west4`
-- automatische Rollouts: an
+1. <https://console.firebase.google.com> → **Projekt hinzufügen** → Name z. B. `tarifwerk` → Google Analytics **nicht** aktivieren.
+2. Links unten **Upgrade** → Tarif **Blaze** wählen und Zahlungsmethode hinterlegen. App Hosting setzt Blaze voraus; bezahlt wird nur, was über das monatliche Gratis-Kontingent hinausgeht.
+3. **Budget-Warnung setzen (wichtig):** <https://console.cloud.google.com/billing> → *Budgets & Benachrichtigungen* → *Budget erstellen* → Betrag z. B. **5 €** → E-Mail-Benachrichtigung bei 50 %, 90 %, 100 %.
 
-## 2. Datenbank vor dem ersten Rollout
+## 2. Backend anlegen
 
-Die aktuelle Railway-Postgres-Instanz ist intern an Railway gebunden. Eine Firebase-App kann eine private `*.railway.internal`-Adresse nicht verwenden. Für Firebase muss `DATABASE_URL` daher auf eine PostgreSQL-Verbindung zeigen, die aus Google Cloud erreichbar ist, z. B. eine dafür bereitgestellte externe Postgres-/Neon-Verbindung.
+1. Firebase-Konsole → **App Hosting** → **Los gehts / Backend erstellen**.
+2. Region: **`europe-west4`** (Niederlande). ⚠️ Lässt sich später nicht ändern.
+3. GitHub verbinden → Repository `mar65vo187/neuuuuuuutarif1509`, Branch `main`, Stammverzeichnis `/`.
+4. Automatische Rollouts: **an**.
+5. Backend-Name: **`tarifwerk`** (wird unten in den Befehlen verwendet).
 
-**Keine produktive Datenbank löschen.** Vor einer Umschaltung müssen Leads, Kunden, Mitarbeiter, Bilder und Dokumente in der Ziel-Datenbank verifiziert sein.
+Der erste Rollout darf fehlschlagen – die Secrets fehlen noch. Das ist normal.
 
-Der Firebase-Build importiert bewusst **keinen** Seed-Snapshot automatisch. Er führt nur Migrationen und deren Verifikation aus. Dadurch überschreibt ein normaler Rollout keine vorhandenen CRM-Daten.
+## 3. Secrets hinterlegen
 
-## 3. Firebase Secrets
+Auf dem eigenen Rechner (Node.js muss installiert sein):
 
-Folgende Secret-IDs anlegen und dem App-Hosting-Backend Zugriff geben:
-
-```text
-tarifwerk-database-url
-tarifwerk-session-secret
-tarifwerk-cron-secret
+```bash
+npm install -g firebase-tools
+firebase login
+firebase use --add            # Projekt "tarifwerk" auswählen
 ```
 
-CLI-Beispiel:
+Dann nacheinander jedes Secret anlegen. Der Befehl fragt den Wert ab und fragt, ob das Backend Zugriff bekommen soll → **Ja** und Backend `tarifwerk` wählen:
 
 ```bash
 firebase apphosting:secrets:set tarifwerk-database-url
@@ -44,42 +47,71 @@ firebase apphosting:secrets:set tarifwerk-session-secret
 firebase apphosting:secrets:set tarifwerk-cron-secret
 ```
 
-### Öffentliche/interne KI
+| Secret | Wert |
+|---|---|
+| `tarifwerk-database-url` | Die **gepoolte** Neon-URL (enthält `-pooler`), zu finden in der Neon-Konsole unter *Connection Details*. |
+| `tarifwerk-session-secret` | **Neuer** Zufallswert, mind. 32 Zeichen: `openssl rand -base64 48`. Ein neuer Wert meldet alle alten Portal-Sessions ab – gewollt. |
+| `tarifwerk-cron-secret` | **Neuer** Zufallswert: `openssl rand -base64 48`. Denselben Wert auch in GitHub hinterlegen (Schritt 6). |
 
-Für Groq/Qwen bzw. xKiro zusätzlich Secrets anlegen:
+Falls die Zugriffsfrage übersprungen wurde:
 
-```text
-tarifwerk-groq-api-key
-tarifwerk-xkiro-api-key
+```bash
+firebase apphosting:secrets:grantaccess tarifwerk-database-url,tarifwerk-session-secret,tarifwerk-cron-secret --backend tarifwerk
 ```
 
-Danach die vorbereiteten `GROQ_API_KEY`-/`XKIRO_API_KEY`-Blöcke in `apphosting.yaml` einkommentieren.
+**KI-Chat (optional):** Wird der öffentliche KI-Chat genutzt, zusätzlich `firebase apphosting:secrets:set tarifwerk-groq-api-key` ausführen und danach den entsprechenden Block in `apphosting.yaml` einkommentieren. Ohne Schlüssel antwortet der Chat mit der eingebauten lokalen Wissensbasis.
 
-## 4. Rollout prüfen
+## 4. Rollout starten und testen
 
-Nach dem ersten erfolgreichen Rollout mindestens testen:
+1. Firebase-Konsole → App Hosting → `tarifwerk` → **Rollouts** → **Rollout erstellen** (Branch `main`).
+2. Nach dem Build ist die Seite unter `https://tarifwerk--<projekt-id>.europe-west4.hosted.app` erreichbar (genaue Adresse steht in der Konsole).
+3. Prüfen:
+   - `<adresse>/api/ready` → muss `"ok": true` melden
+   - Startseite, `/leistungen`, `/anfrage` öffnen
+   - Portal-Login unter `/portal/login` testen
 
-```text
-/api/ready
-/
-/leistungen
-/anfrage
-/portal/login
-```
+## 5. Domain umziehen
 
-`/api/ready` muss `ok: true` sowie `database: ready` melden. Danach Login, Leads/Kunden und Uploads prüfen.
+1. Firebase-Konsole → App Hosting → `tarifwerk` → **Einstellungen → Domains** → **Benutzerdefinierte Domain hinzufügen** → `www.tarifwerk.eu`, danach genauso `tarifwerk.eu`.
+2. Firebase zeigt die nötigen DNS-Einträge (A-/TXT-/CNAME-Records). Beim DNS-Anbieter von `tarifwerk.eu`:
+   - die **alten Einträge auf Render entfernen** (`www` zeigt derzeit auf `tarifwerk.onrender.com`),
+   - die Einträge von Firebase genau so eintragen.
+3. Warten, bis Firebase „Verbunden“ und ein SSL-Zertifikat anzeigt (meist unter 1 Stunde, maximal 24 Stunden).
+4. Die Anwendung leitet `tarifwerk.eu` selbst auf `https://www.tarifwerk.eu` um (`src/proxy.ts`).
 
-## 5. Domain erst nach erfolgreichem Test umstellen
+## 6. Täglichen Operations-Sweep aktivieren
 
-`www.tarifwerk.eu` erst dann mit Firebase verbinden, wenn die Firebase-URL vollständig geprüft wurde. Den bisherigen Railway-/anderen Produktionspfad erst abschalten, wenn Firebase inklusive Portal, Datenbank und KI verifiziert funktioniert.
+GitHub → Repository → **Settings → Secrets and variables → Actions** → **New repository secret**:
 
-## 6. Operations Sweep
+- Name: `CRON_SECRET`
+- Wert: derselbe Wert wie `tarifwerk-cron-secret`
 
-In GitHub unter **Settings → Secrets and variables → Actions** das Repository-Secret `CRON_SECRET` setzen. Optional kann die Repository-Variable `SITE_URL` auf die aktuelle Firebase-App-Hosting-URL gesetzt werden, solange die eigene Domain noch nicht umgeschaltet ist.
+Test: **Actions → Operations Sweep → Run workflow**. Ein grüner Haken bedeutet, dass alles funktioniert.
 
-## Sicherheit
+## 7. Render abschalten
 
-- keine API-Keys, Passwörter oder DB-URLs committen
-- keine Datenbank löschen oder neu initialisieren, solange die Ziel-Daten nicht geprüft sind
-- Domain erst nach erfolgreichem `/api/ready` und Portaltest umstellen
-- Railway erst deaktivieren, wenn Firebase nachweislich vollständig produktiv ist
+Erst wenn `https://www.tarifwerk.eu` über Firebase läuft (Schritt 5 abgeschlossen, Seite und Portal getestet):
+
+Render-Dashboard → Service → **Settings → Delete Service**. Die Neon-Datenbank **nicht** löschen – Firebase nutzt sie weiter.
+
+---
+
+## Kosten im Blick
+
+- Gratis-Kontingent pro Monat u. a.: 2 Mio. Requests, 10 GiB ausgehender Traffic, 180.000 vCPU-Sekunden, 2.500 Build-Minuten.
+- `apphosting.yaml` begrenzt die Instanzen auf `maxInstances: 3` und fährt ohne Besucher auf 0 herunter (`minInstances: 0`).
+- `minInstances: 1` verhindert die kurze Anlaufzeit nach Ruhephasen, kostet aber dauerhaft Geld – nur bei Bedarf ändern.
+
+## Datenbank-Region
+
+Neon-Konsole → Projekt → *Settings*: Liegt die Datenbank in einer US-Region, sollte sie für kurze Ladezeiten und einfacheren Datenschutz nach **AWS Europe Central 1 (Frankfurt)** umziehen (neues Neon-Projekt in Frankfurt, `npm run db:backup` / `node scripts/db-restore.mjs`, danach Secret `tarifwerk-database-url` aktualisieren).
+
+## Wenn der Build fehlschlägt
+
+- **„secret … not found“ / „permission denied“:** Schritt 3 wiederholen, inkl. `grantaccess`.
+- **Fehler im Schritt `[provision]`:** `DATABASE_URL` prüfen (gepoolte Neon-URL). Die Migrationen überschreiben niemals vorhandene Daten.
+- **Build bricht beim eigenen Build-Befehl ab:** In `apphosting.yaml` den Block `scripts:` entfernen (dann baut Firebase mit dem Standard `npm run build`) und Migrationen künftig einmalig lokal ausführen: `DATABASE_URL="<neon-url>" PORTAL_ADMIN_EMAIL="m.egenolf@tarifwerk.eu" npm run db:provision`.
+
+## Datenschutzerklärung anpassen
+
+Nach dem Umzug in der Datenschutzerklärung unter **„2. Hosting“** den tatsächlichen Anbieter eintragen (Google / Firebase App Hosting, Serverstandort EU, Region europe-west4) sowie Neon als Datenbank-Dienstleister. Rechtliche Formulierung bitte prüfen lassen.

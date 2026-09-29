@@ -1,5 +1,10 @@
 name: Operations Sweep
 
+# Ersetzt die frühere Netlify Scheduled Function: ruft täglich den internen,
+# per CRON_SECRET geschützten Operations-Sweep der Live-Anwendung auf.
+# Einrichtung: GitHub → Settings → Secrets and variables → Actions →
+# "New repository secret" → Name CRON_SECRET, gleicher Wert wie in Firebase.
+
 on:
   schedule:
     - cron: "0 4 * * *"
