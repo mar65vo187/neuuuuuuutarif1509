@@ -58,6 +58,7 @@ jobs:
           # plugin emits an output Wrangler config that points at the built Worker.
           CLOUDFLARE_VITE_WRANGLER_CONFIG_PATH=wrangler.temporary.jsonc npm run build
           node scripts/patch-generated-wrangler.mjs
+          node scripts/diagnose-cloudflare-bundle.mjs
 
           OUT="$(mktemp)"
           if ! npx wrangler deploy --temporary >"$OUT" 2>&1; then
