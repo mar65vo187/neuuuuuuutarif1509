@@ -1,9 +1,6 @@
 name: Cloudflare Workers Production
 
 on:
-  push:
-    branches:
-      - cloudflare-workers
   workflow_dispatch:
 
 permissions:
