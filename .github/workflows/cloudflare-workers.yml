@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - cloudflare-workers
+    paths-ignore:
+      - ".cloudflare/deploy-result.json"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: tarifwerk-cloudflare-production
@@ -38,11 +40,53 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Verify Cloudflare credentials are configured
+      - name: Deploy to Cloudflare Workers
         shell: bash
         run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || (echo "Missing CLOUDFLARE_API_TOKEN repository secret" && exit 1)
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "Missing CLOUDFLARE_ACCOUNT_ID repository secret" && exit 1)
+          set -euo pipefail
 
-      - name: Deploy to Cloudflare Workers
-        run: npx @vinext/cloudflare deploy
+          if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "Using permanent Cloudflare credentials."
+            npx @vinext/cloudflare deploy
+            exit 0
+          fi
+
+          echo "Permanent Cloudflare credentials are not available; using official temporary-account deployment."
+          unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL
+
+          OUT="$(mktemp)"
+          if ! npx wrangler deploy --temporary --config wrangler.temporary.jsonc >"$OUT" 2>&1; then
+            sed -E 's#https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+#[CLAIM_URL_REDACTED]#g' "$OUT"
+            exit 1
+          fi
+
+          WORKER_URL="$(grep -Eo 'https://[^[:space:]"'"'<>]+\.workers\.dev[^[:space:]"'"'<>]*' "$OUT" | head -n 1 | sed -E 's/[),.;]+$//')"
+          CLAIM_URL="$(grep -Eo 'https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]"'"'<>]+' "$OUT" | head -n 1)"
+
+          if [[ -z "$WORKER_URL" || -z "$CLAIM_URL" ]]; then
+            sed -E 's#https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+#[CLAIM_URL_REDACTED]#g' "$OUT"
+            echo "Temporary deployment completed without a parseable worker/claim URL."
+            exit 1
+          fi
+
+          CLAIM_CIPHER="$(printf '%s' "$CLAIM_URL" | node scripts/encrypt-cloudflare-claim.mjs)"
+          mkdir -p .cloudflare
+
+          WORKER_URL="$WORKER_URL" CLAIM_CIPHER="$CLAIM_CIPHER" node --input-type=module <<'NODE'
+          import { writeFileSync } from "node:fs";
+          writeFileSync(".cloudflare/deploy-result.json", JSON.stringify({
+            kind: "temporary",
+            workerUrl: process.env.WORKER_URL,
+            encryptedClaim: process.env.CLAIM_CIPHER,
+            claimWithinMinutes: 60,
+            generatedAt: new Date().toISOString()
+          }, null, 2) + "\n");
+          NODE
+
+          echo "::notice title=Cloudflare Worker online::$WORKER_URL"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .cloudflare/deploy-result.json
+          git commit -m "chore: record encrypted Cloudflare deployment handoff [skip ci]"
+          git push origin HEAD:cloudflare-workers
