@@ -70,6 +70,12 @@ jobs:
           WORKER_URL="$(node -e 'const x=require("./.cloudflare/deploy-result.json"); process.stdout.write(x.workerUrl)')"
           echo "::notice title=Cloudflare Worker online::$WORKER_URL"
 
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .cloudflare/deploy-result.json
+          git commit -m "chore: record encrypted Cloudflare deployment handoff [skip ci]"
+          git push origin HEAD:cloudflare-workers
+
           echo "Running live smoke tests against temporary Worker..."
           for ROUTE in / /leistungen /berater /impressum /datenschutz /optimierungsservice /portal/login; do
             CODE="$(curl --retry 4 --retry-delay 2 --retry-all-errors --max-time 20 -L -sS -o /tmp/tarifwerk-smoke-body -w '%{http_code}' "$WORKER_URL$ROUTE")"
@@ -91,8 +97,3 @@ jobs:
           writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
           NODE
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .cloudflare/deploy-result.json
-          git commit -m "chore: record encrypted Cloudflare deployment handoff [skip ci]"
-          git push origin HEAD:cloudflare-workers
