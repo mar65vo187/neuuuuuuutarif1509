@@ -47,9 +47,16 @@ echo.
 echo [5/8] Pruefe Cloudflare-Anmeldung...
 call npx.cmd wrangler whoami >nul 2>nul
 if errorlevel 1 (
-  echo       Browser wird fuer die Cloudflare-Freigabe geoeffnet.
-  echo       Dort nur anmelden und "Allow" bzw. "Zulassen" anklicken.
-  call npx.cmd wrangler login
+  echo.
+  echo       Kein Cloudflare-Login gefunden.
+  echo       Nutze jetzt den Cloudflare DEVICE-LOGIN.
+  echo       Dafuer ist KEIN Opera-/ChatGPT-Browser-Connector notwendig.
+  echo.
+  echo       Wrangler zeigt gleich eine Cloudflare-Adresse und einen kurzen Code.
+  echo       Oeffne die Adresse in irgendeinem Browser oder auf dem Handy,
+  echo       melde dich bei Cloudflare an und bestaetige den Code.
+  echo.
+  call npx.cmd wrangler login --device --browser=false
   if errorlevel 1 goto :failed
 )
 
