@@ -54,8 +54,12 @@ jobs:
           echo "Permanent Cloudflare credentials are not available; using official temporary-account deployment."
           unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL
 
+          # Rebuild with the temporary-account input config. The Cloudflare Vite
+          # plugin emits an output Wrangler config that points at the built Worker.
+          CLOUDFLARE_VITE_WRANGLER_CONFIG_PATH=wrangler.temporary.jsonc npm run build
+
           OUT="$(mktemp)"
-          if ! npx wrangler deploy --temporary --config wrangler.temporary.jsonc >"$OUT" 2>&1; then
+          if ! npx wrangler deploy --temporary >"$OUT" 2>&1; then
             sed -E 's#https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+#[CLAIM_URL_REDACTED]#g' "$OUT"
             exit 1
           fi
