@@ -1,0 +1,384 @@
+From f3ef54952570850ae24161706a6467b6f6d62a00 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 14:13:13 +0200
+Subject: [PATCH] =?UTF-8?q?Firebase=20App=20Hosting=20(EU)=20einrichten,?=
+ =?UTF-8?q?=20Apple-Touch-Icon=20erg=C3=A4nzen?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- apphosting.yaml: Region-Hinweis europe-west4, Secrets, Build mit Migrationen
+- build:firebase-Skript, FIREBASE.md-Anleitung, README-Verweis
+- GitHub-Action für den täglichen Operations-Sweep
+- PNG apple-touch-icon statt SVG, Manifest ergänzt
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DSoEsSASmirebS3MmyAFGv
+---
+ .github/workflows/operations-sweep.yml |  43 +++++++++
+ FIREBASE.md                            | 117 +++++++++++++++++++++++++
+ README.md                              |   6 +-
+ apphosting.yaml                        |  76 ++++++++++++++++
+ package.json                           |   3 +-
+ src/app/apple-icon.tsx                 |  29 ++++++
+ src/app/layout.tsx                     |   2 +-
+ src/app/manifest.ts                    |   6 ++
+ 8 files changed, 279 insertions(+), 3 deletions(-)
+ create mode 100644 .github/workflows/operations-sweep.yml
+ create mode 100644 FIREBASE.md
+ create mode 100644 apphosting.yaml
+ create mode 100644 src/app/apple-icon.tsx
+
+diff --git a/.github/workflows/operations-sweep.yml b/.github/workflows/operations-sweep.yml
+new file mode 100644
+index 0000000..e06e96b
+--- /dev/null
++++ b/.github/workflows/operations-sweep.yml
+@@ -0,0 +1,43 @@
++name: Operations Sweep
++
++# Ersetzt die frühere Netlify Scheduled Function: ruft täglich den internen,
++# per CRON_SECRET geschützten Operations-Sweep der Live-Anwendung auf.
++# Einrichtung: GitHub → Settings → Secrets and variables → Actions →
++# "New repository secret" → Name CRON_SECRET, gleicher Wert wie in Firebase.
++
++on:
++  schedule:
++    - cron: "0 4 * * *"
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++concurrency:
++  group: operations-sweep
++  cancel-in-progress: false
++
++jobs:
++  sweep:
++    runs-on: ubuntu-24.04
++    timeout-minutes: 5
++    env:
++      CRON_SECRET: ${{ secrets.CRON_SECRET }}
++      SITE_URL: ${{ vars.SITE_URL || 'https://www.tarifwerk.eu' }}
++    steps:
++      - name: Operations-Sweep auslösen
++        shell: bash
++        run: |
++          if [ -z "$CRON_SECRET" ]; then
++            echo "::warning::Repository-Secret CRON_SECRET ist nicht gesetzt – Sweep übersprungen."
++            exit 0
++          fi
++          status=$(curl --silent --show-error --max-time 120 --retry 2 --retry-delay 20 \
++            --output /tmp/sweep.json --write-out "%{http_code}" \
++            --header "Authorization: Bearer ${CRON_SECRET}" \
++            "${SITE_URL%/}/api/internal/operations-sweep")
++          cat /tmp/sweep.json; echo
++          if [ "$status" != "200" ]; then
++            echo "::error::Operations-Sweep antwortete mit HTTP $status"
++            exit 1
++          fi
+diff --git a/FIREBASE.md b/FIREBASE.md
+new file mode 100644
+index 0000000..f2fb150
+--- /dev/null
++++ b/FIREBASE.md
+@@ -0,0 +1,117 @@
++# TarifWerk auf Firebase App Hosting
++
++Diese Anleitung zieht die Website von Render auf **Firebase App Hosting** (Google Cloud, Region **europe-west4 / Niederlande**). Die Datenbank bleibt bei **Neon** – es werden keine Daten verschoben.
++
++Konfiguration im Repository:
++
++| Datei | Zweck |
++|---|---|
++| `apphosting.yaml` | Server-Größe, Build-Befehl, Umgebungsvariablen und Secrets |
++| `package.json` → `build:firebase` | Wendet Migrationen an (`scripts/provision-database.mjs`) und baut Next.js |
++| `.github/workflows/operations-sweep.yml` | Täglicher Operations-Sweep um 04:00 UTC (ersetzt die Netlify-Funktion) |
++| `src/app/apple-icon.tsx` | PNG-Icon für iPhone/iPad (iOS zeigt SVG-Icons nicht an) |
++
++---
++
++## 1. Firebase-Projekt anlegen (einmalig, ca. 5 Min.)
++
++1. <https://console.firebase.google.com> → **Projekt hinzufügen** → Name z. B. `tarifwerk` → Google Analytics **nicht** aktivieren.
++2. Links unten **Upgrade** → Tarif **Blaze** wählen und Zahlungsmethode hinterlegen. App Hosting setzt Blaze voraus; bezahlt wird nur, was über das monatliche Gratis-Kontingent hinausgeht.
++3. **Budget-Warnung setzen (wichtig):** <https://console.cloud.google.com/billing> → *Budgets & Benachrichtigungen* → *Budget erstellen* → Betrag z. B. **5 €** → E-Mail-Benachrichtigung bei 50 %, 90 %, 100 %.
++
++## 2. Backend anlegen
++
++1. Firebase-Konsole → **App Hosting** → **Los gehts / Backend erstellen**.
++2. Region: **`europe-west4`** (Niederlande). ⚠️ Lässt sich später nicht ändern.
++3. GitHub verbinden → Repository `mar65vo187/neuuuuuuutarif1509`, Branch `main`, Stammverzeichnis `/`.
++4. Automatische Rollouts: **an**.
++5. Backend-Name: **`tarifwerk`** (wird unten in den Befehlen verwendet).
++
++Der erste Rollout darf fehlschlagen – die Secrets fehlen noch. Das ist normal.
++
++## 3. Secrets hinterlegen
++
++Auf dem eigenen Rechner (Node.js muss installiert sein):
++
++```bash
++npm install -g firebase-tools
++firebase login
++firebase use --add            # Projekt "tarifwerk" auswählen
++```
++
++Dann nacheinander jedes Secret anlegen. Der Befehl fragt den Wert ab und fragt, ob das Backend Zugriff bekommen soll → **Ja** und Backend `tarifwerk` wählen:
++
++```bash
++firebase apphosting:secrets:set tarifwerk-database-url
++firebase apphosting:secrets:set tarifwerk-session-secret
++firebase apphosting:secrets:set tarifwerk-cron-secret
++```
++
++| Secret | Wert |
++|---|---|
++| `tarifwerk-database-url` | Die **gepoolte** Neon-URL (enthält `-pooler`), zu finden in der Neon-Konsole unter *Connection Details*. |
++| `tarifwerk-session-secret` | **Neuer** Zufallswert, mind. 32 Zeichen: `openssl rand -base64 48`. Ein neuer Wert meldet alle alten Portal-Sessions ab – gewollt. |
++| `tarifwerk-cron-secret` | **Neuer** Zufallswert: `openssl rand -base64 48`. Denselben Wert auch in GitHub hinterlegen (Schritt 6). |
++
++Falls die Zugriffsfrage übersprungen wurde:
++
++```bash
++firebase apphosting:secrets:grantaccess tarifwerk-database-url,tarifwerk-session-secret,tarifwerk-cron-secret --backend tarifwerk
++```
++
++**KI-Chat (optional):** Wird der öffentliche KI-Chat genutzt, zusätzlich `firebase apphosting:secrets:set tarifwerk-groq-api-key` ausführen und danach den entsprechenden Block in `apphosting.yaml` einkommentieren. Ohne Schlüssel antwortet der Chat mit der eingebauten lokalen Wissensbasis.
++
++## 4. Rollout starten und testen
++
++1. Firebase-Konsole → App Hosting → `tarifwerk` → **Rollouts** → **Rollout erstellen** (Branch `main`).
++2. Nach dem Build ist die Seite unter `https://tarifwerk--<projekt-id>.europe-west4.hosted.app` erreichbar (genaue Adresse steht in der Konsole).
++3. Prüfen:
++   - `<adresse>/api/ready` → muss `"ok": true` melden
++   - Startseite, `/leistungen`, `/anfrage` öffnen
++   - Portal-Login unter `/portal/login` testen
++
++## 5. Domain umziehen
++
++1. Firebase-Konsole → App Hosting → `tarifwerk` → **Einstellungen → Domains** → **Benutzerdefinierte Domain hinzufügen** → `www.tarifwerk.eu`, danach genauso `tarifwerk.eu`.
++2. Firebase zeigt die nötigen DNS-Einträge (A-/TXT-/CNAME-Records). Beim DNS-Anbieter von `tarifwerk.eu`:
++   - die **alten Einträge auf Render entfernen** (`www` zeigt derzeit auf `tarifwerk.onrender.com`),
++   - die Einträge von Firebase genau so eintragen.
++3. Warten, bis Firebase „Verbunden“ und ein SSL-Zertifikat anzeigt (meist unter 1 Stunde, maximal 24 Stunden).
++4. Die Anwendung leitet `tarifwerk.eu` selbst auf `https://www.tarifwerk.eu` um (`src/proxy.ts`).
++
++## 6. Täglichen Operations-Sweep aktivieren
++
++GitHub → Repository → **Settings → Secrets and variables → Actions** → **New repository secret**:
++
++- Name: `CRON_SECRET`
++- Wert: derselbe Wert wie `tarifwerk-cron-secret`
++
++Test: **Actions → Operations Sweep → Run workflow**. Ein grüner Haken bedeutet, dass alles funktioniert.
++
++## 7. Render abschalten
++
++Erst wenn `https://www.tarifwerk.eu` über Firebase läuft (Schritt 5 abgeschlossen, Seite und Portal getestet):
++
++Render-Dashboard → Service → **Settings → Delete Service**. Die Neon-Datenbank **nicht** löschen – Firebase nutzt sie weiter.
++
++---
++
++## Kosten im Blick
++
++- Gratis-Kontingent pro Monat u. a.: 2 Mio. Requests, 10 GiB ausgehender Traffic, 180.000 vCPU-Sekunden, 2.500 Build-Minuten.
++- `apphosting.yaml` begrenzt die Instanzen auf `maxInstances: 3` und fährt ohne Besucher auf 0 herunter (`minInstances: 0`).
++- `minInstances: 1` verhindert die kurze Anlaufzeit nach Ruhephasen, kostet aber dauerhaft Geld – nur bei Bedarf ändern.
++
++## Datenbank-Region
++
++Neon-Konsole → Projekt → *Settings*: Liegt die Datenbank in einer US-Region, sollte sie für kurze Ladezeiten und einfacheren Datenschutz nach **AWS Europe Central 1 (Frankfurt)** umziehen (neues Neon-Projekt in Frankfurt, `npm run db:backup` / `node scripts/db-restore.mjs`, danach Secret `tarifwerk-database-url` aktualisieren).
++
++## Wenn der Build fehlschlägt
++
++- **„secret … not found“ / „permission denied“:** Schritt 3 wiederholen, inkl. `grantaccess`.
++- **Fehler im Schritt `[provision]`:** `DATABASE_URL` prüfen (gepoolte Neon-URL). Die Migrationen überschreiben niemals vorhandene Daten.
++- **Build bricht beim eigenen Build-Befehl ab:** In `apphosting.yaml` den Block `scripts:` entfernen (dann baut Firebase mit dem Standard `npm run build`) und Migrationen künftig einmalig lokal ausführen: `DATABASE_URL="<neon-url>" PORTAL_ADMIN_EMAIL="m.egenolf@tarifwerk.eu" npm run db:provision`.
++
++## Datenschutzerklärung anpassen
++
++Nach dem Umzug in der Datenschutzerklärung unter **„2. Hosting“** den tatsächlichen Anbieter eintragen (Google / Firebase App Hosting, Serverstandort EU, Region europe-west4) sowie Neon als Datenbank-Dienstleister. Rechtliche Formulierung bitte prüfen lassen.
+diff --git a/README.md b/README.md
+index d3539ca..d0c1377 100644
+--- a/README.md
++++ b/README.md
+@@ -86,7 +86,11 @@ Der Restore prüft vor dem Einlesen die Prüfsummen, wendet das aktuelle Migrati
+ 
+ Empfehlung: Nach jeder größeren Änderung im Portal und vor jedem Update ein Backup anlegen und die Backup-Verzeichnisse zusätzlich auf einem zweiten Speicherort ablegen (z. B. verschlüsselt beim Anbieter des Backups).
+ 
+-## Kostenlos dauerhaft online – ohne Vercel, ohne Firebase
++## Hosting auf Firebase App Hosting (empfohlen)
++
++Die Produktivumgebung läuft auf **Firebase App Hosting** in der EU-Region `europe-west4` mit Neon als Datenbank. Schritt-für-Schritt-Anleitung: **[FIREBASE.md](FIREBASE.md)**. Der folgende Netlify-Abschnitt bleibt nur als Alternative erhalten.
++
++## (Alternative) Kostenlos dauerhaft online – ohne Vercel, ohne Firebase
+ 
+ Diese Anwendung ist ein Node.js-Server mit PostgreSQL: GitHub kann den **Code und die CI kostenlos** hosten (Repository + Workflows in `.github/`), kann ihn aber nicht **ausführen** – GitHub Pages ist rein statisch, GitHub Actions sind nicht dauerhaft erreichbar. Für den kostenlosen Dauerbetrieb ohne Vercel und Firebase: **Netlify Free (Hobby) für die App + Neon Free für die Datenbank**, beide dauerhaft kostenlos, ohne Kreditkarte.
+ 
+diff --git a/apphosting.yaml b/apphosting.yaml
+new file mode 100644
+index 0000000..e0195f1
+--- /dev/null
++++ b/apphosting.yaml
+@@ -0,0 +1,76 @@
++# Firebase App Hosting – Konfiguration für TarifWerk
++# Vollständige Einrichtung: siehe FIREBASE.md
++#
++# Die Region wird NICHT hier festgelegt, sondern einmalig beim Anlegen des
++# Backends in der Firebase-Konsole: europe-west4 (Niederlande, EU) wählen.
++
++runConfig:
++  cpu: 1
++  memoryMiB: 1024
++  # 0 = Server fährt ohne Besucher herunter (kostenlos, erster Aufruf danach
++  # dauert einige Sekunden). 1 = immer wach, verursacht aber laufende Kosten.
++  minInstances: 0
++  # Obergrenze schützt vor unerwarteten Kosten bei Lastspitzen.
++  maxInstances: 3
++  concurrency: 80
++
++scripts:
++  # Wendet vor dem Build die Datenbank-Migrationen an (idempotent, eine
++  # bestehende Datenbank wird nie überschrieben) und baut danach Next.js.
++  buildCommand: npm run build:firebase
++
++env:
++  # --- Pflicht: Secrets (Werte liegen im Google Secret Manager, nie im Repo) ---
++  - variable: DATABASE_URL
++    secret: tarifwerk-database-url
++    availability:
++      - BUILD
++      - RUNTIME
++  - variable: SESSION_SECRET
++    secret: tarifwerk-session-secret
++    availability:
++      - RUNTIME
++  - variable: CRON_SECRET
++    secret: tarifwerk-cron-secret
++    availability:
++      - RUNTIME
++
++  # --- Pflicht: normale Werte ---
++  - variable: PORTAL_ADMIN_EMAIL
++    value: m.egenolf@tarifwerk.eu
++    availability:
++      - BUILD
++      - RUNTIME
++  - variable: NEXT_TELEMETRY_DISABLED
++    value: "1"
++    availability:
++      - BUILD
++      - RUNTIME
++
++  # --- Optional: KI-Schlüssel ---
++  # Erst einkommentieren, NACHDEM das jeweilige Secret angelegt wurde
++  # (firebase apphosting:secrets:set <name>), sonst schlägt der Build fehl.
++  #
++  # - variable: GROQ_API_KEY
++  #   secret: tarifwerk-groq-api-key
++  #   availability:
++  #     - RUNTIME
++  # - variable: XKIRO_API_KEY
++  #   secret: tarifwerk-xkiro-api-key
++  #   availability:
++  #     - RUNTIME
++  # - variable: GEMINI_API_KEY
++  #   secret: tarifwerk-gemini-api-key
++  #   availability:
++  #     - RUNTIME
++  # - variable: OPENROUTER_API_KEY
++  #   secret: tarifwerk-openrouter-api-key
++  #   availability:
++  #     - RUNTIME
++  #
++  # --- Optional: Google Search Console ---
++  # - variable: GOOGLE_SITE_VERIFICATION
++  #   value: "<content-Wert aus dem Meta-Tag>"
++  #   availability:
++  #     - BUILD
++  #     - RUNTIME
+diff --git a/package.json b/package.json
+index bf3a078..4cb507b 100644
+--- a/package.json
++++ b/package.json
+@@ -24,7 +24,8 @@
+     "perf:guard": "node scripts/performance-guard.mjs",
+     "release:manifest": "node scripts/release-manifest.mjs",
+     "audit:repo": "node scripts/audit-repository-completeness.mjs",
+-    "build:with-migrations": "node scripts/migrate-if-configured.mjs && next build"
++    "build:with-migrations": "node scripts/migrate-if-configured.mjs && next build",
++    "build:firebase": "node scripts/provision-database.mjs && next build"
+   },
+   "dependencies": {
+     "dotenv": "17.3.1",
+diff --git a/src/app/apple-icon.tsx b/src/app/apple-icon.tsx
+new file mode 100644
+index 0000000..3903a7c
+--- /dev/null
++++ b/src/app/apple-icon.tsx
+@@ -0,0 +1,29 @@
++import { ImageResponse } from "next/og";
++
++// Apple-Touch-Icon (iOS zeigt keine SVG-Icons an). Quelle: das Markenbild aus
++// public/favicon.svg, quadratisch aufbereitet und als JPEG eingebettet, damit
++// zur Laufzeit kein Dateizugriff nötig ist.
++const BRAND_MARK =
++  "data:image/jpeg;base64,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";
++
++export const size = { width: 180, height: 180 };
++export const contentType = "image/png";
++
++export default function AppleIcon() {
++  return new ImageResponse(
++    (
++      <div
++        style={{
++          width: "100%",
++          height: "100%",
++          display: "flex",
++          backgroundColor: "#0c2140",
++          backgroundImage: `url(${BRAND_MARK})`,
++          backgroundSize: "180px 180px",
++          backgroundRepeat: "no-repeat",
++        }}
++      />
++    ),
++    size,
++  );
++}
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index 01085fb..0a9b4e3 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -39,7 +39,7 @@ export const metadata: Metadata = {
+   icons: {
+     icon: [{ url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }],
+     shortcut: ["/favicon.svg"],
+-    apple: [{ url: "/favicon.svg", sizes: "260x260", type: "image/svg+xml" }],
++    // apple-touch-icon kommt als PNG aus src/app/apple-icon.tsx (iOS ignoriert SVG).
+   },
+   verification: process.env.GOOGLE_SITE_VERIFICATION
+     ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+diff --git a/src/app/manifest.ts b/src/app/manifest.ts
+index 52e9f34..2b57a0f 100644
+--- a/src/app/manifest.ts
++++ b/src/app/manifest.ts
+@@ -17,6 +17,12 @@ export default function manifest(): MetadataRoute.Manifest {
+         type: "image/svg+xml",
+         purpose: "any",
+       },
++      {
++        src: "/apple-icon",
++        sizes: "180x180",
++        type: "image/png",
++        purpose: "any",
++      },
+     ],
+   };
+ }
+-- 
+2.43.0
+
