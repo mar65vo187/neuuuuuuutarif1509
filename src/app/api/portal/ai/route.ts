@@ -73,13 +73,6 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = aiProviderStatus();
-    if (!provider.groq && !provider.xkiro && !provider.gemini && !provider.openrouter) {
-      return NextResponse.json({
-        ok: false,
-        error: "Die echte KI ist im Server noch nicht aktiviert. Es fehlt ein Groq-, Xkiro-, Gemini- oder OpenRouter-API-Key.",
-        configurationRequired: true,
-      }, { status: 503 });
-    }
 
     const used = await usedToday(user.id);
     if (used >= provider.dailyLimit) {
