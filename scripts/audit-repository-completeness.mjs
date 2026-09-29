@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 
 const ROOT = process.cwd();
-const SKIP_DIRS = new Set([".git", ".next", ".tmp", "node_modules"]);
+const SKIP_DIRS = new Set([".git", ".next", ".tmp", "node_modules", "tarifwerk-komplett-2026-09-29-v2"]);
 const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json"];
 const SCANNABLE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const errors = [];
