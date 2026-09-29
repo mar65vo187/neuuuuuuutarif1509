@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
@@ -28,22 +27,18 @@ export async function POST(request: NextRequest, context: Context) {
     const original = Buffer.from(await file.arrayBuffer());
     const image = inspectProfileImage(original);
     if (!image) throw new AdminRequestError("Bitte ein gültiges JPG-, PNG- oder WebP-Bild mit höchstens 20 Megapixeln auswählen.", 422);
-    let data: Buffer;
-    try {
-      // Fully decode, orient and re-encode: reject corrupt payloads and strip metadata/trailing data.
-      data = await sharp(original, { limitInputPixels: 20_000_000, failOn: "warning", animated: false })
-        .rotate()
-        .resize({ width: 1200, height: 1200, fit: "cover", position: "centre" })
-        .webp({ quality: 90 }).toBuffer();
-    } catch { throw new AdminRequestError("Das Bild ist beschädigt oder kann nicht gelesen werden. Bitte eine andere Datei auswählen.", 422); }
+    // The binary-header validator above rejects unsupported formats, oversized dimensions and trailing payload data.
+    // Keep the validated original bytes on Workers to avoid native image codecs while preserving zero-cost uploads.
+    const data = original;
+
     const digest = createHash("sha256").update(data).digest("hex");
     const imageUrl = `/api/advisors/${advisorId}/image?v=${digest.slice(0, 16)}`;
     await db.transaction(async (tx) => {
       await lockAdminMutation(tx, admin.id);
       const [profile] = await tx.select({ id: advisors.id }).from(advisors).where(eq(advisors.id, advisorId)).for("update");
       if (!profile) throw new AdminRequestError("Beraterprofil nicht gefunden.", 404);
-      await tx.insert(advisorImages).values({ advisorId, contentType: "image/webp", data, digest })
-        .onConflictDoUpdate({ target: advisorImages.advisorId, set: { contentType: "image/webp", data, digest, updatedAt: new Date() } });
+      await tx.insert(advisorImages).values({ advisorId, contentType: image.contentType, data, digest })
+        .onConflictDoUpdate({ target: advisorImages.advisorId, set: { contentType: image.contentType, data, digest, updatedAt: new Date() } });
       await tx.update(advisors).set({ imageUrl }).where(eq(advisors.id, advisorId));
     });
     return NextResponse.json({ ok: true, imageUrl });

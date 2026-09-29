@@ -1,0 +1,3 @@
+TarifWerk Cloudflare deployment trigger
+Branch: cloudflare-workers
+Purpose: trigger repository-connected Cloudflare deployment without changing application data or runtime behavior.

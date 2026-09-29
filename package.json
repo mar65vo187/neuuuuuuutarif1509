@@ -1,10 +1,19 @@
 {
   "name": "tarifwerk-website-portal",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "vinext start",
+    "dev:next": "next dev",
+    "build:next": "next build",
+    "start:next": "next start",
+    "dev:vinext": "vite dev",
+    "build:vinext": "vite build",
+    "start:vinext": "vinext start",
+    "deploy": "vinext-cloudflare deploy",
+    "deploy:cloudflare": "vinext-cloudflare deploy",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
@@ -24,7 +33,7 @@
     "perf:guard": "node scripts/performance-guard.mjs",
     "release:manifest": "node scripts/release-manifest.mjs",
     "audit:repo": "node scripts/audit-repository-completeness.mjs",
-    "build:with-migrations": "node scripts/migrate-if-configured.mjs && next build"
+    "build:with-migrations": "node scripts/migrate-if-configured.mjs && vite build"
   },
   "dependencies": {
     "dotenv": "17.3.1",
@@ -35,21 +44,27 @@
     "pg": "8.20.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "sharp": "0.35.4",
+    "react-server-dom-webpack": "19.2.6",
+    "vinext": "1.0.0-beta.12",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.56.0",
     "@tailwindcss/postcss": "4.1.17",
     "@types/node": "22.19.15",
     "@types/pg": "8.18.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@vinext/cloudflare": "1.0.0-beta.10",
+    "@vitejs/plugin-rsc": "0.5.34",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.3.5",
     "postcss": "8.5.28",
     "tailwindcss": "4.1.17",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vite": "^8.0.0",
+    "wrangler": "^4.139.0"
   },
   "engines": {
     "node": ">=20.9.0"

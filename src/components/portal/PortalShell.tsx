@@ -45,7 +45,7 @@ const NAV_SECTIONS = [
       { href: "/portal/rennen", label: "Team-Challenges", icon: Trophy, anyPermission: ["lead.edit"] },
       { href: "/portal/verguetung", label: "Vergütung & Karriere", icon: TrendingUp },
       { href: "/portal/chat", label: "Nachrichten", icon: MessageSquare },
-      { href: "/portal/verwaltung", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
+      { href: "/portal/mitarbeiter", label: "Mitarbeiter verwalten", icon: UserRoundCog, adminOnly: true },
     ],
   },
   {

@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    unoptimized: true,
     remotePatterns: [{ protocol: "https", hostname: "images.pexels.com" }],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [360, 640, 750, 828, 1080, 1200, 1440, 1920],
@@ -13,7 +14,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/admin", destination: "/portal/verwaltung", permanent: false },
+      { source: "/admin", destination: "/portal/mitarbeiter", permanent: false },
       { source: "/beratung", destination: "/berater", permanent: false },
     ];
   },

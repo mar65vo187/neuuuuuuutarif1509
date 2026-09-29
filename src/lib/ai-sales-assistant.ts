@@ -10,7 +10,7 @@ export type AiAssistantHistoryMessage = {
 
 export type AiAssistantAnswer = {
   text: string;
-  provider: "groq" | "xkiro" | "gemini" | "openrouter";
+  provider: "groq" | "xkiro" | "gemini" | "openrouter" | "cloudflare" | "local";
   model: string;
   sources: string[];
   redactions: number;
@@ -415,8 +415,128 @@ async function callOpenRouter(system: string, input: string) {
   return { text, provider: "openrouter" as const, model };
 }
 
+function extractWorkersAiText(payload: unknown) {
+  if (!payload || typeof payload !== "object") return "";
+  const record = payload as {
+    response?: unknown;
+    output_text?: unknown;
+    choices?: Array<{ message?: { content?: unknown }; text?: unknown }>;
+  };
+  if (typeof record.response === "string") return record.response.trim();
+  if (typeof record.output_text === "string") return record.output_text.trim();
+  const choice = Array.isArray(record.choices) ? record.choices[0] : undefined;
+  if (typeof choice?.message?.content === "string") return choice.message.content.trim();
+  if (typeof choice?.text === "string") return choice.text.trim();
+  return "";
+}
+
+async function callCloudflareAi(system: string, input: string) {
+  const { env } = await import("cloudflare:workers");
+  const ai = env.AI;
+  if (!ai || typeof ai.run !== "function") throw new Error("Workers-AI-Binding ist nicht verfügbar.");
+  const model = process.env.TARIFWERK_AI_CLOUDFLARE_MODEL?.trim() || "@cf/google/gemma-4-26b-a4b-it";
+  const result = await ai.run(model, {
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: input },
+    ],
+    max_completion_tokens: 1200,
+    temperature: 0.4,
+    top_p: 0.85,
+    chat_template_kwargs: { enable_thinking: false },
+  });
+  const text = extractWorkersAiText(result).replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  if (!text) throw new Error("Cloudflare Workers AI hat keine Textantwort geliefert.");
+  return { text: text.slice(0, 7000), provider: "cloudflare" as const, model };
+}
+
+function localCoachFallback(input: {
+  question: string;
+  mode: AiAssistantMode;
+  audience: "b2c" | "b2b";
+}) {
+  const q = input.question.trim();
+  const business = input.audience === "b2b";
+  const customer = business ? "Entscheider" : "Kunde";
+  const nextQuestion = business
+    ? "Welche konkrete Auswirkung hat das Problem aktuell auf Kosten, Zeit oder Abläufe?"
+    : "Was ist dir bei der aktuellen Lösung am wichtigsten – Preis, Leistung, Sicherheit oder weniger Aufwand?";
+
+  const byMode: Record<AiAssistantMode, string> = {
+    coach: [
+      "**Stärkster Hebel:** Nicht sofort argumentieren. Kläre zuerst Ausgangslage, Ziel und Entscheidungskriterium.",
+      "",
+      "1. Spiegel kurz, was du verstanden hast.",
+      "2. Stell genau eine vertiefende Frage.",
+      "3. Verknüpfe erst danach einen passenden Nutzen mit dem genannten Bedarf.",
+      "4. Beende mit einem konkreten nächsten Schritt.",
+      "",
+      "**Gute nächste Frage:** " + nextQuestion,
+      "",
+      "**Übung:** Formuliere deinen nächsten Satz in maximal zwei Sätzen – ohne Produktpitch. Ich kann ihn danach schärfen.",
+    ].join("\n"),
+    roleplay: [
+      "**" + customer + ":** „Ich habe gerade ehrlich gesagt keinen Grund, etwas zu ändern. Es läuft doch.“",
+      "",
+      "Antworte jetzt so, wie du es im echten Gespräch tun würdest. Ich bleibe in der Kundenrolle, bis du „Feedback“ oder „Stopp“ schreibst.",
+    ].join("\n"),
+    debrief: [
+      "**Kurz-Auswertung**",
+      "",
+      "- **Einstieg:** War sofort klar, warum das Gespräch relevant ist?",
+      "- **Discovery:** Wurde die aktuelle Situation wirklich verstanden oder zu früh präsentiert?",
+      "- **Bedarf:** Sind Problem, gewünschtes Ergebnis und Entscheidungskriterien konkret?",
+      "- **Nutzen:** Wurde nur das erklärt, was auf den bestätigten Bedarf einzahlt?",
+      "- **Nächster Schritt:** Ist eindeutig, wer was bis wann macht?",
+      "",
+      "**Priorität:** Vertiefe zuerst den Bedarf. Danach lässt sich der Rest sauberer führen.",
+      "",
+      "**Bessere Anschlussfrage:** " + nextQuestion,
+    ].join("\n"),
+    objection: [
+      "**Einwand nicht bekämpfen – diagnostizieren.**",
+      "",
+      "1. Anerkennen: „Verstehe ich.“",
+      "2. Erkunden: „Was genau ist für Sie/dich dabei der entscheidende Punkt?“",
+      "3. Ursache präzisieren statt raten.",
+      "4. Nur auf diese Ursache antworten.",
+      "5. Prüfen: „Ist der Punkt damit geklärt oder gibt es noch etwas dahinter?“",
+      "",
+      "**Nächster Schritt:** Formuliere den Einwand möglichst wörtlich; dann lässt sich die Antwort präziser trainieren.",
+    ].join("\n"),
+    message: [
+      "**Nachrichtenstruktur**",
+      "",
+      "„Hallo, kurze Rückmeldung zu unserem letzten Gespräch: Ich habe den Punkt zu " + (q.slice(0, 120) || "deinem Anliegen") + " noch einmal aufgenommen. Wenn das Thema noch aktuell ist, können wir die relevanten Optionen kurz gemeinsam einordnen. Passt dir eher ein kurzer Anruf oder soll ich dir zuerst die wichtigsten Punkte schicken?“",
+      "",
+      "Kurz, konkreter Kontext, kein künstlicher Druck.",
+    ].join("\n"),
+    product: [
+      "**Produktmodus:** Konkrete Preise, Verfügbarkeiten, Provisionen oder Leistungsdetails darf ich nur aus dem freigegebenen TarifWerk-Produktkatalog bestätigen.",
+      "",
+      "Für die Beratung geh so vor: Bedarf → Muss-Kriterien → Ausschlusskriterien → passende Katalogoptionen → Unterschiede → offene Punkte prüfen.",
+      "",
+      "**Nächste Frage:** Welche konkrete Produktkategorie und welches Kundenkriterium möchtest du einordnen?",
+    ].join("\n"),
+    pitch: [
+      business
+        ? "„Ich melde mich nicht, um Ihnen blind etwas zu verkaufen. Ich möchte zuerst verstehen, ob es bei Ihren aktuellen Verträgen oder Abläufen überhaupt einen relevanten Hebel gibt. Was würden Sie aktuell am ehesten verbessern wollen?“"
+        : "„Ich will dir nicht einfach irgendeinen Tarif hinlegen. Ich würde zuerst kurz prüfen, ob es bei deiner aktuellen Lösung überhaupt etwas Sinnvolles zu verbessern gibt. Was stört dich daran heute am meisten?“",
+      "",
+      "**Warum das funktioniert:** Relevanz vor Produkt, geringe Einstiegshürde und sofort eine echte Discovery-Frage.",
+    ].join("\n"),
+  };
+
+  return {
+    text: byMode[input.mode],
+    provider: "local" as const,
+    model: "tarifwerk-sales-playbook",
+  };
+}
+
 export function aiProviderStatus() {
   return {
+    cloudflare: true,
     groq: Boolean(process.env.GROQ_API_KEY?.trim()),
     xkiro: Boolean(process.env.XKIRO_API_KEY?.trim()),
     gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
@@ -517,8 +637,25 @@ export async function askTarifWerkAi(input: {
     }
   }
 
-  if (!process.env.GROQ_API_KEY?.trim() && !process.env.XKIRO_API_KEY?.trim() && !process.env.GEMINI_API_KEY?.trim() && !process.env.OPENROUTER_API_KEY?.trim()) {
-    throw new Error("KI ist noch nicht aktiviert. GROQ_API_KEY, XKIRO_API_KEY, GEMINI_API_KEY oder OPENROUTER_API_KEY fehlt.");
+  if (preferred === "auto" || preferred === "cloudflare") {
+    try {
+      const result = await callCloudflareAi(system, userInput);
+      return { ...result, sources: knowledge.sources, redactions: redacted.redactions + history.redactions };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Cloudflare Workers AI fehlgeschlagen.";
+      errors.push(message);
+      console.error("[ai] workers-ai unavailable", message);
+    }
   }
-  throw new Error(errors[0] ?? "Kein KI-Provider war erreichbar.");
+
+  const local = localCoachFallback({
+    question: redacted.text,
+    mode: input.mode,
+    audience: input.audience,
+  });
+  return {
+    ...local,
+    sources: ["TarifWerk Sales Playbook", "TarifWerk Unternehmensgrundsätze"],
+    redactions: redacted.redactions + history.redactions,
+  };
 }

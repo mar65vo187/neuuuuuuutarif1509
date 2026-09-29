@@ -1,0 +1,4 @@
+Cloudflare deployment trigger
+Branch: cloudflare-workers
+Triggered: 2026-09-28
+Purpose: trigger Cloudflare Workers Builds Git integration without GitHub Actions.

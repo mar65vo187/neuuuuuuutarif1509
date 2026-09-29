@@ -9,7 +9,7 @@ export type PublicAiMessage = {
 
 type ProviderResult = {
   text: string;
-  provider: "groq" | "xkiro" | "local";
+  provider: "groq" | "xkiro" | "cloudflare" | "local";
   model: string;
 };
 
@@ -160,6 +160,43 @@ async function postChatCompletion(input: {
   return text;
 }
 
+function extractWorkersAiPublicText(payload: unknown) {
+  if (!payload || typeof payload !== "object") return "";
+  const record = payload as {
+    response?: unknown;
+    output_text?: unknown;
+    choices?: Array<{ message?: { content?: unknown }; text?: unknown }>;
+  };
+  if (typeof record.response === "string") return record.response.trim();
+  if (typeof record.output_text === "string") return record.output_text.trim();
+  const choice = Array.isArray(record.choices) ? record.choices[0] : undefined;
+  if (typeof choice?.message?.content === "string") return choice.message.content.trim();
+  if (typeof choice?.text === "string") return choice.text.trim();
+  return "";
+}
+
+async function callCloudflarePublicAi(
+  system: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<ProviderResult> {
+  const { env } = await import("cloudflare:workers");
+  const ai = env.AI;
+  if (!ai || typeof ai.run !== "function") throw new Error("Workers-AI-Binding ist nicht verfügbar.");
+  const model = process.env.TARIFWERK_PUBLIC_AI_CLOUDFLARE_MODEL?.trim()
+    || process.env.TARIFWERK_AI_CLOUDFLARE_MODEL?.trim()
+    || "@cf/google/gemma-4-26b-a4b-it";
+  const result = await ai.run(model, {
+    messages: [{ role: "system", content: system }, ...messages],
+    max_completion_tokens: 520,
+    temperature: 0.5,
+    top_p: 0.85,
+    chat_template_kwargs: { enable_thinking: false },
+  });
+  const text = extractWorkersAiPublicText(result).replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  if (!text) throw new Error("Cloudflare Workers AI hat keine Textantwort geliefert.");
+  return { text: text.slice(0, 3200), provider: "cloudflare", model };
+}
+
 function callLocalFallback(input: {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   audience: AudienceMode;
@@ -285,7 +322,7 @@ export async function askPublicTarifWerkAi(input: {
   const preferred = (process.env.TARIFWERK_PUBLIC_AI_PROVIDER?.trim() || "auto").toLowerCase();
   const errors: string[] = [];
 
-  if (preferred !== "xkiro" && input.allowGroq !== false) {
+  if ((preferred === "auto" || preferred === "groq") && input.allowGroq !== false) {
     try {
       const result = await callGroq(system, messages);
       return { ...result, redactions, fallback: false };
@@ -295,12 +332,22 @@ export async function askPublicTarifWerkAi(input: {
     }
   }
 
+  if (preferred === "auto" || preferred === "xkiro") {
+    try {
+      const result = await callXkiroFallback(system, messages);
+      return { ...result, redactions, fallback: preferred !== "xkiro" };
+    } catch (error) {
+      errors.push("xkiro:" + (error instanceof Error ? error.message : "unbekannt"));
+      console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
+    }
+  }
+
   try {
-    const result = await callXkiroFallback(system, messages);
-    return { ...result, redactions, fallback: preferred !== "xkiro" };
+    const result = await callCloudflarePublicAi(system, messages);
+    return { ...result, redactions, fallback: true };
   } catch (error) {
-    errors.push("xkiro:" + (error instanceof Error ? error.message : "unbekannt"));
-    console.error("[public-ai] xkiro fallback unavailable", error instanceof Error ? error.message : "unknown");
+    errors.push("cloudflare:" + (error instanceof Error ? error.message : "unbekannt"));
+    console.error("[public-ai] workers-ai fallback unavailable", error instanceof Error ? error.message : "unknown");
   }
 
   console.error("[public-ai] external providers unavailable; using local fallback", errors.join(" | "));

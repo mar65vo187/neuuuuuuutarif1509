@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tarifwerk",
+  "compatibility_date": "2026-09-28",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "main": "vinext/server/fetch-handler",
+  "preview_urls": true,
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "PORTAL_OWNER_EMAIL": "m.egenolf@tarifwerk.eu",
+    "TARIFWERK_AI_PROVIDER": "cloudflare",
+    "TARIFWERK_PUBLIC_AI_PROVIDER": "cloudflare"
+  }
+}

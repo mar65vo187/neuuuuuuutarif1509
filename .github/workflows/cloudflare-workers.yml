@@ -1,0 +1,99 @@
+name: Cloudflare Workers Production
+
+on:
+  push:
+    branches:
+      - cloudflare-workers
+    paths-ignore:
+      - ".cloudflare/deploy-result.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tarifwerk-cloudflare-production
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Vinext compatibility check
+        run: npx vinext check
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "Using permanent Cloudflare credentials."
+            npx @vinext/cloudflare deploy
+            exit 0
+          fi
+
+          echo "Permanent Cloudflare credentials are not available; using official temporary-account deployment."
+          unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL
+
+          # Rebuild with the temporary-account input config. The Cloudflare Vite
+          # plugin emits an output Wrangler config that points at the built Worker.
+          CLOUDFLARE_VITE_WRANGLER_CONFIG_PATH=wrangler.temporary.jsonc npm run build
+          node scripts/patch-generated-wrangler.mjs
+          node scripts/diagnose-cloudflare-bundle.mjs
+
+          OUT="$(mktemp)"
+          if ! npx wrangler deploy --temporary >"$OUT" 2>&1; then
+            sed -E 's#https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+#[CLAIM_URL_REDACTED]#g' "$OUT"
+            exit 1
+          fi
+
+          node scripts/capture-cloudflare-deploy.mjs "$OUT"
+          WORKER_URL="$(node -e 'const x=require("./.cloudflare/deploy-result.json"); process.stdout.write(x.workerUrl)')"
+          echo "::notice title=Cloudflare Worker online::$WORKER_URL"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .cloudflare/deploy-result.json
+          git commit -m "chore: record encrypted Cloudflare deployment handoff [skip ci]"
+          git push origin HEAD:cloudflare-workers
+
+          echo "Running live smoke tests against temporary Worker..."
+          for ROUTE in / /leistungen /berater /impressum /datenschutz /optimierungsservice /portal/login; do
+            CODE="$(curl --retry 4 --retry-delay 2 --retry-all-errors --max-time 20 -L -sS -o /tmp/tarifwerk-smoke-body -w '%{http_code}' "$WORKER_URL$ROUTE")"
+            echo "$ROUTE -> HTTP $CODE"
+            if [[ "$CODE" -lt 200 || "$CODE" -ge 400 ]]; then
+              echo "Smoke test failed for $ROUTE"
+              head -c 1000 /tmp/tarifwerk-smoke-body || true
+              exit 1
+            fi
+          done
+
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const path = ".cloudflare/deploy-result.json";
+          const value = JSON.parse(readFileSync(path, "utf8"));
+          value.smokeTested = true;
+          value.smokeRoutes = ["/", "/leistungen", "/berater", "/impressum", "/datenschutz", "/optimierungsservice", "/portal/login"];
+          value.smokeTestedAt = new Date().toISOString();
+          writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
+          NODE
+
