@@ -1,0 +1,38 @@
+name: Operations Sweep
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operations-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      SITE_URL: ${{ vars.SITE_URL || 'https://www.tarifwerk.eu' }}
+    steps:
+      - name: Operations-Sweep auslösen
+        shell: bash
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Repository-Secret CRON_SECRET ist nicht gesetzt – Sweep übersprungen."
+            exit 0
+          fi
+          status=$(curl --silent --show-error --max-time 120 --retry 2 --retry-delay 20 \
+            --output /tmp/sweep.json --write-out "%{http_code}" \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "${SITE_URL%/}/api/internal/operations-sweep")
+          cat /tmp/sweep.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::Operations-Sweep antwortete mit HTTP $status"
+            exit 1
+          fi
