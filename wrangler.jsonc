@@ -2,10 +2,15 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tarifwerk",
   "compatibility_date": "2026-09-28",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "main": "vinext/server/app-router-entry",
   "preview_urls": true,
   "assets": {
     "not_found_handling": "none"
+  },
+  "ai": {
+    "binding": "AI"
   }
 }
