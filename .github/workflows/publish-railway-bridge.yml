@@ -30,7 +30,6 @@ jobs:
         run: |
           set -euo pipefail
           docker run --detach --name tarifwerk-runtime             --env NODE_ENV=production             --env HOSTNAME=0.0.0.0             --env PORT=3000             --publish 127.0.0.1:3000:3000             tarifwerk-runtime:ci
-          trap 'docker stop tarifwerk-runtime >/dev/null 2>&1 || true; docker rm -f tarifwerk-runtime >/dev/null 2>&1 || true' EXIT
 
       - name: Container HTTP smoke
         shell: bash
@@ -48,3 +47,10 @@ jobs:
           done
           docker logs tarifwerk-runtime || true
           exit 1
+
+      - name: Stop container
+        if: always()
+        shell: bash
+        run: |
+          docker stop tarifwerk-runtime >/dev/null 2>&1 || true
+          docker rm -f tarifwerk-runtime >/dev/null 2>&1 || true
