@@ -86,6 +86,10 @@ Der Restore prüft vor dem Einlesen die Prüfsummen, wendet das aktuelle Migrati
 
 Empfehlung: Nach jeder größeren Änderung im Portal und vor jedem Update ein Backup anlegen und die Backup-Verzeichnisse zusätzlich auf einem zweiten Speicherort ablegen (z. B. verschlüsselt beim Anbieter des Backups).
 
+## Firebase App Hosting vorbereiten
+
+Das Repository enthält eine sichere Firebase-App-Hosting-Konfiguration für den `main`-Branch. Firebase bleibt beim offiziellen Next.js-Framework-Adapter; Datenbank-Migrationen laufen idempotent im `prebuild`, ohne vorhandene CRM-Daten zu seeden oder zu überschreiben. Die vollständige Umschalt- und Secret-Anleitung steht in **[FIREBASE.md](FIREBASE.md)**.
+
 ## Kostenlos dauerhaft online – ohne Vercel, ohne Firebase
 
 Diese Anwendung ist ein Node.js-Server mit PostgreSQL: GitHub kann den **Code und die CI kostenlos** hosten (Repository + Workflows in `.github/`), kann ihn aber nicht **ausführen** – GitHub Pages ist rein statisch, GitHub Actions sind nicht dauerhaft erreichbar. Für den kostenlosen Dauerbetrieb ohne Vercel und Firebase: **Netlify Free (Hobby) für die App + Neon Free für die Datenbank**, beide dauerhaft kostenlos, ohne Kreditkarte.
