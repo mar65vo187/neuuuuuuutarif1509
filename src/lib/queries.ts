@@ -10,6 +10,31 @@ import { getLeadPageBounds, leadSearchPattern, normalizeLeadProductFilter } from
 /*  Advisors                                                           */
 /* ------------------------------------------------------------------ */
 
+const PUBLIC_ADVISOR_FALLBACK: Advisor[] = [
+  {
+    id: 0,
+    slug: "marvin-egenolf",
+    name: "Marvin Noel Egenolf",
+    title: "Gründer von TarifWerk",
+    city: "Wiesbaden",
+    region: "Deutschlandweit",
+    regions: ["Wiesbaden", "Mainz", "Frankfurt am Main", "Worms", "Deutschlandweit (digital)"],
+    topics: ["Internet, Mobilfunk, TV", "Strom & Gas", "Versicherungen", "Sicherheitslösungen", "Klimaanlagen", "Solar (Photovoltaik) & Wärmepumpe", "Edelmetalle", "Immobilien"],
+    bio: "Marvin hat TarifWerk gegründet, um mehrere Vertrags-, Versorgungs- und Entscheidungsthemen in einem persönlichen Beratungsprozess zusammenzuführen. Sein Anspruch: relevante Kriterien offen erklären, Empfehlungen nachvollziehbar begründen und danach erreichbar bleiben.",
+    quote: "Ich möchte, dass Sie nach unserem Gespräch verstehen, welche Möglichkeiten Sie haben und warum ein nächster Schritt sinnvoll ist – oder eben nicht.",
+    phone: "+4915782301076",
+    whatsapp: "4915782301076",
+    email: SITE.email,
+    initials: "ME",
+    imageUrl: null,
+    isFounder: true,
+    active: true,
+    sortOrder: 1,
+    createdAt: new Date("2025-01-01T00:00:00.000Z"),
+  },
+];
+
+
 export async function getActiveAdvisors(): Promise<Advisor[]> {
   try {
     const rows = await db
@@ -19,7 +44,7 @@ export async function getActiveAdvisors(): Promise<Advisor[]> {
       .orderBy(asc(advisors.sortOrder), asc(advisors.name));
     return rows.map((a) => a.slug === "marvin-egenolf" ? { ...a, email: SITE.email } : a);
   } catch {
-    throw new Error("Beraterdaten momentan nicht erreichbar.");
+    return PUBLIC_ADVISOR_FALLBACK;
   }
 }
 
@@ -28,7 +53,7 @@ export async function getAdvisorBySlug(slug: string): Promise<Advisor | null> {
     const [a] = await db.select().from(advisors).where(and(eq(advisors.slug, slug), eq(advisors.active, true))).limit(1);
     return a ? (a.slug === "marvin-egenolf" ? { ...a, email: SITE.email } : a) : null;
   } catch {
-    throw new Error("Beraterprofil momentan nicht erreichbar.");
+    return PUBLIC_ADVISOR_FALLBACK.find((advisor) => advisor.slug === slug) ?? null;
   }
 }
 
