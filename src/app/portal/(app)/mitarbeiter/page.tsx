@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import AdministrationPage from "../verwaltung/page";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -7,5 +7,5 @@ export const metadata = {
 };
 
 export default function MitarbeiterPage() {
-  redirect("/portal/verwaltung");
+  return <AdministrationPage />;
 }
