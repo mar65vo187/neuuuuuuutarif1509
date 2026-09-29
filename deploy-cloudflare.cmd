@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 title TarifWerk - Cloudflare Deploy
 cd /d "%~dp0"
 
@@ -14,7 +14,7 @@ where node.exe >nul 2>nul
 if errorlevel 1 (
   set "NODEHOME="
   for /f "usebackq delims=" %%D in (`powershell.exe -NoProfile -Command "$roots=@($env:USERPROFILE+'\Downloads',$env:USERPROFILE+'\Desktop',$env:USERPROFILE+'\Tools'); $n=Get-ChildItem -Path $roots -Recurse -Filter node.exe -ErrorAction SilentlyContinue ^| Where-Object { $_.FullName -match 'node-v22\..*-win-x64' } ^| Select-Object -First 1; if($n){$n.Directory.FullName}"`) do set "NODEHOME=%%D"
-  if defined NODEHOME set "PATH=%NODEHOME%;%PATH%"
+  if defined NODEHOME set "PATH=!NODEHOME!;!PATH!"
 )
 
 where node.exe >nul 2>nul
