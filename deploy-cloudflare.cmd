@@ -9,7 +9,7 @@ echo   TarifWerk - Cloudflare Workers Deployment
 echo ============================================================
 echo.
 
-echo [1/7] Suche Node.js...
+echo [1/8] Suche Node.js...
 where node.exe >nul 2>nul
 if errorlevel 1 (
   set "NODEHOME="
@@ -29,22 +29,22 @@ where npx.cmd >nul 2>nul
 if errorlevel 1 goto :npm_missing
 
 echo.
-echo [2/7] Installiere Projekt-Abhaengigkeiten...
+echo [2/8] Installiere Projekt-Abhaengigkeiten...
 call npm.cmd install --no-audit --no-fund
 if errorlevel 1 goto :failed
 
 echo.
-echo [3/7] Pruefe Next.js/vinext-Kompatibilitaet...
+echo [3/8] Pruefe Next.js/vinext-Kompatibilitaet...
 call npx.cmd vinext check
 if errorlevel 1 goto :failed
 
 echo.
-echo [4/7] Erzeuge Produktions-Build...
+echo [4/8] Erzeuge Produktions-Build...
 call npm.cmd run build
 if errorlevel 1 goto :failed
 
 echo.
-echo [5/7] Pruefe Cloudflare-Anmeldung...
+echo [5/8] Pruefe Cloudflare-Anmeldung...
 call npx.cmd wrangler whoami >nul 2>nul
 if errorlevel 1 (
   echo       Browser wird fuer die Cloudflare-Freigabe geoeffnet.
@@ -57,12 +57,30 @@ call npx.cmd wrangler whoami
 if errorlevel 1 goto :failed
 
 echo.
-echo [6/7] Lade TarifWerk zu Cloudflare Workers hoch...
+echo [6/8] Lade TarifWerk zu Cloudflare Workers hoch...
 call npx.cmd @vinext/cloudflare deploy --skip-build
 if errorlevel 1 goto :failed
 
 echo.
-echo [7/7] DEPLOYMENT ABGESCHLOSSEN
+echo [7/8] Pruefe Server-Sitzungsschluessel...
+set "SECRET_LIST=%TEMP%\tarifwerk-worker-secrets-%RANDOM%.json"
+call npx.cmd wrangler secret list --format json > "!SECRET_LIST!" 2>nul
+findstr /i /c:"SESSION_SECRET" "!SECRET_LIST!" >nul 2>nul
+if errorlevel 1 (
+  echo       SESSION_SECRET fehlt - erzeuge ihn einmalig sicher.
+  set "GENERATED_SESSION_SECRET="
+  for /f "usebackq delims=" %%S in (`powershell.exe -NoProfile -Command "$b=New-Object byte[] 48; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)"`) do set "GENERATED_SESSION_SECRET=%%S"
+  if not defined GENERATED_SESSION_SECRET goto :secret_failed
+  echo(!GENERATED_SESSION_SECRET!| npx.cmd wrangler secret put SESSION_SECRET
+  set "GENERATED_SESSION_SECRET="
+  if errorlevel 1 goto :secret_failed
+) else (
+  echo       Vorhandener SESSION_SECRET bleibt unveraendert.
+)
+del /q "!SECRET_LIST!" >nul 2>nul
+
+echo.
+echo [8/8] DEPLOYMENT ABGESCHLOSSEN
 echo.
 echo Die oben ausgegebene https://...workers.dev-Adresse ist der Test-Link.
 echo www.tarifwerk.eu wird mit diesem Skript absichtlich NICHT automatisch
@@ -83,6 +101,16 @@ exit /b 1
 echo.
 echo FEHLER: npm.cmd oder npx.cmd wurde neben Node.js nicht gefunden.
 echo Bitte die vollstaendige Node-ZIP entpacken, nicht nur node.exe.
+echo.
+pause
+exit /b 1
+
+:secret_failed
+set "GENERATED_SESSION_SECRET="
+if defined SECRET_LIST del /q "!SECRET_LIST!" >nul 2>nul
+echo.
+echo FEHLER: SESSION_SECRET konnte nicht sicher bei Cloudflare hinterlegt werden.
+echo Der Worker wurde nicht als fertig markiert.
 echo.
 pause
 exit /b 1
