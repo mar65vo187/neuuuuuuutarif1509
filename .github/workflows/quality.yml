@@ -97,11 +97,11 @@ jobs:
       - name: Verify migrations
         run: node scripts/verify-migrations.mjs
 
-      - name: Verify privacy functions with rollback
-        run: node scripts/verify-privacy-functions.mjs
-
       - name: Verify product operations schema
         run: node scripts/verify-product-ops-schema.mjs
+
+      - name: Verify privacy functions (Art. 15/17 DSGVO)
+        run: node scripts/verify-privacy-functions.mjs
 
       - name: PostgreSQL backup and restore smoke
         run: bash scripts/ci-recovery-smoke.sh
