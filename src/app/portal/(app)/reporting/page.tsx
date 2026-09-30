@@ -10,6 +10,8 @@ import { getEnterpriseReport } from "@/lib/enterprise";
 import { isCompensationOwner } from "@/lib/compensation";
 import { BI_METRICS, BI_METRIC_BY_KEY } from "@/lib/bi-metrics";
 import { permissionSnapshot, PORTAL_PERMISSION } from "@/lib/enterprise-access";
+import { getPipelineForecast } from "@/lib/pipeline-forecast";
+import { LEAD_LOST_REASON_LABELS, type LeadLostReason } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +50,9 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
 
   const { days: raw } = await searchParams;
   const days = [7, 30, 90, 365].includes(Number(raw)) ? Number(raw) : 30;
-  const report = await getEnterpriseReport(user, days);
+  const [report, forecast] = await Promise.all([getEnterpriseReport(user, days), getPipelineForecast(user)]);
+  const forecastMonthLabel = (month: string) => new Date(`${month}-01T12:00:00Z`).toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "Europe/Berlin" });
+  const lostTotal = forecast.lostReasons.reduce((sum, entry) => sum + entry.count, 0);
   const owner = isCompensationOwner(user);
 
   const cards = [
@@ -118,6 +122,108 @@ export default async function ReportingPage({ searchParams }: { searchParams: Pr
         <p className="mt-3 text-[28px] font-extrabold tracking-tight">{value}</p>
         <p className="mt-1 text-[11.5px] text-steel">{hint}</p>
       </Card>)}
+    </section>
+
+    <section aria-labelledby="lead-forecast-title">
+      <Card>
+        <div>
+          <p className="eyebrow text-electric-deep">Lead-Forecast</p>
+          <h2 id="lead-forecast-title" className="mt-1 text-[18px] font-extrabold">Gewichtete Pipeline aus Berater-Einschätzungen</h2>
+          <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-steel">Erwarteter Wert × Abschlusswahrscheinlichkeit aller offenen Leads. Leads ohne Wahrscheinlichkeit zählen mit 0 %, damit fehlende Angaben den Forecast nicht aufblähen.</p>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Gewichteter Forecast</p>
+            <p className="mt-2 text-[28px] font-extrabold">{money(forecast.weightedCents / 100)}</p>
+            <p className="mt-1 text-[10.5px] text-steel">aus {forecast.leadsWithValue} von {forecast.openLeads} offenen Leads mit Wert</p>
+          </div>
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Pipeline-Volumen</p>
+            <p className="mt-2 text-[28px] font-extrabold">{money(forecast.valueCents / 100)}</p>
+            <p className="mt-1 text-[10.5px] text-steel">ungewichtete Summe der erwarteten Werte</p>
+          </div>
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Wert-Abdeckung</p>
+            <p className="mt-2 text-[28px] font-extrabold">{forecast.openLeads ? Math.round(forecast.leadsWithValue / forecast.openLeads * 100) : 0}%</p>
+            <p className="mt-1 text-[10.5px] text-steel">offene Leads mit erwartetem Wert</p>
+          </div>
+          <div className="rounded-2xl border border-line bg-paper/60 p-4">
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.09em] text-steel">Abschlussdatum überschritten</p>
+            <p className="mt-2 text-[28px] font-extrabold">{forecast.overdueCloseDates}</p>
+            <p className="mt-1 text-[10.5px] text-steel">offene Leads mit Datum in der Vergangenheit</p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-2xl border border-line p-4">
+            <h3 className="text-[14px] font-extrabold">Erwartete Abschlüsse · nächste 6 Monate</h3>
+            {forecast.months.length === 0
+              ? <p className="mt-2 text-[12px] text-steel">Noch keine offenen Leads mit erwartetem Abschlussdatum.</p>
+              : <table className="mt-3 w-full text-left text-[12.5px]">
+                <thead><tr className="text-[10.5px] uppercase tracking-wider text-steel"><th scope="col" className="py-1.5 font-bold">Monat</th><th scope="col" className="py-1.5 text-right font-bold">Leads</th><th scope="col" className="py-1.5 text-right font-bold">Volumen</th><th scope="col" className="py-1.5 text-right font-bold">Gewichtet</th></tr></thead>
+                <tbody>
+                  {forecast.months.map((month) => <tr key={month.month} className="border-t border-line">
+                    <td className="py-2 font-semibold">{forecastMonthLabel(month.month)}</td>
+                    <td className="py-2 text-right">{month.leads}</td>
+                    <td className="py-2 text-right">{money(month.valueCents / 100)}</td>
+                    <td className="py-2 text-right font-bold">{money(month.weightedCents / 100)}</td>
+                  </tr>)}
+                </tbody>
+              </table>}
+          </div>
+          <div className="rounded-2xl border border-line p-4">
+            <h3 className="text-[14px] font-extrabold">Verlustgründe · letzte 12 Monate</h3>
+            {lostTotal === 0
+              ? <p className="mt-2 text-[12px] text-steel">Keine verlorenen Leads im Zeitraum.</p>
+              : <ul className="mt-3 space-y-2">
+                {forecast.lostReasons.map((entry) => {
+                  const share = Math.round(entry.count / lostTotal * 100);
+                  const label = entry.reason && entry.reason in LEAD_LOST_REASON_LABELS ? LEAD_LOST_REASON_LABELS[entry.reason as LeadLostReason] : "Ohne Angabe";
+                  return <li key={entry.reason ?? "none"}>
+                    <div className="flex items-center justify-between text-[12.5px]"><span className="font-semibold">{label}</span><span className="text-steel">{entry.count} · {share} %</span></div>
+                    <div className="mt-1 h-1.5 rounded-full bg-line" aria-hidden="true"><div className="h-1.5 rounded-full bg-electric" style={{ width: `${share}%` }} /></div>
+                  </li>;
+                })}
+              </ul>}
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-2xl border border-line p-4">
+            <h3 className="text-[14px] font-extrabold">Forecast je Berater</h3>
+            <p className="mt-0.5 text-[10.5px] text-steel">Offene Leads, alphabetisch – kein Ranking.</p>
+            {forecast.advisors.length === 0
+              ? <p className="mt-2 text-[12px] text-steel">Keine offenen Leads.</p>
+              : <table className="mt-3 w-full text-left text-[12.5px]">
+                <thead><tr className="text-[10.5px] uppercase tracking-wider text-steel"><th scope="col" className="py-1.5 font-bold">Berater</th><th scope="col" className="py-1.5 text-right font-bold">Offen</th><th scope="col" className="py-1.5 text-right font-bold">Mit Wert</th><th scope="col" className="py-1.5 text-right font-bold">Gewichtet</th></tr></thead>
+                <tbody>
+                  {forecast.advisors.map((row) => <tr key={row.employeeId ?? "none"} className="border-t border-line">
+                    <td className="py-2 font-semibold">{row.name}</td>
+                    <td className="py-2 text-right">{row.openLeads}</td>
+                    <td className="py-2 text-right">{row.leadsWithValue}</td>
+                    <td className="py-2 text-right font-bold">{money(row.weightedCents / 100)}</td>
+                  </tr>)}
+                </tbody>
+              </table>}
+          </div>
+          <div className="rounded-2xl border border-line p-4">
+            <h3 className="text-[14px] font-extrabold">Reaktionszeit · letzte 90 Tage</h3>
+            <p className="mt-0.5 text-[10.5px] text-steel">Zeit von der Anfrage bis zum ersten protokollierten Anruf (Median), ohne Bewerbungen.</p>
+            {forecast.responseTimes.length === 0
+              ? <p className="mt-2 text-[12px] text-steel">Keine Leads im Zeitraum.</p>
+              : <table className="mt-3 w-full text-left text-[12.5px]">
+                <thead><tr className="text-[10.5px] uppercase tracking-wider text-steel"><th scope="col" className="py-1.5 font-bold">Berater</th><th scope="col" className="py-1.5 text-right font-bold">Leads</th><th scope="col" className="py-1.5 text-right font-bold">≤ 24 h</th><th scope="col" className="py-1.5 text-right font-bold">Median</th><th scope="col" className="py-1.5 text-right font-bold">Ohne Anruf</th></tr></thead>
+                <tbody>
+                  {forecast.responseTimes.map((row) => <tr key={row.employeeId ?? "none"} className="border-t border-line">
+                    <td className="py-2 font-semibold">{row.name}</td>
+                    <td className="py-2 text-right">{row.leads}</td>
+                    <td className="py-2 text-right">{row.leads ? Math.round(row.within24h / row.leads * 100) : 0} %</td>
+                    <td className="py-2 text-right font-bold">{row.medianHours === null ? "–" : `${row.medianHours.toLocaleString("de-DE")} h`}</td>
+                    <td className="py-2 text-right">{row.leads - row.contacted}</td>
+                  </tr>)}
+                </tbody>
+              </table>}
+          </div>
+        </div>
+      </Card>
     </section>
 
     <section aria-labelledby="leadership-forecast-title">

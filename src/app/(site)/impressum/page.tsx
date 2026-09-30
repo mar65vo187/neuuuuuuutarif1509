@@ -28,6 +28,14 @@ export default function ImpressumPage() {
       </section>
 
       <section>
+        <h2>Vermittlerangaben</h2>
+        <p>
+          Versicherungen und Immobilien vermitteln ausschließlich Berater mit der jeweils erforderlichen Gewerbeerlaubnis. Status,
+          Registrierung und Erlaubnisbehörde finden Sie in der <a href="/erstinformation">Erstinformation</a>.
+        </p>
+      </section>
+
+      <section>
         <h2>Redaktionell verantwortlich</h2>
         <p>Marvin Noel Egenolf</p>
       </section>

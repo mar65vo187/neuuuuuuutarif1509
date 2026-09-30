@@ -34,7 +34,7 @@ test("lead workspaces reject missing permission before reading CRM data", async 
       "@/lib/portal-productivity": { listSavedViews: rejectRead },
       "@/lib/lead-intelligence": {}, "@/lib/call-intelligence": {},
       "@/lib/portal-date-time": { formatBerlinDateTimeInput: () => "" },
-      ...Object.fromEntries(["ui", "LeadBulkList", "SavedViewsBar", "LeadActions", "LeadProductManager", "LeadPipelineBoard"].map(name => [`@/components/portal/${name}`, {}])),
+      ...Object.fromEntries(["ui", "LeadBulkList", "SavedViewsBar", "LeadActions", "LeadForecastPanel", "LeadPrivacyPanel", "LeadProductManager", "LeadPipelineBoard"].map(name => [`@/components/portal/${name}`, {}])),
     };
     const Page = loadTs(`src/app/portal/(app)/${path}`, dependencies).default;
     await assert.rejects(Page({ searchParams: Promise.resolve({}), params: Promise.resolve({ id: "42" }) }), /Redirect: \/portal$/);

@@ -16,6 +16,7 @@ const routes = [
   "/freund-werben/status",
   "/agb",
   "/impressum",
+  "/erstinformation",
   "/datenschutz",
   "/datenschutz/en",
   "/leistungen/internet-glasfaser-tv",

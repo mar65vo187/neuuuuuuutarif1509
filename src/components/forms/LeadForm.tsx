@@ -362,9 +362,16 @@ export function LeadForm({ type = "termin", advisorSlug, referralCode, advisorNa
       )}
 
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className={`inline-flex items-center gap-2 text-[12.5px] ${muted}`}>
-          <ShieldCheck className="h-4 w-4 text-electric" /> Kostenlos · unverbindlich · kein Datenverkauf
-        </p>
+        <div className={`max-w-md text-[12.5px] ${muted}`}>
+          <p className="inline-flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-electric" /> Kostenlos · unverbindlich · kein Datenverkauf
+          </p>
+          <p className="mt-1 text-[11.5px] leading-relaxed">
+            {business
+              ? "So verdienen wir: Kommt über uns ein Vertrag zustande, erhalten wir in vielen Bereichen eine Provision vom Anbieter. Die Erstorientierung bleibt für Sie kostenlos."
+              : "So verdienen wir: Kommt über uns ein Vertrag zustande, erhalten wir in vielen Bereichen eine Provision vom Anbieter. Die Erstorientierung bleibt für dich kostenlos."}
+          </p>
+        </div>
         <div className="flex gap-2">
           {step > 0 && (
             <Button type="button" variant={dark ? "secondary" : "dark"} magnetic={false} onClick={() => setStep(0)} icon={<ArrowLeft />} disabled={loading}>

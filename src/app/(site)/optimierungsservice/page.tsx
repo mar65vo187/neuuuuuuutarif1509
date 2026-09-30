@@ -16,6 +16,7 @@ import { pageMetadata } from "@/lib/seo";
 import { resolveSiteAudience } from "@/lib/audience-server";
 import { withAudience } from "@/lib/audience";
 import { SITE } from "@/lib/content";
+import { OPTIMIZATION_PUBLIC_TERMS } from "@/lib/optimization-shared";
 
 type Props = { searchParams: Promise<{ audience?: string | string[] }> };
 
@@ -109,7 +110,7 @@ export default async function OptimizationServicePage({ searchParams }: Props) {
       price: "1.99",
       priceCurrency: "EUR",
       url: `${SITE.url}/optimierungsservice`,
-      description: "Mitgliedsbeitrag pro Monat für die laufende Organisation und Übersicht des Optimierungsservices.",
+      description: "Mitgliedsbeitrag pro Monat, Mindestlaufzeit 12 Monate, danach monatlich kündbar. Gemäß § 19 UStG ohne Umsatzsteuer.",
     },
   };
 
@@ -129,8 +130,14 @@ export default async function OptimizationServicePage({ searchParams }: Props) {
             <p className="eyebrow text-electric-soft">Mitgliedschaft</p>
             <div className="mt-4 flex items-end gap-2"><span className="text-[48px] font-extrabold tracking-tight">1,99 €</span><span className="pb-2 text-[13px] font-semibold text-silver">pro Monat</span></div>
             <p className="mt-4 text-[14px] leading-relaxed text-silver">Der Mitgliedsbeitrag bezahlt die laufende Organisation und Übersicht des Optimierungsservices. Produkt- oder Vermittlungsvergütungen können – je nach tatsächlichem Partner und Leistung – zusätzlich an anderer Stelle entstehen und werden transparent eingeordnet.</p>
-            <Link href={withAudience("/anfrage?thema=Optimierungsservice", "b2c")} className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-electric px-6 py-3 text-[14px] font-extrabold text-white hover:bg-electric-deep">Interesse anmelden <ArrowRight className="h-4 w-4" /></Link>
+            <Link href={withAudience("/anfrage?thema=Optimierungsservice", "b2c")} className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-electric px-6 py-3 text-[14px] font-extrabold text-white hover:bg-electric-deep">Service erklären lassen <ArrowRight className="h-4 w-4" /></Link>
             <p className="mt-3 text-[11px] leading-relaxed text-silver">Die Mitgliedschaft wird erst nach bestätigter Freischaltung aktiv. Eine Anfrage allein löst keine Abbuchung aus.</p>
+            <dl className="mt-6 space-y-2.5 border-t border-white/10 pt-5 text-[12px] leading-relaxed">
+              <div><dt className="font-extrabold text-white">Preis</dt><dd className="text-silver">{OPTIMIZATION_PUBLIC_TERMS.price} {OPTIMIZATION_PUBLIC_TERMS.period}. {OPTIMIZATION_PUBLIC_TERMS.taxNote}</dd></div>
+              <div><dt className="font-extrabold text-white">Laufzeit und Kündigung</dt><dd className="text-silver">{OPTIMIZATION_PUBLIC_TERMS.minimumTerm}, {OPTIMIZATION_PUBLIC_TERMS.cancellation}.</dd></div>
+              <div><dt className="font-extrabold text-white">Vertragsschluss</dt><dd className="text-silver">{OPTIMIZATION_PUBLIC_TERMS.conclusion}</dd></div>
+              <div><dt className="font-extrabold text-white">Widerruf</dt><dd className="text-silver">{OPTIMIZATION_PUBLIC_TERMS.withdrawal}</dd></div>
+            </dl>
           </aside>
 
           <div className="grid gap-4 sm:grid-cols-2">

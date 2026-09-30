@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Reveal, Stagger, Item } from "@/components/ui/Reveal";
 import { withAudience, type AudienceMode } from "@/lib/audience";
+import { OPTIMIZATION_PUBLIC_TERMS } from "@/lib/optimization-shared";
 
 const BENEFITS = [
   {
@@ -53,13 +54,16 @@ export function OptimizationMembershipTeaser({ audience }: { audience: AudienceM
                 <span className="text-[44px] font-extrabold tracking-[-0.04em]">1,99 €</span>
                 <span className="pb-2 text-[12px] font-semibold text-silver">pro Monat</span>
               </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-silver/80">
+                {OPTIMIZATION_PUBLIC_TERMS.taxNote} {OPTIMIZATION_PUBLIC_TERMS.minimumTerm}, {OPTIMIZATION_PUBLIC_TERMS.cancellation}.
+              </p>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link href={withAudience("/optimierungsservice", audience)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-electric px-5 text-[13.5px] font-extrabold text-white transition hover:bg-electric-deep">
                   Service ansehen <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link href={withAudience("/anfrage?thema=Optimierungsservice", audience)} className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] px-5 text-[13.5px] font-bold text-white transition hover:bg-white/[0.09]">
-                  Interesse anmelden
+                  Service erklären lassen
                 </Link>
               </div>
               <p className="mt-4 text-[10.5px] leading-relaxed text-silver/75">

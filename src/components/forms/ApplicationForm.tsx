@@ -155,7 +155,7 @@ export function ApplicationForm() {
 
       <div>
         <Button type="submit" size="lg" disabled={loading} iconRight={loading ? <Loader2 className="animate-spin" /> : <ArrowRight />}>
-          {loading ? "Wird gesendet…" : "Bewerbung absenden"}
+          {loading ? "Wird gesendet…" : "Gespräch über die Zusammenarbeit anfragen"}
         </Button>
       </div>
     </form>

@@ -1,11 +1,13 @@
 import {
   boolean,
   customType,
+  date,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   serial,
+  smallint,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -58,6 +60,25 @@ export const advisors = pgTable("advisors", {
   sortOrder: integer("sort_order").notNull().default(100),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Gewerbeerlaubnisse je Berater für die Erstinformation (Migration 0027).
+export const advisorLicenses = pgTable("advisor_licenses", {
+  id: serial("id").primaryKey(),
+  advisorId: integer("advisor_id").notNull().references(() => advisors.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  status: text("status").notNull(),
+  holderName: text("holder_name").notNull(),
+  businessAddress: text("business_address").notNull(),
+  registerNumber: text("register_number"),
+  authority: text("authority").notNull(),
+  remuneration: text("remuneration").notNull().default(""),
+  noHoldingsConfirmed: boolean("no_holdings_confirmed").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type AdvisorLicense = typeof advisorLicenses.$inferSelect;
 
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({
   dataType() { return "bytea"; },
@@ -136,6 +157,11 @@ export const leads = pgTable("leads", {
   tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  // Pipeline forecast (migration 0025). Money in cents, probability 0–100.
+  dealValueCents: integer("deal_value_cents"),
+  winProbability: smallint("win_probability"),
+  expectedCloseAt: date("expected_close_at"),
+  lostReason: text("lost_reason"),
 });
 
 export const leadNotes = pgTable("lead_notes", {

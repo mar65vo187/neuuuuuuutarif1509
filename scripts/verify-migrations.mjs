@@ -11,6 +11,7 @@ const requiredTables = [
   "employee_images",
   "advisors",
   "advisor_images",
+  "advisor_licenses",
   "leads",
   "lead_notes",
   "team_messages",

@@ -49,6 +49,8 @@ test("customer detail omits denied order/task metrics and sections instead of pr
     "@/components/portal/CustomerReferralManager": { CustomerReferralManager: () => null },
     "@/components/portal/CustomerEditForm": { CustomerEditForm: () => null },
     "@/components/portal/Customer360Manager": { Customer360Manager: () => null },
+    "@/components/portal/CustomerPrivacyPanel": { CustomerPrivacyPanel: () => null },
+    "@/lib/privacy-center": { CONSENT_PURPOSE_LABELS: {}, CONSENT_SOURCE_LABELS: {}, getConsentStates: async () => [], getErasureBlockers: async () => [] },
   });
   const html = renderToStaticMarkup(await Page({ params: Promise.resolve({ id: "1" }) }));
   assert.doesNotMatch(html, /Aufträge aktiv|Überfällige Aufgaben|Noch keine Aufträge|Bedarfsabdeckung|2 · Auftrag/);
