@@ -4,6 +4,8 @@ import { Activity, AlertTriangle, ArrowLeft, CheckCircle2, Clock3, FilePlus2, Ma
 import { Card, formatDate } from "@/components/portal/ui";
 import { CustomerReferralManager } from "@/components/portal/CustomerReferralManager";
 import { CustomerEditForm } from "@/components/portal/CustomerEditForm";
+import { CustomerPrivacyPanel } from "@/components/portal/CustomerPrivacyPanel";
+import { CONSENT_PURPOSE_LABELS, CONSENT_SOURCE_LABELS, getConsentStates, getErasureBlockers } from "@/lib/privacy-center";
 import { Customer360Manager } from "@/components/portal/Customer360Manager";
 import { getCurrentUser } from "@/lib/auth";
 import { getCustomer360 } from "@/lib/enterprise";
@@ -17,15 +19,21 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id < 1) notFound();
   const user = await getCurrentUser();
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/kunden/${id}`)}`);
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE, PORTAL_PERMISSION.SERVICE_EDIT] as const);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.CUSTOMER_READ, PORTAL_PERMISSION.CUSTOMER_EDIT, PORTAL_PERMISSION.ORDER_CREATE, PORTAL_PERMISSION.SERVICE_EDIT, PORTAL_PERMISSION.PRIVACY_MANAGE] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.CUSTOMER_EDIT];
   const canRead = capabilities[PORTAL_PERMISSION.CUSTOMER_READ] || canEdit;
   if (!canRead) redirect("/portal");
   const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
   const canCreateServiceCase = capabilities[PORTAL_PERMISSION.SERVICE_EDIT] || user.role === "admin";
+  const canManagePrivacy = Boolean(capabilities[PORTAL_PERMISSION.PRIVACY_MANAGE]);
   const data = await getCustomer360(id, user);
   if (!data) notFound();
   const { customer, capabilities: { canLead, canOrder, canTask } } = data;
+  const anonymized = typeof customer.metadata?.anonymizedAt === "string";
+  const [consentStates, erasureBlockers] = await Promise.all([
+    getConsentStates(customer.id),
+    canManagePrivacy && !anonymized ? getErasureBlockers(customer.id) : Promise.resolve([] as string[]),
+  ]);
   const name = customer.companyName || [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Ohne Name";
   const hasContact = Boolean(customer.phone || customer.email);
   const referralRows = data.referrals.map((row) => ({
@@ -215,7 +223,8 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           ["Bevorzugter Kanal", customer.preferredChannel],
           ["Tags", customer.tags.join(", ")],
         ].map(([key, value]) => <div key={key as string}><dt className="text-[11.5px] font-semibold uppercase tracking-wider text-steel">{key}</dt><dd className="mt-0.5 font-medium">{value || "–"}</dd></div>)}
-      </dl></Card>
+      </dl>
+      </Card>
       {canOrder && <Card className="lg:col-span-3"><div className="flex items-center justify-between"><h2 className="text-[16px] font-extrabold">Aufträge</h2><span className="text-[12.5px] text-steel">{data.orders.length}</span></div>
         {data.orders.length === 0 ? <p className="mt-6 text-[14px] text-steel">Noch keine Aufträge.</p> :
         <ul className="mt-3 divide-y divide-line">{data.orders.map((row) => <li key={row.order.id}><Link href={`/portal/auftraege/${row.order.id}`} className="block py-3">
@@ -224,6 +233,20 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </Link></li>)}</ul>}
       </Card>}
     </div>
+
+    <Card>
+      <CustomerPrivacyPanel
+        customerId={customer.id}
+        customerNumber={customer.customerNumber}
+        consents={consentStates}
+        purposeLabels={CONSENT_PURPOSE_LABELS}
+        sourceLabels={CONSENT_SOURCE_LABELS}
+        canRecordConsent={canEdit}
+        canManagePrivacy={canManagePrivacy}
+        erasureBlockers={erasureBlockers}
+        anonymized={anonymized}
+      />
+    </Card>
 
     <section className="space-y-4">
       <div>

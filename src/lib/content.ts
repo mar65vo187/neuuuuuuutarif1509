@@ -60,19 +60,17 @@ export const SERVICES: Service[] = [
     "key": "internet",
     "slug": "internet-glasfaser-tv",
     "name": "Internet, Mobilfunk, TV",
-    "short": "Gut verbunden. Klar entschieden.",
+    "short": "Anschluss, Preis und Laufzeit im Blick.",
     "featured": false,
     "eyebrow": "Verbunden im Alltag",
-    "headline": "Gut verbunden. Klar entschieden.",
-    "intro": "Internet inklusive Glasfaser, Mobilfunk und TV: Verfügbarkeit, Netz, Datenvolumen, Nutzung und Vertragsbedingungen werden gemeinsam eingeordnet – passend zu Haushalt oder Unternehmen.",
+    "headline": "Passt der Internetvertrag noch?",
+    "intro": "Verfügbarkeit an der Adresse, benötigte Bandbreite und die Kosten über die ganze Laufzeit werden gemeinsam geprüft. Passt der bestehende Tarif, bleibt es dabei.",
     "checks": [
-      "Verfügbarkeit am Anschluss prüfen",
-      "Bandbreite und TV-Bedarf bestimmen",
-      "Laufzeiten, Fristen und Gesamtkosten vergleichen",
-      "Kündigung und Wechsel gemeinsam vorbereiten",
-      "Nutzung und Netzbedarf besprechen",
-      "Datenvolumen passend wählen",
-      "Laufzeit und Gesamtkosten verstehen"
+      "Verfügbarkeit an der Adresse prüfen (DSL, Kabel, Glasfaser)",
+      "Bandbreite, Datenvolumen und TV-Bedarf bestimmen",
+      "Gesamtkosten über die Laufzeit statt nur den Monatspreis vergleichen",
+      "Kündigungsfrist und Vertragsende festhalten",
+      "Umzug, Glasfaserausbau und Wechsel vorbereiten"
     ],
     "forWhom": [
       "Haushalte mit Homeoffice und Streaming",
@@ -82,27 +80,40 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Prüft ihr die Verfügbarkeit für mich?",
-        "a": "Ja – das gehört zur Erstprüfung dazu."
+        "a": "Ja, das gehört zur Erstprüfung. Wir schauen, welche Anschlüsse an der Adresse tatsächlich buchbar sind."
+      },
+      {
+        "q": "Was passiert mit meinem Vertrag, wenn ich umziehe?",
+        "a": "Der Anbieter muss die Leistung am neuen Wohnort in der Regel weiterführen. Kann er dort nicht liefern, besteht ein Sonderkündigungsrecht. Wir sehen uns den konkreten Fall an."
+      },
+      {
+        "q": "Bei mir wird Glasfaser verlegt. Soll ich schon unterschreiben?",
+        "a": "Bei einer Vorvermarktung wird oft ein Anschluss gebucht, der erst später geschaltet wird. Wir klären, ab wann er realistisch läuft und wie der bisherige Vertrag bis dahin weiterläuft."
+      },
+      {
+        "q": "Lohnt sich ein Wechsel nur wegen des Neukundenbonus?",
+        "a": "Nicht immer. Entscheidend sind die Kosten über die gesamte Laufzeit, auch nach der Aktionsphase. Genau das rechnen wir gemeinsam durch."
       }
     ],
-    "seoTitle": "Internet, Mobilfunk & TV: Beratung | TarifWerk",
-    "seoDescription": "Internet, Glasfaser, Mobilfunk und TV persönlich einordnen: Verfügbarkeit, Netz, Leistung und Vertragsbedingungen verständlich prüfen.",
+    "seoTitle": "Internet, Glasfaser, Mobilfunk & TV prüfen | TarifWerk",
+    "seoDescription": "Anschluss, Verfügbarkeit, Laufzeit und Gesamtkosten gemeinsam ansehen. Kostenloses Erstgespräch, die Entscheidung bleibt bei dir.",
     "tickerLabel": "Internet, Mobilfunk, TV"
   },
   {
     "key": "energie",
     "slug": "strom-gas",
     "name": "Strom & Gas",
-    "short": "Energieverträge. Verständlich sortiert.",
+    "short": "Rechnung, Tarif und Frist verständlich.",
     "featured": false,
     "eyebrow": "Energie im Alltag",
-    "headline": "Klare Sicht auf Energiekosten.",
-    "intro": "Verbrauch, Konditionen und Kündigungsfristen werden gemeinsam geprüft. So wird klar, welche Optionen passen und ob ein Wechsel überhaupt sinnvoll ist.",
+    "headline": "Stromrechnung oder Angebot? Gemeinsam draufschauen.",
+    "intro": "Der Abschlag allein sagt nicht, was ein Tarif übers Jahr kostet. Verbrauch, Grundpreis, Arbeitspreis, Bonus, Laufzeit und Vertragsende werden gemeinsam angesehen. Passt der Vertrag schon, sagen wir das.",
     "checks": [
-      "Abrechnung und Abschläge einordnen",
-      "Preisbestandteile und Boni nachvollziehen",
-      "Verträge und Fristen vergleichen",
-      "Wechsel und weitere Schritte begleiten"
+      "Jahresverbrauch und letzte Rechnung einordnen",
+      "Grundpreis, Arbeitspreis und Einmalkosten vergleichen",
+      "Laufzeit, Preisgarantie und Vertragsbedingungen prüfen",
+      "Bonusbedingungen nachrechnen",
+      "Grundversorgung, Umzug oder Wechsel klären"
     ],
     "forWhom": [
       "Haushalte in der Grundversorgung",
@@ -111,28 +122,44 @@ export const SERVICES: Service[] = [
     ],
     "faq": [
       {
+        "q": "Mein Anbieter erhöht die Preise. Was kann ich tun?",
+        "a": "Bei einer Preiserhöhung besteht in der Regel ein Sonderkündigungsrecht. Welche Frist gilt, steht in der Ankündigung und im Vertrag. Am besten das Schreiben mitschicken, dann sehen wir es uns gemeinsam an."
+      },
+      {
+        "q": "Worauf muss ich beim Bonus achten?",
+        "a": "Viele Boni werden erst nach einer Mindestlaufzeit gezahlt oder entfallen bei vorzeitiger Kündigung. Wir rechnen deshalb den Preis mit und ohne Bonus, damit beide Zahlen auf dem Tisch liegen."
+      },
+      {
+        "q": "Ich bin in der Grundversorgung. Ist das schlecht?",
+        "a": "Nicht automatisch, aber oft teurer als ein Sondervertrag. Dafür lässt sie sich kurzfristig kündigen. Wir vergleichen den aktuellen Preis mit passenden Alternativen."
+      },
+      {
+        "q": "Ich ziehe um. Muss ich den Vertrag kündigen?",
+        "a": "Das hängt vom Vertrag ab. Wir prüfen, ob der Tarif an die neue Adresse mitgeht oder ob dort ein neuer Vertrag sinnvoller ist."
+      },
+      {
         "q": "Begleitet TarifWerk auch den Wechsel?",
-        "a": "Ja. Auf Wunsch begleiten wir den kompletten Prozess."
+        "a": "Ja. Die Kündigung beim bisherigen Anbieter übernimmt in der Regel der neue Anbieter, die Versorgung läuft ohne Unterbrechung weiter. Auf Wunsch begleiten wir den gesamten Ablauf."
       }
     ],
-    "seoTitle": "Strom & Gas: Persönliche Tarifberatung | TarifWerk",
-    "seoDescription": "Strom und Gas verständlich prüfen: Verbrauch, Preise, Fristen und sinnvolle Wechseloptionen persönlich einordnen.",
+    "seoTitle": "Strom- und Gasvertrag prüfen lassen | TarifWerk",
+    "seoDescription": "Rechnung, Tarif, Bonus und Frist einordnen. Erstgespräch kostenlos, kein Wechselzwang. Persönlich aus Wiesbaden, deutschlandweit.",
     "tickerLabel": "Alltagstarife (Strom & Gas)"
   },
   {
     "key": "versicherungen",
     "slug": "versicherungen",
     "name": "Versicherungen",
-    "short": "Schutz, der zum tatsächlichen Bedarf passt.",
+    "short": "Bestand, Bedarf und Lücken im Blick.",
     "featured": true,
     "eyebrow": "Sicherheit & Vorsorge",
-    "headline": "Absicherung mit Augenmaß.",
-    "intro": "Bestehende Verträge, tatsächlicher Absicherungsbedarf und mögliche Lücken werden gemeinsam sortiert; bei Bedarf kommen passende Fachpartner hinzu.",
+    "headline": "Policen einmal sauber sortiert.",
+    "intro": "Bestehende Versicherungen werden nach Bedarf, Lücken und Doppelungen sortiert. Auch Beibehalten oder Kündigen kann das richtige Ergebnis sein.",
     "checks": [
-      "Bestehende Verträge und Bedarf ordnen",
-      "Mögliche Lücken und Doppelungen erkennen",
-      "Beiträge und Leistungen verständlich vergleichen",
-      "Veränderungen in Lebens- oder Arbeitssituation berücksichtigen"
+      "Bestehende Verträge und Beiträge auflisten",
+      "Lücken und doppelte Absicherung erkennen",
+      "Leistungen statt nur Beiträge vergleichen",
+      "Änderungen in Familie, Job oder Wohnsituation berücksichtigen"
     ],
     "forWhom": [
       "Junge Familien",
@@ -143,26 +170,35 @@ export const SERVICES: Service[] = [
       {
         "q": "Verkauft ihr mir Verträge, die ich nicht brauche?",
         "a": "Nein. Auch eine Kündigung oder das Beibehalten eines bestehenden Vertrags kann das richtige Ergebnis sein."
+      },
+      {
+        "q": "Welche Unterlagen brauche ich?",
+        "a": "Am besten die letzten Beitragsrechnungen oder Versicherungsscheine. Fehlt etwas, klären wir das im Gespräch."
+      },
+      {
+        "q": "Wie wird TarifWerk bei Versicherungen bezahlt?",
+        "a": "Kommt ein Vertrag über uns zustande, zahlt in der Regel der Versicherer eine Provision. Den Vermittlerstatus und die Art der Vergütung legen wir vor der Beratung offen."
       }
     ],
-    "seoTitle": "Versicherungen verständlich prüfen | TarifWerk",
-    "seoDescription": "Versicherungen verständlich einordnen: bestehenden Schutz, mögliche Lücken und tatsächlichen Bedarf gemeinsam prüfen.",
+    "seoTitle": "Versicherungen prüfen und sortieren | TarifWerk",
+    "seoDescription": "Policen und Bedarf ordnen, Lücken und Doppelungen erkennen. Vermittlerstatus und Vergütung legen wir offen. Erstgespräch kostenlos.",
     "tickerLabel": "Versicherungen"
   },
   {
     "key": "sicherheit",
     "slug": "sicherheitsloesungen",
     "name": "Sicherheitslösungen",
-    "short": "Ein gutes Gefühl beginnt zu Hause.",
+    "short": "Erst klären, was geschützt werden soll.",
     "featured": false,
     "eyebrow": "Zuhause & Sicherheit",
-    "headline": "Sicherheit, die zum Objekt passt.",
-    "intro": "Alarmanlagen, Überwachung und Smart Home: Wir klären Ihren Bedarf und helfen bei der Einordnung passender Lösungen und Fachpartner.",
+    "headline": "Erst klären, was geschützt werden soll.",
+    "intro": "Alarmanlage, Kamera oder Smart Home: Zuerst wird geklärt, welche Bereiche geschützt werden sollen und welche Technik dazu passt. Planung und Montage übernimmt ein Fachbetrieb.",
     "checks": [
       "Bedarf und mögliche Schwachstellen besprechen",
       "Funk, Kabel und Smart Home vergleichen",
       "Datenschutz bei Kameras und Cloud mitdenken",
-      "Montage mit Fachpartnern abstimmen"
+      "Montage mit einem Fachbetrieb abstimmen",
+      "Wartung und Zuständigkeit nach der Montage klären"
     ],
     "forWhom": [
       "Privatkunden mit passendem Bedarf",
@@ -172,25 +208,33 @@ export const SERVICES: Service[] = [
       {
         "q": "Wie läuft die erste Beratung ab?",
         "a": "Wir klären den Bedarf und stimmen die nächsten sinnvollen Schritte persönlich ab."
+      },
+      {
+        "q": "Wer montiert die Anlage?",
+        "a": "Ein Fachbetrieb. Wer montiert, wer für die Ausführung haftet und wer später Ansprechpartner für Wartung ist, steht vor der Beauftragung fest."
+      },
+      {
+        "q": "Darf eine Kamera auch den Gehweg filmen?",
+        "a": "Grundsätzlich soll eine private Kamera nur das eigene Grundstück erfassen, nicht öffentliche Wege oder Nachbargrundstücke. Darauf achten wir bei der Planung."
       }
     ],
-    "seoTitle": "Sicherheitslösungen: Persönliche Beratung | TarifWerk",
-    "seoDescription": "Alarmanlage, Überwachung oder Smart Home: Bedarf, Technik und passende nächste Schritte gemeinsam mit Fachpartnern einordnen.",
+    "seoTitle": "Alarmanlage und Sicherheit planen | TarifWerk",
+    "seoDescription": "Bedarf für Haus oder Betrieb klären, Technik einordnen, Fachbetrieb und Zuständigkeiten vorab festlegen. Erstgespräch kostenlos.",
     "tickerLabel": "Rund um Sicherheit"
   },
   {
     "key": "klima",
     "slug": "klimaanlagen",
     "name": "Klimaanlagen",
-    "short": "Räume zum Wohlfühlen.",
+    "short": "Passend zu Raum, Nutzung und Einbau.",
     "featured": false,
     "eyebrow": "Wohnen & Komfort",
-    "headline": "Ein gutes Klima. Passend geplant.",
-    "intro": "Raumgröße, Nutzung und Budget bestimmen, welche Klimaanlage passt. TarifWerk unterstützt bei Orientierung und Abstimmung mit Fachpartnern.",
+    "headline": "Welche Klimaanlage passt zum Raum?",
+    "intro": "Welche Anlage passt, hängt von Raumgröße, Nutzung, Lautstärke und Einbau ab. Das wird vorab geklärt, die Montage übernimmt ein Fachbetrieb.",
     "checks": [
       "Raumgröße und Nutzung berücksichtigen",
-      "Lösungen und Energieverbrauch vergleichen",
-      "Montage und Einbau besprechen",
+      "Lautstärke und Energieverbrauch vergleichen",
+      "Einbauort und Montage besprechen",
       "Wartung und Reinigung von Anfang an mitdenken"
     ],
     "forWhom": [
@@ -201,29 +245,35 @@ export const SERVICES: Service[] = [
       {
         "q": "Wie läuft die erste Beratung ab?",
         "a": "Wir klären den Bedarf und stimmen die nächsten sinnvollen Schritte persönlich ab."
+      },
+      {
+        "q": "Brauche ich für eine Split-Klimaanlage einen Fachbetrieb?",
+        "a": "Ja. Bei fest installierten Split-Geräten wird mit Kältemittel gearbeitet. Das darf nur ein zertifizierter Fachbetrieb."
+      },
+      {
+        "q": "Wer ist nach dem Einbau Ansprechpartner?",
+        "a": "Das wird vor der Beauftragung festgelegt. Für Gewährleistung und Wartung ist in der Regel der ausführende Fachbetrieb zuständig."
       }
     ],
-    "seoTitle": "Klimaanlagen: Bedarf & Optionen klären | TarifWerk",
-    "seoDescription": "Klimaanlagen passend zu Raum, Nutzung, Energiebedarf und Budget einordnen – gemeinsam mit geeigneten Fachpartnern.",
+    "seoTitle": "Klimaanlage passend zum Raum planen | TarifWerk",
+    "seoDescription": "Nutzung, Raum, Lautstärke, Verbrauch und Einbau gemeinsam klären. Montage durch einen zertifizierten Fachbetrieb.",
     "tickerLabel": "Klimaanlagen"
   },
   {
     "key": "solar",
     "slug": "solar-photovoltaik",
     "name": "Solar (Photovoltaik) & Wärmepumpe",
-    "short": "Heute durchdenken. Morgen profitieren.",
+    "short": "Dach, Verbrauch und Angebot zusammen.",
     "featured": true,
     "eyebrow": "Energie & Zukunft",
-    "headline": "Strom und Wärme gemeinsam durchdenken.",
-    "intro": "Solar und Wärmepumpe werden als Gesamtprojekt betrachtet: Dach, Gebäude, Verbrauch, Budget, Angebote und sinnvolle nächste Schritte.",
+    "headline": "Vor der PV-Anlage: Passen Dach, Verbrauch und Angebot?",
+    "intro": "Vor einer PV-Anlage oder Wärmepumpe sollten Dach, Gebäude, Verbrauch und Angebot zusammenpassen. Wir ordnen das gemeinsam, Planung und Montage übernimmt ein Fachbetrieb.",
     "checks": [
-      "Dachfläche und Ihren Strombedarf einordnen",
-      "Photovoltaik und Speicher zusammen betrachten",
-      "Wirtschaftlichkeit nachvollziehbar prüfen lassen",
-      "Angebote und Umsetzung mit Fachpartnern besprechen",
-      "Gebäude und bestehende Heizung berücksichtigen",
-      "Verbrauch und realistische Betriebskosten besprechen",
-      "Mögliche Förderungen durch Fachpartner prüfen lassen"
+      "Dachfläche, Ausrichtung und Verschattung einordnen",
+      "Stromverbrauch und Speicher zusammen betrachten",
+      "Gebäude und bestehende Heizung für die Wärmepumpe berücksichtigen",
+      "Angebote vergleichbar machen: Leistung, Komponenten, Gesamtpreis",
+      "Mögliche Förderungen durch den Fachbetrieb prüfen lassen"
     ],
     "forWhom": [
       "Eigenheimbesitzer mit steigenden Stromkosten",
@@ -233,15 +283,23 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Kommt ihr vorbei?",
-        "a": "Ja, in unseren Regionen sind Vor-Ort-Termine möglich. Alternativ prüfen wir per Video – auch das funktioniert sehr gut."
+        "a": "In unseren Regionen sind Vor-Ort-Termine nach Absprache möglich. Alternativ prüfen wir per Video."
+      },
+      {
+        "q": "Ich habe schon ein Angebot. Könnt ihr es prüfen?",
+        "a": "Ja. Wir sehen uns Anlagengröße, Komponenten, Gesamtpreis und die Annahmen zur Wirtschaftlichkeit an."
+      },
+      {
+        "q": "Wer plant, montiert und haftet?",
+        "a": "Wer plant, montiert, für die Ausführung haftet und später wartet, steht vor der Unterschrift schriftlich fest. TarifWerk ordnet die Angebote ein, die Ausführung übernimmt ein Fachbetrieb."
       },
       {
         "q": "Muss ich mich für einen Anbieter entscheiden?",
         "a": "Nein. TarifWerk arbeitet mit mehreren Partnern und ordnet verfügbare Optionen transparent ein."
       }
     ],
-    "seoTitle": "Photovoltaik & Wärmepumpe: Beratung | TarifWerk",
-    "seoDescription": "Solar und Wärmepumpe passend zu Dach, Gebäude und Verbrauch einordnen. Besprich Budget und Angebote mit uns. Jetzt Erstgespräch anfragen.",
+    "seoTitle": "Photovoltaik & Wärmepumpe einordnen | TarifWerk",
+    "seoDescription": "Dach, Verbrauch und Angebot besprechen. Wer plant, montiert und haftet, klären wir vorher. Erstgespräch kostenlos.",
     "shortLabel": "Solar/PV & Wärmepumpe",
     "tickerLabel": "Solar (Photovoltaik) & Wärmepumpe"
   },
@@ -249,16 +307,17 @@ export const SERVICES: Service[] = [
     "key": "edelmetalle",
     "slug": "edelmetalle",
     "name": "Edelmetalle",
-    "short": "Werte verstehen. Bewusst entscheiden.",
+    "short": "Kosten und Risiken vor dem Kauf klären.",
     "featured": true,
     "eyebrow": "Werte & Weitblick",
-    "headline": "Substanz beginnt mit Verständnis.",
-    "intro": "Gold, Silber und weitere Edelmetalle verständlich einordnen. Gemeinsam sprechen wir über Möglichkeiten, Kosten und Risiken – ohne Renditeversprechen.",
+    "headline": "Erst Kosten und Risiken, dann Gold.",
+    "intro": "Gold und Silber können im Wert steigen oder fallen. Aufschläge, Lagerung, Verkauf und Zeithorizont werden vorab besprochen, ohne Renditeversprechen.",
     "checks": [
       "Physische Metalle und andere Formen unterscheiden",
-      "Kaufpreise, Aufschläge und Lagerung verstehen",
-      "Risiken und Ihren Zeithorizont besprechen",
-      "Seriöse Angebote nachvollziehbar einordnen"
+      "Kaufpreis, Aufschlag und Rückkaufpreis verstehen",
+      "Lagerung und Versicherung klären",
+      "Verkauf und Verfügbarkeit des Geldes mitdenken",
+      "Risiken und Zeithorizont besprechen"
     ],
     "forWhom": [
       "Menschen, die Vermögen langfristig absichern möchten",
@@ -272,27 +331,31 @@ export const SERVICES: Service[] = [
       },
       {
         "q": "Garantiert ihr Wertsteigerungen?",
-        "a": "Nein – niemand kann das seriös. Wir sprechen über Mechanik, Risiken und Zeithorizonte, nicht über Versprechen."
+        "a": "Nein, niemand kann das seriös. Wir sprechen über Mechanik, Risiken und Zeithorizonte, nicht über Versprechen."
+      },
+      {
+        "q": "Was kostet der Kauf wirklich?",
+        "a": "Zwischen Kauf- und Rückkaufpreis liegt ein Aufschlag, dazu kommen je nach Lösung Lager- und Versicherungskosten. Die Gesamtkosten liegen vor der Entscheidung auf dem Tisch."
       }
     ],
-    "seoTitle": "Gold & Edelmetalle verstehen | TarifWerk",
-    "seoDescription": "Gold und Silber verständlich einordnen: Besprich Möglichkeiten, Kosten und Risiken ohne Renditeversprechen. Jetzt persönliches Erstgespräch anfragen.",
+    "seoTitle": "Gold: Kosten und Risiken verstehen | TarifWerk",
+    "seoDescription": "Aufschläge, Lagerung, Verfügbarkeit und Risiken einordnen. Keine Renditegarantie. Persönliches Erstgespräch kostenlos.",
     "tickerLabel": "Edelmetalle"
   },
   {
     "key": "immobilien",
     "slug": "immobilien",
     "name": "Immobilien",
-    "short": "Raum für den nächsten Schritt.",
+    "short": "Budget, Nebenkosten und nächste Schritte.",
     "featured": true,
     "eyebrow": "Wohnen & Vermögen",
-    "headline": "Ein neues Kapitel. Gut durchdacht.",
-    "intro": "Eigenheim, Kapitalanlage oder erste Orientierung: Fragen werden strukturiert und bei Bedarf mit passenden Fachpartnern weitergeführt.",
+    "headline": "Kauf oder Verkauf? Erst Zahlen und Schritte ordnen.",
+    "intro": "Budget, Nebenkosten und die nächsten Schritte eines Vorhabens werden gemeinsam geordnet. Bewertung, Finanzierung oder Verkauf übernehmen Fachpartner, deren Rolle vorher offengelegt wird.",
     "checks": [
       "Ziele, Budget und Nebenkosten einordnen",
       "Lage, Zustand und laufende Kosten mitdenken",
       "Finanzierungsbausteine verständlich besprechen",
-      "Passende Fachpartner für Bewertung und Finanzierung finden"
+      "Passende Fachpartner für Bewertung, Finanzierung oder Verkauf finden"
     ],
     "forWhom": [
       "Erstkäufer mit vielen offenen Fragen",
@@ -302,15 +365,19 @@ export const SERVICES: Service[] = [
     "faq": [
       {
         "q": "Vermittelt ihr auch Objekte?",
-        "a": "Wir arbeiten mit ausgewählten Marktteilnehmern zusammen und zeigen passende Optionen transparent auf. Die Entscheidung bleibt immer beim Kunden."
+        "a": "Ob TarifWerk selbst vermittelt oder an einen Fachpartner übergibt, legen wir vor jedem Schritt offen, ebenso wer dafür eine Vergütung erhält. Die Entscheidung bleibt beim Kunden."
+      },
+      {
+        "q": "Welche Nebenkosten fallen beim Kauf an?",
+        "a": "Zum Kaufpreis kommen Grunderwerbsteuer, Notar- und Grundbuchkosten und gegebenenfalls eine Maklerprovision. Die Grunderwerbsteuer hängt vom Bundesland ab. Wir rechnen das für das konkrete Vorhaben durch."
       },
       {
         "q": "Was kostet die Erstberatung?",
         "a": "Nichts. Das erste Gespräch ist kostenlos und unverbindlich."
       }
     ],
-    "seoTitle": "Immobilien: Persönliche Orientierung | TarifWerk",
-    "seoDescription": "Immobilienfragen rund um Eigenheim oder Kapitalanlage strukturieren und passende nächste Fachschritte einordnen.",
+    "seoTitle": "Immobilienvorhaben strukturiert besprechen | TarifWerk",
+    "seoDescription": "Budget, Nebenkosten und nächste Fachschritte rund um Kauf oder Verkauf ordnen. Rollen der Fachpartner legen wir offen.",
     "tickerLabel": "Immobilien"
   }
 ];
@@ -503,6 +570,19 @@ export const LEAD_CONTACT_OUTCOME_LABELS: Record<string, string> = {
   voicemail: "Mailbox",
   wrong_number: "Falsche Nummer",
   not_interested: "Kein Interesse",
+};
+
+export const LEAD_LOST_REASONS = ["price", "competitor", "no_need", "unreachable", "timing", "not_eligible", "other"] as const;
+export type LeadLostReason = (typeof LEAD_LOST_REASONS)[number];
+
+export const LEAD_LOST_REASON_LABELS: Record<LeadLostReason, string> = {
+  price: "Preis zu hoch",
+  competitor: "Anderer Anbieter gewählt",
+  no_need: "Kein Bedarf",
+  unreachable: "Nicht erreichbar",
+  timing: "Falscher Zeitpunkt",
+  not_eligible: "Voraussetzungen fehlen",
+  other: "Sonstiges",
 };
 
 export const LEAD_TYPE_LABELS: Record<string, string> = {

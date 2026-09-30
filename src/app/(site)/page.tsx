@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/security/JsonLd";
 import { Hero } from "@/components/home/Hero";
-import { FinderTeaser } from "@/components/home/FinderTeaser";
-import { TrustEngine } from "@/components/home/TrustEngine";
 import { DecisionCheck } from "@/components/home/DecisionCheck";
 import { SessionIntentCard } from "@/components/home/SessionIntentCard";
 import { BrandIdentitySection } from "@/components/home/BrandIdentitySection";
-import { TopicTicker } from "@/components/home/TopicTicker";
 import { OptimizationMembershipTeaser } from "@/components/home/OptimizationMembershipTeaser";
 import {
   AudienceEverydaySection,
@@ -59,18 +56,16 @@ export default async function HomePage({ searchParams }: Props) {
     <>
       <JsonLd data={faqJsonLd} />
       <JsonLd data={serviceListJsonLd} />
+      {/* Gutachten 2026-09-29 (UX-01): kurze Reihenfolge – Versprechen, Ablauf, Einstiege, Belege, FAQ, Anfrage. */}
       <Hero audience={initialAudience} />
-      <AudienceTrustStrip audience={initialAudience} />
-      <BrandIdentitySection audience={initialAudience} />
       <SessionIntentCard audience={initialAudience} />
+      <AudienceProcess audience={initialAudience} />
+      <AudienceTrustStrip audience={initialAudience} />
       <AudienceFocusSection audience={initialAudience} />
       <AudienceEverydaySection audience={initialAudience} />
       <DecisionCheck audience={initialAudience} />
+      <BrandIdentitySection audience={initialAudience} />
       <OptimizationMembershipTeaser audience={initialAudience} />
-      <TrustEngine audience={initialAudience} />
-      <FinderTeaser audience={initialAudience} />
-      <AudienceProcess audience={initialAudience} />
-      <TopicTicker />
       <AudienceFaqSection audience={initialAudience} />
       <AudienceFinalCta audience={initialAudience} />
     </>

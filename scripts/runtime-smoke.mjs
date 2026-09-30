@@ -17,6 +17,7 @@ const routes = [
   "/freund-werben/status",
   "/agb",
   "/impressum",
+  "/erstinformation",
   "/datenschutz",
   "/datenschutz/en",
   // Every current service page

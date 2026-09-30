@@ -5,19 +5,19 @@ type PageSeo = { title: string; description: string; noindex?: boolean };
 
 export const HOME_AUDIENCE_SEO = {
   b2c: {
-    title: "TarifWerk | Beratung auf Augenhöhe – deutschlandweit",
-    description: "TarifWerk bündelt persönliche Beratung zu Internet, Mobilfunk, Strom, Gas, Versicherungen, Solar und mehr – aus Wiesbaden, deutschlandweit.",
+    title: "TarifWerk Wiesbaden: Verträge persönlich prüfen lassen",
+    description: "Vertrag oder Angebot zu Strom, Internet, Versicherung und mehr? Persönliche Einordnung aus Wiesbaden, deutschlandweit. Erstgespräch kostenlos.",
   },
   b2b: {
-    title: "TarifWerk Business | Telekommunikation, Energie & Absicherung",
-    description: "Persönliche Business-Beratung zu Telekommunikation, Energie, Absicherung und weiteren Lösungen für Selbstständige und Unternehmen – deutschlandweit.",
+    title: "TarifWerk Business: Verträge für Unternehmen prüfen",
+    description: "Angebote für Internet, Mobilfunk und Energie einordnen. Ein persönlicher Ansprechpartner für Ihren Betrieb, deutschlandweit.",
   },
 } as const;
 
 export const REQUEST_AUDIENCE_SEO = {
   b2c: {
-    title: "Kostenlose Beratung anfragen | TarifWerk",
-    description: "Thema wählen, Situation kurz schildern und persönliche Einschätzung erhalten. Kostenlos und unverbindlich bei TarifWerk anfragen.",
+    title: "Vertrag prüfen lassen: Beratung anfragen | TarifWerk",
+    description: "Thema wählen, Situation kurz schildern und eine persönliche Einschätzung erhalten. Kostenlos und unverbindlich bei TarifWerk anfragen.",
   },
   b2b: {
     title: "Business-Beratung anfragen | TarifWerk",
@@ -48,8 +48,8 @@ export const AUDIENCE_PAGE_SEO = {
   },
   "/faq": {
     b2c: {
-      title: "TarifWerk FAQ | Kosten, Ablauf & Beratung",
-      description: "Antworten zu TarifWerk, Erstgespräch, Kosten, Ablauf, Tarifen und deutschlandweiter Beratung – transparent und verständlich erklärt.",
+      title: "TarifWerk FAQ: Kosten, Provision und Ablauf",
+      description: "Antworten zu Kosten, Vergütung durch Anbieterprovision, Partnerwahl, Daten und Ablauf der Beratung bei TarifWerk.",
     },
     b2b: {
       title: "TarifWerk Business FAQ | Ablauf & Beratung",
@@ -58,8 +58,8 @@ export const AUDIENCE_PAGE_SEO = {
   },
   "/ueber-uns": {
     b2c: {
-      title: "Über TarifWerk | Beratung auf Augenhöhe aus Wiesbaden",
-      description: "TarifWerk aus Wiesbaden: persönliche Beratung mit einem festen Ansprechpartner für Tarife, Energie und wichtige Entscheidungen – deutschlandweit.",
+      title: "Über TarifWerk aus Wiesbaden",
+      description: "Wie TarifWerk berät, vermittelt und durch Anbieterprovision verdient. Ein fester Ansprechpartner aus Wiesbaden, deutschlandweit.",
     },
     b2b: {
       title: "Über TarifWerk | Business-Beratung deutschlandweit",
@@ -74,11 +74,12 @@ export const PAGE_SEO: Record<string, PageSeo> = {
   "/berater": AUDIENCE_PAGE_SEO["/berater"].b2c,
   "/anfrage": REQUEST_AUDIENCE_SEO.b2c,
   "/ueber-uns": AUDIENCE_PAGE_SEO["/ueber-uns"].b2c,
-  "/karriere": { title: "Berater werden: Karriere bei TarifWerk", description: "Sie erklären verständlich und hören Menschen zu? Lernen Sie die Arbeit als Berater bei TarifWerk kennen und bewerben Sie sich bei uns." },
+  "/karriere": { title: "Berater bei TarifWerk werden", description: "Selbstständig beraten und bei erfolgreicher Vermittlung Provision erhalten. Modell, Aufwand und Einarbeitung klären wir vorab." },
   "/faq": AUDIENCE_PAGE_SEO["/faq"].b2c,
   "/optimierungsservice": { title: "Optimierungsservice für 1,99 € im Monat | TarifWerk", description: "Verträge, Ziele und Wünsche laufend im Blick: TarifWerk bündelt Bestand, Vergleichsoptionen und nächste Schritte für 1,99 € pro Monat." },
-  "/freund-werben": { title: "Freunde werben: bis 1.000 € Wunschgutschein | TarifWerk", description: "TarifWerk empfehlen und bei erfolgreicher Vermittlung je nach Bereich bis zu 1.000 € Wunschgutschein erhalten. Persönlicher Link und transparenter Status." },
+  "/freund-werben": { title: "TarifWerk empfehlen: Prämien und Bedingungen", description: "Persönlichen Empfehlungslink teilen und nach erfolgreicher Vermittlung je nach Bereich bis zu 1.000 € Wunschgutschein erhalten." },
   "/freund-werben/status": { title: "Dein Empfehlungsstatus | TarifWerk", description: "Deinen persönlichen Empfehlungsstatus mit privatem Zugangslink öffnen und zugeordnete Empfehlungen und Prämien im Blick behalten.", noindex: true },
+  "/erstinformation": { title: "Erstinformation für Vermittler | TarifWerk", description: "Status, Registrierung, Erlaubnisbehörde und Schlichtungsstellen der TarifWerk-Berater für Versicherungs- und Immobilienvermittlung.", noindex: true },
   "/impressum": { title: "Impressum & Kontakt | TarifWerk", description: "Angaben zum Betreiber und zur Kontaktaufnahme mit TarifWerk. Informationen zu Verantwortlichkeiten und unseren Kontaktmöglichkeiten.", noindex: true },
   "/datenschutz": { title: "Datenschutzerklärung | TarifWerk", description: "Erfahren Sie, wie TarifWerk personenbezogene Daten verarbeitet, welche Rechte Sie haben und wie Sie uns bei Datenschutzfragen kontaktieren.", noindex: true },
   "/agb": { title: "Allgemeine Geschäftsbedingungen | TarifWerk", description: "Lesen Sie die Bedingungen zur Beratung und Vermittlung bei TarifWerk sowie Hinweise zu Ablauf, Vergütung und Terminen.", noindex: true },

@@ -203,3 +203,35 @@ test("do-not-contact stops every callback without changing a won lead to lost", 
   assert.equal(h.state.leads[0].nextActionAt, null);
   assert.ok(h.state.tasks.every(row => row.status === "cancelled"));
 });
+
+test("forecast values are stored, documented and audited", async () => {
+  const h = harness();
+  const response = await h.request("patch", { dealValueCents: 120050, winProbability: 40, expectedCloseAt: "2026-11-30" });
+  assert.equal(response.status, 200);
+  assert.equal(h.state.leads[0].dealValueCents, 120050);
+  assert.equal(h.state.leads[0].winProbability, 40);
+  assert.equal(h.state.leads[0].expectedCloseAt, "2026-11-30");
+  assert.match(h.state.notes.at(-1).body, /^Forecast aktualisiert: Wert 1\.200,50\s€ · Wahrscheinlichkeit 40 % · Abschluss erwartet am 30\.11\.2026\.$/);
+  const [, , action, , , oldValues, newValues] = h.audit.at(-1);
+  assert.equal(action, "lead.updated");
+  assert.equal(oldValues.dealValueCents, null);
+  assert.equal(newValues.dealValueCents, 120050);
+  assert.equal(newValues.winProbability, 40);
+});
+
+test("a loss reason requires the lost status and is cleared when the lead is reopened", async () => {
+  const open = harness();
+  const rejected = await open.request("patch", { lostReason: "price" });
+  assert.equal(rejected.status, 422);
+  assert.equal(open.writes(), 0);
+
+  const closing = harness({ status: "in_beratung" });
+  assert.equal((await closing.request("patch", { status: "verloren", lostReason: "competitor" })).status, 200);
+  assert.equal(closing.state.leads[0].status, "verloren");
+  assert.equal(closing.state.leads[0].lostReason, "competitor");
+  assert.ok(closing.state.notes.some(note => note.body === "Verlustgrund: Anderer Anbieter gewählt."));
+
+  const reopened = harness({ status: "verloren", lostReason: "timing", closedAt: hourAgo() });
+  assert.equal((await reopened.request("patch", { status: "kontaktiert" })).status, 200);
+  assert.equal(reopened.state.leads[0].lostReason, null);
+});

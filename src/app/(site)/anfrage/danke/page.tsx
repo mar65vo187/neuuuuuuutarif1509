@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   title: { absolute: "Anfrage erhalten | TarifWerk" },
   description: "Die Anfrage ist bei TarifWerk eingegangen.",
   robots: { index: false, follow: false },
+  // Eigene Canonical statt der geerbten Startseiten-URL (Gutachten SEO-02).
+  alternates: { canonical: "/anfrage/danke" },
 };
 
 export default async function ThankYouPage({ searchParams }: { searchParams: Promise<{ ref?: string | string[]; audience?: string | string[]; type?: string | string[] }> }) {

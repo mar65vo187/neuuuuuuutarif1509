@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { leadNotes, leads } from "@/db/schema";
 import { getCurrentUser, isSameOriginRequest } from "@/lib/auth";
 import { leadAccessCondition } from "@/lib/queries";
-import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
+import { LEAD_CONTACT_OUTCOME_LABELS, LEAD_LOST_REASON_LABELS, LEAD_PRIORITY_LABELS, LEAD_STATUS_LABELS } from "@/lib/content";
 import { leadUpdateSchema } from "@/lib/validation";
 import { readJsonBody, RequestBodyError } from "@/lib/request-body";
 import { emitEvent, runAutomationEvent, writeAudit } from "@/lib/enterprise";
@@ -12,6 +12,14 @@ import { PORTAL_PERMISSION, requirePermission } from "@/lib/enterprise-access";
 import { isTerminalLeadStatus, reassignLeadFollowUps, syncLeadFollowUp } from "@/lib/lead-mutation";
 
 export const dynamic = "force-dynamic";
+
+function euroFromCents(cents: number) {
+  return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+function germanDate(isoDate: string) {
+  return `${isoDate.slice(8, 10)}.${isoDate.slice(5, 7)}.${isoDate.slice(0, 4)}`;
+}
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ ok: false, error: "Ungültige Anfrage." }, { status: 403 });
@@ -60,6 +68,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (data.nextActionAt && isTerminalLeadStatus(effectiveStatus)) {
       return NextResponse.json({ ok: false, error: "Bitte öffne den Lead zuerst wieder, bevor du eine Wiedervorlage setzt." }, { status: 422 });
     }
+    if (data.lostReason && effectiveStatus !== "verloren") {
+      return NextResponse.json({ ok: false, error: "Ein Verlustgrund passt nur zum Status „Nicht zustande gekommen“." }, { status: 422 });
+    }
 
     if (data.assignToMe && existing.assignedEmployeeId !== user.id) {
       patch.assignedEmployeeId = user.id;
@@ -84,6 +95,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (JSON.stringify(tags) !== JSON.stringify(existing.tags)) systemNotes.push(`Tags aktualisiert: ${tags.length ? tags.join(", ") : "keine"}.`);
     }
 
+    const forecastChanges: string[] = [];
+    if (data.dealValueCents !== undefined && data.dealValueCents !== (existing.dealValueCents ?? null)) {
+      patch.dealValueCents = data.dealValueCents;
+      forecastChanges.push(data.dealValueCents === null ? "Wert entfernt" : `Wert ${euroFromCents(data.dealValueCents)}`);
+    }
+    if (data.winProbability !== undefined && data.winProbability !== (existing.winProbability ?? null)) {
+      patch.winProbability = data.winProbability;
+      forecastChanges.push(data.winProbability === null ? "Wahrscheinlichkeit entfernt" : `Wahrscheinlichkeit ${data.winProbability} %`);
+    }
+    if (data.expectedCloseAt !== undefined && data.expectedCloseAt !== (existing.expectedCloseAt ?? null)) {
+      patch.expectedCloseAt = data.expectedCloseAt;
+      forecastChanges.push(data.expectedCloseAt === null ? "Abschlussdatum entfernt" : `Abschluss erwartet am ${germanDate(data.expectedCloseAt)}`);
+    }
+    if (forecastChanges.length) systemNotes.push(`Forecast aktualisiert: ${forecastChanges.join(" · ")}.`);
+
     if (data.nextActionAt !== undefined) {
       patch.nextActionAt = data.nextActionAt ? new Date(data.nextActionAt) : null;
       systemNotes.push(data.nextActionAt
@@ -106,6 +132,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (!isTerminalLeadStatus(requestedStatus) && existing.closedAt) {
         patch.closedAt = null;
       }
+      if (requestedStatus !== "verloren" && existing.lostReason) {
+        patch.lostReason = null;
+      }
       if (!existing.assignedEmployeeId && !data.assignToMe) patch.assignedEmployeeId = user.id;
     }
     // A combined status + appointment update must retain both submitted fields.
@@ -113,6 +142,10 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       patch.confirmedSlot = data.confirmedSlot;
       if (effectiveStatus === "termin_bestaetigt") patch.confirmedAt = now;
       if (requestedStatus !== "termin_bestaetigt" || requestedStatus === existing.status) systemNotes.push(`Terminzeit aktualisiert: ${data.confirmedSlot}.`);
+    }
+    if (data.lostReason && data.lostReason !== existing.lostReason) {
+      patch.lostReason = data.lostReason;
+      systemNotes.push(`Verlustgrund: ${LEAD_LOST_REASON_LABELS[data.lostReason]}.`);
     }
     if (isTerminalLeadStatus(effectiveStatus)) {
       patch.nextActionAt = null;
@@ -150,6 +183,10 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
           contactOutcome: existing.contactOutcome,
           nextActionAt: existing.nextActionAt,
           tags: existing.tags,
+          dealValueCents: existing.dealValueCents ?? null,
+          winProbability: existing.winProbability ?? null,
+          expectedCloseAt: existing.expectedCloseAt ?? null,
+          lostReason: existing.lostReason ?? null,
         },
         {
           status: effectiveStatus,
@@ -159,6 +196,10 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
           contactOutcome: patch.contactOutcome ?? existing.contactOutcome,
           nextActionAt: effectiveNextAction,
           tags: patch.tags ?? existing.tags,
+          dealValueCents: Object.prototype.hasOwnProperty.call(patch, "dealValueCents") ? patch.dealValueCents : existing.dealValueCents ?? null,
+          winProbability: Object.prototype.hasOwnProperty.call(patch, "winProbability") ? patch.winProbability : existing.winProbability ?? null,
+          expectedCloseAt: Object.prototype.hasOwnProperty.call(patch, "expectedCloseAt") ? patch.expectedCloseAt : existing.expectedCloseAt ?? null,
+          lostReason: Object.prototype.hasOwnProperty.call(patch, "lostReason") ? patch.lostReason : existing.lostReason ?? null,
         });
     }
 

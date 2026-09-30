@@ -174,7 +174,7 @@ export function ReferralRegistration() {
       <span>TarifWerk darf meine Angaben zur Zuordnung meiner Empfehlungen und zur Kontaktaufnahme dazu verwenden. Kein Newsletter. <Link href="/datenschutz" className="underline">Datenschutz</Link></span>
     </label>
     {error && <p role="alert" className="text-[14px] text-red-700">{error}</p>}
-    <button type="submit" className={button} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Empfehlungslink erstellen</button>
+    <button type="submit" className={button} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Meinen persönlichen Link anlegen</button>
     <p className="inline-flex items-center gap-2 text-[11.5px] leading-relaxed text-steel"><Trophy className="h-3.5 w-3.5 text-electric-deep" /> Monatsturm: Ein Erfolgsschritt zählt erst, wenn aus einer Empfehlung ein aktivierter Abschluss entstanden ist.</p>
   </form>;
 }

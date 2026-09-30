@@ -11,7 +11,26 @@ export type OperationsSweepResult = {
   serviceEscalations: number;
   optimizationReviews: number;
   optimizationContractReviews: number;
+  /** Leads anonymised because their retention period expired (DSGVO Art. 5 Abs. 1 lit. e). */
+  anonymizedLeads: number;
+  leadRetentionMonths: number;
 };
+
+const DEFAULT_LEAD_RETENTION_MONTHS = 0;
+
+/**
+ * Retention for leads that never became a customer or order.
+ * Automatic anonymisation must be explicitly enabled after the retention policy
+ * has been approved. Missing, empty or invalid configuration preserves all leads.
+ * TARIFWERK_LEAD_RETENTION_MONTHS: 0 = disabled, otherwise 6–120 months.
+ */
+export function leadRetentionMonths(raw = process.env.TARIFWERK_LEAD_RETENTION_MONTHS): number {
+  if (raw === undefined || raw.trim() === "") return DEFAULT_LEAD_RETENTION_MONTHS;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 0) return DEFAULT_LEAD_RETENTION_MONTHS;
+  if (value === 0) return 0;
+  return Math.min(Math.max(value, 6), 120);
+}
 
 export async function runOperationsSweep(): Promise<OperationsSweepResult> {
   const operationsPolicy = await getOperationsPolicy();
@@ -21,7 +40,7 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
     const lock = await client.query<{ locked: boolean }>("select pg_try_advisory_xact_lock(772020260920) as locked");
     if (!lock.rows[0]?.locked) {
       await client.query("ROLLBACK");
-      return { skipped: true, leads: 0, customerReviews: 0, staleOrders: 0, opportunities: 0, atRiskCustomers: 0, serviceEscalations: 0, optimizationReviews: 0, optimizationContractReviews: 0 };
+      return { skipped: true, leads: 0, customerReviews: 0, staleOrders: 0, opportunities: 0, atRiskCustomers: 0, serviceEscalations: 0, optimizationReviews: 0, optimizationContractReviews: 0, anonymizedLeads: 0, leadRetentionMonths: leadRetentionMonths() };
     }
 
     const leads = await client.query<{ id: number }>(`
@@ -303,6 +322,15 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       RETURNING id
     `);
 
+    // Speicherbegrenzung: höchstens 500 abgelaufene Leads pro Lauf anonymisieren.
+    const retentionMonths = leadRetentionMonths();
+    const retention = retentionMonths > 0
+      ? await client.query<{ count: number }>(
+        "select tarifwerk_anonymize_leads(array(select t.id from tarifwerk_expired_lead_ids($1::integer) as t(id) order by t.id limit 500)) as count",
+        [retentionMonths],
+      )
+      : null;
+
     const result: OperationsSweepResult = {
       skipped: false,
       leads: leads.rowCount ?? 0,
@@ -313,6 +341,8 @@ export async function runOperationsSweep(): Promise<OperationsSweepResult> {
       serviceEscalations: serviceEscalations.rowCount ?? 0,
       optimizationReviews: optimizationReviews.rowCount ?? 0,
       optimizationContractReviews: optimizationContractReviews.rowCount ?? 0,
+      anonymizedLeads: Number(retention?.rows[0]?.count ?? 0),
+      leadRetentionMonths: retentionMonths,
     };
 
     await client.query(

@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { AlertTriangle, ArrowLeft, BrainCircuit, FilePlus2, Mail, MessageCircle, Network, Phone, PhoneCall } from "lucide-react";
 import { LeadActions } from "@/components/portal/LeadActions";
+import { LeadForecastPanel } from "@/components/portal/LeadForecastPanel";
+import { LeadPrivacyPanel } from "@/components/portal/LeadPrivacyPanel";
 import { LeadProductManager } from "@/components/portal/LeadProductManager";
 import { formatBerlinDateTimeInput } from "@/lib/portal-date-time";
 import { Card, StatusBadge, TypeBadge, formatDate } from "@/components/portal/ui";
@@ -20,10 +22,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!/^\d+$/.test(raw) || !Number.isSafeInteger(id) || id <= 0 || id > 2147483647) notFound();
   const user = await getCurrentUser();
   if (!user) redirect(`/portal/login?next=${encodeURIComponent(`/portal/leads/${id}`)}`);
-  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.ORDER_CREATE] as const);
+  const capabilities = await permissionSnapshot(user, [PORTAL_PERMISSION.LEAD_EDIT, PORTAL_PERMISSION.ORDER_CREATE, PORTAL_PERMISSION.PRIVACY_MANAGE] as const);
   const canEdit = capabilities[PORTAL_PERMISSION.LEAD_EDIT];
   if (!canEdit) redirect("/portal");
   const canCreateOrder = capabilities[PORTAL_PERMISSION.ORDER_CREATE];
+  const canManagePrivacy = Boolean(capabilities[PORTAL_PERMISSION.PRIVACY_MANAGE]);
   const lead = await getLead(id, user);
   if (!lead) notFound();
   const [notes, calls, leadProducts, productOptions] = await Promise.all([
@@ -306,6 +309,23 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </div>
           </Card>
           </div>
+
+          <Card>
+            <LeadForecastPanel
+              leadId={lead.id}
+              status={lead.status}
+              dealValueCents={lead.dealValueCents}
+              winProbability={lead.winProbability}
+              expectedCloseAt={lead.expectedCloseAt}
+              lostReason={lead.lostReason}
+            />
+          </Card>
+
+          {canManagePrivacy && (
+            <Card>
+              <LeadPrivacyPanel leadId={lead.id} linkedToCustomer={Boolean(lead.customerLinked)} />
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -114,6 +114,14 @@ export const leadUpdateSchema = z.object({
   contactOutcome: z.enum(["open", "attempted", "reached", "no_answer", "callback", "voicemail", "wrong_number", "not_interested"]).optional(),
   nextActionAt: z.string().datetime().nullable().optional(),
   tags: z.array(trimmed(40)).max(12).optional(),
+  // Pipeline forecast: value in euro cents (max. 10 Mio. €), probability in percent.
+  dealValueCents: z.number().int().min(0).max(1_000_000_000).nullable().optional(),
+  winProbability: z.number().int().min(0).max(100).nullable().optional(),
+  expectedCloseAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }).nullable().optional(),
+  lostReason: z.enum(["price", "competitor", "no_need", "unreachable", "timing", "not_eligible", "other"]).optional(),
 }).refine((data) => Boolean(
   data.status ||
   data.confirmedSlot ||
@@ -122,7 +130,11 @@ export const leadUpdateSchema = z.object({
   data.priority ||
   data.contactOutcome ||
   data.nextActionAt !== undefined ||
-  data.tags
+  data.tags ||
+  data.dealValueCents !== undefined ||
+  data.winProbability !== undefined ||
+  data.expectedCloseAt !== undefined ||
+  data.lostReason
 ), {
   message: "Bitte gib eine Änderung an.",
 });

@@ -3,7 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { commissionEvents, orders } from "@/db/enterprise-schema";
 import { getCurrentUser } from "@/lib/auth";
-import { listCustomers, listOrders } from "@/lib/enterprise";
+import { listCustomers, listOrders, writeAudit } from "@/lib/enterprise";
 import { hasPermission } from "@/lib/enterprise-access";
 import { isCompensationOwner } from "@/lib/compensation";
 import { createCsvStream } from "@/lib/csv-export";
@@ -25,6 +25,30 @@ function csvDownload<T>(
   });
 }
 
+/**
+ * Accountability (Art. 5 Abs. 2 DSGVO): every bulk export is recorded before
+ * any data leaves the system. If the audit entry cannot be written, the export
+ * is refused instead of running unlogged.
+ */
+async function recordExport(userId: number, type: "customers" | "commissions" | "orders"): Promise<boolean> {
+  try {
+    await db.transaction(async (tx) => {
+      await writeAudit(tx, userId, "export.downloaded", "export", type, undefined, { type });
+    });
+    return true;
+  } catch {
+    console.error("[export] audit entry could not be written");
+    return false;
+  }
+}
+
+function exportUnavailable() {
+  return NextResponse.json(
+    { ok: false, error: "Der Export kann gerade nicht protokolliert werden. Bitte später erneut versuchen." },
+    { status: 503, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser().catch(() => null);
   if (!user) return NextResponse.json({ ok: false, error: "Bitte erneut anmelden." }, { status: 401 });
@@ -37,6 +61,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Keine Exportberechtigung." }, { status: 403 });
     }
 
+    if (!await recordExport(user.id, "customers")) return exportUnavailable();
     const pageSize = 200;
     return csvDownload(
       "tarifwerk-kunden.csv",
@@ -63,6 +88,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Nur der Owner-Account darf Provider-Provisionen exportieren." }, { status: 403 });
     }
 
+    if (!await recordExport(user.id, "commissions")) return exportUnavailable();
     const pageSize = 500;
     const access = user.role === "admin" ? sql`true` : eq(orders.advisorEmployeeId, user.id);
     const fetchPage = (page: number) => db.select({
@@ -104,6 +130,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Keine Berechtigung für Auftragsdaten." }, { status: 403 });
   }
 
+  if (!await recordExport(user.id, "orders")) return exportUnavailable();
   const pageSize = 300;
   const fetchPage = (page: number) => listOrders(user, { page }, pageSize);
 

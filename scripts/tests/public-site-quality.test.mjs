@@ -140,7 +140,10 @@ test("homepage leads with the business model instead of founder repetition", () 
   const finalCta = read("src/components/home/AudienceSections.tsx");
   const leadForm = read("src/components/forms/LeadForm.tsx");
 
-  assert.match(copy, /TarifWerk bündelt Internet, Mobilfunk & TV, Strom & Gas, Versicherungen, Solar & Wärmepumpe, Immobilien, Edelmetalle, Klima und Sicherheit/);
+  // Gutachten 2026-09-29 (CRO-01/MKT-02): one concrete promise first, provider commission disclosed in the hero.
+  assert.match(copy, /primary: "Vertrag kostenlos prüfen lassen"/);
+  assert.match(copy, /Wir erklären dir die wichtigen Kosten und Bedingungen\. Danach entscheidest du selbst\./);
+  assert.match(hero, /erhalten wir in vielen Bereichen eine Provision vom Anbieter/);
   assert.doesNotMatch(homepage, /<Founder /);
   assert.doesNotMatch(hero, /Marvin · dein Ansprechpartner|Marvin · Ihr Ansprechpartner/);
   assert.doesNotMatch(finalCta, /SITE\.whatsappDisplay/);

@@ -53,6 +53,8 @@ export type LeadRow = typeof leads.$inferSelect & {
   interestProductNames: string[];
   soldProductNames: string[];
   nextActionOverdue: boolean;
+  /** Only set by getLead: lead belongs to a customer, order or customer referral. */
+  customerLinked?: boolean;
 };
 
 export type LeadFilter = {
@@ -191,6 +193,10 @@ export async function getLead(id: number, user?: SessionUser) {
       interestProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'interest'), '{}'::text[])`,
       soldProductNames: sql<string[]>`coalesce((select array_agg(p.name order by p.name) from lead_product_links lpl join products p on p.id = lpl.product_id where lpl.lead_id = ${leads.id} and lpl.relation = 'sold'), '{}'::text[])`,
       nextActionOverdue: sql<boolean>`coalesce(${leads.nextActionAt} < now() and ${leads.status} not in ('abgeschlossen','verloren'), false)`,
+      customerLinked: sql<boolean>`(exists (select 1 from customers c where c.created_from_lead_id = ${leads.id})
+        or exists (select 1 from customer_lead_links cl where cl.lead_id = ${leads.id})
+        or exists (select 1 from orders o where o.lead_id = ${leads.id})
+        or exists (select 1 from customer_referrals cr where cr.referred_lead_id = ${leads.id}))`,
     })
     .from(leads)
     .leftJoin(advisors, eq(leads.advisorId, advisors.id))
@@ -207,6 +213,7 @@ export async function getLead(id: number, user?: SessionUser) {
     interestProductNames: row.interestProductNames ?? [],
     soldProductNames: row.soldProductNames ?? [],
     nextActionOverdue: Boolean(row.nextActionOverdue),
+    customerLinked: Boolean(row.customerLinked),
   } as LeadRow;
 }
 
