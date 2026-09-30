@@ -37,7 +37,6 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "tarifwerk-komplett-2026-09-29-v2"
+    "node_modules"
   ]
 }

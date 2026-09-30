@@ -10,3 +10,7 @@ out/
 *.log
 .vercel
 backups/
+
+# Upload-Archive nie einchecken
+/*.zip
+/*.patch
