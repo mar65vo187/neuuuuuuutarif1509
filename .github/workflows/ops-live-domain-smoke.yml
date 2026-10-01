@@ -1,4 +1,4 @@
-name: Ops Railway Domain Bypass Test
+name: Ops Railway Full Smoke
 
 on:
   push:
@@ -9,26 +9,48 @@ permissions:
   contents: read
 
 jobs:
-  bypass-test:
+  full-smoke:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Test Railway frontdoor and custom host
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Full site smoke through Railway frontdoor
+        env:
+          LIVE_BASE_URL: https://tarifwerk-web-production-4b7e.up.railway.app
+          EXPECTED_REVISION: ""
+        run: node scripts/live-production-smoke.mjs
+
+      - name: Public AI smoke through Railway frontdoor
         run: |
-          set +e
-          TARGET="tarifwerk-web-production-4b7e.up.railway.app"
-          echo "=== target DNS ==="
-          dig +short A "$TARGET"
-          echo "=== target /api/ready ==="
-          curl -sv --max-time 20 "https://$TARGET/api/ready" -o /tmp/target-body 2>&1
-          cat /tmp/target-body 2>/dev/null || true
-          IP="$(dig +short A "$TARGET" | head -n1)"
-          echo
-          echo "=== custom host via Railway IP: $IP ==="
-          curl -sv --max-time 20 --resolve "www.tarifwerk.eu:443:$IP" "https://www.tarifwerk.eu/api/ready" -o /tmp/custom-body 2>&1
-          STATUS=$?
-          cat /tmp/custom-body 2>/dev/null || true
-          echo
-          echo "custom_curl_exit=$STATUS"
-          echo "=== custom host certificate ==="
-          echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -ext subjectAltName || true
+          node --input-type=module <<'NODE'
+          const base = "https://tarifwerk-web-production-4b7e.up.railway.app";
+          const response = await fetch(base + "/api/public-ai", {
+            method: "POST",
+            redirect: "follow",
+            signal: AbortSignal.timeout(60000),
+            headers: {
+              "Content-Type": "application/json",
+              "Origin": base,
+              "User-Agent": "TarifWerk-Live-AI-Smoke/1.0"
+            },
+            body: JSON.stringify({
+              messages: [{ role: "user", content: "Welche Themen kann TarifWerk beraten? Antworte bitte kurz." }],
+              audience: "b2c",
+              pagePath: "/"
+            })
+          });
+          const raw = await response.text();
+          let json;
+          try { json = JSON.parse(raw); } catch { throw new Error("KI-Antwort ist kein JSON: " + raw.slice(0, 300)); }
+          if (!response.ok || json?.ok !== true || typeof json?.text !== "string" || json.text.trim().length < 10) {
+            throw new Error("KI-Smoke fehlgeschlagen: HTTP " + response.status + " " + raw.slice(0, 500));
+          }
+          console.log(JSON.stringify({ ok: true, status: response.status, chars: json.text.length, redactions: json.redactions ?? 0 }));
+          NODE
