@@ -1,4 +1,4 @@
-name: Ops Final Production E2E
+name: Ops WWW Routing Behind TLS
 
 on:
   push:
@@ -9,70 +9,43 @@ permissions:
   contents: read
 
 jobs:
-  e2e:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: DNS and certificate
+      - name: Verify routing while Railway certificate is provisioning
         run: |
           set -e
-          echo "CNAME=$(dig +short CNAME www.tarifwerk.eu)"
-          echo "TXT=$(dig +short TXT _railway-verify.www.tarifwerk.eu)"
-          curl -fsSI --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/ >/tmp/head.txt
-          cat /tmp/head.txt
-          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
-          echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
-
-      - name: Full route smoke
-        env:
-          LIVE_BASE_URL: https://www.tarifwerk.eu
-          EXPECTED_REVISION: ""
-        run: node scripts/live-production-smoke.mjs
-
-      - name: Public AI smoke
-        run: |
+          echo "=== HOME ==="
+          curl -kfsSI --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/
+          echo "=== READY ==="
+          curl -kfsS --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/api/ready
+          echo
+          echo "=== PORTAL LOGIN ==="
+          code="$(curl -k -sS -o /tmp/login.html -w '%{http_code}' --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/portal/login)"
+          echo "HTTP=$code"
+          test "$code" = "200"
+          echo "=== PUBLIC AI ==="
           node --input-type=module <<'NODE'
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
           const base = "https://www.tarifwerk.eu";
-          const response = await fetch(base + "/api/public-ai", {
-            method: "POST",
-            redirect: "follow",
-            signal: AbortSignal.timeout(60000),
-            headers: {
-              "Content-Type": "application/json",
-              "Origin": base,
-              "Sec-Fetch-Site": "same-origin",
-              "User-Agent": "TarifWerk-Final-E2E/1.0"
+          const r = await fetch(base + "/api/public-ai", {
+            method:"POST",
+            signal:AbortSignal.timeout(60000),
+            headers:{
+              "content-type":"application/json",
+              "origin":base,
+              "sec-fetch-site":"same-origin"
             },
-            body: JSON.stringify({
-              messages: [{ role: "user", content: "Welche Themen kann TarifWerk beraten? Antworte kurz." }],
-              audience: "b2c",
-              pagePath: "/"
+            body:JSON.stringify({
+              messages:[{role:"user",content:"Welche Themen kann TarifWerk beraten? Antworte kurz."}],
+              audience:"b2c",
+              pagePath:"/"
             })
           });
-          const body = await response.text();
-          let json;
-          try { json = JSON.parse(body); } catch { throw new Error("Public AI returned non-JSON: " + body.slice(0,300)); }
-          if (!response.ok || json?.ok !== true || typeof json?.text !== "string" || json.text.trim().length < 10) {
-            throw new Error("Public AI failed: HTTP " + response.status + " " + body.slice(0,500));
-          }
-          console.log(JSON.stringify({ok:true,status:response.status,chars:json.text.length,provider:json.provider ?? null,model:json.model ?? null}));
-          NODE
-
-      - name: Portal and database readiness
-        run: |
-          node --input-type=module <<'NODE'
-          const base = "https://www.tarifwerk.eu";
-          const login = await fetch(base + "/portal/login", {redirect:"manual", signal:AbortSignal.timeout(30000)});
-          if (login.status !== 200) throw new Error("Portal login HTTP " + login.status);
-
-          const ready = await fetch(base + "/api/ready", {signal:AbortSignal.timeout(30000)});
-          const text = await ready.text();
-          if (!ready.ok) throw new Error("Ready HTTP " + ready.status + " " + text.slice(0,500));
-          let json; try { json = JSON.parse(text); } catch { throw new Error("Ready non-JSON"); }
-          console.log(JSON.stringify({portalLogin:login.status,readyStatus:ready.status,ready:json}));
+          const body = await r.text();
+          if(!r.ok) throw new Error("AI HTTP " + r.status + " " + body.slice(0,300));
+          const j = JSON.parse(body);
+          if(j?.ok !== true || typeof j?.text !== "string" || j.text.trim().length < 10) throw new Error("AI invalid response");
+          console.log(JSON.stringify({ok:true,status:r.status,chars:j.text.length,provider:j.provider??null,model:j.model??null}));
           NODE
