@@ -25,7 +25,8 @@ jobs:
           const base = process.env.LIVE_BASE_URL;
           const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
           const profile = await mkdtemp(path.join(tmpdir(), "tarifwerk-ui-"));
-          const chrome = spawn("google-chrome", ["--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--remote-debugging-port=9222", "--user-data-dir=" + profile, "about:blank"], {stdio:"ignore"});
+          const chrome = spawn("google-chrome", ["--headless", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--no-zygote", "--remote-debugging-port=9222", "--user-data-dir=" + profile, "about:blank"], {stdio:["ignore","ignore","pipe"]});
+          let chromeError = ""; chrome.stderr.on("data",chunk=>{chromeError=(chromeError+chunk.toString()).slice(-4000);});
           let socket;
           const pending = new Map();
           const issues = [];
@@ -65,7 +66,7 @@ jobs:
               try {target=(await (await fetch("http://127.0.0.1:9222/json/list")).json()).find(t=>t.type==="page"); if(target)break;} catch {}
               await delay(200);
             }
-            if(!target) throw new Error("Chrome did not start");
+            if(!target) throw new Error("Chrome did not start: " + chromeError);
             socket=new WebSocket(target.webSocketDebuggerUrl);
             await new Promise((resolve,reject)=>{socket.addEventListener("open",resolve,{once:true});socket.addEventListener("error",reject,{once:true});});
             socket.addEventListener("message",event=>{
