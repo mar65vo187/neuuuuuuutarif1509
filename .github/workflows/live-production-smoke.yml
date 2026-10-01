@@ -4,10 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    # Alle 6 Stunden statt alle 30 Minuten: Ein 30-Minuten-Intervall verbrennt
-    # ~2.900 Actions-Minuten/Monat und überschreitet damit das kostenlose
-    # Kontingent privater Repos (~2.000 Min./Monat). 6 Stunden halten die
-    # Überwachung dauerhaft im Free-Bereich.
+    # Kundendomain und beide Hosting-Adressen getrennt pruefen.
     - cron: "15 */6 * * *"
   workflow_dispatch:
 
@@ -20,10 +17,21 @@ concurrency:
 
 jobs:
   smoke:
+    name: Live smoke (${{ matrix.target.name }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: Public domain
+            url: https://www.tarifwerk.eu
+          - name: Railway
+            url: https://tarifwerk-web-production-4b7e.up.railway.app
+          - name: Firebase
+            url: https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app
     timeout-minutes: 10
     env:
-      LIVE_BASE_URL: https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app
+      LIVE_BASE_URL: ${{ matrix.target.url }}
       EXPECTED_REVISION: ""
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
