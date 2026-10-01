@@ -15,9 +15,10 @@ runConfig:
   concurrency: 80
 
 scripts:
-  # Wendet vor dem Build die Datenbank-Migrationen an (idempotent, eine
-  # bestehende Datenbank wird nie überschrieben) und baut danach Next.js.
-  buildCommand: npm run build:firebase
+  # Firebase builds must be deterministic and side-effect free. Production
+  # database migrations/provisioning are managed separately; the runtime uses
+  # the existing Railway PostgreSQL database.
+  buildCommand: npm run build
 
 env:
   # --- Pflicht: Secrets (Werte liegen im Google Secret Manager, nie im Repo) ---
