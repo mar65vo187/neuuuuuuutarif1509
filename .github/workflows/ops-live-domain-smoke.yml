@@ -1,4 +1,4 @@
-name: Ops Post-Redeploy Domain Check
+name: Ops SSL Preconditions
 
 on:
   push:
@@ -13,24 +13,24 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Check live domain after Railway redeploy
+      - name: Check CAA DNSSEC and domain conflicts
         run: |
           set +e
-          echo "=== DNS ==="
+          echo "=== CAA apex ==="
+          dig +short CAA tarifwerk.eu
+          echo "=== CAA www ==="
+          dig +short CAA www.tarifwerk.eu
+          echo "=== DS apex ==="
+          dig +short DS tarifwerk.eu
+          echo "=== DNSKEY apex ==="
+          dig +short DNSKEY tarifwerk.eu
+          echo "=== CNAME www ==="
           dig +short CNAME www.tarifwerk.eu
+          echo "=== A www ==="
+          dig +short A www.tarifwerk.eu
+          echo "=== AAAA www ==="
+          dig +short AAAA www.tarifwerk.eu
+          echo "=== TXT verify ==="
           dig +short TXT _railway-verify.www.tarifwerk.eu
-          echo "=== HTTPS strict ==="
-          curl -sS -I --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ || true
-          echo "=== HTTPS ignore-cert HOME ==="
-          curl -k -sS -D - -o /tmp/home --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ || true
-          head -c 500 /tmp/home 2>/dev/null || true
-          echo
-          echo "=== READY ignore-cert ==="
-          curl -k -sS -D - --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/api/ready || true
-          echo
-          echo "=== CERT ==="
-          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
-          echo "IP=$IP"
-          if [ -n "$IP" ]; then
-            echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
-          fi
+          echo "=== trace TXT ==="
+          dig +trace TXT _railway-verify.www.tarifwerk.eu | tail -n 80
