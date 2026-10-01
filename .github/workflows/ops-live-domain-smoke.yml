@@ -1,4 +1,4 @@
-name: Ops Domain Reconnect Check
+name: Ops Railway TXT Check
 
 on:
   push:
@@ -9,28 +9,16 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  dns:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
     steps:
-      - name: Check DNS TLS and live site
+      - name: Inspect likely Railway verification records
         run: |
           set +e
-          echo "=== DNS CNAME www ==="
-          dig +short CNAME www.tarifwerk.eu
-          echo "=== DNS A www ==="
-          dig +short A www.tarifwerk.eu
-          echo "=== DNS apex ==="
-          dig +short A tarifwerk.eu
-          echo "=== Railway target DNS ==="
-          dig +short A tarifwerk-web-production-4b7e.up.railway.app
-          echo "=== HTTPS www ==="
-          curl -svI --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ 2>&1 || true
-          echo "=== HTTPS ready ==="
-          curl -sv --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/api/ready 2>&1 || true
-          echo "=== Certificate ==="
-          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
-          echo "resolved_ip=$IP"
-          if [ -n "$IP" ]; then
-            echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
-          fi
+          for name in             www.tarifwerk.eu             tarifwerk.eu             _railway-verify.www.tarifwerk.eu             _railway-verify.tarifwerk.eu             railway-verify.www.tarifwerk.eu             railway-verify.tarifwerk.eu             _acme-challenge.www.tarifwerk.eu             _acme-challenge.tarifwerk.eu
+          do
+            echo "=== TXT $name ==="
+            dig +short TXT "$name"
+            echo "=== CNAME $name ==="
+            dig +short CNAME "$name"
+          done
