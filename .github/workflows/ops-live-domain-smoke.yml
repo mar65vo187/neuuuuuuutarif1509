@@ -1,0 +1,56 @@
+name: Ops Live Domain Smoke
+
+on:
+  push:
+    branches:
+      - ops/live-domain-smoke-2026-10-01
+
+permissions:
+  contents: read
+
+jobs:
+  live-domain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Smoke www.tarifwerk.eu
+        env:
+          LIVE_BASE_URL: https://www.tarifwerk.eu
+          EXPECTED_REVISION: ""
+        run: node scripts/live-production-smoke.mjs
+
+      - name: Smoke TarifWerks KI
+        run: |
+          node --input-type=module <<'NODE'
+          const base = "https://www.tarifwerk.eu";
+          const response = await fetch(base + "/api/public-ai", {
+            method: "POST",
+            redirect: "follow",
+            signal: AbortSignal.timeout(60000),
+            headers: {
+              "Content-Type": "application/json",
+              "Origin": base,
+              "User-Agent": "TarifWerk-Live-AI-Smoke/1.0"
+            },
+            body: JSON.stringify({
+              messages: [{ role: "user", content: "Welche Themen kann TarifWerk beraten? Antworte bitte kurz." }],
+              audience: "b2c",
+              pagePath: "/"
+            })
+          });
+          const text = await response.text();
+          let json;
+          try { json = JSON.parse(text); } catch { throw new Error("KI-Antwort ist kein JSON: " + text.slice(0, 300)); }
+          if (!response.ok || json?.ok !== true || typeof json?.text !== "string" || json.text.trim().length < 10) {
+            throw new Error("KI-Smoke fehlgeschlagen: HTTP " + response.status + " " + text.slice(0, 500));
+          }
+          console.log(JSON.stringify({ ok: true, status: response.status, chars: json.text.length, redactions: json.redactions ?? 0 }));
+          NODE
