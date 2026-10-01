@@ -32,6 +32,8 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
     document.cookie = "tarifwerk-audience=" + mode + "; Path=/; Max-Age=2592000; SameSite=Lax";
   };
 
+  // A full navigation refreshes the shared server layout too (footer, contact CTA and AI).
+  // Next Link retains that layout on query-only navigation, leaving the previous audience active.
   const audienceHref = (mode: AudienceMode) => withAudience(pathname || "/", mode);
 
   useEffect(() => {
@@ -110,8 +112,8 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
             </nav>
             <div className="hidden items-center gap-3 xl:flex">
               <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Zielgruppe wählen">
-                <Link href={audienceHref("b2c")} onClick={() => rememberAudience("b2c")} aria-current={audience === "b2c" ? "page" : undefined} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</Link>
-                <Link href={audienceHref("b2b")} onClick={() => rememberAudience("b2b")} aria-current={audience === "b2b" ? "page" : undefined} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</Link>
+                <a href={audienceHref("b2c")} onClick={() => rememberAudience("b2c")} aria-current={audience === "b2c" ? "page" : undefined} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</a>
+                <a href={audienceHref("b2b")} onClick={() => rememberAudience("b2b")} aria-current={audience === "b2b" ? "page" : undefined} className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</a>
               </div>
               <Button href={withAudience("/anfrage", audience)} size="sm" iconRight={<ArrowRight />}>Beratung starten</Button>
             </div>
@@ -128,8 +130,8 @@ export function Header({ initialAudience }: { initialAudience: AudienceMode }) {
             })}
           </nav>
           <div className="mt-5 inline-flex w-fit rounded-full border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Zielgruppe wählen">
-            <Link href={audienceHref("b2c")} onClick={() => rememberAudience("b2c")} aria-current={audience === "b2c" ? "page" : undefined} className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</Link>
-            <Link href={audienceHref("b2b")} onClick={() => rememberAudience("b2b")} aria-current={audience === "b2b" ? "page" : undefined} className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</Link>
+            <a href={audienceHref("b2c")} onClick={() => rememberAudience("b2c")} aria-current={audience === "b2c" ? "page" : undefined} className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${audience === "b2c" ? "bg-white text-ink" : "text-silver hover:bg-white/8 hover:text-white"}`}>Privat</a>
+            <a href={audienceHref("b2b")} onClick={() => rememberAudience("b2b")} aria-current={audience === "b2b" ? "page" : undefined} className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${audience === "b2b" ? "bg-electric text-white" : "text-silver hover:bg-white/8 hover:text-white"}`}>Business</a>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">{SERVICES.map((service) => <Link key={service.slug} href={withAudience(`/leistungen/${service.slug}`, audience)} className="chip border-white/12 text-silver transition-colors hover:border-electric hover:text-white">{service.shortLabel || service.name}</Link>)}</div>
           <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
