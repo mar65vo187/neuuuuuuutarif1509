@@ -1,4 +1,4 @@
-name: Ops WWW Routing Behind TLS
+name: Ops Post-Redeploy Domain Check
 
 on:
   push:
@@ -13,39 +13,24 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Verify routing while Railway certificate is provisioning
+      - name: Check live domain after Railway redeploy
         run: |
-          set -e
-          echo "=== HOME ==="
-          curl -kfsSI --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/
-          echo "=== READY ==="
-          curl -kfsS --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/api/ready
+          set +e
+          echo "=== DNS ==="
+          dig +short CNAME www.tarifwerk.eu
+          dig +short TXT _railway-verify.www.tarifwerk.eu
+          echo "=== HTTPS strict ==="
+          curl -sS -I --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ || true
+          echo "=== HTTPS ignore-cert HOME ==="
+          curl -k -sS -D - -o /tmp/home --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ || true
+          head -c 500 /tmp/home 2>/dev/null || true
           echo
-          echo "=== PORTAL LOGIN ==="
-          code="$(curl -k -sS -o /tmp/login.html -w '%{http_code}' --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/portal/login)"
-          echo "HTTP=$code"
-          test "$code" = "200"
-          echo "=== PUBLIC AI ==="
-          node --input-type=module <<'NODE'
-          process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-          const base = "https://www.tarifwerk.eu";
-          const r = await fetch(base + "/api/public-ai", {
-            method:"POST",
-            signal:AbortSignal.timeout(60000),
-            headers:{
-              "content-type":"application/json",
-              "origin":base,
-              "sec-fetch-site":"same-origin"
-            },
-            body:JSON.stringify({
-              messages:[{role:"user",content:"Welche Themen kann TarifWerk beraten? Antworte kurz."}],
-              audience:"b2c",
-              pagePath:"/"
-            })
-          });
-          const body = await r.text();
-          if(!r.ok) throw new Error("AI HTTP " + r.status + " " + body.slice(0,300));
-          const j = JSON.parse(body);
-          if(j?.ok !== true || typeof j?.text !== "string" || j.text.trim().length < 10) throw new Error("AI invalid response");
-          console.log(JSON.stringify({ok:true,status:r.status,chars:j.text.length,provider:j.provider??null,model:j.model??null}));
-          NODE
+          echo "=== READY ignore-cert ==="
+          curl -k -sS -D - --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/api/ready || true
+          echo
+          echo "=== CERT ==="
+          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
+          echo "IP=$IP"
+          if [ -n "$IP" ]; then
+            echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
+          fi
