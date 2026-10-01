@@ -100,6 +100,7 @@ for (const path of routes) {
   try {
     const result = await request(path);
     const isApi = path === "/api/health" || path === "/api/ready";
+    const isStaticMetadata = path === "/robots.txt" || path === "/sitemap.xml";
     if (!result.status || result.status < 200 || result.status >= 300) {
       failures.push(`${path}: HTTP ${result.status}`);
       results.push({ ...result, body: result.body.slice(0, 500) });
@@ -123,8 +124,8 @@ for (const path of routes) {
       failures.push("/sitemap.xml: canonical host missing");
     }
     if (!isApi && result.headers.nosniff !== "nosniff") failures.push(`${path}: X-Content-Type-Options missing`);
-    if (!isApi && path !== "/portal/login" && !result.headers.frame) failures.push(`${path}: X-Frame-Options missing`);
-    if (!isApi && !result.headers.csp) failures.push(`${path}: CSP missing`);
+    if (!isApi && !isStaticMetadata && path !== "/portal/login" && !result.headers.frame) failures.push(`${path}: X-Frame-Options missing`);
+    if (!isApi && !isStaticMetadata && !result.headers.csp) failures.push(`${path}: CSP missing`);
     if (new URL(base).protocol === "https:" && !isApi && !result.headers.hsts) failures.push(`${path}: HSTS missing`);
     results.push({ path: result.path, status: result.status, finalUrl: result.finalUrl, ms: result.ms, bytes: result.bytes });
   } catch (error) {
