@@ -1,4 +1,4 @@
-name: Ops Live Domain Smoke
+name: Ops Live Domain Diagnostics
 
 on:
   push:
@@ -9,48 +9,34 @@ permissions:
   contents: read
 
 jobs:
-  live-domain:
+  diagnose:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Node 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Smoke www.tarifwerk.eu
-        env:
-          LIVE_BASE_URL: https://www.tarifwerk.eu
-          EXPECTED_REVISION: ""
-        run: node scripts/live-production-smoke.mjs
-
-      - name: Smoke TarifWerks KI
+      - name: DNS and TLS diagnostics
         run: |
-          node --input-type=module <<'NODE'
-          const base = "https://www.tarifwerk.eu";
-          const response = await fetch(base + "/api/public-ai", {
-            method: "POST",
-            redirect: "follow",
-            signal: AbortSignal.timeout(60000),
-            headers: {
-              "Content-Type": "application/json",
-              "Origin": base,
-              "User-Agent": "TarifWerk-Live-AI-Smoke/1.0"
-            },
-            body: JSON.stringify({
-              messages: [{ role: "user", content: "Welche Themen kann TarifWerk beraten? Antworte bitte kurz." }],
-              audience: "b2c",
-              pagePath: "/"
-            })
-          });
-          const text = await response.text();
-          let json;
-          try { json = JSON.parse(text); } catch { throw new Error("KI-Antwort ist kein JSON: " + text.slice(0, 300)); }
-          if (!response.ok || json?.ok !== true || typeof json?.text !== "string" || json.text.trim().length < 10) {
-            throw new Error("KI-Smoke fehlgeschlagen: HTTP " + response.status + " " + text.slice(0, 500));
-          }
-          console.log(JSON.stringify({ ok: true, status: response.status, chars: json.text.length, redactions: json.redactions ?? 0 }));
-          NODE
+          set +e
+          echo "=== resolv.conf ==="
+          cat /etc/resolv.conf
+          echo "=== dig NS tarifwerk.eu ==="
+          dig +short NS tarifwerk.eu
+          echo "=== dig A tarifwerk.eu ==="
+          dig +short A tarifwerk.eu
+          echo "=== dig AAAA tarifwerk.eu ==="
+          dig +short AAAA tarifwerk.eu
+          echo "=== dig CNAME www.tarifwerk.eu ==="
+          dig +short CNAME www.tarifwerk.eu
+          echo "=== dig A www.tarifwerk.eu ==="
+          dig +short A www.tarifwerk.eu
+          echo "=== dig AAAA www.tarifwerk.eu ==="
+          dig +short AAAA www.tarifwerk.eu
+          echo "=== nslookup www.tarifwerk.eu ==="
+          nslookup www.tarifwerk.eu
+          echo "=== curl www ==="
+          curl -Iv --connect-timeout 10 --max-time 20 https://www.tarifwerk.eu/ 2>&1 || true
+          echo "=== curl apex ==="
+          curl -Iv --connect-timeout 10 --max-time 20 https://tarifwerk.eu/ 2>&1 || true
+          echo "=== curl Railway backend ==="
+          curl -Iv --connect-timeout 10 --max-time 20 https://tarifwerk-prod-production.up.railway.app/api/ready 2>&1 || true
+          echo "=== curl Firebase backend ==="
+          curl -Iv --connect-timeout 10 --max-time 20 https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app/api/ready 2>&1 || true
