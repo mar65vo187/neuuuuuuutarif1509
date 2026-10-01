@@ -505,6 +505,19 @@ export const LEAD_CONTACT_OUTCOME_LABELS: Record<string, string> = {
   not_interested: "Kein Interesse",
 };
 
+export const LEAD_LOST_REASONS = ["price", "competitor", "no_need", "unreachable", "timing", "not_eligible", "other"] as const;
+export type LeadLostReason = (typeof LEAD_LOST_REASONS)[number];
+
+export const LEAD_LOST_REASON_LABELS: Record<LeadLostReason, string> = {
+  price: "Preis zu hoch",
+  competitor: "Anderer Anbieter gewählt",
+  no_need: "Kein Bedarf",
+  unreachable: "Nicht erreichbar",
+  timing: "Falscher Zeitpunkt",
+  not_eligible: "Voraussetzungen fehlen",
+  other: "Sonstiges",
+};
+
 export const LEAD_TYPE_LABELS: Record<string, string> = {
   beratung: "Beratungsanfrage",
   termin: "Terminwunsch",
