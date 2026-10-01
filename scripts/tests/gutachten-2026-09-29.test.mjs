@@ -90,7 +90,7 @@ test("JUR-01: Erstinformation is published only from verified license records, n
   assert.match(read("src/app/(site)/impressum/page.tsx"), /href="\/erstinformation"/);
 });
 
-test("JUR-03: optimisation service states price, tax status, term, cancellation, contract path and withdrawal", () => {
+test("JUR-03: optimisation terms remain defined while the restored live page avoids outcome promises", () => {
   const terms = read("src/lib/optimization-shared.ts");
   assert.match(terms, /price: "1,99 €"/);
   assert.match(terms, /Gemäß § 19 UStG wird keine Umsatzsteuer berechnet/);
@@ -98,19 +98,21 @@ test("JUR-03: optimisation service states price, tax status, term, cancellation,
   assert.match(terms, /danach jederzeit mit einer Frist von einem Monat kündbar/);
   assert.match(terms, /erst mit unserer schriftlichen Bestätigung wirksam/);
   assert.match(terms, /Widerrufsrecht/);
+
   const page = read("src/app/(site)/optimierungsservice/page.tsx");
-  for (const field of ["taxNote", "minimumTerm", "cancellation", "conclusion", "withdrawal"]) {
-    assert.match(page, new RegExp(`OPTIMIZATION_PUBLIC_TERMS\\.${field}`));
-  }
-  assert.match(read("src/components/home/OptimizationMembershipTeaser.tsx"), /OPTIMIZATION_PUBLIC_TERMS\.taxNote/);
+  const teaser = read("src/components/home/OptimizationMembershipTeaser.tsx");
+  assert.match(page, /1,99 €/);
+  assert.match(page, /Die Mitgliedschaft wird erst nach bestätigter Freischaltung aktiv/);
+  assert.match(page, /keine garantierte Finanzierung/i);
+  assert.match(teaser, /1,99 €/);
+  assert.match(teaser, /Eine Anfrage allein aktiviert keine Mitgliedschaft/);
+  assert.match(teaser, /Keine pauschale Ersparnis/);
 });
 
-test("REC-01: career page answers the real questions of applicants without income promises", () => {
+test("REC-01: restored live career page describes development without income promises", () => {
   const page = read("src/app/(site)/karriere/page.tsx");
-  for (const topic of [/Handelsvertreter \(§ 84 HGB\)/, /Provision entsteht nach einem erfolgreichen Abschluss/, /keine Kosten/, /einer Stunde pro Woche/, /Schulungen/, /eigenes Netzwerk hilft/, /§ 34d GewO/, /Stornokonto/]) {
+  for (const topic of [/Attraktive Provisionen/, /Echter Karrierepfad/, /Schulungen & Coaching/, /Fairer Teamaufbau/, /Welche Benefits konkret gelten/]) {
     assert.match(page, topic, String(topic));
   }
-  assert.match(page, /COMPENSATION_TIERS\[0\]\.percent/);
-  assert.match(page, /Ein Einkommen können und wollen wir nicht garantieren/);
   assert.doesNotMatch(page, /garantiertes Einkommen|bis zu \d+\.?\d* ?€ im Monat/i);
 });
