@@ -133,17 +133,18 @@ test("literal internal public links resolve to a real app page", () => {
   assert.deepEqual([...unresolved], []);
 });
 
-test("homepage leads with the business model instead of founder repetition", () => {
+test("homepage keeps the last-known-live consultation positioning without founder repetition", () => {
   const homepage = read("src/app/(site)/page.tsx");
   const copy = read("src/lib/audience-copy.ts");
   const hero = read("src/components/home/Hero.tsx");
   const finalCta = read("src/components/home/AudienceSections.tsx");
   const leadForm = read("src/components/forms/LeadForm.tsx");
 
-  // Gutachten 2026-09-29 (CRO-01/MKT-02): one concrete promise first, provider commission disclosed in the hero.
-  assert.match(copy, /primary: "Vertrag kostenlos prüfen lassen"/);
-  assert.match(copy, /Wir erklären dir die wichtigen Kosten und Bedingungen\. Danach entscheidest du selbst\./);
-  assert.match(hero, /erhalten wir in vielen Bereichen eine Provision vom Anbieter/);
+  // Preserve the public wording that was serving successfully in production on 2026-09-24.
+  assert.match(copy, /primary: "Kostenlose Einschätzung starten"/);
+  assert.match(copy, /TarifWerk bündelt Internet, Mobilfunk & TV, Strom & Gas/);
+  assert.match(copy, /Kommt eine Vermittlung zustande, erhalten wir in vielen Bereichen eine Provision/);
+  assert.match(hero, /Kostenlose Erstorientierung/);
   assert.doesNotMatch(homepage, /<Founder /);
   assert.doesNotMatch(hero, /Marvin · dein Ansprechpartner|Marvin · Ihr Ansprechpartner/);
   assert.doesNotMatch(finalCta, /SITE\.whatsappDisplay/);
