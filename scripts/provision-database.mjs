@@ -46,6 +46,35 @@ const pool = new pg.Pool({ connectionString: databaseUrl, max: 2, connectionTime
 let lockClient;
 let lockTransactionOpen = false;
 
+const ensureConfiguredAdminState = async () => {
+  const adminEmail = process.env.PORTAL_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!adminEmail) {
+    console.warn("[provision] PORTAL_ADMIN_EMAIL fehlt – Admin-Selbstheilung übersprungen.");
+    return;
+  }
+
+  const { rows } = await pool.query(
+    "SELECT id, role, active FROM employees WHERE lower(email) = $1 LIMIT 1",
+    [adminEmail],
+  );
+
+  if (!rows.length) {
+    console.warn("[provision] Konfigurierter Admin ist nicht vorhanden – keine automatische Neuanlage ohne Passwort.");
+    return;
+  }
+
+  const admin = rows[0];
+  if (admin.role !== "admin" || admin.active !== true) {
+    await pool.query(
+      "UPDATE employees SET role = 'admin', active = true WHERE id = $1",
+      [admin.id],
+    );
+    console.log("[provision] Vorhandenen Portal-Admin sicher reaktiviert; Passwort und Profildaten unverändert.");
+  } else {
+    console.log("[provision] Portal-Admin vorhanden und aktiv.");
+  }
+};
+
 try {
   lockClient = await pool.connect();
 
@@ -96,6 +125,7 @@ try {
   });
 
   run("migrate.mjs", "Datenbank-Migrationen anwenden");
+  await ensureConfiguredAdminState();
 
   if (mode === "already-initialized") {
     console.log("[provision] Initialisierungs-Marker vorhanden – vorhandene Daten bleiben unverändert.");
