@@ -8,8 +8,8 @@ export function Hero({ audience }: { audience: AudienceMode }) {
   const copy = AUDIENCE_COPY[audience].hero;
 
   const reassurance = audience === "b2b"
-    ? "Die Erstorientierung ist für Sie kostenlos. Kommt über uns ein Vertrag zustande, erhalten wir in vielen Bereichen eine Provision vom Anbieter. Die Entscheidung bleibt bei Ihnen."
-    : "Die Erstorientierung ist für dich kostenlos. Kommt über uns ein Vertrag zustande, erhalten wir in vielen Bereichen eine Provision vom Anbieter. Die Entscheidung bleibt bei dir."
+    ? "Kostenlose Erstorientierung · transparent erklärt · Entscheidung bleibt bei Ihnen"
+    : "Kostenlose Erstorientierung · transparent erklärt · die Entscheidung bleibt bei dir";
 
   return (
     <section aria-labelledby="home-hero-title" className="relative isolate overflow-hidden bg-ink text-white grain">

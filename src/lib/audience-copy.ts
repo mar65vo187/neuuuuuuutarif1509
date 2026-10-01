@@ -65,13 +65,13 @@ type AudienceCopy = {
 export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
   b2c: {
     hero: {
-      eyebrow: "TarifWerk · persönliche Beratung aus Wiesbaden · deutschlandweit",
-      lines: ["Du willst wissen,", "", "noch passt?"],
-      emphasis: "ob dein Vertrag",
-      body: "Schick uns deinen Vertrag oder dein Angebot, oder erzähl kurz, worum es geht. Wir erklären dir die wichtigen Kosten und Bedingungen. Danach entscheidest du selbst.",
-      primary: "Vertrag kostenlos prüfen lassen",
+      eyebrow: "TarifWerk · Beratung auf Augenhöhe · deutschlandweit",
+      lines: ["Ein Haushalt.", "", "Ein Gesamtblick."],
+      emphasis: "Ein Berater.",
+      body: "TarifWerk bündelt Internet, Mobilfunk & TV, Strom & Gas, Versicherungen, Solar & Wärmepumpe, Immobilien, Edelmetalle, Klima und Sicherheit – persönlich erklärt, transparent eingeordnet und auf Wunsch bis zur Vermittlung koordiniert.",
+      primary: "Kostenlose Einschätzung starten",
       primaryHref: "/anfrage",
-      secondary: "Angebot mit uns durchgehen",
+      secondary: "Zweite Meinung einholen",
       secondaryHref: "/anfrage?situation=vergleich",
       whatsapp: "Hallo TarifWerk, ich möchte kurz meine Situation besprechen.",
       checks: ["kostenlose Erstorientierung", "ein fester Ansprechpartner", "transparent & ohne Abschlussdruck"],
@@ -175,10 +175,10 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
   b2b: {
     hero: {
       eyebrow: "TarifWerk Business · Telekommunikation, Energie & mehr",
-      lines: ["Laufende Verträge", "", "Ein Ansprechpartner."],
-      emphasis: "für Ihren Betrieb.",
-      body: "Wir helfen Ihnen, Angebote für Internet, Mobilfunk und Energie einzuordnen. Zuerst klären wir, was Ihr Betrieb wirklich braucht, dann sehen wir uns Preise und Laufzeiten an.",
-      primary: "Business-Anliegen besprechen",
+      lines: ["Weniger Abstimmung.", "", "Mehr Überblick."],
+      emphasis: "Ein Ansprechpartner.",
+      body: "Wir bündeln Telekommunikation, Energie, Absicherung und weitere laufende Themen Ihres Unternehmens. Sie haben einen direkten Ansprechpartner, statt jedes Thema mit einem neuen Dienstleister von vorne zu beginnen.",
+      primary: "Business-Anfrage starten",
       primaryHref: "/anfrage?audience=b2b",
       secondary: "Leistungen ansehen",
       secondaryHref: "/leistungen",
@@ -286,14 +286,14 @@ export const AUDIENCE_COPY: Record<AudienceMode, AudienceCopy> = {
 
 export const SERVICE_AUDIENCE_COPY: Record<AudienceMode, Record<string, string>> = {
   b2c: {
-    internet: "Wir prüfen mit dir, was an deiner Adresse verfügbar ist, welche Bandbreite du brauchst und was dein Vertrag über die ganze Laufzeit kostet. Passt dein Tarif schon, sagen wir dir das.",
-    energie: "Der Abschlag allein sagt nicht, was dein Tarif übers Jahr kostet. Wir sehen Verbrauch, Grundpreis, Arbeitspreis, Bonus, Laufzeit und Vertragsende an. Passt dein Vertrag schon, sagen wir dir das.",
-    versicherungen: "Wir gehen deine Policen durch und sortieren Bedarf, Lücken und doppelte Verträge. Auch Beibehalten oder Kündigen kann das richtige Ergebnis sein.",
-    sicherheit: "Wir besprechen, welche Bereiche geschützt werden sollen und welche Technik dazu passt. Planung und Montage übernimmt ein Fachbetrieb.",
-    klima: "Welche Anlage passt, hängt von Raum, Nutzung, Lautstärke und Einbau ab. Das klären wir mit dir, bevor ein Fachbetrieb montiert.",
-    solar: "Vor einer PV-Anlage oder Wärmepumpe sollten Dach, Gebäude, Verbrauch und Angebot zusammenpassen. Wir ordnen das mit dir, bevor du unterschreibst.",
-    edelmetalle: "Gold kann steigen oder fallen. Wir klären mit dir Aufschläge, Lagerung, Verkauf und deinen Zeithorizont, ohne Renditeversprechen.",
-    immobilien: "Wir ordnen Budget, Nebenkosten und die nächsten Schritte deines Vorhabens. Welche Fachpartner beteiligt sind und welche Rolle sie haben, legen wir vorher offen.",
+    internet: "Anschluss, Netz, Laufzeit und Kosten verständlich vergleichen.",
+    energie: "Verbrauch, Preise und Fristen prüfen – und nur wechseln, wenn es Sinn ergibt.",
+    versicherungen: "Bestehenden Schutz, mögliche Lücken und Doppelungen sauber einordnen.",
+    sicherheit: "Passende Sicherheitslösungen für Objekt und tatsächlichen Bedarf finden.",
+    klima: "Raum, Nutzung, Verbrauch und Budget gemeinsam betrachten.",
+    solar: "Solar und Wärmepumpe als Gesamtprojekt betrachten – vom Bedarf bis zum Angebot.",
+    edelmetalle: "Kosten, Risiken, Lagerung und Zeithorizont verständlich einordnen.",
+    immobilien: "Budget, Nebenkosten und nächste Schritte rund um die Immobilie strukturieren.",
   },
   b2b: {
     internet: "Standorte, Bandbreite, Mobilfunk und Vertragsbedingungen gemeinsam betrachten.",

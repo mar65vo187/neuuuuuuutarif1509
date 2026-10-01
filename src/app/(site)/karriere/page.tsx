@@ -3,8 +3,6 @@ import { BadgeEuro, Car, Check, Dumbbell, GraduationCap, PiggyBank, Plane, Trend
 import { ApplicationForm } from "@/components/forms/ApplicationForm";
 import { PageHero } from "@/components/site/PageHero";
 import { Item, Reveal, Stagger } from "@/components/ui/Reveal";
-import { Accordion } from "@/components/ui/Accordion";
-import { COMPENSATION_TIERS } from "@/lib/compensation-model";
 
 export const metadata = pageMetadata("/karriere");
 
@@ -18,7 +16,7 @@ const FITS = ["Sie mögen den ehrlichen Kontakt mit Menschen", "Sie können Komp
 const NOT = ["Sie wollen Produkte losschieben, ohne zuzuhören", "Sie versprechen gern alles, was gehört werden will", "Sie arbeiten mit künstlichem Zeitdruck"];
 
 const BENEFITS = [
-  { icon: BadgeEuro, title: "Provision mit klaren Stufen", text: `Sie starten mit ${COMPENSATION_TIERS[0].percent} % Anteil an der Provision und können sich in festen Stufen bis auf ${COMPENSATION_TIERS[COMPENSATION_TIERS.length - 1].percent} % entwickeln.` },
+  { icon: BadgeEuro, title: "Attraktive Provisionen", text: "Ein transparentes Entwicklungsmodell belohnt Leistung, Qualität, Zuverlässigkeit und zusätzliche Verantwortung." },
   { icon: TrendingUp, title: "Echter Karrierepfad", text: "Vom Einstieg über Senior- und Builder-Stufen bis hin zu Teamverantwortung – Entwicklung soll nachvollziehbar statt willkürlich sein." },
   { icon: UsersRound, title: "Fairer Teamaufbau", text: "Wer Menschen entwickelt und Verantwortung übernimmt, kann eine eigene Struktur aufbauen. Mehrleistung wird transparent berücksichtigt." },
   { icon: GraduationCap, title: "Schulungen & Coaching", text: "Produktwissen, Beratung, Gesprächsführung, Prozesse und Qualität werden regelmäßig trainiert – nicht nur am ersten Tag." },
@@ -26,42 +24,6 @@ const BENEFITS = [
   { icon: Car, title: "Mobilitäts-Benefits", text: "Je nach Rolle und Stufe sind Mobilitätslösungen bis hin zu einem gebrandeten TarifWerk-Firmenfahrzeug möglich." },
   { icon: PiggyBank, title: "Langfristige Vorsorge", text: "Interne Treue- und Vorsorgebausteine sollen langfristigen Aufbau belohnen und können einen zusätzlichen Investment-/Sparbaustein enthalten." },
   { icon: Dumbbell, title: "Wellpass & Gesundheit", text: "Gesundheits- und Fitnessbenefits wie Wellpass können je nach Beschäftigungsmodell, Rolle und Verfügbarkeit angeboten werden." },
-];
-
-// Angaben des Inhabers vom 29.09.2026. Keine Einkommensversprechen.
-const CAREER_FAQ = [
-  {
-    q: "Bin ich bei TarifWerk angestellt?",
-    a: "Nein. Sie arbeiten als selbstständiger Handelsvertreter (§ 84 HGB) und entscheiden selbst, wann und wie viel Sie arbeiten.",
-  },
-  {
-    q: "Wann und wie werde ich bezahlt?",
-    a: `Provision entsteht nach einem erfolgreichen Abschluss. Die genauen Bedingungen hängen vom jeweiligen Anbieter ab. Sie starten mit ${COMPENSATION_TIERS[0].percent} % Anteil an der Provision und können sich bis auf ${COMPENSATION_TIERS[COMPENSATION_TIERS.length - 1].percent} % entwickeln. Provisionen und mögliche Stornos werden transparent über Ihr Provisions- und Stornokonto im Portal abgerechnet.`,
-  },
-  {
-    q: "Kostet mich der Einstieg etwas?",
-    a: "Nein. Für den Start bei TarifWerk entstehen Ihnen keine Kosten.",
-  },
-  {
-    q: "Wie viel Zeit muss ich mitbringen?",
-    a: "Starten können Sie schon mit einer Stunde pro Woche. Was daraus wird, hängt von Ihnen ab: von Ihrem Einsatz, Ihren Kunden und den Themen, die Sie beraten.",
-  },
-  {
-    q: "Wie werde ich eingearbeitet?",
-    a: "Über Schulungen und mit Unterstützung von erfahrenen, geschulten Kolleginnen und Kollegen. Produktwissen, Gesprächsführung und Abläufe werden regelmäßig trainiert.",
-  },
-  {
-    q: "Brauche ich eigene Kontakte?",
-    a: "Nein. Ein eigenes Netzwerk hilft, ist aber keine Voraussetzung.",
-  },
-  {
-    q: "Brauche ich eine Erlaubnis?",
-    a: "Das hängt vom Produkt ab. Für Versicherungen sind in der Regel eine Sachkundeprüfung bei der IHK und eine Erlaubnis nach § 34d GewO nötig, für Immobilien eine Erlaubnis nach § 34c GewO. Bei TarifWerk beraten und vermitteln Sie solche Bereiche erst, wenn Qualifikation und Erlaubnis vorliegen.",
-  },
-  {
-    q: "Was passiert bei einem Storno?",
-    a: "Wird ein vermittelter Vertrag storniert, kann die Provision ganz oder teilweise zurückgefordert werden. Deshalb führen wir ein Stornokonto, auf dem Sie jede Buchung nachvollziehen können.",
-  },
 ];
 
 export default function CareerPage() {
@@ -74,7 +36,7 @@ export default function CareerPage() {
             Beraten, wie Sie selbst <span className="display-i font-normal text-champagne-soft">beraten werden möchten.</span>
           </>
         }
-        text="Bei TarifWerk helfen Sie Menschen, Angebote und Verträge einzuordnen. Nebenberuflich oder mit voller Kraft: Vergütung, Aufwand und Einarbeitung besprechen wir vor dem Start schriftlich."
+        text="Wir suchen Menschen, die zuhören können, gern erklären und Ambition mit Anstand verbinden. Nebenberuflich oder mit voller Kraft – das klären wir im Gespräch."
       />
 
       <section className="bg-paper py-20 sm:py-28">
@@ -149,19 +111,6 @@ export default function CareerPage() {
           </div>
 
           <p className="mx-auto mt-6 max-w-4xl text-center text-[11.5px] leading-relaxed text-silver">Welche Benefits konkret gelten, hängt von Rolle, Stufe, Beschäftigungs-/Kooperationsmodell, Zielerreichung, Verfügbarkeit und individueller Vereinbarung ab. Details werden vor einer Zusage transparent besprochen.</p>
-        </div>
-      </section>
-
-      <section className="bg-white py-20 sm:py-24" aria-labelledby="karriere-faq-title">
-        <div className="container-x grid gap-10 lg:grid-cols-12">
-          <div className="lg:col-span-4">
-            <p className="eyebrow text-electric-deep">Fragen vor der Bewerbung</p>
-            <h2 id="karriere-faq-title" className="mt-3 text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold leading-tight text-ink">Was Sie vorher wissen sollten.</h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-steel">Ehrliche Antworten statt Versprechen. Ein Einkommen können und wollen wir nicht garantieren.</p>
-          </div>
-          <div className="lg:col-span-8">
-            <Accordion items={CAREER_FAQ} />
-          </div>
         </div>
       </section>
 

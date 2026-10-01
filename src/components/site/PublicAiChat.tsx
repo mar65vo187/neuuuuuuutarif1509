@@ -27,8 +27,8 @@ function initialMessage(audience: AudienceMode): ChatMessage {
   return {
     role: "assistant",
     content: audience === "b2b"
-      ? "Hallo! Ich bin ein KI-Assistent von TarifWerk, kein Mensch. Was möchten Sie für Ihr Unternehmen gerade einfacher, günstiger oder übersichtlicher lösen?"
-      : "Hi! Ich bin ein KI-Assistent von TarifWerk, kein Mensch. Worum geht es bei dir gerade: Vertrag, Energie, Absicherung, Zuhause oder etwas ganz anderes?",
+      ? "Hallo! Ich bin TarifWerks KI. Was möchten Sie für Ihr Unternehmen gerade einfacher, günstiger oder übersichtlicher lösen?"
+      : "Hi! Ich bin TarifWerks KI. Worum geht es bei dir gerade – Vertrag, Energie, Absicherung, Zuhause oder etwas ganz anderes?",
   };
 }
 
@@ -138,13 +138,6 @@ export function PublicAiChat({ audience, initiallyOpen = false }: { audience: Au
           </header>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {/* KI-Transparenz (Art. 50 KI-Verordnung) und Datenhinweis vor der ersten Eingabe. */}
-            <p className="mb-3 rounded-xl border border-electric/20 bg-electric/[0.07] px-3 py-2.5 text-[10.5px] leading-relaxed text-platinum">
-              {audience === "b2b"
-                ? "Sie chatten mit einer KI, nicht mit einem Menschen. Antworten können Fehler enthalten und ersetzen keine persönliche Beratung. Bitte senden Sie keine Vertrags-, Konto- oder Gesundheitsdaten. Ihre Nachrichten werden zur Beantwortung an unseren KI-Dienstleister übermittelt. "
-                : "Du chattest mit einer KI, nicht mit einem Menschen. Antworten können Fehler enthalten und ersetzen keine persönliche Beratung. Bitte sende keine Vertrags-, Konto- oder Gesundheitsdaten. Deine Nachrichten werden zur Beantwortung an unseren KI-Dienstleister übermittelt. "}
-              <a href="/datenschutz" className="font-bold text-electric-soft underline underline-offset-2 hover:text-white">Datenschutz</a>
-            </p>
             <div className="space-y-3">
               {messages.map((message, index) => (
                 <div key={index} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
