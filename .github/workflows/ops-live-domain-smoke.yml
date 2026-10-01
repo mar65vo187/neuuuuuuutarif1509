@@ -1,4 +1,4 @@
-name: Ops Live Domain Diagnostics
+name: Ops Railway Domain Bypass Test
 
 on:
   push:
@@ -9,34 +9,26 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  bypass-test:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: DNS and TLS diagnostics
+      - name: Test Railway frontdoor and custom host
         run: |
           set +e
-          echo "=== resolv.conf ==="
-          cat /etc/resolv.conf
-          echo "=== dig NS tarifwerk.eu ==="
-          dig +short NS tarifwerk.eu
-          echo "=== dig A tarifwerk.eu ==="
-          dig +short A tarifwerk.eu
-          echo "=== dig AAAA tarifwerk.eu ==="
-          dig +short AAAA tarifwerk.eu
-          echo "=== dig CNAME www.tarifwerk.eu ==="
-          dig +short CNAME www.tarifwerk.eu
-          echo "=== dig A www.tarifwerk.eu ==="
-          dig +short A www.tarifwerk.eu
-          echo "=== dig AAAA www.tarifwerk.eu ==="
-          dig +short AAAA www.tarifwerk.eu
-          echo "=== nslookup www.tarifwerk.eu ==="
-          nslookup www.tarifwerk.eu
-          echo "=== curl www ==="
-          curl -Iv --connect-timeout 10 --max-time 20 https://www.tarifwerk.eu/ 2>&1 || true
-          echo "=== curl apex ==="
-          curl -Iv --connect-timeout 10 --max-time 20 https://tarifwerk.eu/ 2>&1 || true
-          echo "=== curl Railway backend ==="
-          curl -Iv --connect-timeout 10 --max-time 20 https://tarifwerk-prod-production.up.railway.app/api/ready 2>&1 || true
-          echo "=== curl Firebase backend ==="
-          curl -Iv --connect-timeout 10 --max-time 20 https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app/api/ready 2>&1 || true
+          TARGET="tarifwerk-web-production-4b7e.up.railway.app"
+          echo "=== target DNS ==="
+          dig +short A "$TARGET"
+          echo "=== target /api/ready ==="
+          curl -sv --max-time 20 "https://$TARGET/api/ready" -o /tmp/target-body 2>&1
+          cat /tmp/target-body 2>/dev/null || true
+          IP="$(dig +short A "$TARGET" | head -n1)"
+          echo
+          echo "=== custom host via Railway IP: $IP ==="
+          curl -sv --max-time 20 --resolve "www.tarifwerk.eu:443:$IP" "https://www.tarifwerk.eu/api/ready" -o /tmp/custom-body 2>&1
+          STATUS=$?
+          cat /tmp/custom-body 2>/dev/null || true
+          echo
+          echo "custom_curl_exit=$STATUS"
+          echo "=== custom host certificate ==="
+          echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -ext subjectAltName || true
