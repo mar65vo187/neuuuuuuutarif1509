@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 5
     env:
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
-      SITE_URL: ${{ vars.SITE_URL || 'https://www.tarifwerk.eu' }}
+      SITE_URL: https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app
     steps:
       - name: Operations-Sweep auslösen
         shell: bash
