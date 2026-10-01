@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      LIVE_BASE_URL: https://www.tarifwerk.eu
+      LIVE_BASE_URL: https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app
       EXPECTED_REVISION: ""
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
