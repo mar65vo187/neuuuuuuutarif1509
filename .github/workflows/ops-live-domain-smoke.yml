@@ -1,4 +1,4 @@
-name: Ops Railway TXT Check
+name: Ops Final Domain Verify
 
 on:
   push:
@@ -9,16 +9,25 @@ permissions:
   contents: read
 
 jobs:
-  dns:
+  verify:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - name: Inspect likely Railway verification records
+      - name: Verify DNS and SSL
         run: |
           set +e
-          for name in             www.tarifwerk.eu             tarifwerk.eu             _railway-verify.www.tarifwerk.eu             _railway-verify.tarifwerk.eu             railway-verify.www.tarifwerk.eu             railway-verify.tarifwerk.eu             _acme-challenge.www.tarifwerk.eu             _acme-challenge.tarifwerk.eu
-          do
-            echo "=== TXT $name ==="
-            dig +short TXT "$name"
-            echo "=== CNAME $name ==="
-            dig +short CNAME "$name"
-          done
+          echo "=== CNAME ==="
+          dig +short CNAME www.tarifwerk.eu
+          echo "=== TXT ==="
+          dig +short TXT _railway-verify.www.tarifwerk.eu
+          echo "=== A ==="
+          dig +short A www.tarifwerk.eu
+          echo "=== HTTPS ==="
+          curl -svI --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ 2>&1 || true
+          echo "=== READY ==="
+          curl -sv --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/api/ready 2>&1 || true
+          echo "=== CERT ==="
+          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
+          if [ -n "$IP" ]; then
+            echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
+          fi
