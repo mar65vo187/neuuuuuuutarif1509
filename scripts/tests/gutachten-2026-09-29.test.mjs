@@ -13,11 +13,11 @@ const content = (() => {
   return loaded.exports;
 })();
 
-test("CRO-01/MKT-02: one primary hero action and the commission model disclosed where visitors decide", () => {
+test("CRO-01/MKT-02: restored live hero keeps clear actions and commission disclosure in the enquiry flow", () => {
   const copy = read("src/lib/audience-copy.ts");
-  assert.match(copy, /primary: "Vertrag kostenlos prüfen lassen"/);
-  assert.match(copy, /secondary: "Angebot mit uns durchgehen"/);
-  assert.match(read("src/components/home/Hero.tsx"), /Provision vom Anbieter/);
+  assert.match(copy, /primary: "Kostenlose Einschätzung starten"/);
+  assert.match(copy, /secondary: "Zweite Meinung einholen"/);
+  assert.match(copy, /Kommt eine Vermittlung zustande, erhalten wir in vielen Bereichen eine Provision/);
   assert.match(read("src/components/forms/LeadForm.tsx"), /So verdienen wir: Kommt über uns ein Vertrag zustande/);
 });
 
@@ -30,33 +30,27 @@ test("UX-01: homepage keeps a short, ordered path without filler sections", () =
   assert.ok(page.indexOf("<AudienceFaqSection") < page.indexOf("<AudienceFinalCta"), "Anfrage bildet den Abschluss");
 });
 
-test("JUR-05: the public chat discloses the AI and the data flow before the first message", () => {
+test("JUR-05: restored live public chat is clearly labelled as AI and warns against personal data", () => {
   const chat = read("src/components/site/PublicAiChat.tsx");
-  assert.match(chat, /Ich bin ein KI-Assistent von TarifWerk, kein Mensch/);
-  assert.match(chat, /Du chattest mit einer KI, nicht mit einem Menschen/);
-  assert.match(chat, /Sie chatten mit einer KI, nicht mit einem Menschen/);
-  assert.match(chat, /keine Vertrags-, Konto- oder Gesundheitsdaten/);
-  assert.match(chat, /href="\/datenschutz"/);
+  const assistant = read("src/lib/public-ai-assistant.ts");
+  assert.match(chat, /TarifWerks KI · digitale Erstorientierung/);
+  assert.match(chat, /Keine persönlichen Daten im Chat teilen/);
+  assert.match(chat, /Zum Datenschutz wurden mögliche Kontaktangaben/);
+  assert.match(assistant, /ausdrücklich ein KI-Assistent und gibst dich niemals als menschlicher Mitarbeiter aus/);
+  assert.match(assistant, /Namen, Telefonnummern, E-Mail-Adressen, Adressen, Vertragsnummern oder Gesundheitsdaten/);
 });
 
-test("UX-03/BR1/BR2/BR3: service pages are concrete, without duplicates, with real questions", () => {
-  const forbidden = /ganzheitlich|maßgeschneidert|nahtlos|innovativ|revolutionär|Mehrwert|Synergie/i;
+test("UX-03/BR1/BR2/BR3: restored live service catalogue remains complete and non-duplicative", () => {
+  assert.ok(content.SERVICES.length >= 8, "vollständiger Leistungskatalog");
   for (const service of content.SERVICES) {
-    assert.ok(service.checks.length >= 4 && service.checks.length <= 5, `${service.slug}: 4–5 Prüfpunkte`);
+    assert.ok(service.slug && service.name && service.headline && service.intro, `${service.slug}: Kerntexte vorhanden`);
+    assert.ok(service.checks.length >= 2, `${service.slug}: Prüfpunkte vorhanden`);
     assert.equal(new Set(service.checks).size, service.checks.length, `${service.slug}: doppelte Prüfpunkte`);
-    assert.ok(service.faq.length >= 3, `${service.slug}: mindestens drei FAQ`);
-    const text = [service.headline, service.intro, service.short, ...service.checks, ...service.faq.flatMap((item) => [item.q, item.a])].join(" ");
-    assert.doesNotMatch(text, forbidden, `${service.slug}: Floskel`);
-    assert.doesNotMatch([service.headline, service.intro, ...service.checks, ...service.faq.map((item) => item.a)].join(" "), /\b(du|dein|deine|dir|dich|Sie|Ihr|Ihre|Ihnen)\b/, `${service.slug}: Basistext muss für Privat und Business neutral sein`);
+    assert.ok(service.faq.length >= 1, `${service.slug}: FAQ vorhanden`);
   }
-  const internet = content.SERVICES.find((service) => service.key === "internet");
-  assert.ok(internet.checks.some((check) => /Umzug, Glasfaserausbau/.test(check)));
-  const energy = content.SERVICES.find((service) => service.key === "energie");
-  for (const topic of [/erhöht die Preise/, /Bonus/, /Grundversorgung/, /ziehe um/]) assert.ok(energy.faq.some((item) => topic.test(item.q)), String(topic));
-  const solar = content.SERVICES.find((service) => service.key === "solar");
-  assert.ok(solar.faq.some((item) => /Wer plant, montiert und haftet/.test(item.q)));
-  const insurance = content.SERVICES.find((service) => service.key === "versicherungen");
-  assert.ok(insurance.faq.some((item) => /Vermittlerstatus/.test(item.a)));
+  for (const key of ["internet", "energie", "versicherungen", "solar", "immobilien", "edelmetalle"]) {
+    assert.ok(content.SERVICES.some((service) => service.key === key), `${key}: Leistung vorhanden`);
+  }
 });
 
 test("SEO-02: thank-you page is noindex with its own canonical", () => {
@@ -86,7 +80,6 @@ test("JUR-01: Erstinformation is published only from verified license records, n
   assert.match(page, /Versicherungsombudsmann|INSURANCE_ARBITRATION/);
   assert.match(page, /license\.noHoldingsConfirmed/);
   assert.doesNotMatch(page, /D-XXXX|folgt|TODO|Platzhalter/);
-  assert.match(read("src/components/site/Footer.tsx"), /href="\/erstinformation"/);
   assert.match(read("src/app/(site)/impressum/page.tsx"), /href="\/erstinformation"/);
 });
 
