@@ -1,4 +1,4 @@
-name: Ops Current Railway Web E2E
+name: Ops Strict WWW Final
 
 on:
   push:
@@ -9,32 +9,28 @@ permissions:
   contents: read
 
 jobs:
-  e2e:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Full route smoke on current tarifwerk-web
-        env:
-          LIVE_BASE_URL: https://tarifwerk-web-production-4b7e.up.railway.app
-          EXPECTED_REVISION: ""
-        run: node scripts/live-production-smoke.mjs
-      - name: Public AI on current tarifwerk-web
+      - name: Strict HTTPS verification
         run: |
-          node --input-type=module <<'NODE'
-          const base = "https://tarifwerk-web-production-4b7e.up.railway.app";
-          const r = await fetch(base + "/api/public-ai", {
-            method:"POST",
-            signal:AbortSignal.timeout(60000),
-            headers:{"content-type":"application/json","origin":base,"sec-fetch-site":"same-origin"},
-            body:JSON.stringify({messages:[{role:"user",content:"Welche Themen kann TarifWerk beraten? Antworte kurz."}],audience:"b2c",pagePath:"/"})
-          });
-          const text = await r.text();
-          if(!r.ok) throw new Error("AI HTTP "+r.status+" "+text.slice(0,300));
-          const j=JSON.parse(text);
-          if(j?.ok!==true || typeof j?.text!=="string" || j.text.trim().length<10) throw new Error("AI invalid");
-          console.log(JSON.stringify({ok:true,status:r.status,chars:j.text.length,provider:j.provider??null,model:j.model??null}));
-          NODE
+          set +e
+          echo "=== DNS ==="
+          dig +short CNAME www.tarifwerk.eu
+          dig +short TXT _railway-verify.www.tarifwerk.eu
+          echo "=== STRICT HOME ==="
+          curl -sS -D - -o /tmp/home --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/
+          HOME_RC=$?
+          echo "curl_rc=$HOME_RC"
+          head -c 300 /tmp/home 2>/dev/null || true
+          echo
+          echo "=== STRICT READY ==="
+          curl -sS -D - --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/api/ready
+          READY_RC=$?
+          echo
+          echo "ready_rc=$READY_RC"
+          echo "=== CERT ==="
+          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
+          echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
+          if [ "$HOME_RC" -ne 0 ] || [ "$READY_RC" -ne 0 ]; then exit 1; fi
