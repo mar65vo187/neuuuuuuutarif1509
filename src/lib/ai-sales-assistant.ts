@@ -10,7 +10,7 @@ export type AiAssistantHistoryMessage = {
 
 export type AiAssistantAnswer = {
   text: string;
-  provider: "groq" | "xkiro" | "gemini" | "openrouter";
+  provider: "groq" | "xkiro" | "gemini" | "openrouter" | "local";
   model: string;
   sources: string[];
   redactions: number;
@@ -415,6 +415,31 @@ async function callOpenRouter(system: string, input: string) {
   return { text, provider: "openrouter" as const, model };
 }
 
+function localCoachFallback(input: {
+  question: string;
+  mode: AiAssistantMode;
+  audience: "b2c" | "b2b";
+}, sources: string[]): AiAssistantAnswer {
+  const customer = input.audience === "b2b" ? "Geschäftskunden" : "Privatkunden";
+  const q = input.question.trim().slice(0, 1200);
+  const templates: Record<AiAssistantMode, string> = {
+    coach: `**Kurzdiagnose:** Arbeite bei diesem Fall zuerst mit Bedarf statt Produkt: „${q}“\n\n**Stärkster Hebel:** Kläre mit einer offenen Folgefrage, was aktuell wirklich stört, welche Auswirkung das hat und woran eine gute Lösung erkannt würde.\n\n**Formulierung:** „Was ist für dich/Sie an der aktuellen Situation der wichtigste Punkt, den wir verbessern müssen?“\n\n**Nächster Schritt:** Antwort spiegeln, Entscheidungskriterien festhalten und erst danach eine passende TarifWerk-Option einordnen.`,
+    roleplay: `Ich bin ein skeptischer ${customer}-Interessent. „Ich verstehe noch nicht, warum ich jetzt etwas ändern sollte. Was wäre für mich konkret besser – und wo ist der Haken?“`,
+    debrief: `**Debrief zu:** „${q}“\n\n1. Einstieg: War die Relevanz schnell klar?\n2. Bedarf: Wurde die Ursache hinter dem Wunsch verstanden?\n3. Nutzen: Wurde nur passend zum bestätigten Bedarf argumentiert?\n4. Vertrauen: Wurden Grenzen und offene Punkte transparent benannt?\n5. Nächster Schritt: Gibt es eine klare, freiwillige Folgeaktion?\n\n**Verbesserung:** Weniger erklären, eine Ebene tiefer fragen und anschließend knapp zusammenfassen.`,
+    objection: `Bei „${q}“ nicht sofort dagegen argumentieren.\n\n**Antwortstruktur:** „Verstehe ich. Was genau macht Sie/dich dabei am skeptischsten?“ → echten Grund klären → konkret darauf antworten → „Ist der Punkt damit geklärt oder gibt es noch etwas, das dagegen spricht?“`,
+    message: `Hallo, ich melde mich kurz wegen unseres letzten Gesprächs. Mir ist wichtig, dass du/Sie eine klare Entscheidungsgrundlage hast/haben. Wenn das Thema noch aktuell ist, können wir den wichtigsten offenen Punkt kurz gemeinsam prüfen. Passt ein kurzes Gespräch?`,
+    product: `Für eine belastbare Produktaussage zu „${q}“ sollten nur freigegebene TarifWerk-Produktdaten verwendet werden. Prüfe Anbieter, Produkt, Laufzeit, Kosten, Voraussetzungen und benötigte Unterlagen. Fehlt ein Fakt in der Wissensbasis, muss er intern geprüft werden.`,
+    pitch: `„Ich möchte gar nicht direkt etwas verkaufen. Ich würde zuerst gern verstehen, ob es bei Ihnen/dir überhaupt einen sinnvollen Hebel gibt. Was ist beim aktuellen Vertrag oder bei der aktuellen Lösung der Punkt, mit dem Sie/du am wenigsten zufrieden sind/bist?“`,
+  };
+  return {
+    text: templates[input.mode],
+    provider: "local",
+    model: "tarifwerk-local-coach",
+    sources: sources.length ? sources : ["TarifWerk Sales Playbook", "TarifWerk Unternehmensgrundsätze"],
+    redactions: 0,
+  };
+}
+
 export function aiProviderStatus() {
   return {
     groq: Boolean(process.env.GROQ_API_KEY?.trim()),
@@ -517,8 +542,7 @@ export async function askTarifWerkAi(input: {
     }
   }
 
-  if (!process.env.GROQ_API_KEY?.trim() && !process.env.XKIRO_API_KEY?.trim() && !process.env.GEMINI_API_KEY?.trim() && !process.env.OPENROUTER_API_KEY?.trim()) {
-    throw new Error("KI ist noch nicht aktiviert. GROQ_API_KEY, XKIRO_API_KEY, GEMINI_API_KEY oder OPENROUTER_API_KEY fehlt.");
-  }
-  throw new Error(errors[0] ?? "Kein KI-Provider war erreichbar.");
+  if (errors.length) console.error("[ai] external providers unavailable; using local coach", errors.join(" | "));
+  const fallback = localCoachFallback({ question: redacted.text, mode: input.mode, audience: input.audience }, knowledge.sources);
+  return { ...fallback, redactions: redacted.redactions + history.redactions };
 }
