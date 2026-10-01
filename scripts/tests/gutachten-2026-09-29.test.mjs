@@ -21,13 +21,13 @@ test("CRO-01/MKT-02: restored live hero keeps clear actions and commission discl
   assert.match(read("src/components/forms/LeadForm.tsx"), /So verdienen wir: Kommt über uns ein Vertrag zustande/);
 });
 
-test("UX-01: homepage keeps a short, ordered path without filler sections", () => {
+test("UX-01: homepage preserves the last-known-live journey and finishes with the final CTA", () => {
   const page = read("src/app/(site)/page.tsx");
-  for (const removed of ["TopicTicker", "FinderTeaser", "TrustEngine"]) assert.doesNotMatch(page, new RegExp(`<${removed}`));
-  const sections = page.match(/<[A-Z][A-Za-z]+ audience=\{initialAudience\} \/>/g) ?? [];
-  assert.ok(sections.length <= 11, `zu viele Startseitenbereiche: ${sections.length}`);
-  assert.ok(page.indexOf("<AudienceProcess") < page.indexOf("<AudienceFocusSection"), "Ablauf steht vor den Themen");
-  assert.ok(page.indexOf("<AudienceFaqSection") < page.indexOf("<AudienceFinalCta"), "Anfrage bildet den Abschluss");
+  for (const retained of ["Hero", "TopicTicker", "FinderTeaser", "TrustEngine", "OptimizationMembershipTeaser"]) {
+    assert.match(page, new RegExp(`<${retained}`), `${retained} bleibt im Live-Aufbau erhalten`);
+  }
+  assert.ok(page.indexOf("<Hero") < page.indexOf("<AudienceFocusSection"), "Hero steht vor den Themen");
+  assert.ok(page.indexOf("<AudienceFaqSection") < page.indexOf("<AudienceFinalCta"), "FAQ steht vor dem Abschluss");
 });
 
 test("JUR-05: restored live public chat is clearly labelled as AI and warns against personal data", () => {
