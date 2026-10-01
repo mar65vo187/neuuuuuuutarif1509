@@ -1,4 +1,4 @@
-name: Ops Provider Smoke
+name: Ops Domain Reconnect Check
 
 on:
   push:
@@ -9,54 +9,28 @@ permissions:
   contents: read
 
 jobs:
-  providers:
+  diagnose:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    strategy:
-      fail-fast: false
-      matrix:
-        base:
-          - https://tarifwerk-prod-production.up.railway.app
-          - https://neuuuuuuutarif1509--tarifwerk-41e50.europe-west4.hosted.app
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Route smoke
-        env:
-          LIVE_BASE_URL: ${{ matrix.base }}
-          EXPECTED_REVISION: ""
-        run: node scripts/live-production-smoke.mjs
-
-      - name: Public AI smoke
-        env:
-          BASE: ${{ matrix.base }}
+      - name: Check DNS TLS and live site
         run: |
-          node --input-type=module <<'NODE'
-          const base = process.env.BASE;
-          const response = await fetch(base + "/api/public-ai", {
-            method: "POST",
-            redirect: "follow",
-            signal: AbortSignal.timeout(60000),
-            headers: {
-              "Content-Type": "application/json",
-              "Origin": base,
-              "Sec-Fetch-Site": "same-origin",
-              "User-Agent": "TarifWerk-Provider-AI-Smoke/1.0"
-            },
-            body: JSON.stringify({
-              messages: [{ role: "user", content: "Welche Themen kann TarifWerk beraten? Antworte bitte kurz." }],
-              audience: "b2c",
-              pagePath: "/"
-            })
-          });
-          const text = await response.text();
-          let json;
-          try { json = JSON.parse(text); } catch { throw new Error("Kein JSON: " + text.slice(0, 300)); }
-          if (!response.ok || json?.ok !== true || typeof json?.text !== "string" || json.text.trim().length < 10) {
-            throw new Error("AI smoke failed: HTTP " + response.status + " " + text.slice(0, 500));
-          }
-          console.log(JSON.stringify({base, ok:true, status:response.status, chars:json.text.length, provider:json.provider ?? null, model:json.model ?? null, redactions:json.redactions ?? 0}));
-          NODE
+          set +e
+          echo "=== DNS CNAME www ==="
+          dig +short CNAME www.tarifwerk.eu
+          echo "=== DNS A www ==="
+          dig +short A www.tarifwerk.eu
+          echo "=== DNS apex ==="
+          dig +short A tarifwerk.eu
+          echo "=== Railway target DNS ==="
+          dig +short A tarifwerk-web-production-4b7e.up.railway.app
+          echo "=== HTTPS www ==="
+          curl -svI --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ 2>&1 || true
+          echo "=== HTTPS ready ==="
+          curl -sv --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/api/ready 2>&1 || true
+          echo "=== Certificate ==="
+          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
+          echo "resolved_ip=$IP"
+          if [ -n "$IP" ]; then
+            echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
+          fi
