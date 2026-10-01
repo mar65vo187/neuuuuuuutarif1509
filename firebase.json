@@ -1,45 +1,18 @@
 {
-  "apphosting": {
-    "backends": {
-      "tarifwerk": {
-        "runConfig": {
-          "cpu": 1,
-          "memoryMiB": 1024,
-          "minInstances": 0,
-          "maxInstances": 3,
-          "concurrency": 80
-        },
-        "scripts": {
-          "buildCommand": "npm run build:firebase"
-        },
-        "env": [
-          {
-            "variable": "DATABASE_URL",
-            "secret": "tarifwerk-database-url",
-            "availability": ["BUILD", "RUNTIME"]
-          },
-          {
-            "variable": "SESSION_SECRET",
-            "secret": "tarifwerk-session-secret",
-            "availability": ["RUNTIME"]
-          },
-          {
-            "variable": "CRON_SECRET",
-            "secret": "tarifwerk-cron-secret",
-            "availability": ["RUNTIME"]
-          },
-          {
-            "variable": "PORTAL_ADMIN_EMAIL",
-            "value": "m.egenolf@tarifwerk.eu",
-            "availability": ["BUILD", "RUNTIME"]
-          },
-          {
-            "variable": "NEXT_TELEMETRY_DISABLED",
-            "value": "1",
-            "availability": ["BUILD", "RUNTIME"]
-          }
-        ]
-      }
+  "apphosting": [
+    {
+      "backendId": "tarifwerk",
+      "rootDir": ".",
+      "ignore": [
+        "node_modules",
+        ".git",
+        ".next",
+        ".env",
+        ".env.*",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "tarifwerk-komplett-2026-09-29-v2"
+      ]
     }
-  }
+  ]
 }
