@@ -1,4 +1,4 @@
-name: Ops Final Domain Verify
+name: Ops Final WWW Check
 
 on:
   push:
@@ -13,21 +13,21 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Verify DNS and SSL
+      - name: Verify live www
         run: |
           set +e
           echo "=== CNAME ==="
           dig +short CNAME www.tarifwerk.eu
           echo "=== TXT ==="
           dig +short TXT _railway-verify.www.tarifwerk.eu
-          echo "=== A ==="
-          dig +short A www.tarifwerk.eu
-          echo "=== HTTPS ==="
-          curl -svI --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/ 2>&1 || true
+          echo "=== HTTPS HEAD ==="
+          curl -sS -I --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/ || true
           echo "=== READY ==="
-          curl -sv --connect-timeout 10 --max-time 25 https://www.tarifwerk.eu/api/ready 2>&1 || true
+          curl -sS --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/api/ready || true
+          echo
           echo "=== CERT ==="
           IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
+          echo "IP=$IP"
           if [ -n "$IP" ]; then
             echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
           fi
