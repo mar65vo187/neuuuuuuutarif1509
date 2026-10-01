@@ -1,4 +1,4 @@
-name: Ops Authoritative TXT Check
+name: Ops Final WWW Recheck
 
 on:
   push:
@@ -9,26 +9,34 @@ permissions:
   contents: read
 
 jobs:
-  dns:
+  verify:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - name: Check authoritative STRATO DNS
+      - name: Check authoritative DNS and SSL
         run: |
           set +e
           echo "=== NS ==="
           NS="$(dig +short NS tarifwerk.eu)"
           echo "$NS"
-          echo "=== recursive TXT ==="
-          dig +short TXT _railway-verify.www.tarifwerk.eu
           for ns in $NS; do
-            echo "=== $ns TXT _railway-verify.www.tarifwerk.eu ==="
+            echo "=== $ns TXT ==="
             dig @"$ns" +short TXT _railway-verify.www.tarifwerk.eu
-            echo "=== $ns CNAME www.tarifwerk.eu ==="
+            echo "=== $ns CNAME ==="
             dig @"$ns" +short CNAME www.tarifwerk.eu
           done
-          echo "=== possible misplaced TXT names ==="
-          for n in             _railway-verify.tarifwerk.eu             _railway-verify.www.tarifwerk.eu.tarifwerk.eu             www.tarifwerk.eu             tarifwerk.eu
-          do
-            echo "--- $n"
-            dig +short TXT "$n"
-          done
+          echo "=== recursive TXT ==="
+          dig +short TXT _railway-verify.www.tarifwerk.eu
+          echo "=== recursive CNAME ==="
+          dig +short CNAME www.tarifwerk.eu
+          echo "=== HTTPS HEAD ==="
+          curl -sS -I --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/ || true
+          echo "=== READY ==="
+          curl -sS --connect-timeout 10 --max-time 30 https://www.tarifwerk.eu/api/ready || true
+          echo
+          echo "=== CERT ==="
+          IP="$(dig +short A www.tarifwerk.eu | tail -n1)"
+          echo "IP=$IP"
+          if [ -n "$IP" ]; then
+            echo | openssl s_client -connect "$IP:443" -servername www.tarifwerk.eu 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
+          fi
