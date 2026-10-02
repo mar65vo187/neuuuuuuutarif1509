@@ -158,6 +158,9 @@ jobs:
       - name: Runtime HTTP smoke
         run: node scripts/runtime-smoke.mjs
 
+      - name: Browser navigation and audience regression
+        run: node scripts/browser-navigation-smoke.mjs
+
       - name: Runtime concurrency smoke
         run: node scripts/runtime-concurrency-smoke.mjs
 
