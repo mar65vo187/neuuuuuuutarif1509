@@ -1,0 +1,495 @@
+name: Datenbank-Umzug Railway → Neon
+
+# Kopiert die komplette Produktionsdatenbank (Leads, Mitarbeiter, Kunden, Bilder,
+# Dokumente …) von Railway nach Neon und prüft jede einzelne Zeile per Prüfsumme.
+# Läuft nur manuell: Actions → "Datenbank-Umzug Railway → Neon" → Run workflow.
+#
+# Vorher als Repository-Secrets anlegen (Settings → Secrets and variables → Actions):
+#   RAILWAY_DATABASE_URL  Railway → Postgres-Dienst → Variables → DATABASE_PUBLIC_URL
+#   NEON_DATABASE_URL     Neon → Connect → "Connection pooling" AUS → Connection string
+#
+# Die Railway-Datenbank wird nur gelesen. Es werden keine Datensätze, keine
+# Zugangsdaten und keine Backup-Dateien in Logs oder Artefakten veröffentlicht.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bestaetigung:
+        description: "Zum Starten genau UMZIEHEN eintippen"
+        required: true
+        type: string
+      ziel_ueberschreiben:
+        description: "Neon vorher leeren? Nur 'ja', wenn die Website noch NICHT mit Neon arbeitet"
+        required: true
+        default: "nein"
+        type: choice
+        options:
+          - "nein"
+          - "ja"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-move-to-neon
+  cancel-in-progress: false
+
+jobs:
+  move:
+    name: Daten umziehen und prüfen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      TARGET_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Bestätigung und Secrets prüfen
+        env:
+          CONFIRMATION: ${{ inputs.bestaetigung }}
+        run: |
+          status=0
+          if [ "$CONFIRMATION" != "UMZIEHEN" ]; then
+            echo "::error::Zum Starten im Feld 'bestaetigung' genau UMZIEHEN eintippen."
+            status=1
+          fi
+          if [ -z "$SOURCE_DATABASE_URL" ]; then
+            echo "::error::Repository-Secret RAILWAY_DATABASE_URL fehlt (Settings → Secrets and variables → Actions)."
+            status=1
+          fi
+          if [ -z "$TARGET_DATABASE_URL" ]; then
+            echo "::error::Repository-Secret NEON_DATABASE_URL fehlt (Settings → Secrets and variables → Actions)."
+            status=1
+          fi
+          exit $status
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: PostgreSQL-Programme installieren
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL --retry 3 -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          codename="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          for version in 14 15 16 17 18; do
+            sudo apt-get install -y -qq "postgresql-client-${version}" >/dev/null \
+              || echo "::warning::postgresql-client-${version} ist nicht verfügbar."
+          done
+          ls -1 /usr/lib/postgresql
+
+      - name: Daten kopieren und Zeile für Zeile prüfen
+        env:
+          OVERWRITE_TARGET: ${{ inputs.ziel_ueberschreiben }}
+          TARGET_URL_FILE: ${{ runner.temp }}/neon-url
+        run: |
+          # Datenbank-Umzug: kopiert eine komplette PostgreSQL-Datenbank 1:1 von der
+          # QUELLE (z. B. Railway) in das ZIEL (z. B. Neon) und beweist danach über
+          # Prüfsummen jeder einzelnen Zeile, dass alles identisch angekommen ist.
+          #
+          # Sicherheitsregeln
+          #   * Die Quelle wird ausschließlich gelesen (READ-ONLY-Transaktionen + pg_dump).
+          #   * Dump und Quell-Prüfsummen stammen aus EINEM konsistenten Snapshot.
+          #     Gleichzeitige Schreibzugriffe auf die Quelle verfälschen den Abgleich nicht.
+          #   * Das Ziel muss leer sein. Überschreiben nur mit OVERWRITE_TARGET=ja.
+          #   * Der Restore läuft in EINER Transaktion: entweder alles oder nichts.
+          #   * Es werden weder Zugangsdaten noch Inhalte von Datensätzen ausgegeben.
+          #
+          # Umgebungsvariablen
+          #   SOURCE_DATABASE_URL  Pflicht  Quelle (Railway: DATABASE_PUBLIC_URL)
+          #   TARGET_DATABASE_URL  Pflicht  Ziel (Neon, direkte URL ohne "-pooler")
+          #   TARGET_URL_FILE      optional speichert die geprüfte Ziel-URL für Folgeschritte
+          #   OVERWRITE_TARGET     optional "ja" leert ein nicht leeres Ziel vor dem Import
+          #   MAX_SOURCE_MB        optional Größenlimit der Quelle in MB (Standard 512)
+          #   PG_BIN_ROOT          optional Verzeichnis mit <major>/bin (Standard /usr/lib/postgresql)
+          set -Eeuo pipefail
+
+          log() { printf '%s\n' "$*"; }
+          fail() { printf '::error::%s\n' "$*" >&2; exit 1; }
+
+          PG_BIN_ROOT="${PG_BIN_ROOT:-/usr/lib/postgresql}"
+          MAX_SOURCE_MB="${MAX_SOURCE_MB:-512}"
+          OVERWRITE_TARGET="$(printf '%s' "${OVERWRITE_TARGET:-nein}" | tr '[:upper:]' '[:lower:]')"
+
+          # --- Verbindungsdaten normalisieren --------------------------------------------
+          # Akzeptiert auch versehentlich mitkopierte Präfixe wie: psql 'postgresql://…'
+          normalize_url() {
+            local value="$1"
+            value="$(printf '%s' "$value" | tr -d '\r\n' | sed -E "s/^[[:space:]]+//; s/[[:space:]]+$//; s/^psql[[:space:]]+//; s/^['\"]//; s/['\"]$//")"
+            printf '%s' "$value"
+          }
+
+          # Gibt einen Bestandteil der URL aus (Protokoll, Host, Passwort, direkte URL …).
+          url_field() {
+            URL_INPUT="$1" FIELD="$2" node -e '
+              const u = new URL(process.env.URL_INPUT);
+              const f = process.env.FIELD;
+              if (f === "protocol") process.stdout.write(u.protocol);
+              else if (f === "host") process.stdout.write(u.hostname.toLowerCase());
+              else if (f === "server") process.stdout.write(`${u.hostname.toLowerCase().replace(/-pooler(?=\.)/, "")}:${u.port || "5432"}${u.pathname}`);
+              else if (f === "password") process.stdout.write(decodeURIComponent(u.password));
+              else if (f === "rawpassword") process.stdout.write(u.password);
+            '
+          }
+
+          mask() {
+            if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ -n "$1" ]; then printf '::add-mask::%s\n' "$1"; fi
+          }
+
+
+          [ -n "${SOURCE_DATABASE_URL:-}" ] || fail "SOURCE_DATABASE_URL fehlt (GitHub-Secret RAILWAY_DATABASE_URL anlegen)."
+          [ -n "${TARGET_DATABASE_URL:-}" ] || fail "TARGET_DATABASE_URL fehlt (GitHub-Secret NEON_DATABASE_URL anlegen)."
+          command -v node >/dev/null || fail "node wird für die URL-Prüfung benötigt."
+
+          SRC_URL="$(normalize_url "$SOURCE_DATABASE_URL")"
+          TGT_INPUT="$(normalize_url "$TARGET_DATABASE_URL")"
+
+          for name in SRC_URL TGT_INPUT; do
+            value="${!name}"
+            if [ "$name" = "SRC_URL" ]; then label="Die Quell-URL (Secret RAILWAY_DATABASE_URL)"; else label="Die Ziel-URL (Secret NEON_DATABASE_URL)"; fi
+            protocol="$(url_field "$value" protocol 2>/dev/null)" || fail "$label ist keine gültige Verbindungs-URL."
+            case "$protocol" in
+              postgres:|postgresql:) ;;
+              *) fail "$label muss mit postgresql:// beginnen." ;;
+            esac
+            mask "$(url_field "$value" password 2>/dev/null || true)"
+            mask "$(url_field "$value" rawpassword 2>/dev/null || true)"
+          done
+
+          SRC_HOST="$(url_field "$SRC_URL" host)"
+          case "$SRC_HOST" in
+            *.railway.internal) fail "Die Railway-URL ist nur intern erreichbar. Bitte in Railway die Variable DATABASE_PUBLIC_URL verwenden." ;;
+          esac
+          # Firebase braucht die direkte Neon-URL (der Pooler lehnt statement_timeout ab).
+          # Deshalb wird genau diese URL verlangt – sie kommt später 1:1 in Firebase.
+          case "$(url_field "$TGT_INPUT" host)" in
+            *-pooler.*) fail "Die Neon-URL enthält -pooler. In Neon unter Connect den Schalter Connection pooling ausschalten, diese URL als Secret NEON_DATABASE_URL speichern und erneut starten. Genau diese URL kommt später auch in Firebase." ;;
+          esac
+          TGT_URL="$TGT_INPUT"
+          if [ "$(url_field "$SRC_URL" server)" = "$(url_field "$TGT_URL" server)" ]; then
+            fail "Quelle und Ziel zeigen auf denselben Server. Abbruch, um Daten zu schützen."
+          fi
+
+          export PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-30}"
+          export PGAPPNAME="tarifwerk-datenbank-umzug"
+          unset PGOPTIONS
+
+          WORK="$(mktemp -d)"
+          chmod 700 "$WORK"
+          SNAP_PID=""
+          cleanup() {
+            set +e
+            exec 3>&-
+            if [ -n "$SNAP_PID" ] && kill -0 "$SNAP_PID" 2>/dev/null; then
+              kill "$SNAP_PID" 2>/dev/null
+            fi
+            rm -rf "$WORK"
+          }
+          trap cleanup EXIT
+
+          # Entfernt Datensatzinhalte aus PostgreSQL-Fehlermeldungen (öffentliche Logs).
+          sanitize() {
+            sed -E \
+              -e 's/^(DETAIL|CONTEXT|LINE [0-9]+|QUERY|Command was|WHERE):.*/\1: [Inhalt ausgeblendet]/' \
+              -e 's#postgres(ql)?://[^[:space:]]*#postgresql://***#g' \
+              -e 's/(: )"[^"]*"$/\1"[ausgeblendet]"/'
+          }
+
+          # --- Versionen und Werkzeuge ----------------------------------------------------
+          LATEST_MAJOR=""
+          for dir in "$PG_BIN_ROOT"/[0-9]*; do
+            major="${dir##*/}"
+            case "$major" in *[!0-9]*) continue ;; esac
+            if [ -z "$LATEST_MAJOR" ] || [ "$major" -gt "$LATEST_MAJOR" ]; then LATEST_MAJOR="$major"; fi
+          done
+          [ -n "$LATEST_MAJOR" ] || fail "Keine PostgreSQL-Programme unter $PG_BIN_ROOT gefunden."
+          PSQL_PROBE="$PG_BIN_ROOT/$LATEST_MAJOR/bin/psql"
+          [ -x "$PSQL_PROBE" ] || fail "psql fehlt unter $PG_BIN_ROOT/$LATEST_MAJOR/bin."
+
+          probe() {
+            local url="$1" label="$2" out
+            if ! out="$("$PSQL_PROBE" "$url" -XAtq -v ON_ERROR_STOP=1 -c "select current_setting('server_version_num')" 2>"$WORK/probe.err")"; then
+              sanitize < "$WORK/probe.err" >&2
+              fail "$label ist nicht erreichbar. URL prüfen (bei Railway: DATABASE_PUBLIC_URL; Datenbank-Dienst muss laufen)."
+            fi
+            printf '%s' "$out" | tr -d '[:space:]'
+          }
+
+          log "== 1/7 Verbindungen prüfen"
+          SRC_VERSION_NUM="$(probe "$SRC_URL" "Quelle (Railway)")"
+          TGT_VERSION_NUM="$(probe "$TGT_URL" "Ziel (Neon)")"
+          SRC_MAJOR=$((SRC_VERSION_NUM / 10000))
+          TGT_MAJOR=$((TGT_VERSION_NUM / 10000))
+          log "Quelle: PostgreSQL $SRC_MAJOR · Ziel: PostgreSQL $TGT_MAJOR"
+          if [ "$TGT_MAJOR" -lt "$SRC_MAJOR" ]; then
+            fail "Das Ziel hat PostgreSQL $TGT_MAJOR, die Quelle $SRC_MAJOR. Bitte das Neon-Projekt mit PostgreSQL $SRC_MAJOR oder neuer anlegen."
+          fi
+          BIN="$PG_BIN_ROOT/$TGT_MAJOR/bin"
+          for tool in psql pg_dump pg_restore; do
+            [ -x "$BIN/$tool" ] || fail "$tool für PostgreSQL $TGT_MAJOR fehlt unter $BIN."
+          done
+          PSQL="$BIN/psql"
+
+          src_sql() { "$PSQL" "$SRC_URL" -XAtq -v ON_ERROR_STOP=1 "$@"; }
+          tgt_sql() { "$PSQL" "$TGT_URL" -XAtq -v ON_ERROR_STOP=1 "$@"; }
+
+          log "== 2/7 Größe und Zielzustand prüfen"
+          SRC_BYTES="$(src_sql -c "select pg_database_size(current_database())" | tr -d '[:space:]')"
+          SRC_MB=$(( (SRC_BYTES + 1048575) / 1048576 ))
+          log "Größe der Quelldatenbank: ${SRC_MB} MB"
+          if [ "$SRC_MB" -gt "$MAX_SOURCE_MB" ]; then
+            fail "Die Quelle ist ${SRC_MB} MB groß und überschreitet das Limit von ${MAX_SOURCE_MB} MB (Neon Free: 0,5 GB)."
+          fi
+
+          SYSTEM_SCHEMAS="'pg_catalog','information_schema','pg_toast'"
+          USER_SCHEMA_FILTER="n.nspname not in ($SYSTEM_SCHEMAS) and n.nspname not like 'pg\\_temp\\_%' and n.nspname not like 'pg\\_toast\\_temp\\_%'"
+          count_target_objects() { # Tabellen, Sequenzen, Views, Funktionen und Typen (ohne Erweiterungs-Objekte)
+            tgt_sql -c "select
+                (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                  where $USER_SCHEMA_FILTER and not exists (select 1 from pg_depend d where d.classid = 'pg_class'::regclass and d.objid = c.oid and d.deptype = 'e'))
+              + (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                  where $USER_SCHEMA_FILTER and not exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e'))
+              + (select count(*) from pg_type t join pg_namespace n on n.oid = t.typnamespace
+                  where $USER_SCHEMA_FILTER and t.typrelid = 0 and t.typcategory <> 'A'
+                    and not exists (select 1 from pg_depend d where d.classid = 'pg_type'::regclass and d.objid = t.oid and d.deptype = 'e'))" | tr -d '[:space:]'
+          }
+          TARGET_OBJECTS="$(count_target_objects)"
+          if [ "$TARGET_OBJECTS" != "0" ]; then
+            if [ "$OVERWRITE_TARGET" != "ja" ]; then
+              fail "Das Ziel ist nicht leer ($TARGET_OBJECTS Objekte). Nichts verändert. Nur wenn die Website noch NICHT mit Neon arbeitet: Workflow mit 'Ziel überschreiben = ja' erneut starten."
+            fi
+            SRC_SCHEMAS="$(src_sql -c "select string_agg(quote_literal(nspname), ',') from pg_namespace n where $USER_SCHEMA_FILTER")"
+            FOREIGN_OBJECTS="$(tgt_sql -c "select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where $USER_SCHEMA_FILTER and n.nspname not in (${SRC_SCHEMAS:-''})" | tr -d '[:space:]')"
+            if [ "$FOREIGN_OBJECTS" != "0" ]; then
+              fail "Das Ziel enthält Objekte in Schemas, die es in der Quelle nicht gibt. Abbruch ohne Änderung – bitte ein neues, leeres Neon-Projekt verwenden."
+            fi
+            log "Ziel wird wie angefordert geleert (nur Schemas der Quelle) …"
+            DROP_SQL="$(src_sql -c "select string_agg(format('DROP SCHEMA IF EXISTS %I CASCADE; CREATE SCHEMA %I;', nspname, nspname), ' ') from pg_namespace n where $USER_SCHEMA_FILTER")"
+            tgt_sql -1 -c "$DROP_SQL" 2>"$WORK/drop.err" || { sanitize < "$WORK/drop.err" >&2; fail "Ziel konnte nicht geleert werden."; }
+            [ "$(count_target_objects)" = "0" ] || fail "Ziel ist nach dem Leeren nicht leer."
+          fi
+
+          # --- Konsistenter Snapshot der Quelle ------------------------------------------
+          log "== 3/7 Snapshot der Quelle sichern (nur lesend)"
+          mkfifo "$WORK/snap.in"
+          "$PSQL" "$SRC_URL" -XAtq -v ON_ERROR_STOP=1 < "$WORK/snap.in" > "$WORK/snap.out" 2> "$WORK/snap.err" &
+          SNAP_PID=$!
+          exec 3> "$WORK/snap.in"
+          # SIGPIPE nur für diesen Schreibzugriff ignorieren, damit ein Verbindungsabbruch
+          # sauber gemeldet wird statt das Skript stumm zu beenden.
+          ( trap '' PIPE; printf '%s\n' "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;" "SELECT pg_export_snapshot();" >&3 ) || true
+          SNAPSHOT=""
+          for _ in $(seq 1 120); do
+            if [ -s "$WORK/snap.out" ]; then SNAPSHOT="$(head -n1 "$WORK/snap.out" | tr -d '[:space:]')"; break; fi
+            kill -0 "$SNAP_PID" 2>/dev/null || break
+            sleep 0.5
+          done
+          if [ -z "$SNAPSHOT" ]; then
+            sanitize < "$WORK/snap.err" >&2
+            fail "Snapshot der Quelle konnte nicht erstellt werden (Pooler-URL? Bei Railway DATABASE_PUBLIC_URL verwenden)."
+          fi
+          case "$SNAPSHOT" in *[!0-9A-Fa-f-]*) fail "Unerwartete Snapshot-Kennung." ;; esac
+
+          log "== 4/7 Vollständigen Dump erstellen"
+          if ! "$BIN/pg_dump" "$SRC_URL" --snapshot="$SNAPSHOT" --format=custom --compress=6 \
+            --no-owner --no-privileges --no-publications --no-subscriptions --no-security-labels --no-tablespaces \
+            --file="$WORK/db.dump" 2>"$WORK/dump.err"; then
+            sanitize < "$WORK/dump.err" >&2
+            fail "pg_dump ist fehlgeschlagen. Die Quelle wurde nicht verändert."
+          fi
+          grep -v '^pg_dump: warning: there are circular foreign-key constraints' "$WORK/dump.err" | sanitize >&2 || true
+
+          SESSION_SETTINGS="SET TIME ZONE 'UTC'; SET datestyle TO 'ISO, YMD'; SET intervalstyle TO 'postgres'; SET extra_float_digits TO 1; SET bytea_output TO 'hex'; SET statement_timeout TO 0;"
+          TABLE_LIST_SQL="select format('%I.%I', schemaname, tablename) from pg_tables where schemaname not in ($SYSTEM_SCHEMAS) and schemaname not like 'pg\\_temp\\_%' order by 1"
+          CHECKS_SQL="select format(\$f\$select %L, count(*), coalesce(md5(string_agg(md5(t::text), '' order by md5(t::text) collate \"C\")), '-') from %I.%I t;\$f\$, format('%I.%I', schemaname, tablename), schemaname, tablename) from pg_tables where schemaname not in ($SYSTEM_SCHEMAS) and schemaname not like 'pg\\_temp\\_%' order by schemaname, tablename"
+
+          in_snapshot() { # Führt SQL-Befehle in einer Transaktion auf genau dem Snapshot aus.
+            "$PSQL" "$SRC_URL" -XAtq -v ON_ERROR_STOP=1 -F $'\t' \
+              -c "$SESSION_SETTINGS" \
+              -c "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" \
+              -c "SET TRANSACTION SNAPSHOT '$SNAPSHOT'" \
+              "$@" \
+              -c "COMMIT"
+          }
+
+          log "== 5/7 Prüfsummen der Quelle berechnen (gleicher Snapshot)"
+          in_snapshot -c "$TABLE_LIST_SQL" > "$WORK/source.tables" 2>"$WORK/src.err" || { sanitize < "$WORK/src.err" >&2; fail "Tabellenliste der Quelle nicht lesbar."; }
+          in_snapshot -c "$CHECKS_SQL" > "$WORK/checks.sql" 2>"$WORK/src.err" || { sanitize < "$WORK/src.err" >&2; fail "Prüfabfragen konnten nicht erzeugt werden."; }
+          {
+            printf '%s\n' "$SESSION_SETTINGS" "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;" "SET TRANSACTION SNAPSHOT '$SNAPSHOT';"
+            cat "$WORK/checks.sql"
+            printf '%s\n' "COMMIT;"
+          } > "$WORK/source-checks.sql"
+          "$PSQL" "$SRC_URL" -XAtq -v ON_ERROR_STOP=1 -F $'\t' -f "$WORK/source-checks.sql" > "$WORK/source.sums" 2>"$WORK/src.err" \
+            || { sanitize < "$WORK/src.err" >&2; fail "Prüfsummen der Quelle konnten nicht berechnet werden."; }
+
+          # Snapshot freigeben (die Quelle wurde nur gelesen). Dump und Prüfsummen haben
+          # den Snapshot zu diesem Zeitpunkt bereits erfolgreich übernommen.
+          ( trap '' PIPE; printf '%s\n' "COMMIT;" >&3 ) || true
+          exec 3>&-
+          if ! wait "$SNAP_PID"; then
+            log "::warning::Die Snapshot-Verbindung wurde vorzeitig beendet; Dump und Prüfsummen waren zu diesem Zeitpunkt bereits konsistent übernommen."
+          fi
+          SNAP_PID=""
+
+          TABLE_COUNT="$(wc -l < "$WORK/source.tables" | tr -d '[:space:]')"
+          [ "$TABLE_COUNT" -gt 0 ] || fail "Die Quelle enthält keine Tabellen. Falsche Datenbank?"
+          [ "$(wc -l < "$WORK/source.sums" | tr -d '[:space:]')" = "$TABLE_COUNT" ] || fail "Prüfsummen der Quelle unvollständig."
+
+          # --- Import ins Ziel -------------------------------------------------------------
+          log "== 6/7 In das Ziel importieren (eine Transaktion: alles oder nichts)"
+          "$BIN/pg_restore" --list "$WORK/db.dump" > "$WORK/toc.full"
+          # Kommentare zu Erweiterungen/Schema "public" gehören dem Anbieter des Ziels und
+          # enthalten keine Daten; sie würden auf verwalteten Datenbanken scheitern.
+          sed -E \
+            -e 's/^([0-9]+; [0-9]+ [0-9]+ COMMENT - EXTENSION .*)$/;\1/' \
+            -e 's/^([0-9]+; [0-9]+ [0-9]+ SCHEMA - public .*)$/;\1/' \
+            -e 's/^([0-9]+; [0-9]+ [0-9]+ COMMENT - SCHEMA public .*)$/;\1/' \
+            "$WORK/toc.full" > "$WORK/toc.list"
+          if ! "$BIN/pg_restore" --dbname="$TGT_URL" --use-list="$WORK/toc.list" --single-transaction --exit-on-error \
+            --no-owner --no-privileges "$WORK/db.dump" 2>"$WORK/restore.err"; then
+            sanitize < "$WORK/restore.err" >&2
+            fail "Import fehlgeschlagen. Das Ziel wurde vollständig zurückgerollt; die Quelle ist unverändert."
+          fi
+          rm -f "$WORK/db.dump"
+          tgt_sql -c "SET client_min_messages TO error" -c "ANALYZE" >/dev/null
+
+          # --- Abgleich ----------------------------------------------------------------------
+          log "== 7/7 Jede Tabelle Zeile für Zeile abgleichen"
+          tgt_sql -c "$TABLE_LIST_SQL" > "$WORK/target.tables"
+          if ! diff -q "$WORK/source.tables" "$WORK/target.tables" >/dev/null; then
+            log "Abweichende Tabellenliste:"; diff "$WORK/source.tables" "$WORK/target.tables" | sed -n '1,40p' || true
+            fail "Tabellen im Ziel weichen von der Quelle ab."
+          fi
+          {
+            printf '%s\n' "$SESSION_SETTINGS" "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;"
+            cat "$WORK/checks.sql"
+            printf '%s\n' "COMMIT;"
+          } > "$WORK/target-checks.sql"
+          "$PSQL" "$TGT_URL" -XAtq -v ON_ERROR_STOP=1 -F $'\t' -f "$WORK/target-checks.sql" > "$WORK/target.sums" 2>"$WORK/tgt.err" \
+            || { sanitize < "$WORK/tgt.err" >&2; fail "Prüfsummen des Ziels konnten nicht berechnet werden."; }
+
+          MISMATCHES=0
+          TOTAL_ROWS=0
+          while IFS=$'\t' read -r table count sum; do
+            target_line="$(awk -F '\t' -v t="$table" '$1 == t { print; exit }' "$WORK/target.sums")"
+            if [ "$target_line" = "$(printf '%s\t%s\t%s' "$table" "$count" "$sum")" ]; then
+              log "  ✓ $table"
+            else
+              log "  ✗ $table (Quelle: $count Zeilen, Ziel: $(printf '%s' "$target_line" | cut -f2) Zeilen)"
+              MISMATCHES=$((MISMATCHES + 1))
+            fi
+            TOTAL_ROWS=$((TOTAL_ROWS + count))
+          done < "$WORK/source.sums"
+          [ "$MISMATCHES" -eq 0 ] || fail "$MISMATCHES Tabelle(n) weichen ab. Website NICHT umstellen."
+
+          # Sequenzen (fortlaufende IDs) müssen hinter den vorhandenen Daten stehen,
+          # sonst würden neue Leads/Mitarbeiter mit doppelten IDs scheitern.
+          tgt_sql 2>"$WORK/seq.err" >/dev/null <<'SQL' || { sanitize < "$WORK/seq.err" >&2; fail "Sequenzprüfung fehlgeschlagen."; }
+          DO $$
+          DECLARE
+            r record;
+            max_value bigint;
+            last_val bigint;
+            called boolean;
+            behind text := '';
+          BEGIN
+            FOR r IN
+              SELECT n.nspname, c.relname, a.attname,
+                     pg_get_serial_sequence(format('%I.%I', n.nspname, c.relname), a.attname) AS seq
+              FROM pg_attribute a
+              JOIN pg_class c ON c.oid = a.attrelid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE c.relkind IN ('r', 'p') AND a.attnum > 0 AND NOT a.attisdropped
+                AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+                AND pg_get_serial_sequence(format('%I.%I', n.nspname, c.relname), a.attname) IS NOT NULL
+            LOOP
+              EXECUTE format('SELECT max(%I)::bigint FROM %I.%I', r.attname, r.nspname, r.relname) INTO max_value;
+              EXECUTE format('SELECT last_value, is_called FROM %s', r.seq) INTO last_val, called;
+              IF max_value IS NOT NULL AND (last_val < max_value OR (last_val = max_value AND NOT called)) THEN
+                behind := behind || r.seq || ' ';
+              END IF;
+            END LOOP;
+            IF behind <> '' THEN
+              RAISE EXCEPTION 'Sequenzen stehen hinter den Daten: %', behind;
+            END IF;
+          END
+          $$;
+          SQL
+
+          # Hinweis, falls die Quelle seit dem Snapshot neue Daten bekommen hat.
+          {
+            printf '%s\n' "$SESSION_SETTINGS" "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;"
+            cat "$WORK/checks.sql"
+            printf '%s\n' "COMMIT;"
+          } > "$WORK/live-checks.sql"
+          CHANGED_SINCE=""
+          if "$PSQL" "$SRC_URL" -XAtq -v ON_ERROR_STOP=1 -F $'\t' -f "$WORK/live-checks.sql" > "$WORK/live.sums" 2>/dev/null; then
+            CHANGED_SINCE="$(diff <(sort "$WORK/source.sums") <(sort "$WORK/live.sums") | awk -F '\t' '/^[<>]/ { sub(/^[<>] /, "", $1); print $1 }' | sort -u | tr '\n' ' ' || true)"
+          fi
+
+          log ""
+          log "ERGEBNIS: $TABLE_COUNT Tabellen mit insgesamt $TOTAL_ROWS Zeilen identisch übertragen (Prüfsumme je Zeile)."
+          if [ -n "$CHANGED_SINCE" ]; then
+            log "::warning::Während des Umzugs kamen in der Quelle neue Änderungen hinzu in: $CHANGED_SINCE– vor dem Umschalten der Website den Workflow mit 'Ziel überschreiben = ja' erneut starten."
+          fi
+
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              printf '## Datenbank-Umzug erfolgreich\n\n'
+              printf -- '- Quelle: PostgreSQL %s · Ziel: PostgreSQL %s\n' "$SRC_MAJOR" "$TGT_MAJOR"
+              printf -- '- %s Tabellen, %s Zeilen – jede Zeile per Prüfsumme bestätigt\n' "$TABLE_COUNT" "$TOTAL_ROWS"
+              printf -- '- Fortlaufende IDs (Sequenzen) geprüft\n'
+              if [ -n "$CHANGED_SINCE" ]; then
+                printf -- '- ⚠️ Seit dem Snapshot geändert: %s→ vor dem Umschalten erneut ausführen (Ziel überschreiben = ja)\n' "$CHANGED_SINCE"
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -n "${TARGET_URL_FILE:-}" ]; then
+            ( umask 077; printf '%s' "$TGT_URL" > "$TARGET_URL_FILE" )
+          fi
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Neon auf den aktuellen App-Stand bringen (Migrationen)
+        run: |
+          set -euo pipefail
+          DATABASE_URL="$(cat "$RUNNER_TEMP/neon-url")"
+          echo "::add-mask::${DATABASE_URL}"
+          export DATABASE_URL
+          node scripts/migrate.mjs
+
+      - name: App-Kompatibilität prüfen (Tabellen, Migrationen, Admin-Konto)
+        env:
+          PORTAL_ADMIN_EMAIL: m.egenolf@tarifwerk.eu
+        run: |
+          set -euo pipefail
+          DATABASE_URL="$(cat "$RUNNER_TEMP/neon-url")"
+          echo "::add-mask::${DATABASE_URL}"
+          export DATABASE_URL
+          node scripts/db-check.mjs
+
+      - name: Nächste Schritte
+        run: |
+          {
+            echo ""
+            echo "### Nächste Schritte"
+            echo "1. Google Cloud Secret Manager → Secret \`tarifwerk-database-url\` → **Neue Version** → genau die Neon-URL aus \`NEON_DATABASE_URL\` einfügen."
+            echo "2. Firebase-Konsole → App Hosting → Backend \`neuuuuuuutarif1509\` → **Rollout erstellen** (Branch \`main\`)."
+            echo "3. Portal-Login und Leads auf der Firebase-Adresse prüfen, danach die Domain \`www.tarifwerk.eu\` auf Firebase umstellen."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Temporäre Zugangsdaten entfernen
+        if: always()
+        run: rm -f "$RUNNER_TEMP/neon-url"
